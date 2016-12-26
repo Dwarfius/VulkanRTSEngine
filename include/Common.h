@@ -16,4 +16,7 @@
 using namespace std;
 using namespace glm;
 
+#define SCREEN_W 800
+#define SCREEN_H 600
+
 #endif // !_COMMON_H

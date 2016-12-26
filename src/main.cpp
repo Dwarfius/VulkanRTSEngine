@@ -1,11 +1,12 @@
 #include "Common.h"
+#include "Game.h"
 
 int main()
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow *window = glfwCreateWindow(800, 600, "Vulkan RTS Engine", nullptr, nullptr);
+	GLFWwindow *window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
 
 	//enumerating available extensions
 	uint32_t extensionCount = 0;
@@ -17,10 +18,21 @@ int main()
 		printf("  %d: %s(%d)\n", i, props[i].extensionName, props[i].specVersion);
 	delete[] props;
 
-	while (!glfwWindowShouldClose(window)) 
+	glfwSetTime(0);
+	float oldTime = 0;
+
+	Game *game = new Game();
+	game->Init();
+	while (!glfwWindowShouldClose(window) && game->IsRunning()) 
 	{
 		glfwPollEvents();
+		float newTime = glfwGetTime();
+		float deltaTime = newTime - oldTime;
+		game->Update(deltaTime);
+		game->Render();
 	}
+	game->CleanUp();
+	delete game;
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

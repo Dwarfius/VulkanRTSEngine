@@ -8,7 +8,13 @@ find_package(Vulkan REQUIRED)
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
 
-add_executable(VulkanRTSEngine src/main.cpp include/Common.h)
+add_executable(VulkanRTSEngine 
+# Our own sources...
+src/main.cpp src/Camera.cpp src/Game.cpp src/Graphics.cpp
+# headers...
+include/Common.h include/Camera.h include/Game.h include/Graphics.h
+# and 3rd-party stuff
+src/tinyxml2.cpp include/tinyxml2.h)
 
 include_directories(VulkanRTSEngine include/ ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${VULKAN_INCLUDE_DIR})
 
