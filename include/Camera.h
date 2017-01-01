@@ -24,7 +24,7 @@ struct Frustrum
 
 		//computing the vertical fov
 		tang = tan(radians(fov));
-		sphereFactorY = 1.0f / cos(fov);
+		sphereFactorY = 1.0f / cos(radians(fov));
 
 		//computing horizontal fov
 		float angleX = atan(tang * ratio);
@@ -68,8 +68,8 @@ struct Frustrum
 class Camera
 {
 private:
-	const GLfloat sensX = 1, sensY = 1;
-	GLfloat yaw, pitch;
+	const float sensX = 1, sensY = 1;
+	float yaw, pitch;
 	vec3 pos, up, forward, right;
 	mat4 projMatrix, viewMatrix, VP;
 
@@ -92,7 +92,7 @@ public:
 
 	void LookAt(vec3 target) { forward = normalize(target - pos); }
 
-	void Rotate(GLfloat deltaYaw, GLfloat deltaPitch) { yaw += deltaYaw * sensX; pitch += deltaPitch * sensY; }
+	void Rotate(float deltaYaw, float deltaPitch) { yaw += deltaYaw * sensX; pitch += deltaPitch * sensY; }
 
 	void Recalculate();
 	mat4 GetView() { return viewMatrix; }

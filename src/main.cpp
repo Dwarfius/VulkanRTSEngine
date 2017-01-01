@@ -1,22 +1,21 @@
 #include "Common.h"
 #include "Game.h"
+#include "Graphics.h"
 
 int main()
 {
 	glfwInit();
 
+	if (glfwVulkanSupported() == GLFW_FALSE)
+	{
+		printf("Vulkan Unavailable!");
+		return -1;
+	}
+
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow *window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
 
-	//enumerating available extensions
-	uint32_t extensionCount = 0;
-	vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-	printf("Found %d Vulkan extensions\n", extensionCount);
-	vk::ExtensionProperties *props = new vk::ExtensionProperties[extensionCount];
-	vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, props);
-	for (int i = 0; i < extensionCount; i++)
-		printf("  %d: %s(%d)\n", i, props[i].extensionName, props[i].specVersion);
-	delete[] props;
+	Graphics::Init();
 
 	glfwSetTime(0);
 	float oldTime = 0;
@@ -33,6 +32,8 @@ int main()
 	}
 	game->CleanUp();
 	delete game;
+
+	Graphics::CleanUp();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
