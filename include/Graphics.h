@@ -11,18 +11,35 @@
 class Graphics
 {
 public:
-	static void Init();
+	static void Init(GLFWwindow *window);
 	static void Render();
 	static void Display();
 	static void CleanUp();
 
-	static vk::Instance GetInstance() { return instance; }
-	static vk::Device GetDevice() { return device; }
+	static vk::Instance* GetInstance() { return &instance; }
+	static vk::Device* GetDevice() { return &device; }
 private:
 	Graphics();
 
+	static GLFWwindow *window;
+
+	// Instance related
 	static vk::Instance instance;
+	static void CreateInstance();
+	
+	// Device related
 	static vk::Device device;
+	static void CreateDevice();
+	static bool IsSuitable(const vk::PhysicalDevice &device);
+
+	// Queues from Device
+	static uint32_t graphicsFamIndex, computeFamIndex, transferFamIndex;
+	static vk::Queue graphicsQueue, computeQueue, transferQueue;
+
+	// Window surface
+	static vk::SurfaceKHR surface;
+	static void CreateSurface();
+	static vk::Queue presentQueue;
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually
@@ -30,7 +47,7 @@ private:
 	static PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
 
 	static VkDebugReportCallbackEXT debugCallback;
-	static bool Graphics::LayersAvailable(const vector<const char*> validationLayers);
+	static bool Graphics::LayersAvailable(const vector<const char*> &validationLayers);
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugReportFlagsEXT flags,
 		VkDebugReportObjectTypeEXT objType,
