@@ -28,18 +28,38 @@ private:
 	static void CreateInstance();
 	
 	// Device related
+	const static vector<const char *> requiredLayers;
+	const static vector<const char *> requiredExtensions;
 	static vk::Device device;
 	static void CreateDevice();
 	static bool IsSuitable(const vk::PhysicalDevice &device);
 
 	// Queues from Device
-	static uint32_t graphicsFamIndex, computeFamIndex, transferFamIndex;
-	static vk::Queue graphicsQueue, computeQueue, transferQueue;
+	struct QueuesInfo {
+		uint32_t graphicsFamIndex, computeFamIndex, transferFamIndex, presentFamIndex;
+		vk::Queue graphicsQueue, computeQueue, transferQueue, presentQueue;
+	};
+	static QueuesInfo queues;
 
 	// Window surface
 	static vk::SurfaceKHR surface;
 	static void CreateSurface();
-	static vk::Queue presentQueue;
+
+	// Swapchain
+	struct SwapchainSupportInfo {
+		vk::SurfaceCapabilitiesKHR surfCaps;
+		vector<vk::SurfaceFormatKHR> suppFormats;
+		vector<vk::PresentModeKHR> presentModes;
+
+		// used swapchain settings
+		vk::Format imgFormat;
+		vk::Extent2D swapExtent;
+	};
+	static SwapchainSupportInfo swapInfo;
+	static vk::SwapchainKHR swapchain;
+	static vector<vk::Image> images; // images to render to, auto-destroyed by swapchain
+	static vector<vk::ImageView> imgViews; // views to acess images through, needs to be destroyed
+	static void CreateSwapchain();
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually
