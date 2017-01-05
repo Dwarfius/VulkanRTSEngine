@@ -1,5 +1,6 @@
 # Custom
 build/
+*.spv # SpirV shader bytecode - just to avoid platform-dependent issues, force users to compile it on their own
 
 # Compiled Object files
 *.slo

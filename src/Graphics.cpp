@@ -1,6 +1,7 @@
 #include "Graphics.h"
 #include <algorithm>
 #include <set>
+#include <fstream>
 
 const vector<const char *> Graphics::requiredLayers = {
 #ifdef _DEBUG
@@ -23,6 +24,10 @@ Graphics::SwapchainSupportInfo Graphics::swapInfo;
 vk::SwapchainKHR Graphics::swapchain;
 vector<vk::Image> Graphics::images;
 vector<vk::ImageView> Graphics::imgViews;
+vk::ShaderModule Graphics::vertShader, Graphics::fragShader;
+vk::RenderPass Graphics::renderPass;
+vk::PipelineLayout Graphics::pipelineLayout;
+vk::Pipeline Graphics::pipeline;
 
 // Public Methods
 void Graphics::Init(GLFWwindow *window)
@@ -33,6 +38,8 @@ void Graphics::Init(GLFWwindow *window)
 	CreateSurface();
 	CreateDevice();
 	CreateSwapchain();
+	CreateRenderPass();
+	CreatePipeline();
 }
 
 void Graphics::Render()
@@ -45,6 +52,11 @@ void Graphics::Display()
 
 void Graphics::CleanUp()
 {
+	device.destroyPipeline(pipeline);
+	device.destroyPipelineLayout(pipelineLayout);
+	device.destroyRenderPass(renderPass);
+	device.destroyShaderModule(vertShader);
+	device.destroyShaderModule(fragShader);
 	for (auto v : imgViews)
 		device.destroyImageView(v);
 	device.destroySwapchainKHR(swapchain);
@@ -188,7 +200,7 @@ void Graphics::CreateDevice()
 		}
 		i++;
 	}
-	printf("[Info] Using graphics=%d, compute=%d and transfer=%d\n", queues.graphicsFamIndex, queues.computeFamIndex, queues.transferFamIndex);
+	printf("[Info] Using queue families: graphics=%d, compute=%d and transfer=%d\n", queues.graphicsFamIndex, queues.computeFamIndex, queues.transferFamIndex);
 
 	// proper set-up of queues is a bit convoluted, cause it has to take care of the 3! cases of combinations
 	vector<vk::DeviceQueueCreateInfo> queuesToCreate;
@@ -335,6 +347,140 @@ void Graphics::CreateSwapchain()
 	}
 }
 
+void Graphics::CreateRenderPass()
+{
+	// in order to define a render pass, we need to collect all attachments for it
+	// as of now we only render color to single texture
+	vk::AttachmentDescription colorAttachment{
+		{},
+		swapInfo.imgFormat, vk::SampleCountFlagBits::e1,
+		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+		vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+		vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR
+	};
+	// in order to reference what attachment will be referenced in a subpass, attachment reference needs to be created
+	vk::AttachmentReference colorRef{
+		0, vk::ImageLayout::eColorAttachmentOptimal
+	};
+	// create the only subpass we need for color rendering
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorRef;
+
+	// now that we have all the required info, create the render pass
+	vk::RenderPassCreateInfo passCreateInfo{
+		{},
+		1, &colorAttachment, // attachments
+		1, &subpass, // subpasses
+		0, nullptr // dependencies
+	};
+	renderPass = device.createRenderPass(passCreateInfo);
+}
+
+void Graphics::CreatePipeline()
+{
+	// first, getting the shaders
+	vector<char> frag = readFile("assets/base-frag.spv");
+	vector<char> vert = readFile("assets/base-vert.spv");
+
+	// and wrapping them in to something we can pass around vulkan apis
+	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
+	fragShader = device.createShaderModule({ {}, frag.size(), (const uint32_t*)frag.data() });
+
+	// now, to link them up
+	vector<vk::PipelineShaderStageCreateInfo> stages = {
+		{ {}, vk::ShaderStageFlagBits::eVertex, vertShader, "main", nullptr },
+		{ {}, vk::ShaderStageFlagBits::eFragment, fragShader, "main", nullptr }
+	};
+
+	// one part of the pipeline defined, next: vertex input
+	vk::PipelineVertexInputStateCreateInfo vertInputInfo{
+		{},
+		0, nullptr, // vert binding descriptions
+		0, nullptr  // vert attribs descriptions
+	};
+
+	// then input assembly ...
+	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo{
+		{}, vk::PrimitiveTopology::eTriangleList, VK_FALSE
+	};
+
+	// viewport ...
+	vk::Viewport viewport{
+		0, 0,
+		(float)swapInfo.swapExtent.width, (float)swapInfo.swapExtent.height,
+		0, 1
+	};
+
+	// scissors ...
+	vk::Rect2D scissors{
+		{0, 0},
+		swapInfo.swapExtent
+	};
+
+	// viewport definition from the viewport and scissors...
+	vk::PipelineViewportStateCreateInfo viewportCreateInfo{
+		{},
+		1, &viewport,
+		1, &scissors
+	};
+
+	// rasterizer...
+	vk::PipelineRasterizationStateCreateInfo rasterizerCreateInfo;
+	// most of the default stuff suits us, just need small adjustements
+	rasterizerCreateInfo.cullMode = vk::CullModeFlagBits::eBack;
+	rasterizerCreateInfo.frontFace = vk::FrontFace::eClockwise;
+
+	// multisampling...
+	vk::PipelineMultisampleStateCreateInfo multisampleCreateInfo;
+	multisampleCreateInfo.minSampleShading = 1;
+
+	// color blending...
+	// blend states are done per frame buffer, since we have only 1 - we use only 1 state
+	vk::PipelineColorBlendAttachmentState blendState;
+	// since we don't do any blending, just turn it off and write to all
+	blendState.blendEnable = VK_FALSE;
+	blendState.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+
+	// linking the state to the actual color blending part of pipeline
+	vk::PipelineColorBlendStateCreateInfo colorBlendCreateInfo;
+	colorBlendCreateInfo.attachmentCount = 1;
+	colorBlendCreateInfo.pAttachments = &blendState;
+
+	// almost there - mark states that we might dynamically change without recreating the pipeline
+	vector<vk::DynamicState> dynStates = {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eLineWidth
+	};
+	vk::PipelineDynamicStateCreateInfo dynStatesCreateInfo{
+		{},
+		(uint32_t)dynStates.size(), dynStates.data()
+	};
+
+	// define and create the pipeline layout
+	vk::PipelineLayoutCreateInfo layoutCreateInfo{
+		{},
+		0, nullptr, // layouts
+		0, nullptr  // push constant ranges
+	};
+	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
+
+	// we have the layour and the renderpass - all that's needed for an actual pipeline
+	vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
+		{},
+		(uint32_t)stages.size(), stages.data(),
+		&vertInputInfo, &inputAssemblyInfo,
+		nullptr, &viewportCreateInfo,
+		&rasterizerCreateInfo, &multisampleCreateInfo,
+		nullptr, &colorBlendCreateInfo,
+		&dynStatesCreateInfo, pipelineLayout,
+		renderPass, 0,
+		VK_NULL_HANDLE, -1
+	};
+	pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
+}
+
 // extend this later to use proper checking of caps
 bool Graphics::IsSuitable(const vk::PhysicalDevice &device)
 {
@@ -431,4 +577,21 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::DebugCallback(VkDebugReportFlagsEXT fla
 	else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
 		printf("[Performance] VL: %s\n", msg);
 	return VK_FALSE;
+}
+
+vector<char> Graphics::readFile(const string & filename)
+{
+	ifstream file(filename, ios::ate | ios::binary);
+	if (!file.is_open())
+	{
+		printf("[Error] Failed to open file: %s\n", filename.c_str());
+		return vector<char>();
+	}
+	
+	size_t size = file.tellg();
+	vector<char> buffer(size);
+	file.seekg(0);
+	file.read(buffer.data(), size);
+	file.close();
+	return buffer;
 }

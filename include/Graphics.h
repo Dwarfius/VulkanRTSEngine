@@ -61,6 +61,16 @@ private:
 	static vector<vk::ImageView> imgViews; // views to acess images through, needs to be destroyed
 	static void CreateSwapchain();
 
+	// Render Passes
+	static vk::RenderPass renderPass;
+	static void CreateRenderPass();
+
+	// Graphic Pipeline
+	static vk::Pipeline pipeline;
+	static vk::PipelineLayout pipelineLayout;
+	static vk::ShaderModule vertShader, fragShader;
+	static void CreatePipeline();
+
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually
 	static PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
@@ -77,6 +87,9 @@ private:
 		const char* layerPrefix,
 		const char* msg,
 		void* userData);
+
+	// Utilities
+	static vector<char> readFile(const string& filename);
 };
 
 #endif // !_GRAPHICS_H
