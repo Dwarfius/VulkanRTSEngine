@@ -28,22 +28,49 @@ vk::ShaderModule Graphics::vertShader, Graphics::fragShader;
 vk::RenderPass Graphics::renderPass;
 vk::PipelineLayout Graphics::pipelineLayout;
 vk::Pipeline Graphics::pipeline;
+vector<vk::Framebuffer> Graphics::swapchainFrameBuffers;
+vk::CommandPool Graphics::pool;
+vector<vk::CommandBuffer> Graphics::cmdBuffers;
+vk::Semaphore Graphics::imgAvailable, Graphics::renderFinished;
 
 // Public Methods
 void Graphics::Init(GLFWwindow *window)
 {
 	// saving a reference for internal usage
 	Graphics::window = window;
+	glfwSetWindowSizeCallback(window, OnWindowResized);
 	CreateInstance();
 	CreateSurface();
 	CreateDevice();
 	CreateSwapchain();
 	CreateRenderPass();
 	CreatePipeline();
+	CreateFrameBuffers();
+	CreateCommandResources();
 }
 
 void Graphics::Render()
 {
+	// acquire image to render to
+	uint32_t imgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
+
+	// submit the queue
+	// make sure it waits for the image to become available before we start outputting color
+	vk::PipelineStageFlags waitAt = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	vk::SubmitInfo submitInfo{
+		1, &imgAvailable, &waitAt,
+		1, &cmdBuffers[imgIndex],
+		1, &renderFinished
+	};
+	queues.graphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
+
+	// present the results of the drawing
+	vk::PresentInfoKHR presentInfo{
+		1, &renderFinished,
+		1, &swapchain, &imgIndex,
+		nullptr
+	};
+	queues.graphicsQueue.presentKHR(presentInfo);
 }
 
 void Graphics::Display()
@@ -52,18 +79,66 @@ void Graphics::Display()
 
 void Graphics::CleanUp()
 {
+	// gonna make sure all the tasks are finished before we can start destroying resources
+	device.waitIdle();
+
+	device.destroySemaphore(imgAvailable);
+	device.destroySemaphore(renderFinished);
+	device.destroyCommandPool(pool);
+	
+	for (auto b : swapchainFrameBuffers)
+		device.destroyFramebuffer(b);
+	swapchainFrameBuffers.clear();
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipelineLayout);
 	device.destroyRenderPass(renderPass);
 	device.destroyShaderModule(vertShader);
 	device.destroyShaderModule(fragShader);
+
 	for (auto v : imgViews)
 		device.destroyImageView(v);
+	imgViews.clear();
 	device.destroySwapchainKHR(swapchain);
 	instance.destroySurfaceKHR(surface);
+
 	device.destroy();
 	DestroyDebugReportCallback(instance, debugCallback, nullptr);
 	instance.destroy();
+}
+
+void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
+{
+	if (width == 0 && height == 0)
+		return;
+
+	// gonna make sure all the tasks are finished before we can start destroying resources
+	device.waitIdle();
+
+	// leave out the logical device and instance, but everything else must be recreated
+	device.destroySemaphore(imgAvailable);
+	device.destroySemaphore(renderFinished);
+	device.destroyCommandPool(pool);
+
+	for (auto b : swapchainFrameBuffers)
+		device.destroyFramebuffer(b);
+	swapchainFrameBuffers.clear();
+	device.destroyPipeline(pipeline);
+	device.destroyPipelineLayout(pipelineLayout);
+	device.destroyRenderPass(renderPass);
+	device.destroyShaderModule(vertShader);
+	device.destroyShaderModule(fragShader);
+
+	for (auto v : imgViews)
+		device.destroyImageView(v);
+	imgViews.clear();
+	device.destroySwapchainKHR(swapchain);
+	//instance.destroySurfaceKHR(surface);
+
+	CreateSwapchain();
+	CreateRenderPass();
+	CreatePipeline();
+	CreateFrameBuffers();
+	CreateCommandResources();
 }
 
 // Private Methods
@@ -368,12 +443,23 @@ void Graphics::CreateRenderPass()
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorRef;
 
+	// specifying dependencies to tell Vulkan api how to transition images
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0; // we only have 1 subpass, so it's 0
+
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.srcAccessMask = {};
+
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+
 	// now that we have all the required info, create the render pass
 	vk::RenderPassCreateInfo passCreateInfo{
 		{},
 		1, &colorAttachment, // attachments
 		1, &subpass, // subpasses
-		0, nullptr // dependencies
+		1, &dependency // dependencies
 	};
 	renderPass = device.createRenderPass(passCreateInfo);
 }
@@ -450,7 +536,7 @@ void Graphics::CreatePipeline()
 
 	// almost there - mark states that we might dynamically change without recreating the pipeline
 	vector<vk::DynamicState> dynStates = {
-		vk::DynamicState::eViewport,
+		//vk::DynamicState::eViewport,
 		vk::DynamicState::eLineWidth
 	};
 	vk::PipelineDynamicStateCreateInfo dynStatesCreateInfo{
@@ -479,6 +565,66 @@ void Graphics::CreatePipeline()
 		VK_NULL_HANDLE, -1
 	};
 	pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
+}
+
+void Graphics::CreateFrameBuffers()
+{
+	for (size_t i = 0; i < imgViews.size(); i++)
+	{
+		vk::FramebufferCreateInfo fboCreateInfo{
+			{},
+			renderPass,
+			1, &imgViews[i],
+			swapInfo.swapExtent.width, swapInfo.swapExtent.height,
+			1
+		};
+		swapchainFrameBuffers.push_back(device.createFramebuffer(fboCreateInfo));
+	}
+}
+
+void Graphics::CreateCommandResources()
+{
+	// before we can create command buffers, we need a pool to allocate from
+	pool = device.createCommandPool({ {}, queues.graphicsFamIndex });
+	// allocating a cmdBuffer per swapchain FBO
+	cmdBuffers = device.allocateCommandBuffers({ pool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
+
+	// pre recording all command buffers just as example usage
+	// in the future almost all of them will be dynamic
+	float clearColor[] = { 0, 0, 0, 1 };
+	vk::ClearValue clearVal;
+	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
+	memcpy(&clearVal.color.float32, clearColor, sizeof(clearVal.color.float32));
+	for (size_t i = 0; i < cmdBuffers.size(); i++)
+	{
+		// begin recording to command buffer
+		cmdBuffers[i].begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+		
+		// start the render pass
+		vk::RenderPassBeginInfo beginInfo{
+			renderPass,
+			swapchainFrameBuffers[i],
+			{ {0, 0}, swapInfo.swapExtent },
+			1, &clearVal
+		};
+		cmdBuffers[i].beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+		
+		// bing the pipeline for rendering with
+		cmdBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+		// actual draw
+		cmdBuffers[i].draw(3, 1, 0, 0);
+		
+		// finish up the render pass
+		cmdBuffers[i].endRenderPass();
+
+		// finish the recording
+		cmdBuffers[i].end();
+	}
+
+	// we will need semaphores for properly managing the async drawing
+	imgAvailable = device.createSemaphore({});
+	renderFinished = device.createSemaphore({});
 }
 
 // extend this later to use proper checking of caps

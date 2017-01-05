@@ -18,6 +18,8 @@ public:
 
 	static vk::Instance* GetInstance() { return &instance; }
 	static vk::Device* GetDevice() { return &device; }
+
+	static void OnWindowResized(GLFWwindow *window, int width, int height);
 private:
 	Graphics();
 
@@ -70,6 +72,16 @@ private:
 	static vk::PipelineLayout pipelineLayout;
 	static vk::ShaderModule vertShader, fragShader;
 	static void CreatePipeline();
+
+	// Render Frame Buffers
+	static vector<vk::Framebuffer> swapchainFrameBuffers;
+	static void CreateFrameBuffers();
+
+	// Command Pool, Buffers and Semaphores
+	static vk::Semaphore imgAvailable, renderFinished;
+	static vk::CommandPool pool;
+	static vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer ber swapchain fbo
+	static void CreateCommandResources();
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually

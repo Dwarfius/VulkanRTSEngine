@@ -25,10 +25,12 @@ int main()
 	while (!glfwWindowShouldClose(window) && game->IsRunning()) 
 	{
 		glfwPollEvents();
+
 		float newTime = glfwGetTime();
 		float deltaTime = newTime - oldTime;
 		game->Update(deltaTime);
-		game->Render();
+		//game->Render();
+		Graphics::Render();
 	}
 	game->CleanUp();
 	delete game;
