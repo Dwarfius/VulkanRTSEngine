@@ -1,6 +1,7 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#define VULKAN_HPP_TYPESAFE_CONVERSION
 #include <vulkan/vulkan.hpp>
 
 #define GLFW_INCLUDE_VULKAN
