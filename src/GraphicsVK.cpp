@@ -1,4 +1,4 @@
-#include "Graphics.h"
+#include "GraphicsVK.h"
 #include <algorithm>
 #include <set>
 #include <fstream>
@@ -36,8 +36,15 @@ vk::Semaphore Graphics::imgAvailable, Graphics::renderFinished;
 // Public Methods
 void Graphics::Init(GLFWwindow *window)
 {
-	// saving a reference for internal usage
-	Graphics::window = window;
+	if (glfwVulkanSupported() == GLFW_FALSE)
+	{
+		printf("[Error] Vulkan loader unavailable");
+		return;
+	}
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
+	
 	glfwSetWindowSizeCallback(window, OnWindowResized);
 	CreateInstance();
 	CreateSurface();
@@ -104,6 +111,8 @@ void Graphics::CleanUp()
 	device.destroy();
 	DestroyDebugReportCallback(instance, debugCallback, nullptr);
 	instance.destroy();
+
+	glfwDestroyWindow(window);
 }
 
 void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
@@ -467,8 +476,8 @@ void Graphics::CreateRenderPass()
 void Graphics::CreatePipeline()
 {
 	// first, getting the shaders
-	vector<char> frag = readFile("assets/base-frag.spv");
-	vector<char> vert = readFile("assets/base-vert.spv");
+	vector<char> frag = readFile("assets/VulkanShaders/base-frag.spv");
+	vector<char> vert = readFile("assets/VulkanShaders/base-vert.spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
 	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
