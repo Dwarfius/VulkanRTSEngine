@@ -1,4 +1,5 @@
-#include "GraphicsGL.h"
+#include "Graphics.h"
+#include "GameObject.h"
 #include <algorithm>
 #include <set>
 #include <fstream>
@@ -28,12 +29,12 @@ void Graphics::Init()
 	printf("[Info] OpenGL context found, version: %s\n", glGetString(GL_VERSION));
 	printf("[Info] GLEW initialized, version: %s\n", glewGetString(GLEW_VERSION));
 
-	//Smooth shading
+	// Smooth shading
 	glShadeModel(GL_SMOOTH);
 	glClearColor(0, 0, 0, 0);
 	glClearDepth(1);
 
-	//enable depth testing
+	// enable depth testing
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL); //set less or equal func for depth testing
 
@@ -41,7 +42,7 @@ void Graphics::Init()
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//turn on back face culling
+	// turn on back face culling
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
@@ -50,10 +51,13 @@ void Graphics::Init()
 	LoadResources();
 }
 
-void Graphics::Render()
+void Graphics::Render(GameObject* go)
 {
-	glBindVertexArray(vaos[0]);
-	glUseProgram(shaders[0]);
+	// fix this bit of overhead later
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[go->GetTexture()]);
+	glBindVertexArray(vaos[go->GetModel()]);
+	glUseProgram(shaders[go->GetShader()]);
 	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 }
 
@@ -80,8 +84,9 @@ void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
 void Graphics::LoadResources()
 {
 	// first, a couple base shaders
+	for(size_t i=0; i<shadersToLoad.size(); i++)
 	{
-		string vert = readFile("assets/GLShaders/base.vert");
+		string vert = readFile("assets/GLShaders/" + shadersToLoad[i] + ".vert");
 		const char *data = vert.c_str();
 		GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertShader, 1, &data, NULL);
@@ -90,7 +95,7 @@ void Graphics::LoadResources()
 		GLint isCompiled = 0;
 		glGetShaderiv(vertShader, GL_COMPILE_STATUS, &isCompiled);
 
-		string frag = readFile("assets/GLShaders/base.frag");
+		string frag = readFile("assets/GLShaders/" + shadersToLoad[i] + ".frag");
 		GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 		data = frag.c_str();
 		glShaderSource(fragShader, 1, &data, NULL);
@@ -159,6 +164,12 @@ void Graphics::LoadResources()
 
 		glBindVertexArray(0);
 		vaos.push_back(vao);
+	}
+
+	// lastly, the textures
+	{
+		// just a plug while NYI
+		textures.push_back(0);
 	}
 }
 

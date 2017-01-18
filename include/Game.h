@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "GameObject.h"
 #include <vector>
+#include <thread>
 
 class Game
 {
@@ -28,10 +29,12 @@ private:
 
 	bool running;
 	struct ThreadInfo {
-		size_t id;
+		uint id, total;
 		bool stageDone;
-		size_t stage; // 0 = idle, 1 = update and cull, 2 = sort, 3 = draw
+		char stage; // 0 = idle, 1 = update and cull, 2 = sort, 3 = draw
 	};
+	vector<thread> threads;
+	void Work(ThreadInfo info);
 
 	// just general settings
 	const float speed = 0.2f;

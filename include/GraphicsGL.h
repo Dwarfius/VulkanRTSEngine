@@ -9,7 +9,7 @@ class Graphics
 {
 public:
 	static void Init();
-	static void Render();
+	static void Render(GameObject* go);
 	static void Display();
 	static void CleanUp();
 
