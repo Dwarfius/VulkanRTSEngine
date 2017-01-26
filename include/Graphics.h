@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <string>
+
 using namespace std;
+
 const std::vector<string> shadersToLoad = {
 	"base"
 };

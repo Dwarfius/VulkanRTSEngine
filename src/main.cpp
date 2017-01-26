@@ -16,8 +16,12 @@ int main()
 	{
 		glfwPollEvents();
 
+		if (glfwGetKey(Graphics::GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			break;
+
 		float newTime = glfwGetTime();
 		float deltaTime = newTime - oldTime;
+		oldTime = newTime;
 		game->Update(deltaTime);
 		game->Render();
 	}

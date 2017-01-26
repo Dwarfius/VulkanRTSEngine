@@ -6,6 +6,15 @@
 #include <vector>
 #include <thread>
 
+// have to define it outside of Game
+// it messes up with method declaration
+enum Stage {
+	Idle,
+	Update,
+	WaitingToSubmit,
+	Render
+};
+
 class Game
 {
 public:
@@ -15,7 +24,7 @@ public:
 	Game* GetInstance() { return inst; }
 
 	void Init();
-	void Update(float deltaTime);
+	void Update(const float deltaTime);
 	void Render();
 	void CleanUp();
 
@@ -29,12 +38,13 @@ private:
 
 	bool running;
 	struct ThreadInfo {
-		uint id, total;
-		bool stageDone;
-		char stage; // 0 = idle, 1 = update and cull, 2 = sort, 3 = draw
+		uint totalThreads;
+		float deltaTime;
+		Stage stage;
 	};
+	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;
-	void Work(ThreadInfo info);
+	void Work(uint infoInd);
 
 	// just general settings
 	const float speed = 0.2f;

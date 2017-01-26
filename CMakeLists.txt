@@ -23,11 +23,17 @@ find_package(GLM REQUIRED)
 
 add_executable(VulkanRTSEngine 
 	# Our own sources...
-	src/main.cpp src/Camera.cpp src/Game.cpp ${GraphicsCpp}
+	src/main.cpp src/Camera.cpp src/Game.cpp ${GraphicsCpp} src/Components/ComponentBase.cpp
+	src/GameObject.cpp
 	# headers...
-	include/Common.h include/Camera.h include/Game.h include/Graphics.h ${GraphicsH}
+	include/Common.h include/Camera.h include/Game.h include/Graphics.h ${GraphicsH} include/Components/ComponentBase.h
+	include/GameObject.h
 	# and 3rd-party stuff
-	src/tinyxml2.cpp include/tinyxml2.h)
+	src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
+
+# just to make our life a little bit more organized, group files
+source_group("Components" FILES src/Components/ComponentBase.cpp include/Components/ComponentBase.h)
+source_group("Extra" FILES src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
 if(UseVulkan)
 	add_definitions(-DGRAPHICS_VK)

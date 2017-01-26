@@ -15,8 +15,8 @@ Game::Game()
 		threads.resize(maxThreads);
 		for (uint i = 0; i < maxThreads; i++)
 		{
-			ThreadInfo info{ i, maxThreads, false, 0 };
-			threads[i] = thread(&Game::Work, this, info);
+			threadInfos.push_back({ maxThreads, 0, Stage::Idle });
+			threads[i] = thread(&Game::Work, this, i);
 		}
 	}
 	else
@@ -38,11 +38,35 @@ void Game::Init()
 	go->SetShader(0);
 	go->SetTexture(0);
 	gameObjects.push_back(go);
+	go = new GameObject();
+	go->SetModel(0);
+	go->SetShader(0);
+	go->SetTexture(0);
+	gameObjects.push_back(go);
+	go = new GameObject();
+	go->SetModel(0);
+	go->SetShader(0);
+	go->SetTexture(0);
+	gameObjects.push_back(go);
+
+	// activating our threads
+	for (uint i = 0; i < threadInfos.size(); i++)
+	{
+		ThreadInfo &info = threadInfos[i];
+		info.stage = Stage::Update;
+	}
 }
 
-void Game::Update(float deltaTime)
+void Game::Update(const float deltaTime)
 {
-	// first we update the camera
+	// notify threads of a new deltaTime
+	for (uint i = 0; i < threadInfos.size(); i++)
+	{
+		ThreadInfo &info = threadInfos[i];
+		info.deltaTime = deltaTime;
+	}
+
+	// update the camera
 	vec3 forward = camera.GetForward();
 	vec3 right = camera.GetRight();
 	vec3 up = camera.GetUp();
@@ -65,18 +89,26 @@ void Game::Update(float deltaTime)
 	curMPos = vec2(x, y);
 	vec2 deltaPos = curMPos - oldMPos;
 	camera.Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
-
-	// [NYI]start updating the objects
-	// ...
 }
 
 void Game::Render()
 {
-	// multithread this
-	for (auto go : gameObjects)
-		Graphics::Render(go);
+	// checking if threads are idle - means they finished submitting work
+	bool threadsIdle = true;
+	for (ThreadInfo info : threadInfos)
+		threadsIdle &= info.stage == Stage::WaitingToSubmit;
+	
+	// if it's not - don't rush the display
+	if (!threadsIdle)
+		return;
 
 	Graphics::Display();
+	// the current render queue has been used up, we can fill it up again
+	for (uint i = 0; i < threadInfos.size(); i++)
+	{
+		ThreadInfo &info = threadInfos[i];
+		info.stage = Stage::Render;
+	}
 }
 
 void Game::CleanUp()
@@ -85,20 +117,37 @@ void Game::CleanUp()
 		delete gameObjects[i];
 }
 
-void Game::Work(ThreadInfo info)
+void Game::Work(uint infoInd)
 {
 	while (running)
 	{
-		if (info.stageDone || info.stage == 0)
+		ThreadInfo &info = threadInfos[infoInd];
+		if (info.stage == Stage::Idle)
 			continue;
+		
+		size_t size = gameObjects.size() / info.totalThreads;
+		if (size == 0)
+			size = 1;
+		size_t start = size * infoInd;
+		size_t end = start + size;
+		if (end > gameObjects.size()) // just a safety precaution
+			end = gameObjects.size();
 
 		switch (info.stage)
 		{
-		case 1:
+		case Stage::Update:
+			for (size_t i = start; i < end; i++)
+				gameObjects[i]->Update(info.deltaTime);
+			info.stage = Stage::WaitingToSubmit;
 			break;
-		default:
+		case Stage::WaitingToSubmit:
+			break;
+		case Stage::Render:
+			for (size_t i = start; i < end; i++)
+				Graphics::Render(gameObjects[i], infoInd);
+			info.stage = Stage::Update;
 			break;
 		}
 	}
-	printf("[Info] Worker thread %d ending\n", info.id);
+	printf("[Info] Worker thread %d ending\n", infoInd);
 }

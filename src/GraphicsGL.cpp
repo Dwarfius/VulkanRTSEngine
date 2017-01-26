@@ -5,7 +5,10 @@
 #include <fstream>
 
 GLFWwindow* Graphics::window = nullptr;
-vector<GLuint> Graphics::shaders, Graphics::textures, Graphics::vaos;
+vector<ShaderId> Graphics::shaders;
+vector<TextureId> Graphics::textures;
+vector<ModelId> Graphics::vaos;
+vector<Graphics::RenderJob> Graphics::threadJobs[16];
 
 // Public Methods
 void Graphics::Init()
@@ -49,20 +52,30 @@ void Graphics::Init()
 	glViewport(0, 0, SCREEN_W, SCREEN_H);
 
 	LoadResources();
+
+	// fix this bit of awkwardness later
+	glActiveTexture(GL_TEXTURE0);
 }
 
-void Graphics::Render(GameObject* go)
+void Graphics::Render(GameObject* go, uint threadId)
 {
-	// fix this bit of overhead later
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[go->GetTexture()]);
-	glBindVertexArray(vaos[go->GetModel()]);
-	glUseProgram(shaders[go->GetShader()]);
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+	// we don't actually render, we just create a render job, Display() does the rendering
+	threadJobs[threadId].push_back(RenderJob{ go->GetShader(), go->GetTexture(), go->GetModel() });
 }
 
 void Graphics::Display()
 {
+	for (uint i = 0; i < 16; i++)
+	{
+		for (RenderJob r : threadJobs[i])
+		{
+			glBindTexture(GL_TEXTURE_2D, textures[r.texture]);
+			glBindVertexArray(vaos[r.model]);
+			glUseProgram(shaders[r.shader]);
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+		}
+		threadJobs[i].clear();
+	}
 	glfwSwapBuffers(window);
 	// clear the buffer for next frame render
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
