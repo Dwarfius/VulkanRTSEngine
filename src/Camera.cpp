@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Common.h"
 
 Camera::Camera(bool orthoMode)
 {

@@ -2,29 +2,29 @@
 #define _GRAPHICS_GL_H
 
 #include "Common.h"
+#include "Camera.h"
 #include <vector>
 #include <string>
 
-class Graphics
+class GraphicsGL : public Graphics
 {
 public:
-	static void Init();
-	static void Render(GameObject* go, uint threadId);
-	static void Display();
-	static void CleanUp();
+	GraphicsGL() {}
 
-	static GLFWwindow* GetWindow() { return window; }
+	void Init() override;
+	void Render(Camera *cam, GameObject *go, uint threadId) override;
+	void Display() override;
+	void CleanUp() override;
 
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
+
+	vec3 GetModelCenter(ModelId m) override { return vaos[m].center; }
 private:
-	Graphics();
 
-	static GLFWwindow *window;
-
-	static vector<ShaderId> shaders;
-	static vector<TextureId> textures;
-	static vector<ModelId> vaos; //vertex array object (holds info on vbo and ebo)
-	static void LoadResources();
+	vector<ShaderId> shaders;
+	vector<TextureId> textures;
+	vector<Model> vaos; //vertex array object (holds info on vbo and ebo)
+	void LoadResources();
 
 	// emulating a render queue
 	// should cache the shader's uniforms as well
@@ -32,13 +32,12 @@ private:
 		ShaderId shader;
 		TextureId texture;
 		ModelId model;
+
+		mat4 mvp;
 	};
 	// supporting max 16 threads
 	// might want to multi-buffer this
-	static vector<RenderJob> threadJobs[16];
-
-	// Utilities
-	static string readFile(const string& filename);
+	vector<RenderJob> threadJobs[16];
 };
 
 #endif // !_GRAPHICS_GL_H

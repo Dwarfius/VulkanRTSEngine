@@ -2,6 +2,7 @@
 #define _GAME_H
 
 #include "Camera.h"
+#include "Graphics.h"
 #include "GameObject.h"
 #include <vector>
 #include <thread>
@@ -29,8 +30,11 @@ public:
 	void CleanUp();
 
 	bool IsRunning() { return running; }
+
+	static Graphics* GetGraphics() { return graphics; }
 private:
 	static Game *inst;
+	static Graphics *graphics;
 
 	vec2 oldMPos, curMPos;
 	Camera camera;
@@ -47,7 +51,7 @@ private:
 	void Work(uint infoInd);
 
 	// just general settings
-	const float speed = 0.2f;
+	const float speed = 1;
 	const float mouseSens = 0.2f;
 };
 

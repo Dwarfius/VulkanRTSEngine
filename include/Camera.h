@@ -1,7 +1,9 @@
 #ifndef _CAMERA_H
 #define _CAMERA_H
 
-#include "Common.h"
+#include <glm\glm.hpp>
+
+using namespace glm;
 
 struct Frustrum
 {

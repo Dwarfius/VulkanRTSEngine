@@ -6,7 +6,7 @@
 class GameObject
 {
 public:
-	GameObject() {}
+	GameObject() : size(vec3(1, 1, 1)) {}
 	~GameObject() {}
 
 	void Update(float deltaTime);
@@ -19,10 +19,30 @@ public:
 
 	void SetTexture(TextureId newTexture) { texture = newTexture; }
 	TextureId GetTexture() { return texture; }
+
+	vec3 GetPos() { return pos; }
+	void SetPos(vec3 pPos) { pos = pPos; modelDirty = true; }
+	void Move(vec3 delta) { pos += delta; modelDirty = true; }
+
+	vec3 GetRotation() { return rotation; }
+	void SetRotation(vec3 pRotation) { rotation = pRotation; modelDirty = true; }
+	void AddRotation(vec3 delta) { rotation += delta; modelDirty = true; }
+
+	vec3 GetScale() { return size; }
+	void SetScale(vec3 pScale) { size = pScale; modelDirty = true; }
+	void AddScale(vec3 delta) { size += delta; modelDirty = true; }
+
+	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
+
 private:
 	ModelId model;
 	ShaderId shader;
 	TextureId texture;
+
+	vec3 pos, rotation, size;
+	mat4 modelMatrix;
+	bool modelDirty = true;
+	void UpdateMatrix();
 };
 
 #endif // !_GAME_OBJECT_H

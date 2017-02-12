@@ -4,6 +4,21 @@ project (VulkanRTSEngine)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 list(APPEND CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
+# Turning on Full Optimization to help with model loading
+if(MSVC)
+	# spexicy all optimizations
+	string(REPLACE "/Od" "/Ox" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+	# turn of conflicting Run Time Checks
+	string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+	# enable inlining of everything
+	string(REPLACE "/Ob0" "/Ob2" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+	# Release already has everything except for /Ox
+	string(REPLACE "/O2" "/Ox" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+elseif(CMAKE_COMPILER_IS_GNUCC)
+	# not sure, have to get my hands on a linux machine
+	# need to compile with -Ofast
+endif()
+
 # Avoiding bloating by focusing either on Vulkan or GL
 option(UseVulkan "Use Vulkan" OFF)
 
@@ -24,7 +39,7 @@ find_package(GLM REQUIRED)
 add_executable(VulkanRTSEngine 
 	# Our own sources...
 	src/main.cpp src/Camera.cpp src/Game.cpp ${GraphicsCpp} src/Components/ComponentBase.cpp
-	src/GameObject.cpp
+	src/GameObject.cpp src/Graphics.cpp
 	# headers...
 	include/Common.h include/Camera.h include/Game.h include/Graphics.h ${GraphicsH} include/Components/ComponentBase.h
 	include/GameObject.h
@@ -37,11 +52,13 @@ source_group("Extra" FILES src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
 if(UseVulkan)
 	add_definitions(-DGRAPHICS_VK)
-	include_directories(VulkanRTSEngine include/ ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${VULKAN_INCLUDE_DIR})
+	include_directories(VulkanRTSEngine include/ include/extra 
+		${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${VULKAN_INCLUDE_DIR})
 	target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${VULKAN_LIBRARY})
 else()
 	add_definitions(-DGRAPHICS_GL)
-	include_directories(VulkanRTSEngine include/ ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
+	include_directories(VulkanRTSEngine include/ include/extra 
+		${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
 	target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY})
 endif()
 

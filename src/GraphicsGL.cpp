@@ -3,15 +3,10 @@
 #include <algorithm>
 #include <set>
 #include <fstream>
-
-GLFWwindow* Graphics::window = nullptr;
-vector<ShaderId> Graphics::shaders;
-vector<TextureId> Graphics::textures;
-vector<ModelId> Graphics::vaos;
-vector<Graphics::RenderJob> Graphics::threadJobs[16];
+#include <glm\gtc\type_ptr.hpp>
 
 // Public Methods
-void Graphics::Init()
+void GraphicsGL::Init()
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -19,7 +14,7 @@ void Graphics::Init()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
 	window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
-	glfwSetWindowSizeCallback(window, OnWindowResized);
+	glfwSetWindowSizeCallback(window, GraphicsGL::OnWindowResized);
 	
 	glfwMakeContextCurrent(window);
 	glewExperimental = true;
@@ -53,26 +48,54 @@ void Graphics::Init()
 
 	LoadResources();
 
-	// fix this bit of awkwardness later
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void Graphics::Render(GameObject* go, uint threadId)
+void GraphicsGL::Render(Camera *cam, GameObject* go, uint threadId)
 {
+	mat4 mvp = cam->Get() * go->GetModelMatrix();
+	RenderJob job{
+		go->GetShader(),
+		go->GetTexture(),
+		go->GetModel(),
+		mvp
+	};
 	// we don't actually render, we just create a render job, Display() does the rendering
-	threadJobs[threadId].push_back(RenderJob{ go->GetShader(), go->GetTexture(), go->GetModel() });
+	threadJobs[threadId].push_back(job);
 }
 
-void Graphics::Display()
+void GraphicsGL::Display()
 {
 	for (uint i = 0; i < 16; i++)
 	{
 		for (RenderJob r : threadJobs[i])
 		{
-			glBindTexture(GL_TEXTURE_2D, textures[r.texture]);
-			glBindVertexArray(vaos[r.model]);
-			glUseProgram(shaders[r.shader]);
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+			Model vao = vaos[r.model];
+			ShaderId shader = shaders[r.shader];
+			TextureId texture = textures[r.texture];
+
+			if (shader != currShader)
+			{
+				glUseProgram(shader);
+				currShader = shader;
+			}
+
+			if (texture != currTexture)
+			{
+				glBindTexture(GL_TEXTURE_2D, texture);
+				glUniform1i(glGetUniformLocation(shader, "tex"), 0);
+				currTexture = texture;
+			}
+
+			if (vao.id != currModel)
+			{
+				glBindVertexArray(vao.id);
+				currModel = vao.id;
+			}
+
+			uint loc = glGetUniformLocation(shader, "mvp");
+			glUniformMatrix4fv(loc, 1, false, (const GLfloat*)value_ptr(r.mvp));
+			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
 		}
 		threadJobs[i].clear();
 	}
@@ -81,12 +104,14 @@ void Graphics::Display()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Graphics::CleanUp()
+void GraphicsGL::CleanUp()
 {
+	// fill this in!
+
 	glfwDestroyWindow(window);
 }
 
-void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
+void GraphicsGL::OnWindowResized(GLFWwindow * window, int width, int height)
 {
 	if (width == 0 && height == 0)
 		return;
@@ -94,7 +119,7 @@ void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void Graphics::LoadResources()
+void GraphicsGL::LoadResources()
 {
 	// first, a couple base shaders
 	for(size_t i=0; i<shadersToLoad.size(); i++)
@@ -140,66 +165,68 @@ void Graphics::LoadResources()
 		shaders.push_back(baseProg);
 	}
 
-	// now the vbos and ebos
+	for(size_t i=0; i<modelsToLoad.size(); i++)
 	{
-		GLuint vao;
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
+		Model m;
+		vector<Vertex> vertices;
+		vector<uint> indices;
+		LoadModel(modelsToLoad[i], vertices, indices, m.center);
 
-		struct Vertex {
-			vec2 pos;
-			vec3 color;
-		};
+		printf("[Info] Center: %f, %f, %f\n", m.center.x, m.center.y, m.center.z);
+		
+		m.vertexCount = vertices.size();
+		m.indexCount = indices.size();
+		
+		glGenVertexArrays(1, &m.id);
+		glBindVertexArray(m.id);
 
-		Vertex vertices[3] = {
-			{ vec2(0.0, -0.5), vec3(1.0, 0.0, 0.0) },
-			{ vec2(0.5, 0.5),  vec3(0.0, 1.0, 0.0) },
-			{ vec2(-0.5, 0.5), vec3(0.0, 0.0, 1.0) }
-		};
 		GLuint vbo;
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3, vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 
-		vector<uint> indices = { 0, 1, 2 };
 		GLuint ebo;
 		glGenBuffers(1, &ebo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * 3, indices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * indices.size(), indices.data(), GL_STATIC_DRAW);
 
-		//tell the VAO that 1 is the position element
+		// tell the VAO that 0 is the position element
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)0);
 
-		//tell the VAO that 1 is the color element
+		// uvs at 1
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)sizeof(vec2));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)sizeof(vec3));
+
+		// normals at 2
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)(sizeof(vec3) + sizeof(vec2)));
 
 		glBindVertexArray(0);
-		vaos.push_back(vao);
+		vaos.push_back(m);
 	}
 
 	// lastly, the textures
+	for(size_t i=0; i<texturesToLoad.size(); i++)
 	{
-		// just a plug while NYI
-		textures.push_back(0);
-	}
-}
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
 
-string Graphics::readFile(const string & filename)
-{
-	ifstream file(filename, ios::ate | ios::binary);
-	if (!file.is_open())
-	{
-		printf("[Error] Failed to open file: %s\n", filename.c_str());
-		return "";
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+
+		int texWidth, texHeight, texChannels;
+		string name = "assets/textures/" + texturesToLoad[i];
+		void *pixels = LoadTexture(name, &texWidth, &texHeight, &texChannels, STBI_rgb);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		FreeTexture(pixels);
+
+		textures.push_back(tex);
 	}
-	
-	size_t size = file.tellg();
-	string data;
-	data.resize(size);
-	file.seekg(0);
-	file.read(&data[0], size);
-	file.close();
-	return data;
 }

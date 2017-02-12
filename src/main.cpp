@@ -5,18 +5,18 @@
 int main()
 {
 	glfwInit();
-	Graphics::Init();
 
 	glfwSetTime(0);
 	float oldTime = 0;
 
 	Game *game = new Game();
 	game->Init();
-	while (!glfwWindowShouldClose(Graphics::GetWindow()) && game->IsRunning()) 
+	GLFWwindow *window = Game::GetGraphics()->GetWindow();
+	while (!glfwWindowShouldClose(window) && game->IsRunning())
 	{
 		glfwPollEvents();
 
-		if (glfwGetKey(Graphics::GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			break;
 
 		float newTime = glfwGetTime();
@@ -27,8 +27,7 @@ int main()
 	}
 	game->CleanUp();
 	delete game;
-
-	Graphics::CleanUp();
+	
 	glfwTerminate();
 
 	return 0;
