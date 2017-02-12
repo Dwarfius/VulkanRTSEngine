@@ -71,19 +71,19 @@ void GraphicsGL::Display()
 		for (RenderJob r : threadJobs[i])
 		{
 			Model vao = vaos[r.model];
-			ShaderId shader = shaders[r.shader];
+			Shader shader = shaders[r.shader];
 			TextureId texture = textures[r.texture];
 
-			if (shader != currShader)
+			if (shader.id != currShader)
 			{
-				glUseProgram(shader);
-				currShader = shader;
+				glUseProgram(shader.id);
+				currShader = shader.id;
 			}
 
 			if (texture != currTexture)
 			{
 				glBindTexture(GL_TEXTURE_2D, texture);
-				glUniform1i(glGetUniformLocation(shader, "tex"), 0);
+				glUniform1i(glGetUniformLocation(shader.id, "tex"), 0);
 				currTexture = texture;
 			}
 
@@ -93,7 +93,7 @@ void GraphicsGL::Display()
 				currModel = vao.id;
 			}
 
-			uint loc = glGetUniformLocation(shader, "mvp");
+			uint loc = glGetUniformLocation(shader.id, "mvp");
 			glUniformMatrix4fv(loc, 1, false, (const GLfloat*)value_ptr(r.mvp));
 			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
 		}
@@ -106,7 +106,23 @@ void GraphicsGL::Display()
 
 void GraphicsGL::CleanUp()
 {
-	// fill this in!
+	for (Shader p : shaders)
+	{
+		for (uint32_t s : p.shaderSources)
+			glDeleteShader(s);
+		glDeleteProgram(p.id);
+	}
+	shaders.clear();
+
+	for (Model m : vaos)
+	{
+		glDeleteBuffers(m.buffers.size(), m.buffers.data());
+		glDeleteBuffers(1, &m.id);
+	}
+	vaos.clear();
+
+	glDeleteTextures(textures.size(), textures.data());
+	textures.clear();
 
 	glfwDestroyWindow(window);
 }
@@ -124,6 +140,8 @@ void GraphicsGL::LoadResources()
 	// first, a couple base shaders
 	for(size_t i=0; i<shadersToLoad.size(); i++)
 	{
+		Shader shader;
+
 		string vert = readFile("assets/GLShaders/" + shadersToLoad[i] + ".vert");
 		const char *data = vert.c_str();
 		GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
@@ -139,30 +157,31 @@ void GraphicsGL::LoadResources()
 		glShaderSource(fragShader, 1, &data, NULL);
 		glCompileShader(fragShader);
 
-		GLuint baseProg = glCreateProgram();
-		glAttachShader(baseProg, vertShader);
-		glAttachShader(baseProg, fragShader);
-		glLinkProgram(baseProg);
+		shader.id = glCreateProgram();
+		glAttachShader(shader.id, vertShader);
+		glAttachShader(shader.id, fragShader);
+		glLinkProgram(shader.id);
 
 		GLint isLinked = 0;
-		glGetProgramiv(baseProg, GL_LINK_STATUS, &isLinked);
+		glGetProgramiv(shader.id, GL_LINK_STATUS, &isLinked);
 
 		if (isLinked == GL_FALSE)
 		{
 			GLint length = 0;
-			glGetProgramiv(baseProg, GL_INFO_LOG_LENGTH, &length);
+			glGetProgramiv(shader.id, GL_INFO_LOG_LENGTH, &length);
 
 			char *msg = (char*)malloc(length);
-			glGetProgramInfoLog(baseProg, length, &length, msg);
+			glGetProgramInfoLog(shader.id, length, &length, msg);
 
 			printf("[Error] Shader linking error: %s\n", msg);
 			free(msg);
 
-			glDeleteProgram(baseProg);
+			glDeleteProgram(shader.id);
 			return;
 		}
-
-		shaders.push_back(baseProg);
+		shader.shaderSources.push_back(fragShader);
+		shader.shaderSources.push_back(vertShader);
+		shaders.push_back(shader);
 	}
 
 	for(size_t i=0; i<modelsToLoad.size(); i++)
@@ -184,11 +203,13 @@ void GraphicsGL::LoadResources()
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+		m.buffers.push_back(vbo);
 
 		GLuint ebo;
 		glGenBuffers(1, &ebo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * indices.size(), indices.data(), GL_STATIC_DRAW);
+		m.buffers.push_back(ebo);
 
 		// tell the VAO that 0 is the position element
 		glEnableVertexAttribArray(0);

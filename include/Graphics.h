@@ -28,12 +28,15 @@ struct Model
 	size_t vertexCount;
 	size_t indexCount;
 	vec3 center;
+
+	vector<uint32_t> buffers; // OpenGL resource tracking
 };
 
 typedef uint32_t ShaderId;
 struct Shader 
 {
 	uint32_t id;
+	vector<uint32_t> shaderSources; // OpenGL resource tracking
 };
 
 typedef uint32_t TextureId;

@@ -21,7 +21,7 @@ public:
 	vec3 GetModelCenter(ModelId m) override { return vaos[m].center; }
 private:
 
-	vector<ShaderId> shaders;
+	vector<Shader> shaders;
 	vector<TextureId> textures;
 	vector<Model> vaos; //vertex array object (holds info on vbo and ebo)
 	void LoadResources();
