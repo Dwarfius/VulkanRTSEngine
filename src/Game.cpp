@@ -44,7 +44,7 @@ void Game::Init()
 	go->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
-	camera.SetPos(vec3(-2, 2, 0));
+	//camera.SetPos(vec3(-2, 2, 0));
 	//camera.LookAt(go->GetPos());
 
 	/*go = new GameObject();

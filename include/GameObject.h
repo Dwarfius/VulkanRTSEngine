@@ -6,7 +6,7 @@
 class GameObject
 {
 public:
-	GameObject() : size(vec3(1, 1, 1)) {}
+	GameObject() : pos(vec3(0, 0, 0)), size(vec3(1, 1, 1)) {}
 	~GameObject() {}
 
 	void Update(float deltaTime);

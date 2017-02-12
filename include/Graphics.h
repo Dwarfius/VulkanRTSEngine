@@ -4,7 +4,7 @@
 #include "Camera.h"
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <glm/gtx/hash.hpp>
 
 using namespace std;
 using namespace glm;
@@ -22,28 +22,50 @@ const std::vector<string> texturesToLoad = {
 
 // providing unified interfaces (just to make it easier to see/track)
 typedef uint32_t ModelId;
-struct Model {
+struct Model 
+{
 	uint32_t id;
 	size_t vertexCount;
 	size_t indexCount;
 	vec3 center;
 };
+
 typedef uint32_t ShaderId;
-struct Shader {
+struct Shader 
+{
 	uint32_t id;
-	unordered_map<string, uint> uniforms;
 };
+
 typedef uint32_t TextureId;
 
 // forward declaring to resolve a circular dependency
 class GameObject;
 struct GLFWwindow;
 
-struct Vertex {
+struct Vertex 
+{
 	vec3 pos;
 	vec2 uv;
 	vec3 normal;
+
+	bool operator==(const Vertex& other) const 
+	{
+		return pos == other.pos && uv == other.uv && normal == other.normal;
+	}
 };
+
+namespace std 
+{
+	template<> struct hash<Vertex> 
+	{
+		size_t operator()(Vertex const& vertex) const 
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.uv) << 1);
+		}
+	};
+}
 
 class Graphics
 {

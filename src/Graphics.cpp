@@ -3,6 +3,7 @@
 #include <tiny_obj_loader.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <unordered_map>
 
 ModelId Graphics::currModel;
 ShaderId Graphics::currShader;
@@ -25,6 +26,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 
 	vertices.reserve(attrib.vertices.size());
 	vec3 newCenter;
+	unordered_map<Vertex, uint> uniqueVerts;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex;
@@ -49,8 +51,15 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 				};
 			}
 
-			vertices.push_back(vertex);
-			indices.push_back(indices.size());
+			// checking for vertex duplication
+			if (uniqueVerts.count(vertex) == 0)
+			{
+				uniqueVerts[vertex] = vertices.size(); // marking that new vertex is at this index
+				vertices.push_back(vertex); // adding it at the marked position
+			}
+			
+			// reusing the vertex
+			indices.push_back(uniqueVerts[vertex]);
 		}
 	}
 	newCenter /= vertices.size();
