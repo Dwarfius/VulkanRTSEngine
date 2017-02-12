@@ -27,13 +27,6 @@ Game::Game()
 		printf("[Info] Using single-thread mode\n");
 }
 
-Game::~Game()
-{
-	running = false;
-	for (size_t i = 0; i < threads.size(); i++)
-		threads[i].join();
-}
-
 void Game::Init()
 {
 	gameObjects.reserve(2000);
@@ -135,6 +128,20 @@ void Game::Render()
 
 void Game::CleanUp()
 {
+	// checking if threads are idle - means they finished submitting work and we can clean em up
+	bool threadsIdle;
+	while (!threadsIdle)
+	{
+		threadsIdle = true;
+		for (ThreadInfo info : threadInfos)
+			threadsIdle &= info.stage == Stage::WaitingToSubmit;
+	}
+
+	// we can mark that the engine is done - wrap the threads
+	running = false;
+	for (size_t i = 0; i < threads.size(); i++)
+		threads[i].join();
+
 	for (size_t i = 0; i < gameObjects.size(); i++)
 		delete gameObjects[i];
 

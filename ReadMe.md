@@ -7,7 +7,6 @@ Tasks
 =====
 
 # OpenGL
-* When shutting down make sure to wait on threads to reach the Waiting phase
 * Add resource cleanup on unload
 * Test the center calculation logic for meshes on other, simpler objects
 * Improve RenderJob to store the required uniforms
