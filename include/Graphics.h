@@ -19,7 +19,8 @@ const std::vector<string> modelsToLoad = {
 };
 const std::vector<string> texturesToLoad = {
 	"chalet.jpg",
-	"test.jpg"
+	"test.jpg",
+	"CubeUnwrap.jpg"
 };
 
 // providing unified interfaces (just to make it easier to see/track)

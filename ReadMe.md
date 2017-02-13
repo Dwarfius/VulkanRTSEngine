@@ -5,9 +5,9 @@ This is a mutltithreaded engine project indended as a research in to Vulkan API.
 
 Tasks
 =====
+* Need to fix LookAt, during recalculate it discards it
 
 # OpenGL
-* Test the center calculation logic for meshes on other, simpler objects
 * Improve RenderJob to store the required uniforms
 
 # Vulkan

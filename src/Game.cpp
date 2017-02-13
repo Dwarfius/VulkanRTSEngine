@@ -37,9 +37,6 @@ void Game::Init()
 	go->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
-	//camera.SetPos(vec3(-2, 2, 0));
-	//camera.LookAt(go->GetPos());
-
 	go = new GameObject();
 	go->SetModel(0);
 	go->SetShader(0);
@@ -59,8 +56,11 @@ void Game::Init()
 	go = new GameObject();
 	go->SetModel(1);
 	go->SetShader(0);
-	go->SetTexture(1);
+	go->SetTexture(2);
 	gameObjects.push_back(go);
+	
+	//camera.SetPos(vec3(0, 0, 0));
+	camera.LookAt(go->GetPos());
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -101,6 +101,9 @@ void Game::Update()
 		camera.Translate(-up * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		camera.Translate(up * deltaTime * speed);
+
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+		camera.LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
 
 	oldMPos = curMPos;
 	double x, y;
