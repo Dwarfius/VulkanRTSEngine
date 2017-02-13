@@ -10,10 +10,12 @@ using namespace std;
 using namespace glm;
 
 const std::vector<string> shadersToLoad = {
-	"base"
+	"base",
+	"debug"
 };
 const std::vector<string> modelsToLoad = {
-	"chalet"
+	"chalet",
+	"cube"
 };
 const std::vector<string> texturesToLoad = {
 	"chalet.jpg",

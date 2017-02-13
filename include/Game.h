@@ -25,7 +25,7 @@ public:
 	Game* GetInstance() { return inst; }
 
 	void Init();
-	void Update(const float deltaTime);
+	void Update();
 	void Render();
 	void CleanUp();
 
@@ -36,6 +36,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
+	float oldTime;
 	vec2 oldMPos, curMPos;
 	Camera camera;
 	vector<GameObject*> gameObjects;
@@ -43,8 +44,8 @@ private:
 	bool running;
 	struct ThreadInfo {
 		uint totalThreads;
-		float deltaTime;
 		Stage stage;
+		float deltaTime;
 	};
 	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;

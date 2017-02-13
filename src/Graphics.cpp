@@ -37,10 +37,13 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 			};
 			newCenter += vertex.pos;
 
-			vertex.uv = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1 - attrib.texcoords[2 * index.texcoord_index + 1]
-			};
+			if (index.texcoord_index != -1)
+			{
+				vertex.uv = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1 - attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+			}
 
 			if (index.normal_index != -1)
 			{

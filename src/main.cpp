@@ -7,7 +7,6 @@ int main()
 	glfwInit();
 
 	glfwSetTime(0);
-	float oldTime = 0;
 
 	Game *game = new Game();
 	game->Init();
@@ -19,10 +18,7 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			break;
 
-		float newTime = glfwGetTime();
-		float deltaTime = newTime - oldTime;
-		oldTime = newTime;
-		game->Update(deltaTime);
+		game->Update();
 		game->Render();
 	}
 	game->CleanUp();

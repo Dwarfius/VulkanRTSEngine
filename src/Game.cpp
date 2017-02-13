@@ -19,7 +19,7 @@ Game::Game()
 		threads.resize(maxThreads);
 		for (uint i = 0; i < maxThreads; i++)
 		{
-			threadInfos.push_back({ maxThreads, 0, Stage::Idle });
+			threadInfos.push_back({ maxThreads, Stage::Idle, 0 });
 			threads[i] = thread(&Game::Work, this, i);
 		}
 	}
@@ -40,16 +40,27 @@ void Game::Init()
 	//camera.SetPos(vec3(-2, 2, 0));
 	//camera.LookAt(go->GetPos());
 
-	/*go = new GameObject();
-	go->SetModel(0);
-	go->SetShader(0);
-	go->SetTexture(0);
-	gameObjects.push_back(go);
 	go = new GameObject();
 	go->SetModel(0);
 	go->SetShader(0);
 	go->SetTexture(0);
-	gameObjects.push_back(go);*/
+	go->SetPos(vec3(3, 0, 0));
+	go->SetRotation(vec3(-90, 0, 0));
+	gameObjects.push_back(go);
+
+	go = new GameObject();
+	go->SetModel(0);
+	go->SetShader(0);
+	go->SetTexture(0);
+	go->SetPos(vec3(-3, 0, 0));
+	go->SetRotation(vec3(-90, 0, 0));
+	gameObjects.push_back(go);
+
+	go = new GameObject();
+	go->SetModel(1);
+	go->SetShader(0);
+	go->SetTexture(1);
+	gameObjects.push_back(go);
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -57,11 +68,16 @@ void Game::Init()
 		ThreadInfo &info = threadInfos[i];
 		info.stage = Stage::Update;
 	}
+	// setting the up-to-date time
+	oldTime = glfwGetTime();
 }
 
-void Game::Update(const float deltaTime)
+void Game::Update()
 {
-	// notify threads of a new deltaTime
+	const float time = glfwGetTime();
+	const float deltaTime = time - oldTime;
+	oldTime = time;
+
 	for (uint i = 0; i < threadInfos.size(); i++)
 	{
 		ThreadInfo &info = threadInfos[i];
@@ -155,10 +171,8 @@ void Game::Work(uint infoInd)
 		ThreadInfo &info = threadInfos[infoInd];
 		if (info.stage == Stage::Idle)
 			continue;
-		
-		size_t size = gameObjects.size() / info.totalThreads;
-		if (size == 0)
-			size = 1;
+
+		size_t size = ceil(gameObjects.size() / (float)info.totalThreads);
 		size_t start = size * infoInd;
 		size_t end = start + size;
 		if (end > gameObjects.size()) // just a safety precaution
