@@ -7,10 +7,10 @@ Tasks
 =====
 * Need to fix LookAt, during recalculate it discards it
 
-## OpenGL
+### OpenGL
 * Improve RenderJob to store the required uniforms
 
-## Vulkan
+### Vulkan
 * Get it up-to-date with the current execution model
 * Add texture support
 * Add vertex and uniform buffering
