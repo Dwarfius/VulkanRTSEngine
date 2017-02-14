@@ -10,6 +10,7 @@ void GameObject::UpdateMatrix()
 {
 	if (!modelDirty)
 		return;
+
 	vec3 center = Game::GetGraphics()->GetModelCenter(model);
 
 	modelMatrix = translate(mat4(1), pos);

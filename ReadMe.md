@@ -8,7 +8,6 @@ Tasks
 * Need to fix LookAt, during recalculate it discards it
 * Add bounding spheres
 * Start working on collisions
-* GameObject.h - avoid uniform copy on GetUniforms(), have to figure this out 
 
 ### OpenGL
 * Animations

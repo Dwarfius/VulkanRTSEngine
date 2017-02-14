@@ -34,7 +34,8 @@ public:
 
 	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
 
-	// avoid copypasting
+	// compiler should perform RVO, so please do it
+	// https://web.archive.org/web/20130930101140/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value
 	auto GetUniforms() { return uniforms; }
 private:
 	ModelId model;
