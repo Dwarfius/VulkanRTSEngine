@@ -34,6 +34,7 @@ public:
 
 	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
 
+	// avoid copypasting
 	auto GetUniforms() { return uniforms; }
 private:
 	ModelId model;
