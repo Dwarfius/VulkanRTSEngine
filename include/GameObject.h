@@ -34,6 +34,7 @@ public:
 
 	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
 
+	auto GetUniforms() { return uniforms; }
 private:
 	ModelId model;
 	ShaderId shader;
@@ -43,6 +44,8 @@ private:
 	mat4 modelMatrix;
 	bool modelDirty = true;
 	void UpdateMatrix();
+
+	unordered_map<string, Shader::UniformValue> uniforms;
 };
 
 #endif // !_GAME_OBJECT_H

@@ -59,10 +59,13 @@ void GraphicsGL::Render(Camera *cam, GameObject* go, uint threadId)
 		go->GetModel(),
 	};
 
+	// copy the existing ones
+	job.uniforms = go->GetUniforms();
+	// add our own
 	mat4 mvp = cam->Get() * go->GetModelMatrix();
-	Shader::UniformValue uniform{ "mvp", 0 };
-	uniform.value.m = mvp;
-	job.uniforms.push_back(uniform);
+	Shader::UniformValue uniform;
+	uniform.m = mvp;
+	job.uniforms["mvp"] = uniform;
 
 	// we don't actually render, we just create a render job, Display() does the rendering
 	threadJobs[threadId].push_back(job);
@@ -97,30 +100,37 @@ void GraphicsGL::Display()
 				currModel = vao.id;
 			}
 
-			for (Shader::UniformValue u : r.uniforms)
+			for (auto pair = r.uniforms.begin(); pair != r.uniforms.end(); ++pair)
 			{
-				// find the bind point for the uniform
-				Shader::BindPoint bp = shader.uniforms[u.name];
+				// check to see if shader has this uniform bind point
+				auto iter = shader.uniforms.find(pair->first);
+				if (iter == shader.uniforms.end())
+					continue;
+
+				// shader has it, so use it
+				Shader::BindPoint bp = iter->second;
+				Shader::UniformValue u = pair->second;
+
 				// pass it's value
 				switch (bp.type)
 				{
 				case Shader::UniformType::Int:
-					glUniform1i(bp.loc, u.value.i);
+					glUniform1i(bp.loc, u.i);
 					break;
 				case Shader::UniformType::Float:
-					glUniform1f(bp.loc, u.value.f);
+					glUniform1f(bp.loc, u.f);
 					break;
 				case Shader::UniformType::Vec2:
-					glUniform2f(bp.loc, u.value.v2.x, u.value.v2.y);
+					glUniform2f(bp.loc, u.v2.x, u.v2.y);
 					break;
 				case Shader::UniformType::Vec3:
-					glUniform3f(bp.loc, u.value.v3.x, u.value.v3.y, u.value.v3.z);
+					glUniform3f(bp.loc, u.v3.x, u.v3.y, u.v3.z);
 					break;
 				case Shader::UniformType::Vec4:
-					glUniform4f(bp.loc, u.value.v4.x, u.value.v4.y, u.value.v4.z, u.value.v4.w);
+					glUniform4f(bp.loc, u.v4.x, u.v4.y, u.v4.z, u.v4.w);
 					break;
 				case Shader::UniformType::Mat4:
-					glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.value.m));
+					glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.m));
 					break;
 				}
 			}

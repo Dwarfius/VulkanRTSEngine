@@ -19,5 +19,9 @@ void GameObject::UpdateMatrix()
 	modelMatrix = scale(modelMatrix, size);
 	modelMatrix = translate(modelMatrix, -center);
 
+	Shader::UniformValue val;
+	val.m = modelMatrix;
+	uniforms["model"] = val;
+
 	modelDirty = false;
 }

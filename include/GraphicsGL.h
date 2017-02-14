@@ -33,7 +33,7 @@ private:
 		TextureId texture;
 		ModelId model;
 
-		vector<Shader::UniformValue> uniforms;
+		unordered_map<string, Shader::UniformValue> uniforms;
 	};
 	// supporting max 16 threads
 	// might want to multi-buffer this

@@ -42,23 +42,20 @@ struct Shader
 	uint32_t id;
 
 	enum UniformType { Int, Float, Vec2, Vec3, Vec4, Mat4 };
-	struct UniformValue
-	{
-		string name;
-		union Value {
-			int32_t i;
-			float f;
-			vec2 v2;
-			vec3 v3;
-			vec4 v4;
-			mat4 m;
-		} value;
+	union UniformValue {
+		int32_t i;
+		float f;
+		vec2 v2;
+		vec3 v3;
+		vec4 v4;
+		mat4 m;
+
+		UniformValue() {}
 	};
 	struct BindPoint 
 	{ 
 		uint loc; 
 		UniformType type;
-		
 	};
 	unordered_map<string, BindPoint> uniforms;
 
@@ -121,7 +118,7 @@ protected:
 
 	// need to have this copy here so that classes that 
 	// inherit from Graphics know what's available and 
-	// are not tied to stb
+	// are not tied to stb. yes, it's not kosher, sorry.
 	enum
 	{
 		STBI_default = 0, // only used for req_comp
