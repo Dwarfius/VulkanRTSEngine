@@ -92,7 +92,7 @@ public:
 	void Translate(vec3 delta) { pos += delta; }
 	void SetPos(vec3 newPos) { pos = newPos; }
 
-	void LookAt(vec3 target) { forward = normalize(target - pos); }
+	void LookAt(vec3 target);
 
 	void Rotate(float deltaYaw, float deltaPitch) { yaw += deltaYaw * sensX; pitch += deltaPitch * sensY; }
 

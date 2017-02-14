@@ -5,7 +5,7 @@ Camera::Camera(bool orthoMode)
 {
 	yaw = -90; 
 	pitch = 0;
-	pos = vec3(0, 0, 10);
+	pos = vec3(0, 0, 5);
 	up = vec3(0, 1, 0);
 
 	//setting up the matrix for UI rendering
@@ -19,6 +19,14 @@ Camera::Camera(bool orthoMode)
 
 Camera::~Camera()
 {
+}
+
+void Camera::LookAt(vec3 target)
+{ 
+	// fix this!
+	forward = normalize(target - pos);
+	pitch = degrees(asin(-forward.y));
+	yaw = degrees(atan2(forward.x, forward.z));
 }
 
 void Camera::Recalculate()

@@ -37,7 +37,7 @@ private:
 	static Graphics *graphics;
 
 	float oldTime;
-	vec2 oldMPos, curMPos;
+	vec2 oldMPos;
 	Camera camera;
 	vector<GameObject*> gameObjects;
 

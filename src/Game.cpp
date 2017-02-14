@@ -60,7 +60,7 @@ void Game::Init()
 	gameObjects.push_back(go);
 	
 	//camera.SetPos(vec3(0, 0, 0));
-	camera.LookAt(go->GetPos());
+	//camera.LookAt(go->GetPos());
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -70,6 +70,9 @@ void Game::Init()
 	}
 	// setting the up-to-date time
 	oldTime = glfwGetTime();
+	double x, y;
+	glfwGetCursorPos(graphics->GetWindow(), &x, &y);
+	oldMPos = vec2(x, y);
 }
 
 void Game::Update()
@@ -105,12 +108,12 @@ void Game::Update()
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
 		camera.LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
 
-	oldMPos = curMPos;
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
-	curMPos = vec2(x, y);
+	vec2 curMPos = vec2(x, y);
 	vec2 deltaPos = curMPos - oldMPos;
 	camera.Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
+	oldMPos = curMPos;
 
 	// debug
 	vec3 target = gameObjects[0]->GetPos();
