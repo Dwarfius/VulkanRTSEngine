@@ -148,7 +148,7 @@ void Game::Render()
 void Game::CleanUp()
 {
 	// checking if threads are idle - means they finished submitting work and we can clean em up
-	bool threadsIdle;
+	bool threadsIdle = false;
 	while (!threadsIdle)
 	{
 		threadsIdle = true;

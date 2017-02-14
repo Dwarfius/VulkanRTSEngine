@@ -3,7 +3,6 @@
 #include <tiny_obj_loader.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <unordered_map>
 
 ModelId Graphics::currModel;
 ShaderId Graphics::currShader;

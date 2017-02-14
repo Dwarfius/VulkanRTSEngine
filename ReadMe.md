@@ -6,9 +6,11 @@ This is a mutltithreaded engine project indended as a research in to Vulkan API.
 Tasks
 =====
 * Need to fix LookAt, during recalculate it discards it
+* Add bounding spheres
+* Start working on collisions
 
 ### OpenGL
-* Improve RenderJob to store the required uniforms
+* Animations
 
 ### Vulkan
 * Get it up-to-date with the current execution model

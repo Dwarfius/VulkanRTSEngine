@@ -53,13 +53,17 @@ void GraphicsGL::Init()
 
 void GraphicsGL::Render(Camera *cam, GameObject* go, uint threadId)
 {
-	mat4 mvp = cam->Get() * go->GetModelMatrix();
 	RenderJob job{
 		go->GetShader(),
 		go->GetTexture(),
 		go->GetModel(),
-		mvp
 	};
+
+	mat4 mvp = cam->Get() * go->GetModelMatrix();
+	Shader::UniformValue uniform{ "mvp", 0 };
+	uniform.value.m = mvp;
+	job.uniforms.push_back(uniform);
+
 	// we don't actually render, we just create a render job, Display() does the rendering
 	threadJobs[threadId].push_back(job);
 }
@@ -83,7 +87,7 @@ void GraphicsGL::Display()
 			if (texture != currTexture)
 			{
 				glBindTexture(GL_TEXTURE_2D, texture);
-				glUniform1i(glGetUniformLocation(shader.id, "tex"), 0);
+				glUniform1i(shader.uniforms["tex"].loc, 0);
 				currTexture = texture;
 			}
 
@@ -93,8 +97,34 @@ void GraphicsGL::Display()
 				currModel = vao.id;
 			}
 
-			uint loc = glGetUniformLocation(shader.id, "mvp");
-			glUniformMatrix4fv(loc, 1, false, (const GLfloat*)value_ptr(r.mvp));
+			for (Shader::UniformValue u : r.uniforms)
+			{
+				// find the bind point for the uniform
+				Shader::BindPoint bp = shader.uniforms[u.name];
+				// pass it's value
+				switch (bp.type)
+				{
+				case Shader::UniformType::Int:
+					glUniform1i(bp.loc, u.value.i);
+					break;
+				case Shader::UniformType::Float:
+					glUniform1f(bp.loc, u.value.f);
+					break;
+				case Shader::UniformType::Vec2:
+					glUniform2f(bp.loc, u.value.v2.x, u.value.v2.y);
+					break;
+				case Shader::UniformType::Vec3:
+					glUniform3f(bp.loc, u.value.v3.x, u.value.v3.y, u.value.v3.z);
+					break;
+				case Shader::UniformType::Vec4:
+					glUniform4f(bp.loc, u.value.v4.x, u.value.v4.y, u.value.v4.z, u.value.v4.w);
+					break;
+				case Shader::UniformType::Mat4:
+					glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.value.m));
+					break;
+				}
+			}
+			
 			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
 		}
 		threadJobs[i].clear();
@@ -179,6 +209,40 @@ void GraphicsGL::LoadResources()
 			glDeleteProgram(shader.id);
 			return;
 		}
+
+		//going to iterate through every uniform and cache info about it
+		GLint uniformCount = 0;
+		glGetProgramiv(shader.id, GL_ACTIVE_UNIFORMS, &uniformCount);
+		const int maxLength = 100;
+		char nameChars[maxLength];
+		for (int i = 0; i < uniformCount; i++)
+		{
+			GLenum type = 0;
+			GLsizei nameLength = 0;
+			GLsizei uniSize = 0;
+			glGetActiveUniform(shader.id, i, maxLength, &nameLength, &uniSize, &type, nameChars);
+			string name(nameChars, nameLength);
+			GLint loc = glGetUniformLocation(shader.id, name.c_str());
+			
+			// converting to API independent format
+			Shader::UniformType uniformType;
+			if (type == GL_FLOAT)
+				uniformType = Shader::UniformType::Float;
+			else if (type == GL_FLOAT_VEC2)
+				uniformType = Shader::UniformType::Vec2;
+			else if (type == GL_FLOAT_VEC3)
+				uniformType = Shader::UniformType::Vec3;
+			else if (type == GL_FLOAT_VEC4)
+				uniformType = Shader::UniformType::Vec4;
+			else if (type == GL_FLOAT_MAT4)
+				uniformType = Shader::UniformType::Mat4;
+			else
+				uniformType = Shader::UniformType::Int;
+
+			Shader::BindPoint bindPoint{ loc, uniformType };
+			shader.uniforms[name] = bindPoint;
+		}
+
 		shader.shaderSources.push_back(fragShader);
 		shader.shaderSources.push_back(vertShader);
 		shaders.push_back(shader);

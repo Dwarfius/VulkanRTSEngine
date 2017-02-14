@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <glm/gtx/hash.hpp>
+#include <unordered_map>
 
 using namespace std;
 using namespace glm;
@@ -39,6 +40,28 @@ typedef uint32_t ShaderId;
 struct Shader 
 {
 	uint32_t id;
+
+	enum UniformType { Int, Float, Vec2, Vec3, Vec4, Mat4 };
+	struct UniformValue
+	{
+		string name;
+		union Value {
+			int32_t i;
+			float f;
+			vec2 v2;
+			vec3 v3;
+			vec4 v4;
+			mat4 m;
+		} value;
+	};
+	struct BindPoint 
+	{ 
+		uint loc; 
+		UniformType type;
+		
+	};
+	unordered_map<string, BindPoint> uniforms;
+
 	vector<uint32_t> shaderSources; // OpenGL resource tracking
 };
 
