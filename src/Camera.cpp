@@ -26,7 +26,7 @@ void Camera::LookAt(vec3 target)
 	// fix this!
 	forward = normalize(target - pos);
 	pitch = degrees(asin(-forward.y));
-	yaw = degrees(atan2(forward.x, forward.z));
+	yaw = degrees(atan2(forward.z, forward.x));
 }
 
 void Camera::Recalculate()
