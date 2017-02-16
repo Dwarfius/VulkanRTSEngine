@@ -5,14 +5,14 @@ This is a mutltithreaded engine project indended as a research in to Vulkan API.
 
 Tasks
 =====
-* Need to fix LookAt, during recalculate it discards it
-* Add bounding spheres
 * Start working on collisions
 
 ### OpenGL
 * Animations
+* Add debug drawing (sphere for now)
 
 ### Vulkan
 * Get it up-to-date with the current execution model
 * Add texture support
 * Add vertex and uniform buffering
+* Add debug drawing (sphere for now)

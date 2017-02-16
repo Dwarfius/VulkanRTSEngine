@@ -12,23 +12,23 @@ public:
 	void Update(float deltaTime);
 
 	void SetModel(ModelId newModel) { model = newModel; }
-	ModelId GetModel() { return model; }
+	ModelId GetModel() const { return model; }
 
 	void SetShader(ShaderId newShader) { shader = newShader; }
-	ShaderId GetShader() { return shader; }
+	const ShaderId GetShader() const { return shader; }
 
 	void SetTexture(TextureId newTexture) { texture = newTexture; }
-	TextureId GetTexture() { return texture; }
+	TextureId GetTexture() const { return texture; }
 
-	vec3 GetPos() { return pos; }
+	vec3 GetPos() const { return pos; }
 	void SetPos(vec3 pPos) { pos = pPos; modelDirty = true; }
 	void Move(vec3 delta) { pos += delta; modelDirty = true; }
 
-	vec3 GetRotation() { return rotation; }
+	vec3 GetRotation() const { return rotation; }
 	void SetRotation(vec3 pRotation) { rotation = pRotation; modelDirty = true; }
 	void AddRotation(vec3 delta) { rotation += delta; modelDirty = true; }
 
-	vec3 GetScale() { return size; }
+	vec3 GetScale() const { return size; }
 	void SetScale(vec3 pScale) { size = pScale; modelDirty = true; }
 	void AddScale(vec3 delta) { size += delta; modelDirty = true; }
 
@@ -36,7 +36,8 @@ public:
 
 	// compiler should perform RVO, so please do it
 	// https://web.archive.org/web/20130930101140/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value
-	auto GetUniforms() { return uniforms; }
+	auto GetUniforms() const { return uniforms; }
+
 private:
 	ModelId model;
 	ShaderId shader;

@@ -17,10 +17,6 @@ Camera::Camera(bool orthoMode)
 		SetProjPersp(45, SCREEN_W / SCREEN_H, 0.1f, 1000.f);
 }
 
-Camera::~Camera()
-{
-}
-
 void Camera::LookAt(vec3 target)
 { 
 	// fix this!

@@ -24,6 +24,8 @@ const std::vector<string> texturesToLoad = {
 	"CubeUnwrap.jpg"
 };
 
+const int maxThreads = 16;
+
 // providing unified interfaces (just to make it easier to see/track)
 typedef uint32_t ModelId;
 struct Model 
@@ -32,6 +34,7 @@ struct Model
 	size_t vertexCount;
 	size_t indexCount;
 	vec3 center;
+	float sphereRadius;
 
 	vector<uint32_t> buffers; // OpenGL resource tracking
 };
@@ -97,13 +100,17 @@ class Graphics
 {
 public:
 	virtual void Init() = 0;
-	virtual void Render(Camera *cam, GameObject *go, uint threadId) = 0;
+	virtual void Render(const Camera *cam, GameObject *go, const uint threadId) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
 	virtual vec3 GetModelCenter(ModelId m) = 0;
 
 	GLFWwindow* GetWindow() { return window; }
+	
+	int GetRenderCalls() const;
+	void ResetRenderCalls();
+
 protected:
 	GLFWwindow *window;
 
@@ -111,7 +118,9 @@ protected:
 	static ShaderId currShader;
 	static TextureId currTexture;
 
-	void LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center);
+	int renderCalls[maxThreads];
+
+	void LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center, float &radius);
 	unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
 	void FreeTexture(void *data);
 	string readFile(const string& filename);

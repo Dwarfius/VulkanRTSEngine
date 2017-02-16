@@ -8,7 +8,21 @@ ModelId Graphics::currModel;
 ShaderId Graphics::currShader;
 TextureId Graphics::currTexture;
 
-void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center)
+int Graphics::GetRenderCalls() const
+{
+	int callsTotal = 0;
+	for (int i = 0; i < maxThreads; i++)
+		callsTotal += renderCalls[i];
+	return callsTotal;
+}
+
+void Graphics::ResetRenderCalls()
+{
+	for (int i = 0; i < maxThreads; i++)
+		renderCalls[i] = 0;
+}
+
+void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center, float &radius)
 {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
@@ -25,6 +39,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 
 	vertices.reserve(attrib.vertices.size());
 	vec3 newCenter;
+	float maxLen = 0;
 	unordered_map<Vertex, uint> uniqueVerts;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
@@ -58,6 +73,10 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 			{
 				uniqueVerts[vertex] = vertices.size(); // marking that new vertex is at this index
 				vertices.push_back(vertex); // adding it at the marked position
+
+				float len = length(vertex.pos);
+				if (len > maxLen)
+					maxLen = len;
 			}
 			
 			// reusing the vertex
@@ -66,6 +85,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 	}
 	newCenter /= vertices.size();
 	center = newCenter;
+	radius = maxLen;
 }
 
 unsigned char* Graphics::LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels)

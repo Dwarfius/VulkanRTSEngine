@@ -51,8 +51,14 @@ void GraphicsGL::Init()
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void GraphicsGL::Render(Camera *cam, GameObject* go, uint threadId)
+void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint threadId)
 {
+	vec3 scale = go->GetScale();
+	float maxScale = max({ scale.x, scale.y, scale.z });
+	float scaledRadius = vaos[go->GetModel()].sphereRadius * maxScale;
+	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
+		return;
+
 	RenderJob job{
 		go->GetShader(),
 		go->GetTexture(),
@@ -70,11 +76,12 @@ void GraphicsGL::Render(Camera *cam, GameObject* go, uint threadId)
 
 	// we don't actually render, we just create a render job, Display() does the rendering
 	threadJobs[threadId].push_back(job);
+	renderCalls[threadId]++;
 }
 
 void GraphicsGL::Display()
 {
-	for (uint i = 0; i < 16; i++)
+	for (uint i = 0; i < maxThreads; i++)
 	{
 		for (RenderJob r : threadJobs[i])
 		{
@@ -264,9 +271,9 @@ void GraphicsGL::LoadResources()
 		Model m;
 		vector<Vertex> vertices;
 		vector<uint> indices;
-		LoadModel(modelsToLoad[i], vertices, indices, m.center);
+		LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
 
-		printf("[Info] Center: %f, %f, %f\n", m.center.x, m.center.y, m.center.z);
+		printf("[Info] Center: %f, %f, %f; Radius:%f\n", m.center.x, m.center.y, m.center.z, m.sphereRadius);
 		
 		m.vertexCount = vertices.size();
 		m.indexCount = indices.size();

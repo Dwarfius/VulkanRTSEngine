@@ -58,9 +58,6 @@ void Game::Init()
 	go->SetShader(0);
 	go->SetTexture(2);
 	gameObjects.push_back(go);
-	
-	//camera.SetPos(vec3(0, 0, 0));
-	//camera.LookAt(go->GetPos());
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -134,6 +131,9 @@ void Game::Render()
 		return;
 
 	graphics->Display();
+
+	printf("[Info] Render calls: %d\n", graphics->GetRenderCalls());
+	graphics->ResetRenderCalls();
 
 	// update the mvp
 	camera.Recalculate();

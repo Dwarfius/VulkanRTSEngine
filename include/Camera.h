@@ -44,21 +44,21 @@ struct Frustrum
 	}
 
 	//check if sphere is intersecting the frustrum
-	bool CheckSphere(const vec3& pos, const float rad)
+	bool CheckSphere(const vec3& pos, const float rad) const
 	{
-		vec3 v = pos - camPos;
-		float vZ = dot(v, Z);
+		const vec3 v = pos - camPos;
+		const float vZ = dot(v, Z);
 		if (vZ < nearPlane - rad || vZ > farPlane + rad)
 			return false;
 
-		float vY = dot(v, Y);
-		float height = vZ * tang;
+		const float vY = dot(v, Y);
+		const float height = vZ * tang;
 		float d = sphereFactorY * rad; //distance from sphere center to yPlane
 		if (vY < -height - d || vY > height + d)
 			return false;
 
-		float vX = dot(v, X);
-		float width = height * ratio;
+		const float vX = dot(v, X);
+		const float width = height * ratio;
 		d = sphereFactorX * rad; //distance from sphere center to xPlane
 		if (vX < -width - d || vX > width + d)
 			return false;
@@ -80,15 +80,15 @@ private:
 
 public:
 	Camera(bool orthoMode = false);
-	~Camera();
+	~Camera() {}
 
-	mat4 Get() { return VP; }
+	mat4 Get() const { return VP; }
 
-	vec3 GetForward() { return forward; }
-	vec3 GetRight() { return right; }
-	vec3 GetUp() { return up; }
+	vec3 GetForward() const { return forward; }
+	vec3 GetRight() const { return right; }
+	vec3 GetUp() const { return up; }
 
-	vec3 GetPos() { return pos; }
+	vec3 GetPos() const { return pos; }
 	void Translate(vec3 delta) { pos += delta; }
 	void SetPos(vec3 newPos) { pos = newPos; }
 
@@ -97,16 +97,16 @@ public:
 	void Rotate(float deltaYaw, float deltaPitch) { yaw += deltaYaw * sensX; pitch += deltaPitch * sensY; }
 
 	void Recalculate();
-	mat4 GetView() { return viewMatrix; }
-	mat4 GetProj() { return projMatrix; }
+	mat4 GetView() const { return viewMatrix; }
+	mat4 GetProj() const { return projMatrix; }
 
-	bool IsOrtho() { return orthoMode; }
+	bool IsOrtho() const { return orthoMode; }
 
 	//sets the perspective projection
 	void SetProjPersp(float fov, float ratio, float nearPlane, float farPlane);
 	//sets the ortho projection
 	void SetProjOrtho(float left, float right, float bottom, float top);
 
-	bool CheckSphere(const vec3& pos, const float rad) { return frustrum.CheckSphere(pos, rad); }
+	bool CheckSphere(const vec3& pos, const float rad) const { return frustrum.CheckSphere(pos, rad); }
 };
 #endif

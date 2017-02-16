@@ -11,13 +11,14 @@ public:
 	GraphicsGL() {}
 
 	void Init() override;
-	void Render(Camera *cam, GameObject *go, uint threadId) override;
+	void Render(const Camera *cam, GameObject *go, const uint threadId) override;
 	void Display() override;
 	void CleanUp() override;
 
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
 	vec3 GetModelCenter(ModelId m) override { return vaos[m].center; }
+
 private:
 
 	vector<Shader> shaders;
@@ -37,7 +38,7 @@ private:
 	};
 	// supporting max 16 threads
 	// might want to multi-buffer this
-	vector<RenderJob> threadJobs[16];
+	vector<RenderJob> threadJobs[maxThreads];
 };
 
 #endif // !_GRAPHICS_GL_H
