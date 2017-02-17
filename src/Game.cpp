@@ -1,5 +1,6 @@
 #include "Game.h"
-#include "Graphics.h"
+#include "GraphicsGL.h"
+#include "GraphicsVK.h"
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;

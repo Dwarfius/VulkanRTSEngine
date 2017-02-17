@@ -19,30 +19,20 @@ elseif(CMAKE_COMPILER_IS_GNUCC)
 	# need to compile with -Ofast
 endif()
 
-# Avoiding bloating by focusing either on Vulkan or GL
-option(UseVulkan "Use Vulkan" OFF)
-
-if(UseVulkan)
-	find_package(Vulkan REQUIRED)
-	set(GraphicsCpp src/GraphicsVK.cpp)
-	set(GraphicsH include/GraphicsVK.h)
-else()
-	find_package(OpenGL REQUIRED)
-	find_package(GLEW REQUIRED) # FindGLEW.cmake is provided with cmake installation
-	set(GraphicsCpp src/GraphicsGL.cpp)
-	set(GraphicsH include/GraphicsGL.h)
-endif()
+find_package(Vulkan REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED) # FindGLEW.cmake is provided with cmake installation
 
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
 
 add_executable(VulkanRTSEngine 
 	# Our own sources...
-	src/main.cpp src/Camera.cpp src/Game.cpp ${GraphicsCpp} src/Components/ComponentBase.cpp
+	src/main.cpp src/Camera.cpp src/Game.cpp src/GraphicsGL.cpp src/GraphicsVK.cpp src/Components/ComponentBase.cpp
 	src/GameObject.cpp src/Graphics.cpp
 	# headers...
-	include/Common.h include/Camera.h include/Game.h include/Graphics.h ${GraphicsH} include/Components/ComponentBase.h
-	include/GameObject.h
+	include/Common.h include/Camera.h include/Game.h include/Graphics.h include/GraphicsGL.h include/GraphicsVK.h 
+	include/GameObject.h include/Components/ComponentBase.h
 	# and 3rd-party stuff
 	src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
@@ -50,17 +40,11 @@ add_executable(VulkanRTSEngine
 source_group("Components" FILES src/Components/ComponentBase.cpp include/Components/ComponentBase.h)
 source_group("Extra" FILES src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
-if(UseVulkan)
-	add_definitions(-DGRAPHICS_VK)
-	include_directories(VulkanRTSEngine include/ include/extra 
-		${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${VULKAN_INCLUDE_DIR})
-	target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${VULKAN_LIBRARY})
-else()
-	add_definitions(-DGRAPHICS_GL)
-	include_directories(VulkanRTSEngine include/ include/extra 
-		${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
-	target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY})
-endif()
+include_directories(VulkanRTSEngine include/ include/extra 
+	${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}
+	${VULKAN_INCLUDE_DIR})
+target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}
+${VULKAN_LIBRARY})
 
 add_custom_command(TARGET VulkanRTSEngine PRE_BUILD COMMAND ${CMAKE_COMMAND}
 					-E copy_directory ${CMAKE_SOURCE_DIR}/assets

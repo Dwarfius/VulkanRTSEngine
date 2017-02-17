@@ -3,39 +3,21 @@
 #include <set>
 #include <fstream>
 
-const vector<const char *> Graphics::requiredLayers = {
+GraphicsVK* GraphicsVK::activeGraphics = NULL;
+
+const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
 	"VK_LAYER_LUNARG_standard_validation"
 #endif
 };
-const vector<const char *> Graphics::requiredExtensions = {
+const vector<const char *> GraphicsVK::requiredExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-GLFWwindow* Graphics::window = nullptr;
-vk::Instance Graphics::instance = VK_NULL_HANDLE;
-vk::Device Graphics::device = VK_NULL_HANDLE;
-VkDebugReportCallbackEXT Graphics::debugCallback = VK_NULL_HANDLE;
-PFN_vkCreateDebugReportCallbackEXT Graphics::CreateDebugReportCallback = VK_NULL_HANDLE;
-PFN_vkDestroyDebugReportCallbackEXT Graphics::DestroyDebugReportCallback = VK_NULL_HANDLE;
-vk::SurfaceKHR Graphics::surface = VK_NULL_HANDLE;
-Graphics::QueuesInfo Graphics::queues;
-Graphics::SwapchainSupportInfo Graphics::swapInfo;
-vk::SwapchainKHR Graphics::swapchain;
-vector<vk::Image> Graphics::images;
-vector<vk::ImageView> Graphics::imgViews;
-vk::ShaderModule Graphics::vertShader, Graphics::fragShader;
-vk::RenderPass Graphics::renderPass;
-vk::PipelineLayout Graphics::pipelineLayout;
-vk::Pipeline Graphics::pipeline;
-vector<vk::Framebuffer> Graphics::swapchainFrameBuffers;
-vk::CommandPool Graphics::pool;
-vector<vk::CommandBuffer> Graphics::cmdBuffers;
-vk::Semaphore Graphics::imgAvailable, Graphics::renderFinished;
-
 // Public Methods
-void Graphics::Init(GLFWwindow *window)
+void GraphicsVK::Init()
 {
+	activeGraphics = this;
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
 		printf("[Error] Vulkan loader unavailable");
@@ -56,7 +38,7 @@ void Graphics::Init(GLFWwindow *window)
 	CreateCommandResources();
 }
 
-void Graphics::Render()
+void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
 {
 	// acquire image to render to
 	uint32_t imgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
@@ -80,11 +62,11 @@ void Graphics::Render()
 	queues.graphicsQueue.presentKHR(presentInfo);
 }
 
-void Graphics::Display()
+void GraphicsVK::Display()
 {
 }
 
-void Graphics::CleanUp()
+void GraphicsVK::CleanUp()
 {
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
@@ -113,13 +95,20 @@ void Graphics::CleanUp()
 	instance.destroy();
 
 	glfwDestroyWindow(window);
+
+	activeGraphics = NULL;
 }
 
-void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
+void GraphicsVK::OnWindowResized(GLFWwindow * window, int width, int height)
 {
 	if (width == 0 && height == 0)
 		return;
 
+	activeGraphics->WindowResized(width, height);
+}
+
+void GraphicsVK::WindowResized(int width, int height)
+{
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
 
@@ -151,7 +140,7 @@ void Graphics::OnWindowResized(GLFWwindow * window, int width, int height)
 }
 
 // Private Methods
-void Graphics::CreateInstance()
+void GraphicsVK::CreateInstance()
 {
 	// creating the instance
 	vk::ApplicationInfo appInfo;
@@ -197,7 +186,7 @@ void Graphics::CreateInstance()
 #endif
 }
 
-void Graphics::CreateDevice()
+void GraphicsVK::CreateDevice()
 {
 	// first we gotta find our physical device before we can create a logical one
 	vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
@@ -314,7 +303,7 @@ void Graphics::CreateDevice()
 	queues.presentQueue = device.getQueue(queues.presentFamIndex, 0);
 }
 
-void Graphics::CreateSurface()
+void GraphicsVK::CreateSurface()
 {
 	// another vulkan.hpp issue - can't get underlying pointer, have to manually construct surface
 	VkSurfaceKHR vkSurface;
@@ -327,7 +316,7 @@ void Graphics::CreateSurface()
 	surface = vk::SurfaceKHR(vkSurface);
 }
 
-void Graphics::CreateSwapchain()
+void GraphicsVK::CreateSwapchain()
 {
 	// by this point we have the capabilities of the surface queried, we just have to pick one
 	// device might be able to support all the formats, so check if it's the case
@@ -431,7 +420,7 @@ void Graphics::CreateSwapchain()
 	}
 }
 
-void Graphics::CreateRenderPass()
+void GraphicsVK::CreateRenderPass()
 {
 	// in order to define a render pass, we need to collect all attachments for it
 	// as of now we only render color to single texture
@@ -473,11 +462,11 @@ void Graphics::CreateRenderPass()
 	renderPass = device.createRenderPass(passCreateInfo);
 }
 
-void Graphics::CreatePipeline()
+void GraphicsVK::CreatePipeline()
 {
 	// first, getting the shaders
-	vector<char> frag = readFile("assets/VulkanShaders/base-frag.spv");
-	vector<char> vert = readFile("assets/VulkanShaders/base-vert.spv");
+	string frag = readFile("assets/VulkanShaders/base-frag.spv");
+	string vert = readFile("assets/VulkanShaders/base-vert.spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
 	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
@@ -576,7 +565,7 @@ void Graphics::CreatePipeline()
 	pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
 }
 
-void Graphics::CreateFrameBuffers()
+void GraphicsVK::CreateFrameBuffers()
 {
 	for (size_t i = 0; i < imgViews.size(); i++)
 	{
@@ -591,7 +580,7 @@ void Graphics::CreateFrameBuffers()
 	}
 }
 
-void Graphics::CreateCommandResources()
+void GraphicsVK::CreateCommandResources()
 {
 	// before we can create command buffers, we need a pool to allocate from
 	pool = device.createCommandPool({ {}, queues.graphicsFamIndex });
@@ -637,7 +626,7 @@ void Graphics::CreateCommandResources()
 }
 
 // extend this later to use proper checking of caps
-bool Graphics::IsSuitable(const vk::PhysicalDevice &device)
+bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
 {
 	bool isSuiting = true;
 
@@ -690,7 +679,7 @@ bool Graphics::IsSuitable(const vk::PhysicalDevice &device)
 	return isSuiting;
 }
 
-bool Graphics::LayersAvailable(const vector<const char*> &validationLayers)
+bool GraphicsVK::LayersAvailable(const vector<const char*> &validationLayers)
 {
 	//what we have
 	uint32_t availableLayersCount;
@@ -722,7 +711,7 @@ bool Graphics::LayersAvailable(const vector<const char*> &validationLayers)
 	return foundAll;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char * layerPrefix, const char * msg, void * userData)
+VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsVK::DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char * layerPrefix, const char * msg, void * userData)
 {
 	string type;
 	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
@@ -732,21 +721,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::DebugCallback(VkDebugReportFlagsEXT fla
 	else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
 		printf("[Performance] VL: %s\n", msg);
 	return VK_FALSE;
-}
-
-vector<char> Graphics::readFile(const string & filename)
-{
-	ifstream file(filename, ios::ate | ios::binary);
-	if (!file.is_open())
-	{
-		printf("[Error] Failed to open file: %s\n", filename.c_str());
-		return vector<char>();
-	}
-	
-	size_t size = file.tellg();
-	vector<char> buffer(size);
-	file.seekg(0);
-	file.read(buffer.data(), size);
-	file.close();
-	return buffer;
 }

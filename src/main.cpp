@@ -1,6 +1,7 @@
 #include "Common.h"
 #include "Game.h"
 #include "Graphics.h"
+#include <GLFW/glfw3.h>
 
 int main()
 {

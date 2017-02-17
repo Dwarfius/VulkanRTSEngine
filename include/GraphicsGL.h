@@ -1,9 +1,11 @@
 #ifndef _GRAPHICS_GL_H
 #define _GRAPHICS_GL_H
 
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include "Graphics.h"
 #include "Common.h"
-#include <vector>
-#include <string>
 
 class GraphicsGL : public Graphics
 {

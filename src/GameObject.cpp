@@ -1,5 +1,6 @@
 #include "GameObject.h"
 #include "Game.h"
+#include "Common.h"
 
 void GameObject::Update(float deltaTime)
 {

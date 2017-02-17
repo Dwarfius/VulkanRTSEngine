@@ -1,45 +1,53 @@
 #ifndef _GRAPHICS_VK_H
 #define _GRAPHICS_VK_H
 
+// Forcing this define for 32bit typesafe conversions, as in
+// being able to construct c++ classes based of vulkan c handles
+// theoretically this is unsafe - check vulkan.hpp for more info
+#define VULKAN_HPP_TYPESAFE_CONVERSION
+#include <vulkan/vulkan.hpp>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include "Graphics.h"
 #include "Common.h"
 
-class Graphics
+class GraphicsVK : Graphics
 {
 public:
-	static void Init();
-	static void Render();
-	static void Display();
-	static void CleanUp();
+	GraphicsVK() {}
 
-	static GLFWwindow* GetWindow() { return window; }
+	void Init() override;
+	void Render(const Camera *cam, GameObject *go, const uint threadId) override;
+	void Display() override;
+	void CleanUp() override;
 
+	// this is a trampoline to the actual implementation
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 private:
-	Graphics();
-
-	static GLFWwindow *window;
+	static GraphicsVK *activeGraphics;
+	void WindowResized(int width, int height);
 
 	// Instance related
-	static vk::Instance instance;
-	static void CreateInstance();
+	vk::Instance instance;
+	void CreateInstance();
 	
 	// Device related
 	const static vector<const char *> requiredLayers;
 	const static vector<const char *> requiredExtensions;
-	static vk::Device device;
-	static void CreateDevice();
-	static bool IsSuitable(const vk::PhysicalDevice &device);
+	vk::Device device;
+	void CreateDevice();
+	bool IsSuitable(const vk::PhysicalDevice &device);
 
 	// Queues from Device
 	struct QueuesInfo {
 		uint32_t graphicsFamIndex, computeFamIndex, transferFamIndex, presentFamIndex;
 		vk::Queue graphicsQueue, computeQueue, transferQueue, presentQueue;
 	};
-	static QueuesInfo queues;
+	QueuesInfo queues;
 
 	// Window surface
-	static vk::SurfaceKHR surface;
-	static void CreateSurface();
+	vk::SurfaceKHR surface;
+	void CreateSurface();
 
 	// Swapchain
 	struct SwapchainSupportInfo {
@@ -51,39 +59,39 @@ private:
 		vk::Format imgFormat;
 		vk::Extent2D swapExtent;
 	};
-	static SwapchainSupportInfo swapInfo;
-	static vk::SwapchainKHR swapchain;
-	static vector<vk::Image> images; // images to render to, auto-destroyed by swapchain
-	static vector<vk::ImageView> imgViews; // views to acess images through, needs to be destroyed
-	static void CreateSwapchain();
+	SwapchainSupportInfo swapInfo;
+	vk::SwapchainKHR swapchain;
+	vector<vk::Image> images; // images to render to, auto-destroyed by swapchain
+	vector<vk::ImageView> imgViews; // views to acess images through, needs to be destroyed
+	void CreateSwapchain();
 
 	// Render Passes
-	static vk::RenderPass renderPass;
-	static void CreateRenderPass();
+	vk::RenderPass renderPass;
+	void CreateRenderPass();
 
 	// Graphic Pipeline
-	static vk::Pipeline pipeline;
-	static vk::PipelineLayout pipelineLayout;
-	static vk::ShaderModule vertShader, fragShader;
-	static void CreatePipeline();
+	vk::Pipeline pipeline;
+	vk::PipelineLayout pipelineLayout;
+	vk::ShaderModule vertShader, fragShader;
+	void CreatePipeline();
 
 	// Render Frame Buffers
-	static vector<vk::Framebuffer> swapchainFrameBuffers;
-	static void CreateFrameBuffers();
+	vector<vk::Framebuffer> swapchainFrameBuffers;
+	void CreateFrameBuffers();
 
 	// Command Pool, Buffers and Semaphores
-	static vk::Semaphore imgAvailable, renderFinished;
-	static vk::CommandPool pool;
-	static vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer ber swapchain fbo
-	static void CreateCommandResources();
+	vk::Semaphore imgAvailable, renderFinished;
+	vk::CommandPool pool;
+	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer ber swapchain fbo
+	void CreateCommandResources();
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually
-	static PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-	static PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+	PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+	PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
 
-	static VkDebugReportCallbackEXT debugCallback;
-	static bool Graphics::LayersAvailable(const vector<const char*> &validationLayers);
+	VkDebugReportCallbackEXT debugCallback;
+	bool LayersAvailable(const vector<const char*> &validationLayers);
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugReportFlagsEXT flags,
 		VkDebugReportObjectTypeEXT objType,
@@ -93,9 +101,6 @@ private:
 		const char* layerPrefix,
 		const char* msg,
 		void* userData);
-
-	// Utilities
-	static vector<char> readFile(const string& filename);
 };
 
 #endif // !_GRAPHICS_VK_H
