@@ -9,7 +9,7 @@ Game::Game()
 {
 	inst = this;
 
-	graphics = new GraphicsGL();
+	graphics = new GraphicsVK();
 	graphics->Init();
 
 	uint maxThreads = thread::hardware_concurrency();
@@ -133,7 +133,7 @@ void Game::Render()
 
 	graphics->Display();
 
-	printf("[Info] Render calls: %d\n", graphics->GetRenderCalls());
+	//printf("[Info] Render calls: %d\n", graphics->GetRenderCalls());
 	graphics->ResetRenderCalls();
 
 	// update the mvp

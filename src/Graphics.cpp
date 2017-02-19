@@ -22,7 +22,7 @@ void Graphics::ResetRenderCalls()
 		renderCalls[i] = 0;
 }
 
-void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center, float &radius)
+void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius)
 {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
@@ -37,7 +37,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint> &in
 		return;
 	}
 
-	vertices.reserve(attrib.vertices.size());
+	vertices.reserve(vertices.size() + attrib.vertices.size());
 	vec3 newCenter;
 	float maxLen = 0;
 	unordered_map<Vertex, uint> uniqueVerts;

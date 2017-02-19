@@ -11,7 +11,7 @@
 #include "Graphics.h"
 #include "Common.h"
 
-class GraphicsVK : Graphics
+class GraphicsVK : public Graphics
 {
 public:
 	GraphicsVK() {}
@@ -23,7 +23,12 @@ public:
 
 	// this is a trampoline to the actual implementation
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
+
+	vec3 GetModelCenter(ModelId m) override { return vec3(0, 0, 0); }
 private:
+	void LoadResources();
+	void UnloadResources();
+
 	static GraphicsVK *activeGraphics;
 	void WindowResized(int width, int height);
 
@@ -35,6 +40,7 @@ private:
 	const static vector<const char *> requiredLayers;
 	const static vector<const char *> requiredExtensions;
 	vk::Device device;
+	vk::PhysicalDevice physDevice;
 	void CreateDevice();
 	bool IsSuitable(const vk::PhysicalDevice &device);
 
@@ -70,10 +76,10 @@ private:
 	void CreateRenderPass();
 
 	// Graphic Pipeline
-	vk::Pipeline pipeline;
+	vector<vk::Pipeline> pipelines;
 	vk::PipelineLayout pipelineLayout;
 	vk::ShaderModule vertShader, fragShader;
-	void CreatePipeline();
+	vk::Pipeline CreatePipeline(string name);
 
 	// Render Frame Buffers
 	vector<vk::Framebuffer> swapchainFrameBuffers;
@@ -82,8 +88,19 @@ private:
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore imgAvailable, renderFinished;
 	vk::CommandPool pool;
-	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer ber swapchain fbo
+	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer per swapchain fbo
+	vector<vk::CommandBuffer> secCmdBuffers[maxThreads]; // for recording 
 	void CreateCommandResources();
+
+	// renderable resources
+	vk::VertexInputBindingDescription GetBindingDescription() const;
+	array<vk::VertexInputAttributeDescription, 3> GetAttribDescriptions() const;
+	// we're gonna push everything to a single vbo/ibo
+	// LoadResources handles the vbo/ibo creation
+	vk::Buffer vbo, ibo;
+	vk::DeviceMemory vboMem, iboMem;
+	vector<Model> models;
+	uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props);
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually

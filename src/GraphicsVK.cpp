@@ -1,4 +1,5 @@
 #include "GraphicsVK.h"
+#include "GameObject.h"
 #include <algorithm>
 #include <set>
 #include <fstream>
@@ -7,7 +8,8 @@ GraphicsVK* GraphicsVK::activeGraphics = NULL;
 
 const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
-	"VK_LAYER_LUNARG_standard_validation"
+	"VK_LAYER_LUNARG_standard_validation",
+	"VK_LAYER_LUNARG_monitor"
 #endif
 };
 const vector<const char *> GraphicsVK::requiredExtensions = {
@@ -17,13 +19,13 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 // Public Methods
 void GraphicsVK::Init()
 {
-	activeGraphics = this;
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
 		printf("[Error] Vulkan loader unavailable");
 		return;
 	}
 
+	activeGraphics = this;
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
 	
@@ -33,22 +35,145 @@ void GraphicsVK::Init()
 	CreateDevice();
 	CreateSwapchain();
 	CreateRenderPass();
-	CreatePipeline();
 	CreateFrameBuffers();
 	CreateCommandResources();
+
+	LoadResources();
+}
+
+void GraphicsVK::LoadResources()
+{
+	// same order as GraphicsGL
+	// shaders
+	for (string shaderName : shadersToLoad)
+	{
+		vk::Pipeline pipeline = CreatePipeline(shaderName);
+		pipelines.push_back(pipeline);
+	}
+
+	// models
+	{
+		vector<Vertex> vertices;
+		vector<uint32_t> indices;
+
+		// have to perform vert and index offset calculations as well
+		for (string modelName : modelsToLoad)
+		{
+			Model m;
+			LoadModel(modelName, vertices, indices, m.center, m.sphereRadius);
+
+			models.push_back(m);
+		}
+
+		// create vbo
+		vk::BufferCreateInfo bufferInfo;
+		bufferInfo.size = sizeof(Vertex) * vertices.size();
+		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+		bufferInfo.sharingMode = vk::SharingMode::eConcurrent;
+		vbo = device.createBuffer(bufferInfo);
+
+		// buffer doesn't have any memmory assigned to it yet
+		vk::MemoryRequirements reqs = device.getBufferMemoryRequirements(vbo);
+		vk::MemoryAllocateInfo allocInfo{
+			bufferInfo.size,
+			FindMemoryType(reqs.memoryTypeBits, 
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+		};
+		vboMem = device.allocateMemory(allocInfo);
+		// now that we have the memory for it created, we have to bind it to buffer
+		device.bindBufferMemory(vbo, vboMem, 0);
+
+		// now buffer the memory
+		void* data;
+		vkMapMemory(device, vboMem, 0, bufferInfo.size, 0, &data);
+			memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+		vkUnmapMemory(device, vboMem);
+
+		// Continue from here
+		// https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
+	}
+
+	// textures
+	{
+		for (string textureName : texturesToLoad)
+		{
+			// ...
+		}
+	}
+}
+
+void GraphicsVK::UnloadResources()
+{
+
 }
 
 void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
 {
+	// get the vector of secondary buffers for thread
+	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId];
+	// we need to find the corresponding secondary buffer
+	ShaderId pipelineInd = go->GetShader();
+	Model m = models[go->GetModel()];
+
+	// draw out all the indices
+	buffers[pipelineInd].drawIndexed(m.indexCount, 1, 0, 0, 0);
+}
+
+void GraphicsVK::Display()
+{
+	// have to end all secondary buffers here
+	for (size_t thread = 0; thread < maxThreads; thread++)
+		for (auto buffs : secCmdBuffers[thread])
+			buffs.end();
+
 	// acquire image to render to
 	uint32_t imgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
+
+	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
+	float clearColor[] = { 0, 0, 0, 1 };
+	vk::ClearValue clearVal;
+	memcpy(&clearVal.color.float32, clearColor, sizeof(clearVal.color.float32));
+
+	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[imgIndex];
+	{
+		// begin recording to command buffer
+		primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+		// start the render pass
+		vk::RenderPassBeginInfo beginInfo{
+			renderPass,
+			swapchainFrameBuffers[imgIndex],
+			{ { 0, 0 }, swapInfo.swapExtent },
+			1, &clearVal
+		};
+		// has to be vk::SubpassContents::eSecondaryCommandBuffers
+		primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+		for (size_t pipelineInd = 0; pipelineInd < pipelines.size(); pipelineInd++)
+		{
+			vk::Pipeline pipeline = pipelines[pipelineInd];
+
+			// bind the pipeline for rendering with
+			primaryCmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+			// push the secondaries in to primary
+			for (size_t thread = 0; thread<maxThreads; thread++)
+				primaryCmdBuffer.executeCommands(1, &secCmdBuffers[thread][pipelineInd]);
+		}
+
+		// finish up the render pass
+		primaryCmdBuffer.endRenderPass();
+
+		// finish the recording
+		primaryCmdBuffer.end();
+	}
 
 	// submit the queue
 	// make sure it waits for the image to become available before we start outputting color
 	vk::PipelineStageFlags waitAt = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::SubmitInfo submitInfo{
 		1, &imgAvailable, &waitAt,
-		1, &cmdBuffers[imgIndex],
+		1, &primaryCmdBuffer,
 		1, &renderFinished
 	};
 	queues.graphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
@@ -60,16 +185,41 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
 		nullptr
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
-}
 
-void GraphicsVK::Display()
-{
+	// have to begin all secondary buffers here
+	for (size_t thread = 0; thread < maxThreads; thread++)
+	{
+		for (auto buff : secCmdBuffers[thread])
+		{
+			// need inheritance info since secondary buffer
+			vk::CommandBufferInheritanceInfo inheritanceInfo{
+				renderPass, 0, // render using subpass#0 of renderpass
+#error Fix! imgIndex points to FB that is used by *old* primary command buffer
+				swapchainFrameBuffers[imgIndex], 
+				0
+			};
+			vk::CommandBufferBeginInfo info{
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit | vk::CommandBufferUsageFlagBits::eRenderPassContinue,
+				&inheritanceInfo
+			};
+			buff.begin(info);
+
+			// bind the vbo
+			vk::DeviceSize offset = 0;
+			buff.bindVertexBuffers(0, 1, &vbo, &offset);
+		}
+	}
 }
 
 void GraphicsVK::CleanUp()
 {
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
+
+	device.destroyBuffer(vbo);
+	device.freeMemory(vboMem);
+	device.destroyBuffer(ibo);
+	device.freeMemory(iboMem);
 
 	device.destroySemaphore(imgAvailable);
 	device.destroySemaphore(renderFinished);
@@ -78,7 +228,11 @@ void GraphicsVK::CleanUp()
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
 	swapchainFrameBuffers.clear();
-	device.destroyPipeline(pipeline);
+	
+	for(auto pipeline : pipelines)
+		device.destroyPipeline(pipeline);
+	pipelines.clear();
+	
 	device.destroyPipelineLayout(pipelineLayout);
 	device.destroyRenderPass(renderPass);
 	device.destroyShaderModule(vertShader);
@@ -120,7 +274,11 @@ void GraphicsVK::WindowResized(int width, int height)
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
 	swapchainFrameBuffers.clear();
-	device.destroyPipeline(pipeline);
+
+	for (auto pipeline : pipelines)
+		device.destroyPipeline(pipeline);
+	pipelines.clear();
+
 	device.destroyPipelineLayout(pipelineLayout);
 	device.destroyRenderPass(renderPass);
 	device.destroyShaderModule(vertShader);
@@ -131,12 +289,13 @@ void GraphicsVK::WindowResized(int width, int height)
 	imgViews.clear();
 	device.destroySwapchainKHR(swapchain);
 	//instance.destroySurfaceKHR(surface);
+	UnloadResources();
 
 	CreateSwapchain();
 	CreateRenderPass();
-	CreatePipeline();
 	CreateFrameBuffers();
 	CreateCommandResources();
+	LoadResources();
 }
 
 // Private Methods
@@ -211,9 +370,10 @@ void GraphicsVK::CreateDevice()
 		printf("[Error] No suitable vulkan device found!");
 		return;
 	}
+	physDevice = pickedDevice;
 
 	// then we gotta pick queue families for our use (graphics, compute and transfer)
-	vector<vk::QueueFamilyProperties> queueFamProps = pickedDevice.getQueueFamilyProperties();
+	vector<vk::QueueFamilyProperties> queueFamProps = physDevice.getQueueFamilyProperties();
 	int i = 0;
 	/*
 	// for now, using the simple set-up with 1 queue
@@ -293,7 +453,7 @@ void GraphicsVK::CreateDevice()
 		(uint32_t)requiredExtensions.size(), requiredExtensions.data(),
 		&features
 	};
-	device = pickedDevice.createDevice(devCreateInfo);
+	device = physDevice.createDevice(devCreateInfo);
 
 	// queues are auto-created on device creation, so just have to get their handles
 	// shared queues will deal with parallelization with device events
@@ -462,11 +622,11 @@ void GraphicsVK::CreateRenderPass()
 	renderPass = device.createRenderPass(passCreateInfo);
 }
 
-void GraphicsVK::CreatePipeline()
+vk::Pipeline GraphicsVK::CreatePipeline(string name)
 {
 	// first, getting the shaders
-	string frag = readFile("assets/VulkanShaders/base-frag.spv");
-	string vert = readFile("assets/VulkanShaders/base-vert.spv");
+	string frag = readFile("assets/VulkanShaders/" + name + ".spv");
+	string vert = readFile("assets/VulkanShaders/" + name + ".spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
 	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
@@ -479,10 +639,12 @@ void GraphicsVK::CreatePipeline()
 	};
 
 	// one part of the pipeline defined, next: vertex input
+	vk::VertexInputBindingDescription binding = GetBindingDescription();
+	array<vk::VertexInputAttributeDescription, 3> attribs = GetAttribDescriptions();
 	vk::PipelineVertexInputStateCreateInfo vertInputInfo{
 		{},
-		0, nullptr, // vert binding descriptions
-		0, nullptr  // vert attribs descriptions
+		1, &binding, // vert binding descriptions
+		attribs.size(), attribs.data()  // vert attribs descriptions
 	};
 
 	// then input assembly ...
@@ -562,7 +724,8 @@ void GraphicsVK::CreatePipeline()
 		renderPass, 0,
 		VK_NULL_HANDLE, -1
 	};
-	pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
+	vk::Pipeline pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
+	return pipeline;
 }
 
 void GraphicsVK::CreateFrameBuffers()
@@ -587,42 +750,29 @@ void GraphicsVK::CreateCommandResources()
 	// allocating a cmdBuffer per swapchain FBO
 	cmdBuffers = device.allocateCommandBuffers({ pool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
 
-	// pre recording all command buffers just as example usage
-	// in the future almost all of them will be dynamic
-	float clearColor[] = { 0, 0, 0, 1 };
-	vk::ClearValue clearVal;
-	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
-	memcpy(&clearVal.color.float32, clearColor, sizeof(clearVal.color.float32));
-	for (size_t i = 0; i < cmdBuffers.size(); i++)
-	{
-		// begin recording to command buffer
-		cmdBuffers[i].begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
-		
-		// start the render pass
-		vk::RenderPassBeginInfo beginInfo{
-			renderPass,
-			swapchainFrameBuffers[i],
-			{ {0, 0}, swapInfo.swapExtent },
-			1, &clearVal
-		};
-		cmdBuffers[i].beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-		
-		// bing the pipeline for rendering with
-		cmdBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-		// actual draw
-		cmdBuffers[i].draw(3, 1, 0, 0);
-		
-		// finish up the render pass
-		cmdBuffers[i].endRenderPass();
-
-		// finish the recording
-		cmdBuffers[i].end();
-	}
-
 	// we will need semaphores for properly managing the async drawing
 	imgAvailable = device.createSemaphore({});
 	renderFinished = device.createSemaphore({});
+}
+
+vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const
+{
+	vk::VertexInputBindingDescription desc = {
+		0, // binding
+		sizeof(Vertex), // stride
+		vk::VertexInputRate::eVertex // input rate
+	};
+	return desc;
+}
+
+array<vk::VertexInputAttributeDescription, 3> GraphicsVK::GetAttribDescriptions() const
+{
+	array<vk::VertexInputAttributeDescription, 3> descs = {
+		vk::VertexInputAttributeDescription { 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos) }, 
+		vk::VertexInputAttributeDescription { 1, 0, vk::Format::eR32G32Sfloat,    offsetof(Vertex, uv) }, 
+		vk::VertexInputAttributeDescription { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) }, 
+	};
+	return descs;
 }
 
 // extend this later to use proper checking of caps
@@ -677,6 +827,17 @@ bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
 	isSuiting &= !swapInfo.suppFormats.empty() && !swapInfo.presentModes.empty();
 
 	return isSuiting;
+}
+
+uint32_t GraphicsVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props)
+{
+	vk::PhysicalDeviceMemoryProperties devProps = physDevice.getMemoryProperties();
+	for (uint32_t i = 0; i < devProps.memoryTypeCount; i++)
+	{
+		if (typeFilter & (1 << i) && (devProps.memoryTypes[i].propertyFlags & props) == props)
+			return i;
+	}
+	return -1;
 }
 
 bool GraphicsVK::LayersAvailable(const vector<const char*> &validationLayers)

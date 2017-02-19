@@ -270,7 +270,7 @@ void GraphicsGL::LoadResources()
 	{
 		Model m;
 		vector<Vertex> vertices;
-		vector<uint> indices;
+		vector<uint32_t> indices;
 		LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
 
 		printf("[Info] Center: %f, %f, %f; Radius:%f\n", m.center.x, m.center.y, m.center.z, m.sphereRadius);
@@ -295,15 +295,15 @@ void GraphicsGL::LoadResources()
 
 		// tell the VAO that 0 is the position element
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)offsetof(Vertex, pos));
 
 		// uvs at 1
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)sizeof(vec3));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)offsetof(Vertex, uv));
 
 		// normals at 2
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)(sizeof(vec3) + sizeof(vec2)));
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)(offsetof(Vertex, normal)));
 
 		glBindVertexArray(0);
 		vaos.push_back(m);

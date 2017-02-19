@@ -121,7 +121,7 @@ protected:
 
 	int renderCalls[maxThreads];
 
-	void LoadModel(string name, vector<Vertex> &vertices, vector<uint> &indices, vec3 &center, float &radius);
+	void LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius);
 	unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
 	void FreeTexture(void *data);
 	string readFile(const string& filename);
