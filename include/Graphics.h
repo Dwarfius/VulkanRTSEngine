@@ -102,7 +102,7 @@ class Graphics
 public:
 	virtual void Init() = 0;
 	virtual void BeginGather() = 0;
-	virtual void Render(const Camera *cam, GameObject *go, const uint threadId) = 0;
+	virtual void Render(const Camera *cam, GameObject *go, const uint32_t threadId) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	

@@ -51,7 +51,7 @@ void GraphicsGL::Init()
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint threadId)
+void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
 {
 	vec3 scale = go->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });

@@ -9,8 +9,8 @@ GraphicsVK* GraphicsVK::activeGraphics = NULL;
 const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
 	"VK_LAYER_LUNARG_standard_validation",
-	"VK_LAYER_LUNARG_monitor"
 #endif
+	"VK_LAYER_LUNARG_monitor"
 };
 const vector<const char *> GraphicsVK::requiredExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -189,7 +189,7 @@ void GraphicsVK::BeginGather()
 	}
 }
 
-void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
+void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
 {
 	// get the vector of secondary buffers for thread
 	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId][currImgIndex];
@@ -262,6 +262,9 @@ void GraphicsVK::CleanUp()
 	device.destroySemaphore(renderFinished);
 	device.destroyCommandPool(graphCmdPool);
 	device.destroyCommandPool(transfCmdPool);
+	for (auto pool : graphSecCmdPools)
+		device.destroyCommandPool(pool);
+	graphSecCmdPools.clear();
 	
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
@@ -309,6 +312,9 @@ void GraphicsVK::WindowResized(int width, int height)
 	device.destroySemaphore(renderFinished);
 	device.destroyCommandPool(graphCmdPool);
 	device.destroyCommandPool(transfCmdPool);
+	for (auto pool : graphSecCmdPools)
+		device.destroyCommandPool(pool);
+	graphSecCmdPools.clear();
 
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
@@ -789,9 +795,16 @@ void GraphicsVK::CreateCommandResources()
 	transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
 	// allocating a cmdBuffer per swapchain FBO
 	cmdBuffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
-	for(int j = 0; j<3; j++)
-		for (int i = 0; i < maxThreads; i++)
-			secCmdBuffers[i][j] = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() });
+
+	// now the secondary command buffers
+	// has to be an extra pool cause recording to buffer involves accessing pool, 
+	// concurrent use of which is prohibited
+	for (int i = 0; i < maxThreads; i++)
+	{
+		graphSecCmdPools.push_back(device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex }));
+		for (int j = 0; j < 3; j++)
+			secCmdBuffers[i][j] = device.allocateCommandBuffers({ graphSecCmdPools[i], vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() });
+	}
 
 	// we will need semaphores for properly managing the async drawing
 	imgAvailable = device.createSemaphore({});
@@ -811,8 +824,11 @@ vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const
 array<vk::VertexInputAttributeDescription, 3> GraphicsVK::GetAttribDescriptions() const
 {
 	array<vk::VertexInputAttributeDescription, 3> descs = {
+		// vec3 pos
 		vk::VertexInputAttributeDescription { 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos) }, 
+		// vec2 uv
 		vk::VertexInputAttributeDescription { 1, 0, vk::Format::eR32G32Sfloat,    offsetof(Vertex, uv) }, 
+		// vec3 normal
 		vk::VertexInputAttributeDescription { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) }, 
 	};
 	return descs;

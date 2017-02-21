@@ -18,7 +18,7 @@ public:
 
 	void Init() override;
 	void BeginGather() override;
-	void Render(const Camera *cam, GameObject *go, const uint threadId) override;
+	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
 
@@ -90,6 +90,7 @@ private:
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore imgAvailable, renderFinished;
 	vk::CommandPool graphCmdPool, transfCmdPool;
+	vector<vk::CommandPool> graphSecCmdPools;
 	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer per swapchain fbo
 	// it's a little strange, but essentially per each pipeline there's a secondary command buffer
 	// each thread has it's own version of pipeline-linked cmd buffer
