@@ -12,8 +12,8 @@ using namespace std;
 using namespace glm;
 
 const std::vector<string> shadersToLoad = {
-	"base",
-	"debug"
+	"base"
+	//"debug"
 };
 const std::vector<string> modelsToLoad = {
 	"chalet",
@@ -32,8 +32,8 @@ typedef uint32_t ModelId;
 struct Model 
 {
 	uint32_t id;
-	size_t vertexCount;
-	size_t indexCount;
+	size_t vertexCount, vertexOffset;
+	size_t indexCount, indexOffset;
 	vec3 center;
 	float sphereRadius;
 
@@ -101,6 +101,7 @@ class Graphics
 {
 public:
 	virtual void Init() = 0;
+	virtual void BeginGather() = 0;
 	virtual void Render(const Camera *cam, GameObject *go, const uint threadId) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;

@@ -60,37 +60,64 @@ void GraphicsVK::LoadResources()
 		for (string modelName : modelsToLoad)
 		{
 			Model m;
+			m.vertexOffset = vertices.size();
+			m.indexOffset = indices.size();
+			
 			LoadModel(modelName, vertices, indices, m.center, m.sphereRadius);
+			m.vertexCount = vertices.size() - m.vertexOffset;
+			m.indexCount = indices.size() - m.indexOffset;
 
 			models.push_back(m);
 		}
 
-		// create vbo
-		vk::BufferCreateInfo bufferInfo;
-		bufferInfo.size = sizeof(Vertex) * vertices.size();
-		bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
-		bufferInfo.sharingMode = vk::SharingMode::eConcurrent;
-		vbo = device.createBuffer(bufferInfo);
+		// creating staging vbo
+		vk::Buffer stagingBuff;
+		vk::DeviceMemory stagingMem;
+		vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eTransferSrc;
+		vk::MemoryPropertyFlags memProps = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+		vk::DeviceSize size = sizeof(Vertex) * vertices.size();
+		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
-		// buffer doesn't have any memmory assigned to it yet
-		vk::MemoryRequirements reqs = device.getBufferMemoryRequirements(vbo);
-		vk::MemoryAllocateInfo allocInfo{
-			bufferInfo.size,
-			FindMemoryType(reqs.memoryTypeBits, 
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
-		};
-		vboMem = device.allocateMemory(allocInfo);
-		// now that we have the memory for it created, we have to bind it to buffer
-		device.bindBufferMemory(vbo, vboMem, 0);
-
-		// now buffer the memory
+		// now buffer the memory to staging
 		void* data;
-		vkMapMemory(device, vboMem, 0, bufferInfo.size, 0, &data);
-			memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		vkUnmapMemory(device, vboMem);
+		vkMapMemory(device, stagingMem, 0, size, 0, &data);
+			memcpy(data, vertices.data(), size);
+		vkUnmapMemory(device, stagingMem);
 
-		// Continue from here
-		// https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
+		// creating vbo device local
+		usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+		memProps = vk::MemoryPropertyFlagBits::eDeviceLocal;
+		CreateBuffer(size, usage, memProps, vbo, vboMem);
+
+		// create the command buffer to perform cross-buffer copy
+		CopyBuffer(stagingBuff, vbo, size);
+
+		// cleanup
+		device.destroyBuffer(stagingBuff);
+		device.freeMemory(stagingMem);
+
+		// same for ibo
+		usage = vk::BufferUsageFlagBits::eTransferSrc;
+		memProps = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+		size = sizeof(uint32_t) * indices.size();
+		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
+
+		// now buffer the memory to staging
+		vkMapMemory(device, stagingMem, 0, size, 0, &data);
+			memcpy(data, indices.data(), size);
+		vkUnmapMemory(device, stagingMem);
+
+		// creating ibo device local
+		usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+		memProps = vk::MemoryPropertyFlagBits::eDeviceLocal;
+		CreateBuffer(size, usage, memProps, ibo, iboMem);
+
+		// transfer
+		CopyBuffer(stagingBuff, ibo, size);
+
+		// cleanup
+		device.destroyBuffer(stagingBuff);
+		device.freeMemory(stagingMem);
 	}
 
 	// textures
@@ -107,66 +134,100 @@ void GraphicsVK::UnloadResources()
 
 }
 
-void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
+void GraphicsVK::BeginGather()
 {
-	// get the vector of secondary buffers for thread
-	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId];
-	// we need to find the corresponding secondary buffer
-	ShaderId pipelineInd = go->GetShader();
-	Model m = models[go->GetModel()];
-
-	// draw out all the indices
-	buffers[pipelineInd].drawIndexed(m.indexCount, 1, 0, 0, 0);
-}
-
-void GraphicsVK::Display()
-{
-	// have to end all secondary buffers here
-	for (size_t thread = 0; thread < maxThreads; thread++)
-		for (auto buffs : secCmdBuffers[thread])
-			buffs.end();
-
 	// acquire image to render to
-	uint32_t imgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
+	currImgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
 
 	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
 	float clearColor[] = { 0, 0, 0, 1 };
 	vk::ClearValue clearVal;
 	memcpy(&clearVal.color.float32, clearColor, sizeof(clearVal.color.float32));
 
-	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[imgIndex];
+	// begin recording to command buffer
+	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
+	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+	// start the render pass
+	vk::RenderPassBeginInfo beginInfo{
+		renderPass,
+		swapchainFrameBuffers[currImgIndex],
+		{ { 0, 0 }, swapInfo.swapExtent },
+		1, &clearVal
+	};
+	// has to be vk::SubpassContents::eSecondaryCommandBuffers
+	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
+
+	// have to begin all secondary buffers here
+	for (size_t thread = 0; thread < maxThreads; thread++)
 	{
-		// begin recording to command buffer
-		primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
-
-		// start the render pass
-		vk::RenderPassBeginInfo beginInfo{
-			renderPass,
-			swapchainFrameBuffers[imgIndex],
-			{ { 0, 0 }, swapInfo.swapExtent },
-			1, &clearVal
-		};
-		// has to be vk::SubpassContents::eSecondaryCommandBuffers
-		primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-
-		for (size_t pipelineInd = 0; pipelineInd < pipelines.size(); pipelineInd++)
+		for (size_t pipeline = 0; pipeline < shadersToLoad.size(); pipeline++)
 		{
-			vk::Pipeline pipeline = pipelines[pipelineInd];
+			vk::CommandBuffer buff = secCmdBuffers[thread][currImgIndex][pipeline];
+			// need inheritance info since secondary buffer
+			vk::CommandBufferInheritanceInfo inheritanceInfo{
+				renderPass, 0, // render using subpass#0 of renderpass
+				swapchainFrameBuffers[currImgIndex],
+				0
+			};
+			vk::CommandBufferBeginInfo info{
+				vk::CommandBufferUsageFlagBits::eOneTimeSubmit 
+					| vk::CommandBufferUsageFlagBits::eRenderPassContinue
+					| vk::CommandBufferUsageFlagBits::eSimultaneousUse,
+				&inheritanceInfo
+			};
+			buff.begin(info);
+
+			// bind the vbo and ibo
+			vk::DeviceSize offset = 0;
+			buff.bindVertexBuffers(0, 1, &vbo, &offset);
+			buff.bindIndexBuffer(ibo, 0, vk::IndexType::eUint32);
 
 			// bind the pipeline for rendering with
-			primaryCmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-			// push the secondaries in to primary
-			for (size_t thread = 0; thread<maxThreads; thread++)
-				primaryCmdBuffer.executeCommands(1, &secCmdBuffers[thread][pipelineInd]);
+			buff.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[pipeline]);
 		}
-
-		// finish up the render pass
-		primaryCmdBuffer.endRenderPass();
-
-		// finish the recording
-		primaryCmdBuffer.end();
 	}
+}
+
+void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint threadId)
+{
+	// get the vector of secondary buffers for thread
+	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId][currImgIndex];
+	// we need to find the corresponding secondary buffer
+	ShaderId pipelineInd = go->GetShader();
+	Model m = models[go->GetModel()];
+
+	// draw out all the indices
+	//buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
+	buffers[pipelineInd].drawIndexed(3, 1, 0, 0, 0);
+}
+
+void GraphicsVK::Display()
+{
+	// before we can execute them, have to end them
+	for (size_t thread = 0; thread < maxThreads; thread++)
+		for (auto buffs : secCmdBuffers[thread][currImgIndex])
+			buffs.end();
+
+	// draw out all the accumulated render calls
+	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
+	for (size_t pipelineInd = 0; pipelineInd < pipelines.size(); pipelineInd++)
+	{
+		vk::Pipeline pipeline = pipelines[pipelineInd];
+
+		// bind the pipeline for rendering with
+		// primaryCmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+		// push the secondaries in to primary
+		for (size_t thread = 0; thread<maxThreads; thread++)
+			primaryCmdBuffer.executeCommands(1, &secCmdBuffers[thread][currImgIndex][pipelineInd]);
+	}
+
+	// finish up the render pass
+	primaryCmdBuffer.endRenderPass();
+
+	// finish the recording
+	primaryCmdBuffer.end();
 
 	// submit the queue
 	// make sure it waits for the image to become available before we start outputting color
@@ -181,34 +242,10 @@ void GraphicsVK::Display()
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
 		1, &renderFinished,
-		1, &swapchain, &imgIndex,
+		1, &swapchain, &currImgIndex,
 		nullptr
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
-
-	// have to begin all secondary buffers here
-	for (size_t thread = 0; thread < maxThreads; thread++)
-	{
-		for (auto buff : secCmdBuffers[thread])
-		{
-			// need inheritance info since secondary buffer
-			vk::CommandBufferInheritanceInfo inheritanceInfo{
-				renderPass, 0, // render using subpass#0 of renderpass
-#error Fix! imgIndex points to FB that is used by *old* primary command buffer
-				swapchainFrameBuffers[imgIndex], 
-				0
-			};
-			vk::CommandBufferBeginInfo info{
-				vk::CommandBufferUsageFlagBits::eOneTimeSubmit | vk::CommandBufferUsageFlagBits::eRenderPassContinue,
-				&inheritanceInfo
-			};
-			buff.begin(info);
-
-			// bind the vbo
-			vk::DeviceSize offset = 0;
-			buff.bindVertexBuffers(0, 1, &vbo, &offset);
-		}
-	}
 }
 
 void GraphicsVK::CleanUp()
@@ -223,7 +260,8 @@ void GraphicsVK::CleanUp()
 
 	device.destroySemaphore(imgAvailable);
 	device.destroySemaphore(renderFinished);
-	device.destroyCommandPool(pool);
+	device.destroyCommandPool(graphCmdPool);
+	device.destroyCommandPool(transfCmdPool);
 	
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
@@ -269,7 +307,8 @@ void GraphicsVK::WindowResized(int width, int height)
 	// leave out the logical device and instance, but everything else must be recreated
 	device.destroySemaphore(imgAvailable);
 	device.destroySemaphore(renderFinished);
-	device.destroyCommandPool(pool);
+	device.destroyCommandPool(graphCmdPool);
+	device.destroyCommandPool(transfCmdPool);
 
 	for (auto b : swapchainFrameBuffers)
 		device.destroyFramebuffer(b);
@@ -625,8 +664,8 @@ void GraphicsVK::CreateRenderPass()
 vk::Pipeline GraphicsVK::CreatePipeline(string name)
 {
 	// first, getting the shaders
-	string frag = readFile("assets/VulkanShaders/" + name + ".spv");
-	string vert = readFile("assets/VulkanShaders/" + name + ".spv");
+	string frag = readFile("assets/VulkanShaders/" + name + "-frag.spv");
+	string vert = readFile("assets/VulkanShaders/" + name + "-vert.spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
 	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
@@ -644,7 +683,7 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	vk::PipelineVertexInputStateCreateInfo vertInputInfo{
 		{},
 		1, &binding, // vert binding descriptions
-		attribs.size(), attribs.data()  // vert attribs descriptions
+		(uint32_t)attribs.size(), attribs.data()  // vert attribs descriptions
 	};
 
 	// then input assembly ...
@@ -746,9 +785,13 @@ void GraphicsVK::CreateFrameBuffers()
 void GraphicsVK::CreateCommandResources()
 {
 	// before we can create command buffers, we need a pool to allocate from
-	pool = device.createCommandPool({ {}, queues.graphicsFamIndex });
+	graphCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex });
+	transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
 	// allocating a cmdBuffer per swapchain FBO
-	cmdBuffers = device.allocateCommandBuffers({ pool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
+	cmdBuffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
+	for(int j = 0; j<3; j++)
+		for (int i = 0; i < maxThreads; i++)
+			secCmdBuffers[i][j] = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() });
 
 	// we will need semaphores for properly managing the async drawing
 	imgAvailable = device.createSemaphore({});
@@ -773,6 +816,58 @@ array<vk::VertexInputAttributeDescription, 3> GraphicsVK::GetAttribDescriptions(
 		vk::VertexInputAttributeDescription { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) }, 
 	};
 	return descs;
+}
+
+void GraphicsVK::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Buffer &buff, vk::DeviceMemory &mem)
+{
+	// create vbo
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = vk::SharingMode::eConcurrent;
+	uint32_t famIndices[2] = { queues.graphicsFamIndex, queues.transferFamIndex };
+	bufferInfo.queueFamilyIndexCount = 2;
+	bufferInfo.pQueueFamilyIndices = famIndices;
+	buff = device.createBuffer(bufferInfo);
+
+	// buffer doesn't have any memmory assigned to it yet
+	vk::MemoryRequirements reqs = device.getBufferMemoryRequirements(buff);
+	vk::MemoryAllocateInfo allocInfo{
+		reqs.size,
+		FindMemoryType(reqs.memoryTypeBits,	memProps)
+	};
+	mem = device.allocateMemory(allocInfo);
+	// now that we have the memory for it created, we have to bind it to buffer
+	device.bindBufferMemory(buff, mem, 0);
+}
+
+void GraphicsVK::CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size)
+{
+	// to copy it over a command buffer is needed
+	vk::CommandBufferAllocateInfo info{
+		transfCmdPool, vk::CommandBufferLevel::ePrimary, 1
+	};
+	vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info)[0];
+
+	vk::CommandBufferBeginInfo beginInfo{
+		vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr
+	};
+	cmdBuffer.begin(beginInfo);
+	vk::BufferCopy region{
+		0, 0, size
+	};
+	cmdBuffer.copyBuffer(from, to, 1, &region);
+	cmdBuffer.end();
+
+	// submit the cmd buffer to transfer queue
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffer;
+	queues.transferQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
+	// waiting until it finishes
+	queues.transferQueue.waitIdle();
+	// cleanup
+	device.freeCommandBuffers(transfCmdPool, 1, &cmdBuffer);
 }
 
 // extend this later to use proper checking of caps

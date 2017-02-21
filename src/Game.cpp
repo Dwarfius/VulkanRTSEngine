@@ -11,6 +11,7 @@ Game::Game()
 
 	graphics = new GraphicsVK();
 	graphics->Init();
+	graphics->BeginGather();
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -113,11 +114,7 @@ void Game::Update()
 	camera.Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
 	oldMPos = curMPos;
 
-	// debug
-	vec3 target = gameObjects[0]->GetPos();
-	vec3 dirToLook = normalize(target - camera.GetPos());
-	vec3 diff = dirToLook - camera.GetForward();
-	//printf("[Info] Diff: %f, %f, %f\n", diff.x, diff.y, diff.z);
+	
 }
 
 void Game::Render()
@@ -140,8 +137,9 @@ void Game::Render()
 	camera.Recalculate();
 	//vec3 p = camera.GetPos();
 	//printf("[Info] x:%f y:%f z:%f\n", p.x, p.y, p.z);
-
+	
 	// the current render queue has been used up, we can fill it up again
+	graphics->BeginGather();
 	for (uint i = 0; i < threadInfos.size(); i++)
 	{
 		ThreadInfo &info = threadInfos[i];

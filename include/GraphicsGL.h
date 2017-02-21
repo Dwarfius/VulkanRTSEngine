@@ -13,6 +13,7 @@ public:
 	GraphicsGL() {}
 
 	void Init() override;
+	void BeginGather() override {};
 	void Render(const Camera *cam, GameObject *go, const uint threadId) override;
 	void Display() override;
 	void CleanUp() override;

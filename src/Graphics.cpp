@@ -40,6 +40,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 	vertices.reserve(vertices.size() + attrib.vertices.size());
 	vec3 newCenter;
 	float maxLen = 0;
+	size_t vertsAdded = 0;
 	unordered_map<Vertex, uint> uniqueVerts;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
@@ -71,6 +72,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 			// checking for vertex duplication
 			if (uniqueVerts.count(vertex) == 0)
 			{
+				vertsAdded++;
 				uniqueVerts[vertex] = vertices.size(); // marking that new vertex is at this index
 				vertices.push_back(vertex); // adding it at the marked position
 
@@ -83,7 +85,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 			indices.push_back(uniqueVerts[vertex]);
 		}
 	}
-	newCenter /= vertices.size();
+	newCenter /= vertsAdded;
 	center = newCenter;
 	radius = maxLen;
 }
