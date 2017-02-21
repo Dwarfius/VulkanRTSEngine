@@ -89,6 +89,7 @@ private:
 
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore imgAvailable, renderFinished;
+	array<vk::Fence, 3> cmdFences;
 	vk::CommandPool graphCmdPool, transfCmdPool;
 	vector<vk::CommandPool> graphSecCmdPools;
 	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer per swapchain fbo

@@ -139,6 +139,10 @@ void GraphicsVK::BeginGather()
 	// acquire image to render to
 	currImgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
 
+	// before we start recording the command buffer, need to make sure that it has finished working
+	device.waitForFences(1, &cmdFences[currImgIndex], false, ~0ull);
+	device.resetFences(1, &cmdFences[currImgIndex]);
+
 	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
 	float clearColor[] = { 0, 0, 0, 1 };
 	vk::ClearValue clearVal;
@@ -237,7 +241,7 @@ void GraphicsVK::Display()
 		1, &primaryCmdBuffer,
 		1, &renderFinished
 	};
-	queues.graphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
+	queues.graphicsQueue.submit(1, &submitInfo, cmdFences[currImgIndex]);
 
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
@@ -253,6 +257,8 @@ void GraphicsVK::CleanUp()
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
 
+	for (auto fence : cmdFences)
+		device.destroyFence(fence);
 	device.destroyBuffer(vbo);
 	device.freeMemory(vboMem);
 	device.destroyBuffer(ibo);
@@ -308,6 +314,8 @@ void GraphicsVK::WindowResized(int width, int height)
 	device.waitIdle();
 
 	// leave out the logical device and instance, but everything else must be recreated
+	for (auto fence : cmdFences)
+		device.destroyFence(fence);
 	device.destroySemaphore(imgAvailable);
 	device.destroySemaphore(renderFinished);
 	device.destroyCommandPool(graphCmdPool);
@@ -809,6 +817,10 @@ void GraphicsVK::CreateCommandResources()
 	// we will need semaphores for properly managing the async drawing
 	imgAvailable = device.createSemaphore({});
 	renderFinished = device.createSemaphore({});
+
+	// our 3 fences to synchronize command submission
+	for (size_t i = 0; i < cmdFences.size(); i++)
+		cmdFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
 }
 
 vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const
