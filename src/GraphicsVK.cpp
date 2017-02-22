@@ -202,8 +202,8 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	Model m = models[go->GetModel()];
 
 	// draw out all the indices
-	//buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
-	buffers[pipelineInd].drawIndexed(3, 1, 0, 0, 0);
+	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
+	//buffers[pipelineInd].drawIndexed(3, 1, 0, 0, 0);
 }
 
 void GraphicsVK::Display()

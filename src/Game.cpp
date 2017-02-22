@@ -9,7 +9,7 @@ Game::Game()
 {
 	inst = this;
 
-	graphics = new GraphicsVK();
+	graphics = new GraphicsGL();
 	graphics->Init();
 	graphics->BeginGather();
 
@@ -113,8 +113,6 @@ void Game::Update()
 	vec2 deltaPos = curMPos - oldMPos;
 	camera.Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
 	oldMPos = curMPos;
-
-	
 }
 
 void Game::Render()
