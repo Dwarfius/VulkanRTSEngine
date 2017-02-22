@@ -9,7 +9,7 @@ Game::Game()
 {
 	inst = this;
 
-	graphics = new GraphicsGL();
+	graphics = new GraphicsVK();
 	graphics->Init();
 	graphics->BeginGather();
 

@@ -12,7 +12,6 @@ Tasks
 * Add debug drawing (sphere for now)
 
 ### Vulkan
-* Get it up-to-date with the current execution model
 * Add texture support
-* Add vertex and uniform buffering
+* Add uniform buffering
 * Add debug drawing (sphere for now)

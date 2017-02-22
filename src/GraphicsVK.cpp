@@ -37,6 +37,7 @@ void GraphicsVK::Init()
 	CreateRenderPass();
 	CreateFrameBuffers();
 	CreateCommandResources();
+	CreateDescriptorSetLayout();
 
 	LoadResources();
 }
@@ -50,6 +51,8 @@ void GraphicsVK::LoadResources()
 		vk::Pipeline pipeline = CreatePipeline(shaderName);
 		pipelines.push_back(pipeline);
 	}
+	// continue with UBOs. don't use a DEVICE_LOCAL memory, just write to mapped directly
+	// https://vulkan-tutorial.com/Uniform_buffers/Descriptor_layout_and_buffer
 
 	// models
 	{
@@ -129,11 +132,6 @@ void GraphicsVK::LoadResources()
 	}
 }
 
-void GraphicsVK::UnloadResources()
-{
-
-}
-
 void GraphicsVK::BeginGather()
 {
 	// acquire image to render to
@@ -203,7 +201,6 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 
 	// draw out all the indices
 	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
-	//buffers[pipelineInd].drawIndexed(3, 1, 0, 0, 0);
 }
 
 void GraphicsVK::Display()
@@ -256,6 +253,8 @@ void GraphicsVK::CleanUp()
 {
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
+
+	device.destroyDescriptorSetLayout(descriptorLayout);
 
 	for (auto fence : cmdFences)
 		device.destroyFence(fence);
@@ -312,43 +311,6 @@ void GraphicsVK::WindowResized(int width, int height)
 {
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
-
-	// leave out the logical device and instance, but everything else must be recreated
-	for (auto fence : cmdFences)
-		device.destroyFence(fence);
-	device.destroySemaphore(imgAvailable);
-	device.destroySemaphore(renderFinished);
-	device.destroyCommandPool(graphCmdPool);
-	device.destroyCommandPool(transfCmdPool);
-	for (auto pool : graphSecCmdPools)
-		device.destroyCommandPool(pool);
-	graphSecCmdPools.clear();
-
-	for (auto b : swapchainFrameBuffers)
-		device.destroyFramebuffer(b);
-	swapchainFrameBuffers.clear();
-
-	for (auto pipeline : pipelines)
-		device.destroyPipeline(pipeline);
-	pipelines.clear();
-
-	device.destroyPipelineLayout(pipelineLayout);
-	device.destroyRenderPass(renderPass);
-	device.destroyShaderModule(vertShader);
-	device.destroyShaderModule(fragShader);
-
-	for (auto v : imgViews)
-		device.destroyImageView(v);
-	imgViews.clear();
-	device.destroySwapchainKHR(swapchain);
-	//instance.destroySurfaceKHR(surface);
-	UnloadResources();
-
-	CreateSwapchain();
-	CreateRenderPass();
-	CreateFrameBuffers();
-	CreateCommandResources();
-	LoadResources();
 }
 
 // Private Methods
@@ -760,7 +722,7 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	// define and create the pipeline layout
 	vk::PipelineLayoutCreateInfo layoutCreateInfo{
 		{},
-		0, nullptr, // layouts
+		1, &descriptorLayout, // layouts
 		0, nullptr  // push constant ranges
 	};
 	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
@@ -821,6 +783,17 @@ void GraphicsVK::CreateCommandResources()
 	// our 3 fences to synchronize command submission
 	for (size_t i = 0; i < cmdFences.size(); i++)
 		cmdFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
+}
+
+void GraphicsVK::CreateDescriptorSetLayout()
+{
+	vk::DescriptorSetLayoutBinding binding{
+		0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex
+	};
+	vk::DescriptorSetLayoutCreateInfo info{
+		{}, 1, &binding
+	};
+	descriptorLayout = device.createDescriptorSetLayout(info);
 }
 
 vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const

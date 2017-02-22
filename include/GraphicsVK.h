@@ -28,7 +28,6 @@ public:
 	vec3 GetModelCenter(ModelId m) override { return vec3(0, 0, 0); }
 private:
 	void LoadResources();
-	void UnloadResources();
 
 	static GraphicsVK *activeGraphics;
 	void WindowResized(int width, int height);
