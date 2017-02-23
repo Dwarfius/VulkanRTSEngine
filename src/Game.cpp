@@ -11,7 +11,7 @@ Game::Game()
 
 	graphics = new GraphicsVK();
 	graphics->Init();
-	graphics->BeginGather();
+	camera.InvertProj();
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -59,6 +59,7 @@ void Game::Init()
 	go->SetModel(1);
 	go->SetShader(0);
 	go->SetTexture(2);
+	go->SetPos(vec3(0, 2, 0));
 	gameObjects.push_back(go);
 
 	// activating our threads
@@ -72,6 +73,8 @@ void Game::Init()
 	double x, y;
 	glfwGetCursorPos(graphics->GetWindow(), &x, &y);
 	oldMPos = vec2(x, y);
+
+	graphics->BeginGather();
 }
 
 void Game::Update()
@@ -133,8 +136,6 @@ void Game::Render()
 
 	// update the mvp
 	camera.Recalculate();
-	//vec3 p = camera.GetPos();
-	//printf("[Info] x:%f y:%f z:%f\n", p.x, p.y, p.z);
 	
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
@@ -185,7 +186,10 @@ void Game::Work(uint infoInd)
 		{
 		case Stage::Update:
 			for (size_t i = start; i < end; i++)
+			{
+				gameObjects[i]->SetIndex(i);
 				gameObjects[i]->Update(info.deltaTime);
+			}
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::WaitingToSubmit:

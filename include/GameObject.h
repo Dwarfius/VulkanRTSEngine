@@ -34,11 +34,15 @@ public:
 
 	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
 
+	void SetIndex(size_t newInd) { index = newInd; }
+	size_t GetIndex() { return index; }
+
 	// compiler should perform RVO, so please do it
 	// https://web.archive.org/web/20130930101140/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value
 	auto GetUniforms() const { return uniforms; }
 
 private:
+	size_t index;
 	ModelId model;
 	ShaderId shader;
 	TextureId texture;

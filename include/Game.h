@@ -22,7 +22,7 @@ public:
 	Game();
 	~Game() { }
 
-	Game* GetInstance() { return inst; }
+	static Game* GetInstance() { return inst; }
 
 	void Init();
 	void Update();
@@ -30,6 +30,8 @@ public:
 	void CleanUp();
 
 	bool IsRunning() { return running; }
+	size_t GetGameObjectCount() { return gameObjects.size(); }
+	const static uint32_t maxObjects = 4000;
 
 	static Graphics* GetGraphics() { return graphics; }
 private:

@@ -17,7 +17,7 @@ out gl_PerVertex {
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    //gl_Position = matrices.mvp * vec4(inPos, 1.0);
-    gl_Position = vec4(inPos, 1);
+    gl_Position = matrices.mvp * vec4(inPos, 1.0);
+    //gl_Position = vec4(inPos, 1);
     fragColor = vec4(1, 1, 1, 1);
 }

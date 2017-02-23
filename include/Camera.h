@@ -99,6 +99,7 @@ public:
 	void Recalculate();
 	mat4 GetView() const { return viewMatrix; }
 	mat4 GetProj() const { return projMatrix; }
+	void InvertProj() { projMatrix[1][1] *= -1; }
 
 	bool IsOrtho() const { return orthoMode; }
 

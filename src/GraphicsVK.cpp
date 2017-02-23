@@ -38,6 +38,9 @@ void GraphicsVK::Init()
 	CreateFrameBuffers();
 	CreateCommandResources();
 	CreateDescriptorSetLayout();
+	CreateUBO();
+	CreateDescriptorPool();
+	CreateDescriptorSet();
 
 	LoadResources();
 }
@@ -82,10 +85,9 @@ void GraphicsVK::LoadResources()
 		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
 		// now buffer the memory to staging
-		void* data;
-		vkMapMemory(device, stagingMem, 0, size, 0, &data);
+		void* data = device.mapMemory(stagingMem, 0, size, {});
 			memcpy(data, vertices.data(), size);
-		vkUnmapMemory(device, stagingMem);
+		device.unmapMemory(stagingMem);
 
 		// creating vbo device local
 		usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
@@ -106,9 +108,9 @@ void GraphicsVK::LoadResources()
 		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
 		// now buffer the memory to staging
-		vkMapMemory(device, stagingMem, 0, size, 0, &data);
+		data = device.mapMemory(stagingMem, 0, size, {});
 			memcpy(data, indices.data(), size);
-		vkUnmapMemory(device, stagingMem);
+		device.unmapMemory(stagingMem);
 
 		// creating ibo device local
 		usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
@@ -198,8 +200,18 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = go->GetShader();
 	Model m = models[go->GetModel()];
+	size_t index = go->GetIndex();
 
+	// update the uniforms
+	auto uniforms = go->GetUniforms();
+	MatUBO matrices;
+	matrices.model = go->GetModelMatrix();
+	matrices.mvp = cam->Get() * matrices.model;
+	//matrices.mvp[1][1] *= -1; // have to flip cause GLM uses OpenGL coords, not Vulkan
+	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
+	
 	// draw out all the indices
+	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
 }
 
@@ -254,6 +266,9 @@ void GraphicsVK::CleanUp()
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
 
+	device.destroyDescriptorPool(descriptorPool);
+
+	DestroyUBO();
 	device.destroyDescriptorSetLayout(descriptorLayout);
 
 	for (auto fence : cmdFences)
@@ -476,6 +491,9 @@ void GraphicsVK::CreateDevice()
 	queues.computeQueue = device.getQueue(queues.computeFamIndex, 0);
 	queues.transferQueue = device.getQueue(queues.transferFamIndex, 0);
 	queues.presentQueue = device.getQueue(queues.presentFamIndex, 0);
+
+	// we need the alignment for our uniform buffers
+	alignment = physDevice.getProperties().limits.minUniformBufferOffsetAlignment;
 }
 
 void GraphicsVK::CreateSurface()
@@ -691,7 +709,7 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	vk::PipelineRasterizationStateCreateInfo rasterizerCreateInfo;
 	// most of the default stuff suits us, just need small adjustements
 	rasterizerCreateInfo.cullMode = vk::CullModeFlagBits::eBack;
-	rasterizerCreateInfo.frontFace = vk::FrontFace::eClockwise;
+	rasterizerCreateInfo.frontFace = vk::FrontFace::eCounterClockwise;
 
 	// multisampling...
 	vk::PipelineMultisampleStateCreateInfo multisampleCreateInfo;
@@ -794,6 +812,70 @@ void GraphicsVK::CreateDescriptorSetLayout()
 		{}, 1, &binding
 	};
 	descriptorLayout = device.createDescriptorSetLayout(info);
+}
+
+void GraphicsVK::CreateDescriptorPool()
+{
+	// at the moment only support uniform buffers, but should add img views as well
+	vk::DescriptorPoolSize poolSize{
+		vk::DescriptorType::eUniformBuffer, Game::maxObjects
+	};
+	vk::DescriptorPoolCreateInfo info{
+		{}, Game::maxObjects, 1, &poolSize
+	};
+	descriptorPool = device.createDescriptorPool(info);
+}
+
+void GraphicsVK::CreateDescriptorSet()
+{
+	// every object will have it's own descriptor set
+	array<vk::DescriptorSetLayout, Game::maxObjects> layouts;
+	layouts.fill(descriptorLayout);
+
+	vk::DescriptorSetAllocateInfo info{
+		descriptorPool, Game::maxObjects, layouts.data()
+	};
+	vector<vk::DescriptorSet> sets = device.allocateDescriptorSets(info);
+	memcpy(descriptorSets.data(), sets.data(), sets.size() * sizeof(vk::DescriptorSet));
+
+	// now we have to update the descriptor's values location
+	array<vk::DescriptorBufferInfo, Game::maxObjects> bufferInfos;
+	array<vk::WriteDescriptorSet, Game::maxObjects> writeTargets;
+	
+	for(size_t i=0; i<descriptorSets.size(); i++)
+	{
+		// make descriptor point at buffer
+		bufferInfos[i] = {
+			ubo, GetAlignedOffset(i, sizeof(MatUBO)), sizeof(MatUBO)
+		};
+		// update descriptor with buffer binding
+		writeTargets[i] = {
+			descriptorSets[i], 0, 0, 1, vk::DescriptorType::eUniformBuffer, 
+			nullptr, &bufferInfos[i], nullptr
+		};
+	}
+	device.updateDescriptorSets(writeTargets, nullptr);
+}
+
+void GraphicsVK::CreateUBO()
+{
+	uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
+
+	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});
+}
+
+void GraphicsVK::DestroyUBO()
+{
+	if (mappedUboMem)
+	{
+		device.unmapMemory(uboMem);
+		mappedUboMem = nullptr;
+		uboSize = 0;
+
+		device.destroyBuffer(ubo);
+		device.freeMemory(uboMem);
+	}
 }
 
 vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const

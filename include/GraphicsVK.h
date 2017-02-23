@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include "Graphics.h"
 #include "Common.h"
+#include "Game.h"
 
 class GraphicsVK : public Graphics
 {
@@ -105,6 +106,23 @@ private:
 	};
 	vk::DescriptorSetLayout descriptorLayout;
 	void CreateDescriptorSetLayout();
+	vk::DescriptorPool descriptorPool;
+	array<vk::DescriptorSet, Game::maxObjects> descriptorSets;
+	void CreateDescriptorPool();
+	void CreateDescriptorSet();
+	size_t uboSize = 0;
+	void *mappedUboMem = nullptr;
+	vk::Buffer ubo;
+	vk::DeviceMemory uboMem;
+	void CreateUBO();
+	void DestroyUBO();
+	size_t alignment = 0;
+	size_t GetAlignedOffset(size_t ind, size_t step)
+	{
+		size_t actualStep = ceil(step * 1.f / alignment) * alignment;
+		size_t currSize = ind * actualStep;
+		return currSize;
+	}
 
 	// Renderable resources
 	vk::VertexInputBindingDescription GetBindingDescription() const;
