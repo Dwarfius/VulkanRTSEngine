@@ -92,8 +92,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 
 unsigned char* Graphics::LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels)
 {
-	unsigned char* pixels = stbi_load(name.c_str(), x, y, channels, desiredChannels);
-	return pixels;
+	return stbi_load(name.c_str(), x, y, channels, desiredChannels);
 }
 
 void Graphics::FreeTexture(void *data)

@@ -42,6 +42,7 @@ private:
 	const static vector<const char *> requiredExtensions;
 	vk::Device device;
 	vk::PhysicalDevice physDevice;
+	vk::PhysicalDeviceLimits limits;
 	void CreateDevice();
 	bool IsSuitable(const vk::PhysicalDevice &device);
 
@@ -49,8 +50,7 @@ private:
 	struct QueuesInfo {
 		uint32_t graphicsFamIndex, computeFamIndex, transferFamIndex, presentFamIndex;
 		vk::Queue graphicsQueue, computeQueue, transferQueue, presentQueue;
-	};
-	QueuesInfo queues;
+	} queues;
 
 	// Window surface
 	vk::SurfaceKHR surface;
@@ -90,7 +90,8 @@ private:
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore imgAvailable, renderFinished;
 	array<vk::Fence, 3> cmdFences;
-	vk::CommandPool graphCmdPool, transfCmdPool;
+	vk::CommandPool graphCmdPool; 
+	// vk::CommandPool transfCmdPool; for now we only use the generic queue
 	vector<vk::CommandPool> graphSecCmdPools;
 	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer per swapchain fbo
 	// it's a little strange, but essentially per each pipeline there's a secondary command buffer
@@ -104,10 +105,9 @@ private:
 		mat4 model;
 		mat4 mvp;
 	};
-	vk::DescriptorSetLayout descriptorLayout;
-	void CreateDescriptorSetLayout();
+	vk::DescriptorSetLayout uboLayout, samplerLayout;
 	vk::DescriptorPool descriptorPool;
-	array<vk::DescriptorSet, Game::maxObjects> descriptorSets;
+	vector<vk::DescriptorSet> uboSets, samplerSets;
 	void CreateDescriptorPool();
 	void CreateDescriptorSet();
 	size_t uboSize = 0;
@@ -116,13 +116,18 @@ private:
 	vk::DeviceMemory uboMem;
 	void CreateUBO();
 	void DestroyUBO();
-	size_t alignment = 0;
-	size_t GetAlignedOffset(size_t ind, size_t step)
-	{
-		size_t actualStep = ceil(step * 1.f / alignment) * alignment;
-		size_t currSize = ind * actualStep;
-		return currSize;
-	}
+	size_t GetAlignedOffset(size_t ind, size_t step) { return ind * ceil(step * 1.f / limits.minUniformBufferOffsetAlignment) * limits.minUniformBufferOffsetAlignment; }
+
+	// Textures
+	vk::Sampler sampler;
+	vector<vk::ImageView> textureViews;
+	vector<vk::Image> textures;
+	vector<vk::DeviceMemory> textureMems;
+	void CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem);
+	void TransitionLayout(vk::Image img, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void CopyImage(vk::Buffer srcBuffer, vk::Image dstImage, uint32_t width, uint32_t height);
+	vk::ImageView CreateImageView(vk::Image img, vk::Format format);
+	void CreateSampler();
 
 	// Renderable resources
 	vk::VertexInputBindingDescription GetBindingDescription() const;
@@ -135,6 +140,10 @@ private:
 	void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Buffer &buff, vk::DeviceMemory &mem);
 	void CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props);
+
+	// util buffer func
+	vk::CommandBuffer CreateOneTimeCmdBuffer();
+	void EndOneTimeCmdBuffer(vk::CommandBuffer cmdBuff);
 
 	// Validation Layers related
 	// Vulkan C++ binding doesn't have complete extension linking yet, so have to do it manually

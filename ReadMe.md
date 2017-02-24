@@ -13,5 +13,5 @@ Tasks
 
 ### Vulkan
 * Add texture support
-* Add uniform buffering
+* Figure out why positions are different from OpenGL
 * Add debug drawing (sphere for now)

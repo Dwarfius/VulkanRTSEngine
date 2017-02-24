@@ -37,12 +37,11 @@ void GraphicsVK::Init()
 	CreateRenderPass();
 	CreateFrameBuffers();
 	CreateCommandResources();
-	CreateDescriptorSetLayout();
 	CreateUBO();
 	CreateDescriptorPool();
-	CreateDescriptorSet();
-
 	LoadResources();
+	CreateSampler();
+	CreateDescriptorSet();
 }
 
 void GraphicsVK::LoadResources()
@@ -127,10 +126,54 @@ void GraphicsVK::LoadResources()
 
 	// textures
 	{
+		// thank you Sascha Williams
+		// https://github.com/SaschaWillems/Vulkan/blob/master/texture/texture.cpp
+		// again we need a staging buffer
+		vk::Buffer stagingBuff;
+		vk::DeviceMemory stagingMem;
+		vk::DeviceSize stagingSize = 8096 * 8096 * 4; // 8k x 8k or RGBA32
+		CreateBuffer(stagingSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuff, stagingMem);
+
+		// start processing the textures
+		textures.reserve(texturesToLoad.size());
+		textureMems.reserve(texturesToLoad.size());
 		for (string textureName : texturesToLoad)
 		{
-			// ...
+			// load up the texture data
+			int width, height, channels;
+			unsigned char *pixels = LoadTexture("assets/textures/" + textureName, &width, &height, &channels, STBI_rgb_alpha);
+			vk::DeviceSize texSize = height * width * channels;
+
+			// copy it over to buffer
+			uint8_t *data = (uint8_t*)device.mapMemory(stagingMem, 0, stagingSize, {});
+				memcpy(data, pixels, (size_t)texSize);
+			device.unmapMemory(stagingMem);
+
+			// create the actual texture
+			vk::Image text;
+			vk::DeviceMemory textMem;
+			CreateImage(width, height, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eDeviceLocal, text, textMem);
+
+			// in order to perform the copy the staging buffer has to be in TransferSrcOptimal layout
+			// same for target, but TransferDstOptimal
+			TransitionLayout(text, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::ePreinitialized, vk::ImageLayout::eTransferDstOptimal);
+			// now we can copy
+			CopyImage(stagingBuff, text, width, height);
+			// in order to use it it has to be transitioned in to ShaderReadOnlyOptimal
+			TransitionLayout(text, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+
+			// we gud, texture ready
+			textures.push_back(text);
+			textureMems.push_back(textMem);
+			FreeTexture(pixels);
+
+			// create a textureView for it
+			vk::ImageView view = CreateImageView(text, vk::Format::eR8G8B8A8Unorm);
+			textureViews.push_back(view);
 		}
+
+		device.destroyBuffer(stagingBuff);
+		device.freeMemory(stagingMem);
 	}
 }
 
@@ -195,6 +238,12 @@ void GraphicsVK::BeginGather()
 
 void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
 {
+	vec3 scale = go->GetScale();
+	float maxScale = max({ scale.x, scale.y, scale.z });
+	float scaledRadius = models[go->GetModel()].sphereRadius * maxScale;
+	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
+		return;
+
 	// get the vector of secondary buffers for thread
 	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId][currImgIndex];
 	// we need to find the corresponding secondary buffer
@@ -207,11 +256,14 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	MatUBO matrices;
 	matrices.model = go->GetModelMatrix();
 	matrices.mvp = cam->Get() * matrices.model;
-	//matrices.mvp[1][1] *= -1; // have to flip cause GLM uses OpenGL coords, not Vulkan
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
-	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+	array<vk::DescriptorSet, 2> setsToBind{
+		uboSets[index], samplerSets[go->GetTexture()]
+	};
+	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
+		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
 	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
 }
 
@@ -266,10 +318,23 @@ void GraphicsVK::CleanUp()
 	// gonna make sure all the tasks are finished before we can start destroying resources
 	device.waitIdle();
 
+	device.destroySampler(sampler);
+
+	for (auto v : textureViews)
+		device.destroyImageView(v);
+	textureViews.clear();
+	for (auto t : textures)
+		device.destroyImage(t);
+	textures.clear();
+	for (auto m : textureMems)
+		device.freeMemory(m);
+	textureMems.clear();
+
 	device.destroyDescriptorPool(descriptorPool);
 
 	DestroyUBO();
-	device.destroyDescriptorSetLayout(descriptorLayout);
+	device.destroyDescriptorSetLayout(uboLayout);
+	device.destroyDescriptorSetLayout(samplerLayout);
 
 	for (auto fence : cmdFences)
 		device.destroyFence(fence);
@@ -281,7 +346,7 @@ void GraphicsVK::CleanUp()
 	device.destroySemaphore(imgAvailable);
 	device.destroySemaphore(renderFinished);
 	device.destroyCommandPool(graphCmdPool);
-	device.destroyCommandPool(transfCmdPool);
+	//device.destroyCommandPool(transfCmdPool);
 	for (auto pool : graphSecCmdPools)
 		device.destroyCommandPool(pool);
 	graphSecCmdPools.clear();
@@ -488,12 +553,66 @@ void GraphicsVK::CreateDevice()
 	// queues are auto-created on device creation, so just have to get their handles
 	// shared queues will deal with parallelization with device events
 	queues.graphicsQueue = device.getQueue(queues.graphicsFamIndex, 0);
-	queues.computeQueue = device.getQueue(queues.computeFamIndex, 0);
-	queues.transferQueue = device.getQueue(queues.transferFamIndex, 0);
+	//queues.computeQueue = device.getQueue(queues.computeFamIndex, 0);
+	//queues.transferQueue = device.getQueue(queues.transferFamIndex, 0);
 	queues.presentQueue = device.getQueue(queues.presentFamIndex, 0);
 
 	// we need the alignment for our uniform buffers
-	alignment = physDevice.getProperties().limits.minUniformBufferOffsetAlignment;
+	limits = physDevice.getProperties().limits;
+}
+
+// extend this later to use proper checking of caps
+bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
+{
+	bool isSuiting = true;
+
+	vk::PhysicalDeviceProperties props = device.getProperties();
+	isSuiting &= props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu || props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
+	if (!isSuiting)
+		return isSuiting;
+
+	//vk::PhysicalDeviceFeatures feats = device.getFeatures();
+
+	// we need graphics, compute, transfer and present (can be same queue family)
+	vector<vk::QueueFamilyProperties> queueFamProps = device.getQueueFamilyProperties();
+	bool foundQueues[4] = { false, false, false, false };
+	uint32_t i = 0;
+	for (auto prop : queueFamProps)
+	{
+		if (prop.queueFlags & vk::QueueFlagBits::eGraphics)
+			foundQueues[0] = true;
+		if (prop.queueFlags & vk::QueueFlagBits::eCompute)
+			foundQueues[1] = true;
+		if (prop.queueFlags & vk::QueueFlagBits::eTransfer)
+			foundQueues[2] = true;
+		if (device.getSurfaceSupportKHR(i, surface))
+			foundQueues[3] = true;
+		i++;
+	}
+	for (int i = 0; i < 4; i++)
+		isSuiting &= foundQueues[i];
+	if (!isSuiting)
+		return isSuiting;
+
+	// we also need the requested extensions
+	set<string> reqExts(requiredExtensions.cbegin(), requiredExtensions.cend()); // has to be string for the == to work
+	vector<vk::ExtensionProperties> supportedExts = device.enumerateDeviceExtensionProperties();
+	for (auto ext : supportedExts)
+		reqExts.erase(ext.extensionName);
+	isSuiting &= reqExts.empty();
+	if (!isSuiting)
+		return isSuiting;
+
+	// we found a proper device, now just need to make sure it has proper swapchain caps
+	swapInfo.surfCaps = device.getSurfaceCapabilitiesKHR(surface);
+	swapInfo.suppFormats = device.getSurfaceFormatsKHR(surface);
+	swapInfo.presentModes = device.getSurfacePresentModesKHR(surface);
+
+	// though it's strange to have swapchain support but no proper formats/present modes
+	// have to check just to be safe - it's not stated in the api spec that it's always > 0
+	isSuiting &= !swapInfo.suppFormats.empty() && !swapInfo.presentModes.empty();
+
+	return isSuiting;
 }
 
 void GraphicsVK::CreateSurface()
@@ -601,16 +720,7 @@ void GraphicsVK::CreateSwapchain()
 
 	// but in order to use them, we need imageviews
 	for(int i=0; i<images.size(); i++)
-	{
-		vk::ImageViewCreateInfo viewCreateInfo;
-		viewCreateInfo.viewType = vk::ImageViewType::e2D;
-		viewCreateInfo.image = images[i];
-		viewCreateInfo.format = swapInfo.imgFormat;
-		viewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		viewCreateInfo.subresourceRange.levelCount = 1; // no mipmaps
-		viewCreateInfo.subresourceRange.layerCount = 1; // no layers
-		imgViews.push_back(device.createImageView(viewCreateInfo));
-	}
+		imgViews.push_back(CreateImageView(images[i], swapInfo.imgFormat));
 }
 
 void GraphicsVK::CreateRenderPass()
@@ -738,9 +848,12 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	};
 
 	// define and create the pipeline layout
+	vector<vk::DescriptorSetLayout> layouts{
+		uboLayout, samplerLayout
+	};
 	vk::PipelineLayoutCreateInfo layoutCreateInfo{
 		{},
-		1, &descriptorLayout, // layouts
+		(uint32_t)layouts.size(), layouts.data(), // layouts
 		0, nullptr  // push constant ranges
 	};
 	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
@@ -780,7 +893,7 @@ void GraphicsVK::CreateCommandResources()
 {
 	// before we can create command buffers, we need a pool to allocate from
 	graphCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex });
-	transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
+	//transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
 	// allocating a cmdBuffer per swapchain FBO
 	cmdBuffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
 
@@ -803,56 +916,81 @@ void GraphicsVK::CreateCommandResources()
 		cmdFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
 }
 
-void GraphicsVK::CreateDescriptorSetLayout()
-{
-	vk::DescriptorSetLayoutBinding binding{
-		0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex
-	};
-	vk::DescriptorSetLayoutCreateInfo info{
-		{}, 1, &binding
-	};
-	descriptorLayout = device.createDescriptorSetLayout(info);
-}
-
 void GraphicsVK::CreateDescriptorPool()
 {
 	// at the moment only support uniform buffers, but should add img views as well
-	vk::DescriptorPoolSize poolSize{
-		vk::DescriptorType::eUniformBuffer, Game::maxObjects
+	array<vk::DescriptorPoolSize, 2> poolSizes{
+		vk::DescriptorPoolSize { vk::DescriptorType::eUniformBuffer, Game::maxObjects },
+		vk::DescriptorPoolSize { vk::DescriptorType::eCombinedImageSampler, (uint32_t)texturesToLoad.size() }
 	};
-	vk::DescriptorPoolCreateInfo info{
-		{}, Game::maxObjects, 1, &poolSize
+	vk::DescriptorPoolCreateInfo poolInfo{
+		{}, Game::maxObjects + (uint32_t)texturesToLoad.size(), (uint32_t)poolSizes.size(), poolSizes.data()
 	};
-	descriptorPool = device.createDescriptorPool(info);
+	descriptorPool = device.createDescriptorPool(poolInfo);
+
+	// first, the matrices ubo layout
+	vector<vk::DescriptorSetLayoutBinding> bindings{
+		vk::DescriptorSetLayoutBinding{ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex }
+	};
+	uboLayout = device.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
+
+	// then the samplers
+	bindings = {
+		vk::DescriptorSetLayoutBinding{ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment }
+	};
+	samplerLayout = device.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
 }
 
 void GraphicsVK::CreateDescriptorSet()
 {
 	// every object will have it's own descriptor set
-	array<vk::DescriptorSetLayout, Game::maxObjects> layouts;
-	layouts.fill(descriptorLayout);
+	array<vk::DescriptorSetLayout, Game::maxObjects> uboLayouts;
+	uboLayouts.fill(uboLayout);
 
 	vk::DescriptorSetAllocateInfo info{
-		descriptorPool, Game::maxObjects, layouts.data()
+		descriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
 	};
-	vector<vk::DescriptorSet> sets = device.allocateDescriptorSets(info);
-	memcpy(descriptorSets.data(), sets.data(), sets.size() * sizeof(vk::DescriptorSet));
+	uboSets = device.allocateDescriptorSets(info);
 
 	// now we have to update the descriptor's values location
-	array<vk::DescriptorBufferInfo, Game::maxObjects> bufferInfos;
-	array<vk::WriteDescriptorSet, Game::maxObjects> writeTargets;
-	
-	for(size_t i=0; i<descriptorSets.size(); i++)
+	vector<vk::DescriptorBufferInfo> bufferInfos;
+	bufferInfos.reserve(uboSets.size());
+	vector<vk::WriteDescriptorSet> writeTargets;
+	writeTargets.reserve(uboSets.size());
+	for(size_t i=0; i<uboSets.size(); i++)
 	{
 		// make descriptor point at buffer
-		bufferInfos[i] = {
+		bufferInfos.push_back({
 			ubo, GetAlignedOffset(i, sizeof(MatUBO)), sizeof(MatUBO)
-		};
+		});
 		// update descriptor with buffer binding
-		writeTargets[i] = {
-			descriptorSets[i], 0, 0, 1, vk::DescriptorType::eUniformBuffer, 
+		writeTargets.push_back({
+			uboSets[i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
 			nullptr, &bufferInfos[i], nullptr
-		};
+		});
+	}
+	device.updateDescriptorSets(writeTargets, nullptr);
+
+	// now the samplers
+	vector<vk::DescriptorSetLayout> samplerLayouts(texturesToLoad.size(), samplerLayout);
+	info = {
+		descriptorPool, (uint32_t)samplerLayouts.size(), samplerLayouts.data()
+	};
+	samplerSets = device.allocateDescriptorSets(info);
+
+	// samplers allocated, need to update them
+	vector<vk::DescriptorImageInfo> imageInfos;
+	imageInfos.reserve(texturesToLoad.size());
+	writeTargets.clear();
+	for (uint32_t i = 0; i < texturesToLoad.size(); i++)
+	{
+		imageInfos.push_back({
+			sampler, textureViews[i], vk::ImageLayout::eShaderReadOnlyOptimal
+		});
+		writeTargets.push_back({
+			samplerSets[i], 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
+			&imageInfos[i], nullptr, nullptr
+		});
 	}
 	device.updateDescriptorSets(writeTargets, nullptr);
 }
@@ -876,6 +1014,126 @@ void GraphicsVK::DestroyUBO()
 		device.destroyBuffer(ubo);
 		device.freeMemory(uboMem);
 	}
+}
+
+void GraphicsVK::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem)
+{
+	vk::ImageCreateInfo imgInfo{
+		{}, vk::ImageType::e2D, format, vk::Extent3D {width, height, 1},
+		1, 1, vk::SampleCountFlagBits::e1, tiling, usage, 
+		vk::SharingMode::eExclusive, 1, nullptr, 
+		vk::ImageLayout::ePreinitialized
+	};
+	img = device.createImage(imgInfo);
+	vk::MemoryRequirements reqs = device.getImageMemoryRequirements(img);
+	vk::MemoryAllocateInfo memInfo{
+		reqs.size, FindMemoryType(reqs.memoryTypeBits, memProps)
+	};
+	mem = device.allocateMemory(memInfo);
+	device.bindImageMemory(img, mem, 0);
+}
+
+void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+{
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
+	
+	vk::ImageMemoryBarrier barrier;
+	// transfer from - to
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	// we don't transfer ownership of image
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	// the image and it's subresource to perform the transition on
+	barrier.image = img;
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	// now, depending on layout transitions we need to change access masks
+	if (oldLayout == vk::ImageLayout::ePreinitialized && newLayout == vk::ImageLayout::eTransferSrcOptimal)
+	{
+		barrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+	}
+	else if (oldLayout == vk::ImageLayout::ePreinitialized && newLayout == vk::ImageLayout::eTransferDstOptimal)
+	{
+		barrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+	}
+	else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+	{
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+	}
+	else if (oldLayout == vk::ImageLayout::eTransferSrcOptimal && newLayout == vk::ImageLayout::ePreinitialized)
+	{
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eHostWrite;
+	}
+	else
+		printf("[Error] Transition image layout unsupported: %d -> %d\n", oldLayout, newLayout);
+
+	cmdBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
+		{},
+		0, nullptr,
+		0, nullptr,
+		1, &barrier);
+
+	EndOneTimeCmdBuffer(cmdBuffer);
+}
+
+// images must already be in Transfer Src/Dst Optimal layout
+void GraphicsVK::CopyImage(vk::Buffer srcBuff, vk::Image dstImage, uint32_t width, uint32_t height)
+{
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
+	
+	vk::ImageSubresourceLayers layers{
+		vk::ImageAspectFlagBits::eColor, 0, 0, 1
+	};
+
+	vk::BufferImageCopy region{
+		0, 0, 0, // no offset, tightly packed rows and columns
+		layers, {}, { width, height, 1}
+	};
+	cmdBuffer.copyBufferToImage(srcBuff, dstImage, vk::ImageLayout::eTransferDstOptimal, 
+		1, &region);
+
+	EndOneTimeCmdBuffer(cmdBuffer);
+}
+
+vk::ImageView GraphicsVK::CreateImageView(vk::Image img, vk::Format format)
+{
+	vk::ImageSubresourceRange range{
+		vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
+	};
+
+	vk::ImageViewCreateInfo info{
+		{}, img, vk::ImageViewType::e2D, format, vk::ComponentMapping(), range
+	};
+	return device.createImageView(info);
+}
+
+void GraphicsVK::CreateSampler()
+{
+	vk::SamplerCreateInfo info{
+		{},
+		vk::Filter::eLinear, vk::Filter::eLinear, // mag, min
+		vk::SamplerMipmapMode::eLinear, // sampler mode
+		vk::SamplerAddressMode::eRepeat, // u coordinate
+		vk::SamplerAddressMode::eRepeat, // v
+		vk::SamplerAddressMode::eRepeat, // w
+		0, // lod bias
+		true, 16, // anisotrophy
+		false, vk::CompareOp::eNever, // whether compare the value when sampling it
+		0, 0, // min max lod levels
+		vk::BorderColor::eIntOpaqueBlack, // color of the border
+		false // using normalized coordinates
+	};
+	sampler = device.createSampler(info);
 }
 
 vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const
@@ -907,7 +1165,7 @@ void GraphicsVK::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, v
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
 	bufferInfo.usage = usage;
-	bufferInfo.sharingMode = vk::SharingMode::eConcurrent;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 	uint32_t famIndices[2] = { queues.graphicsFamIndex, queues.transferFamIndex };
 	bufferInfo.queueFamilyIndexCount = 2;
 	bufferInfo.pQueueFamilyIndices = famIndices;
@@ -927,84 +1185,12 @@ void GraphicsVK::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, v
 void GraphicsVK::CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size)
 {
 	// to copy it over a command buffer is needed
-	vk::CommandBufferAllocateInfo info{
-		transfCmdPool, vk::CommandBufferLevel::ePrimary, 1
-	};
-	vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info)[0];
-
-	vk::CommandBufferBeginInfo beginInfo{
-		vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr
-	};
-	cmdBuffer.begin(beginInfo);
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
 	vk::BufferCopy region{
 		0, 0, size
 	};
 	cmdBuffer.copyBuffer(from, to, 1, &region);
-	cmdBuffer.end();
-
-	// submit the cmd buffer to transfer queue
-	vk::SubmitInfo submitInfo;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuffer;
-	queues.transferQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
-	// waiting until it finishes
-	queues.transferQueue.waitIdle();
-	// cleanup
-	device.freeCommandBuffers(transfCmdPool, 1, &cmdBuffer);
-}
-
-// extend this later to use proper checking of caps
-bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
-{
-	bool isSuiting = true;
-
-	vk::PhysicalDeviceProperties props = device.getProperties();
-	isSuiting &= props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu || props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
-	if (!isSuiting)
-		return isSuiting;
-
-	//vk::PhysicalDeviceFeatures feats = device.getFeatures();
-
-	// we need graphics, compute, transfer and present (can be same queue family)
-	vector<vk::QueueFamilyProperties> queueFamProps = device.getQueueFamilyProperties();
-	bool foundQueues[4] = { false, false, false, false };
-	uint32_t i = 0;
-	for (auto prop : queueFamProps)
-	{
-		if (prop.queueFlags & vk::QueueFlagBits::eGraphics)
-			foundQueues[0] = true;
-		if (prop.queueFlags & vk::QueueFlagBits::eCompute)
-			foundQueues[1] = true;
-		if (prop.queueFlags & vk::QueueFlagBits::eTransfer)
-			foundQueues[2] = true;
-		if (device.getSurfaceSupportKHR(i, surface))
-			foundQueues[3] = true;
-		i++;
-	}
-	for (int i = 0; i < 4; i++)
-		isSuiting &= foundQueues[i];
-	if (!isSuiting)
-		return isSuiting;
-
-	// we also need the requested extensions
-	set<string> reqExts(requiredExtensions.cbegin(), requiredExtensions.cend()); // has to be string for the == to work
-	vector<vk::ExtensionProperties> supportedExts = device.enumerateDeviceExtensionProperties();
-	for (auto ext : supportedExts)
-		reqExts.erase(ext.extensionName);
-	isSuiting &= reqExts.empty();
-	if (!isSuiting)
-		return isSuiting;
-
-	// we found a proper device, now just need to make sure it has proper swapchain caps
-	swapInfo.surfCaps = device.getSurfaceCapabilitiesKHR(surface);
-	swapInfo.suppFormats = device.getSurfaceFormatsKHR(surface);
-	swapInfo.presentModes = device.getSurfacePresentModesKHR(surface);
-
-	// though it's strange to have swapchain support but no proper formats/present modes
-	// have to check just to be safe - it's not stated in the api spec that it's always > 0
-	isSuiting &= !swapInfo.suppFormats.empty() && !swapInfo.presentModes.empty();
-
-	return isSuiting;
+	EndOneTimeCmdBuffer(cmdBuffer);
 }
 
 uint32_t GraphicsVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props)
@@ -1016,6 +1202,33 @@ uint32_t GraphicsVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
 			return i;
 	}
 	return -1;
+}
+
+vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer()
+{
+	vk::CommandBufferAllocateInfo info{
+		graphCmdPool, vk::CommandBufferLevel::ePrimary, 1
+	};
+	vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info)[0];
+
+	vk::CommandBufferBeginInfo beginInfo{
+		vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr
+	};
+	cmdBuffer.begin(beginInfo);
+	return cmdBuffer;
+}
+
+void GraphicsVK::EndOneTimeCmdBuffer(vk::CommandBuffer cmdBuff)
+{
+	cmdBuff.end();
+	
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuff;
+	queues.graphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
+	queues.graphicsQueue.waitIdle();
+	
+	device.freeCommandBuffers(graphCmdPool, 1, &cmdBuff);
 }
 
 bool GraphicsVK::LayersAvailable(const vector<const char*> &validationLayers)
