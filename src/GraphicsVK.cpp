@@ -48,6 +48,18 @@ void GraphicsVK::LoadResources()
 {
 	// same order as GraphicsGL
 	// shaders
+
+	// define and create the only pipeline layout we use
+	vector<vk::DescriptorSetLayout> layouts{
+		uboLayout, samplerLayout
+	};
+	vk::PipelineLayoutCreateInfo layoutCreateInfo{
+		{},
+		(uint32_t)layouts.size(), layouts.data(), // layouts
+		0, nullptr  // push constant ranges
+	};
+	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
+
 	for (string shaderName : shadersToLoad)
 	{
 		vk::Pipeline pipeline = CreatePipeline(shaderName);
@@ -846,17 +858,6 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 		{},
 		(uint32_t)dynStates.size(), dynStates.data()
 	};
-
-	// define and create the pipeline layout
-	vector<vk::DescriptorSetLayout> layouts{
-		uboLayout, samplerLayout
-	};
-	vk::PipelineLayoutCreateInfo layoutCreateInfo{
-		{},
-		(uint32_t)layouts.size(), layouts.data(), // layouts
-		0, nullptr  // push constant ranges
-	};
-	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
 
 	// we have the layour and the renderpass - all that's needed for an actual pipeline
 	vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
