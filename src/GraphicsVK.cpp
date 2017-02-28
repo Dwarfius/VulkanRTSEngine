@@ -154,7 +154,7 @@ void GraphicsVK::LoadResources()
 			// load up the texture data
 			int width, height, channels;
 			unsigned char *pixels = LoadTexture("assets/textures/" + textureName, &width, &height, &channels, STBI_rgb_alpha);
-			vk::DeviceSize texSize = height * width * channels;
+			vk::DeviceSize texSize = height * width * 4;
 
 			// copy it over to buffer
 			uint8_t *data = (uint8_t*)device.mapMemory(stagingMem, 0, stagingSize, {});
