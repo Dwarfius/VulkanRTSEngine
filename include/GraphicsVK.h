@@ -100,6 +100,16 @@ private:
 	vector<vk::CommandBuffer> secCmdBuffers[maxThreads][3]; // for recording 
 	void CreateCommandResources();
 
+	// Depth texture
+	vk::Format depthFormat;
+	vk::Image depthImg;
+	vk::ImageView depthImgView;
+	vk::DeviceMemory depthImgMem;
+	void CreateDepthTexture();
+	const vector<vk::Format> depthCands = { vk::Format::eD24UnormS8Uint, vk::Format::eD32SfloatS8Uint, vk::Format::eD32Sfloat };
+	vk::Format FindSupportedFormat(vk::ImageTiling tiling, vk::FormatFeatureFlags feats);
+	bool HasStencilComponent(vk::Format f) { return f == vk::Format::eD32SfloatS8Uint || f == vk::Format::eD24UnormS8Uint; }
+
 	// Descriptor Sets
 	struct MatUBO {
 		mat4 model;
@@ -110,7 +120,7 @@ private:
 	vector<vk::DescriptorSet> uboSets, samplerSets;
 	void CreateDescriptorPool();
 	void CreateDescriptorSet();
-	size_t uboSize = 0;
+
 	void *mappedUboMem = nullptr;
 	vk::Buffer ubo;
 	vk::DeviceMemory uboMem;
@@ -126,7 +136,7 @@ private:
 	void CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem);
 	void TransitionLayout(vk::Image img, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 	void CopyImage(vk::Buffer srcBuffer, vk::Image dstImage, uint32_t width, uint32_t height);
-	vk::ImageView CreateImageView(vk::Image img, vk::Format format);
+	vk::ImageView CreateImageView(vk::Image img, vk::Format format, vk::ImageAspectFlags aspect);
 	void CreateSampler();
 
 	// Renderable resources

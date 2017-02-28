@@ -35,6 +35,7 @@ void GraphicsVK::Init()
 	CreateDevice();
 	CreateSwapchain();
 	CreateRenderPass();
+	CreateDepthTexture();
 	CreateFrameBuffers();
 	CreateCommandResources();
 	CreateUBO();
@@ -180,7 +181,7 @@ void GraphicsVK::LoadResources()
 			FreeTexture(pixels);
 
 			// create a textureView for it
-			vk::ImageView view = CreateImageView(text, vk::Format::eR8G8B8A8Unorm);
+			vk::ImageView view = CreateImageView(text, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 			textureViews.push_back(view);
 		}
 
@@ -198,10 +199,11 @@ void GraphicsVK::BeginGather()
 	device.waitForFences(1, &cmdFences[currImgIndex], false, ~0ull);
 	device.resetFences(1, &cmdFences[currImgIndex]);
 
-	// Vulkan.hpp is still a bit of a donkey so have to manually initialize with my values through copy
-	float clearColor[] = { 0, 0, 0, 1 };
-	vk::ClearValue clearVal;
-	memcpy(&clearVal.color.float32, clearColor, sizeof(clearVal.color.float32));
+	// color and depth clear vals
+	array<vk::ClearValue, 2> clearVals;
+	array<uint32_t, 4> clearCol = { 0, 0, 0, 1 };
+	clearVals[0] = vk::ClearValue(vk::ClearColorValue(clearCol));
+	clearVals[1] = vk::ClearValue({ 1, 0 });
 
 	// begin recording to command buffer
 	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
@@ -212,7 +214,7 @@ void GraphicsVK::BeginGather()
 		renderPass,
 		swapchainFrameBuffers[currImgIndex],
 		{ { 0, 0 }, swapInfo.swapExtent },
-		1, &clearVal
+		(uint32_t)clearVals.size(), clearVals.data()
 	};
 	// has to be vk::SubpassContents::eSecondaryCommandBuffers
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
@@ -347,6 +349,10 @@ void GraphicsVK::CleanUp()
 	DestroyUBO();
 	device.destroyDescriptorSetLayout(uboLayout);
 	device.destroyDescriptorSetLayout(samplerLayout);
+
+	device.destroyImageView(depthImgView);
+	device.destroyImage(depthImg);
+	device.freeMemory(depthImgMem);
 
 	for (auto fence : cmdFences)
 		device.destroyFence(fence);
@@ -571,6 +577,16 @@ void GraphicsVK::CreateDevice()
 
 	// we need the alignment for our uniform buffers
 	limits = physDevice.getProperties().limits;
+
+	// now that we have the device, we can find what depth format we'll use
+	depthFormat = FindSupportedFormat(
+		vk::ImageTiling::eOptimal,
+		vk::FormatFeatureFlagBits::eDepthStencilAttachment
+	);
+
+	// before we can create command buffers, we need a pool to allocate from
+	graphCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex });
+	//transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
 }
 
 // extend this later to use proper checking of caps
@@ -732,29 +748,40 @@ void GraphicsVK::CreateSwapchain()
 
 	// but in order to use them, we need imageviews
 	for(int i=0; i<images.size(); i++)
-		imgViews.push_back(CreateImageView(images[i], swapInfo.imgFormat));
+		imgViews.push_back(CreateImageView(images[i], swapInfo.imgFormat, vk::ImageAspectFlagBits::eColor));
 }
 
 void GraphicsVK::CreateRenderPass()
 {
 	// in order to define a render pass, we need to collect all attachments for it
-	// as of now we only render color to single texture
+	// as of now we only render color to single texture and depth
 	vk::AttachmentDescription colorAttachment{
 		{},
 		swapInfo.imgFormat, vk::SampleCountFlagBits::e1,
-		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // load/store
+		vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil load/store
+		vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR // initial/final layouts
+	};
+	vk::AttachmentDescription depthAttachment{
+		{},
+		depthFormat, vk::SampleCountFlagBits::e1,
+		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
 		vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-		vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR
+		vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal
 	};
 	// in order to reference what attachment will be referenced in a subpass, attachment reference needs to be created
 	vk::AttachmentReference colorRef{
 		0, vk::ImageLayout::eColorAttachmentOptimal
+	};
+	vk::AttachmentReference depthRef{
+		1, vk::ImageLayout::eDepthStencilAttachmentOptimal
 	};
 	// create the only subpass we need for color rendering
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorRef;
+	subpass.pDepthStencilAttachment = &depthRef;
 
 	// specifying dependencies to tell Vulkan api how to transition images
 	vk::SubpassDependency dependency;
@@ -768,9 +795,10 @@ void GraphicsVK::CreateRenderPass()
 	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
 
 	// now that we have all the required info, create the render pass
+	array<vk::AttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 	vk::RenderPassCreateInfo passCreateInfo{
 		{},
-		1, &colorAttachment, // attachments
+		(uint32_t)attachments.size(), attachments.data(), // attachments
 		1, &subpass, // subpasses
 		1, &dependency // dependencies
 	};
@@ -859,6 +887,16 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 		(uint32_t)dynStates.size(), dynStates.data()
 	};
 
+	// enable depth testing
+	vk::PipelineDepthStencilStateCreateInfo depthInfo{
+		{}, 
+		true, true, // depth test and depth write
+		vk::CompareOp::eLess, // depth test op
+		false, false, // depth bounds and stencil tests
+		vk::StencilOpState(), vk::StencilOpState(), // stencil's front and back tests
+		0, 1 // depth bounds
+	};
+
 	// we have the layour and the renderpass - all that's needed for an actual pipeline
 	vk::GraphicsPipelineCreateInfo pipelineCreateInfo{
 		{},
@@ -866,7 +904,7 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 		&vertInputInfo, &inputAssemblyInfo,
 		nullptr, &viewportCreateInfo,
 		&rasterizerCreateInfo, &multisampleCreateInfo,
-		nullptr, &colorBlendCreateInfo,
+		&depthInfo, &colorBlendCreateInfo,
 		&dynStatesCreateInfo, pipelineLayout,
 		renderPass, 0,
 		VK_NULL_HANDLE, -1
@@ -879,10 +917,12 @@ void GraphicsVK::CreateFrameBuffers()
 {
 	for (size_t i = 0; i < imgViews.size(); i++)
 	{
+		// each render target will use the same depth image internally
+		array<vk::ImageView, 2> views = { imgViews[i], depthImgView };
 		vk::FramebufferCreateInfo fboCreateInfo{
 			{},
 			renderPass,
-			1, &imgViews[i],
+			(uint32_t)views.size(), views.data(),
 			swapInfo.swapExtent.width, swapInfo.swapExtent.height,
 			1
 		};
@@ -892,9 +932,6 @@ void GraphicsVK::CreateFrameBuffers()
 
 void GraphicsVK::CreateCommandResources()
 {
-	// before we can create command buffers, we need a pool to allocate from
-	graphCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex });
-	//transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
 	// allocating a cmdBuffer per swapchain FBO
 	cmdBuffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
 
@@ -915,6 +952,31 @@ void GraphicsVK::CreateCommandResources()
 	// our 3 fences to synchronize command submission
 	for (size_t i = 0; i < cmdFences.size(); i++)
 		cmdFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
+}
+
+void GraphicsVK::CreateDepthTexture()
+{
+	// create the image of depth format
+	CreateImage(swapInfo.swapExtent.width, swapInfo.swapExtent.height, depthFormat,
+		vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, 
+		vk::MemoryPropertyFlagBits::eDeviceLocal, depthImg, depthImgMem);
+	depthImgView = CreateImageView(depthImg, depthFormat, vk::ImageAspectFlagBits::eDepth);
+	
+	// in order to use it we have to transition it to optimal attachment layout
+	TransitionLayout(depthImg, depthFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+}
+
+vk::Format GraphicsVK::FindSupportedFormat(vk::ImageTiling tiling, vk::FormatFeatureFlags feats)
+{
+	for (vk::Format format : depthCands)
+	{
+		vk::FormatProperties props = physDevice.getFormatProperties(format);
+		if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & feats) == feats)
+			return format;
+		else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & feats) == feats)
+			return format;
+	}
+	throw runtime_error("Failed to find supported format");
 }
 
 void GraphicsVK::CreateDescriptorPool()
@@ -998,7 +1060,7 @@ void GraphicsVK::CreateDescriptorSet()
 
 void GraphicsVK::CreateUBO()
 {
-	uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	size_t uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
 
 	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});
@@ -1010,7 +1072,6 @@ void GraphicsVK::DestroyUBO()
 	{
 		device.unmapMemory(uboMem);
 		mappedUboMem = nullptr;
-		uboSize = 0;
 
 		device.destroyBuffer(ubo);
 		device.freeMemory(uboMem);
@@ -1047,7 +1108,18 @@ void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLay
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	// the image and it's subresource to perform the transition on
 	barrier.image = img;
-	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+	// accounting that depth images can be transitioned as well
+	if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+	{
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		// it can be a depth-stencil
+		if (HasStencilComponent(format))
+			barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+	}
+	else
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -1069,10 +1141,10 @@ void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLay
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 	}
-	else if (oldLayout == vk::ImageLayout::eTransferSrcOptimal && newLayout == vk::ImageLayout::ePreinitialized)
+	else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
 	{
-		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-		barrier.dstAccessMask = vk::AccessFlagBits::eHostWrite;
+		barrier.srcAccessMask = vk::AccessFlagBits();
+		barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 	}
 	else
 		printf("[Error] Transition image layout unsupported: %d -> %d\n", oldLayout, newLayout);
@@ -1106,14 +1178,14 @@ void GraphicsVK::CopyImage(vk::Buffer srcBuff, vk::Image dstImage, uint32_t widt
 	EndOneTimeCmdBuffer(cmdBuffer);
 }
 
-vk::ImageView GraphicsVK::CreateImageView(vk::Image img, vk::Format format)
+vk::ImageView GraphicsVK::CreateImageView(vk::Image img, vk::Format format, vk::ImageAspectFlags aspect)
 {
 	vk::ImageSubresourceRange range{
-		vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
+		aspect, 0, 1, 0, 1
 	};
 
 	vk::ImageViewCreateInfo info{
-		{}, img, vk::ImageViewType::e2D, format, vk::ComponentMapping(), range
+		{}, img, vk::ImageViewType::e2D, format, {}, range
 	};
 	return device.createImageView(info);
 }
