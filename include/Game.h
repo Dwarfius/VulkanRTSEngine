@@ -40,7 +40,7 @@ private:
 
 	float oldTime;
 	vec2 oldMPos;
-	Camera camera;
+	Camera *camera;
 	vector<GameObject*> gameObjects;
 
 	bool running;

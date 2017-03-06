@@ -24,6 +24,8 @@ public:
 
 private:
 
+	void OnResize(int width, int height);
+
 	vector<Shader> shaders;
 	vector<TextureId> textures;
 	vector<Model> vaos; //vertex array object (holds info on vbo and ebo)

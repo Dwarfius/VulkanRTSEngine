@@ -113,9 +113,14 @@ public:
 	int GetRenderCalls() const;
 	void ResetRenderCalls();
 
+	float GetWidth() { return width; }
+	float GetHeight() { return height; }
+
 protected:
 	GLFWwindow *window;
+	float width = 800, height = 600;
 
+	static Graphics *activeGraphics;
 	static ModelId currModel;
 	static ShaderId currShader;
 	static TextureId currTexture;

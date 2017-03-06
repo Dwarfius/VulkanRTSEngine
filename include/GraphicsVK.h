@@ -30,8 +30,8 @@ public:
 private:
 	void LoadResources();
 
-	static GraphicsVK *activeGraphics;
 	void WindowResized(int width, int height);
+	bool paused = false, gatherStarted = false;
 
 	// Instance related
 	vk::Instance instance;
@@ -67,7 +67,7 @@ private:
 		vk::Extent2D swapExtent;
 	};
 	SwapchainSupportInfo swapInfo;
-	vk::SwapchainKHR swapchain;
+	vk::SwapchainKHR swapchain = VK_NULL_HANDLE;
 	vector<vk::Image> images; // images to render to, auto-destroyed by swapchain
 	vector<vk::ImageView> imgViews; // views to acess images through, needs to be destroyed
 	void CreateSwapchain();

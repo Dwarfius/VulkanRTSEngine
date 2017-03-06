@@ -14,6 +14,7 @@ Tasks
 * Add debug drawing (sphere for now)
 
 ### Vulkan
+* Figure out why can't reuse the swapchain when recreating it on resize
 * Animations
 * Figure out why positions are different from OpenGL
 * Add debug drawing (sphere for now)

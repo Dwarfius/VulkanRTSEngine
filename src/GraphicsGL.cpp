@@ -8,12 +8,14 @@
 // Public Methods
 void GraphicsGL::Init()
 {
+	activeGraphics = this;
+
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
-	window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
+	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
 	glfwSetWindowSizeCallback(window, GraphicsGL::OnWindowResized);
 	
 	glfwMakeContextCurrent(window);
@@ -44,7 +46,7 @@ void GraphicsGL::Init()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glViewport(0, 0, SCREEN_W, SCREEN_H);
+	glViewport(0, 0, (int)width, (int)height);
 
 	LoadResources();
 
@@ -175,12 +177,19 @@ void GraphicsGL::CleanUp()
 	glfwDestroyWindow(window);
 }
 
+void GraphicsGL::OnResize(int width, int height)
+{
+	this->width = width;
+	this->height = height;
+	glViewport(0, 0, width, height);
+}
+
 void GraphicsGL::OnWindowResized(GLFWwindow * window, int width, int height)
 {
 	if (width == 0 && height == 0)
 		return;
 
-	glViewport(0, 0, width, height);
+	((GraphicsGL*)activeGraphics)->OnResize(width, height);
 }
 
 void GraphicsGL::LoadResources()

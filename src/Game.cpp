@@ -11,7 +11,8 @@ Game::Game()
 
 	graphics = new GraphicsVK();
 	graphics->Init();
-	camera.InvertProj();
+	camera = new Camera();
+	camera->InvertProj();
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -90,31 +91,31 @@ void Game::Update()
 	}
 
 	// update the camera
-	vec3 forward = camera.GetForward();
-	vec3 right = camera.GetRight();
-	vec3 up = camera.GetUp();
+	vec3 forward = camera->GetForward();
+	vec3 right = camera->GetRight();
+	vec3 up = camera->GetUp();
 	GLFWwindow *window = graphics->GetWindow();
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.Translate(forward * deltaTime * speed);
+		camera->Translate(forward * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.Translate(-forward * deltaTime * speed);
+		camera->Translate(-forward * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.Translate(right * deltaTime * speed);
+		camera->Translate(right * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.Translate(-right * deltaTime * speed);
+		camera->Translate(-right * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		camera.Translate(-up * deltaTime * speed);
+		camera->Translate(-up * deltaTime * speed);
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		camera.Translate(up * deltaTime * speed);
+		camera->Translate(up * deltaTime * speed);
 
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-		camera.LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
+		camera->LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
 
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
 	vec2 curMPos = vec2(x, y);
 	vec2 deltaPos = curMPos - oldMPos;
-	camera.Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
+	camera->Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
 	oldMPos = curMPos;
 }
 
@@ -135,7 +136,7 @@ void Game::Render()
 	graphics->ResetRenderCalls();
 
 	// update the mvp
-	camera.Recalculate();
+	camera->Recalculate();
 	
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
@@ -166,6 +167,8 @@ void Game::CleanUp()
 		delete gameObjects[i];
 
 	graphics->CleanUp();
+
+	delete camera;
 }
 
 void Game::Work(uint infoInd)
@@ -196,7 +199,7 @@ void Game::Work(uint infoInd)
 			break;
 		case Stage::Render:
 			for (size_t i = start; i < end; i++)
-				graphics->Render(&camera, gameObjects[i], infoInd);
+				graphics->Render(camera, gameObjects[i], infoInd);
 			info.stage = Stage::Update;
 			break;
 		}

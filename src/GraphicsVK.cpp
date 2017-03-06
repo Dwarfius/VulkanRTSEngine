@@ -4,8 +4,6 @@
 #include <set>
 #include <fstream>
 
-GraphicsVK* GraphicsVK::activeGraphics = NULL;
-
 const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
 	"VK_LAYER_LUNARG_standard_validation",
@@ -27,7 +25,7 @@ void GraphicsVK::Init()
 
 	activeGraphics = this;
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(SCREEN_W, SCREEN_H, "Vulkan RTS Engine", nullptr, nullptr);
+	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
 	
 	glfwSetWindowSizeCallback(window, OnWindowResized);
 	CreateInstance();
@@ -49,7 +47,6 @@ void GraphicsVK::LoadResources()
 {
 	// same order as GraphicsGL
 	// shaders
-
 	// define and create the only pipeline layout we use
 	vector<vk::DescriptorSetLayout> layouts{
 		uboLayout, samplerLayout
@@ -61,6 +58,7 @@ void GraphicsVK::LoadResources()
 	};
 	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
 
+	// Actual pipelines
 	for (string shaderName : shadersToLoad)
 	{
 		vk::Pipeline pipeline = CreatePipeline(shaderName);
@@ -246,12 +244,27 @@ void GraphicsVK::BeginGather()
 
 			// bind the pipeline for rendering with
 			buff.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[pipeline]);
+
+			// update the dynamic states
+			vk::Viewport viewport{
+				0, 0,
+				(float)swapInfo.swapExtent.width, (float)swapInfo.swapExtent.height,
+				0, 1
+			};
+			buff.setViewport(0, 1, &viewport);
+
+			vk::Rect2D scissor{ {}, swapInfo.swapExtent };
+			buff.setScissor(0, 1, &scissor);
 		}
 	}
+	gatherStarted = true;
 }
 
 void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
 {
+	if (paused)
+		return;
+
 	vec3 scale = go->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });
 	float scaledRadius = models[go->GetModel()].sphereRadius * maxScale;
@@ -283,6 +296,10 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 
 void GraphicsVK::Display()
 {
+	// early exit if no gather active - helps with resizing
+	if (!gatherStarted)
+		return;
+
 	// before we can execute them, have to end them
 	for (size_t thread = 0; thread < maxThreads; thread++)
 		for (auto buffs : secCmdBuffers[thread][currImgIndex])
@@ -325,6 +342,7 @@ void GraphicsVK::Display()
 		nullptr
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
+	gatherStarted = false;
 }
 
 void GraphicsVK::CleanUp()
@@ -402,13 +420,43 @@ void GraphicsVK::OnWindowResized(GLFWwindow * window, int width, int height)
 	if (width == 0 && height == 0)
 		return;
 
-	activeGraphics->WindowResized(width, height);
+	((GraphicsVK*)activeGraphics)->WindowResized(width, height);
 }
 
 void GraphicsVK::WindowResized(int width, int height)
 {
+	paused = true;
 	// gonna make sure all the tasks are finished before we can start destroying resources
+	this->width = width;
+	this->height = height;
+
+	// force the end of rendering
+	Display();
 	device.waitIdle();
+	
+	// destroy first
+	// framebuffers of swapchain
+	for (auto b : swapchainFrameBuffers)
+		device.destroyFramebuffer(b);
+	swapchainFrameBuffers.clear();
+
+	// depth texture
+	device.destroyImageView(depthImgView);
+	device.destroyImage(depthImg);
+	device.freeMemory(depthImgMem);
+
+	// swapchain images
+	for (auto v : imgViews)
+		device.destroyImageView(v);
+	imgViews.clear();
+	device.destroySwapchainKHR(swapchain);
+
+	// then recreate
+	CreateSwapchain();
+	CreateDepthTexture();
+	CreateFrameBuffers();
+
+	paused = false;
 }
 
 // Private Methods
@@ -631,14 +679,11 @@ bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
 	if (!isSuiting)
 		return isSuiting;
 
-	// we found a proper device, now just need to make sure it has proper swapchain caps
-	swapInfo.surfCaps = device.getSurfaceCapabilitiesKHR(surface);
-	swapInfo.suppFormats = device.getSurfaceFormatsKHR(surface);
-	swapInfo.presentModes = device.getSurfacePresentModesKHR(surface);
-
+	vector<vk::SurfaceFormatKHR> suppFormats = device.getSurfaceFormatsKHR(surface);
+	vector<vk::PresentModeKHR> presentModes = device.getSurfacePresentModesKHR(surface);
 	// though it's strange to have swapchain support but no proper formats/present modes
 	// have to check just to be safe - it's not stated in the api spec that it's always > 0
-	isSuiting &= !swapInfo.suppFormats.empty() && !swapInfo.presentModes.empty();
+	isSuiting &= !suppFormats.empty() && !presentModes.empty();
 
 	return isSuiting;
 }
@@ -658,6 +703,11 @@ void GraphicsVK::CreateSurface()
 
 void GraphicsVK::CreateSwapchain()
 {
+	// we found a proper device and surface, fetch the swapchain caps
+	swapInfo.surfCaps = physDevice.getSurfaceCapabilitiesKHR(surface);
+	swapInfo.suppFormats = physDevice.getSurfaceFormatsKHR(surface);
+	swapInfo.presentModes = physDevice.getSurfacePresentModesKHR(surface);
+
 	// by this point we have the capabilities of the surface queried, we just have to pick one
 	// device might be able to support all the formats, so check if it's the case
 	vk::SurfaceFormatKHR format;
@@ -698,9 +748,9 @@ void GraphicsVK::CreateSwapchain()
 	// vulkan window surface may provide us with the ability to set our own extents
 	if (swapInfo.surfCaps.currentExtent.width == UINT32_MAX)
 	{
-		uint32_t width  = clamp(SCREEN_W, swapInfo.surfCaps.minImageExtent.width,  swapInfo.surfCaps.maxImageExtent.width);
-		uint32_t height = clamp(SCREEN_H, swapInfo.surfCaps.minImageExtent.height, swapInfo.surfCaps.maxImageExtent.height);
-		swapInfo.swapExtent = { width, height };
+		uint32_t w = clamp((uint32_t)width, swapInfo.surfCaps.minImageExtent.width,  swapInfo.surfCaps.maxImageExtent.width);
+		uint32_t h = clamp((uint32_t)height, swapInfo.surfCaps.minImageExtent.height, swapInfo.surfCaps.maxImageExtent.height);
+		swapInfo.swapExtent = { w, h };
 	}
 	else // or it might not and we have to use it's provided extent
 		swapInfo.swapExtent = swapInfo.surfCaps.currentExtent;
@@ -738,6 +788,7 @@ void GraphicsVK::CreateSwapchain()
 		swapCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
 	swapCreateInfo.presentMode = mode;
 	swapCreateInfo.clipped = VK_TRUE;
+	// TODO: Investigate - for some reason I get validation errors by passing swapchain here
 	swapCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	swapchain = device.createSwapchainKHR(swapCreateInfo);
@@ -879,8 +930,9 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 
 	// almost there - mark states that we might dynamically change without recreating the pipeline
 	vector<vk::DynamicState> dynStates = {
-		//vk::DynamicState::eViewport,
-		vk::DynamicState::eLineWidth
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eLineWidth,
+		vk::DynamicState::eScissor
 	};
 	vk::PipelineDynamicStateCreateInfo dynStatesCreateInfo{
 		{},

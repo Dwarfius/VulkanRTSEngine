@@ -4,6 +4,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+Graphics* Graphics::activeGraphics = NULL;
 ModelId Graphics::currModel;
 ShaderId Graphics::currShader;
 TextureId Graphics::currTexture;
