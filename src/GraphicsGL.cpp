@@ -175,6 +175,7 @@ void GraphicsGL::CleanUp()
 	textures.clear();
 
 	glfwDestroyWindow(window);
+	activeGraphics = NULL;
 }
 
 void GraphicsGL::OnResize(int width, int height)

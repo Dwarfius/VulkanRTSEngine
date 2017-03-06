@@ -411,7 +411,6 @@ void GraphicsVK::CleanUp()
 	instance.destroy();
 
 	glfwDestroyWindow(window);
-
 	activeGraphics = NULL;
 }
 

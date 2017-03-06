@@ -9,10 +9,15 @@ Game::Game()
 {
 	inst = this;
 
-	graphics = new GraphicsVK();
+	if (isVK)
+		graphics = new GraphicsVK();
+	else
+		graphics = new GraphicsGL();
 	graphics->Init();
+
 	camera = new Camera();
-	camera->InvertProj();
+	if(isVK)
+		camera->InvertProj();
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -129,6 +134,22 @@ void Game::Render()
 	// if it's not - don't rush the display
 	if (!threadsIdle)
 		return;
+
+	// safe place to change up things
+	if (glfwGetKey(graphics->GetWindow(), GLFW_KEY_F1) == GLFW_PRESS)
+	{
+		isVK = !isVK;
+
+		graphics->CleanUp();
+		delete graphics;
+
+		if (isVK)
+			graphics = new GraphicsVK();
+		else
+			graphics = new GraphicsGL();
+		graphics->Init();
+		camera->InvertProj();
+	}
 
 	graphics->Display();
 

@@ -37,6 +37,7 @@ public:
 private:
 	static Game *inst;
 	static Graphics *graphics;
+	bool isVK = false;
 
 	float oldTime;
 	vec2 oldMPos;
