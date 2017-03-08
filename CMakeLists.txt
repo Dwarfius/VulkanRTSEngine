@@ -20,11 +20,11 @@ elseif(CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 find_package(Vulkan REQUIRED)
-find_package(OpenGL REQUIRED)
+find_package(OpenGL REQUIRED) # FindOpenGL.cmake is provided with cmake installation
 find_package(GLEW REQUIRED) # FindGLEW.cmake is provided with cmake installation
-
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
+find_package(Bullet REQUIRED) # FindBullet.cmake is provided with cmake installation
 
 add_executable(VulkanRTSEngine 
 	# Our own sources...
@@ -37,14 +37,16 @@ add_executable(VulkanRTSEngine
 	src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
 # just to make our life a little bit more organized, group files
-source_group("Components" FILES src/Components/ComponentBase.cpp include/Components/ComponentBase.h)
+source_group("Components" FILES 
+	src/Components/ComponentBase.cpp
+	include/Components/ComponentBase.h)
 source_group("Extra" FILES src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 
 include_directories(VulkanRTSEngine include/ include/extra 
 	${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}
-	${VULKAN_INCLUDE_DIR})
+	${VULKAN_INCLUDE_DIR} ${BULLET_INCLUDE_DIRS})
 target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}
-${VULKAN_LIBRARY})
+	${VULKAN_LIBRARY} ${BULLET_LIBRARIES})
 
 add_custom_command(TARGET VulkanRTSEngine PRE_BUILD COMMAND ${CMAKE_COMMAND}
 					-E copy_directory ${CMAKE_SOURCE_DIR}/assets
