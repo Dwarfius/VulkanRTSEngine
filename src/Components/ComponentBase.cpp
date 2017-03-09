@@ -10,11 +10,6 @@ void ComponentBase::Update(float deltaTime)
 
 }
 
-void ComponentBase::Render()
-{
-
-}
-
 void ComponentBase::Destroy()
 {
 

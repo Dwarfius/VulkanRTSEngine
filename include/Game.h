@@ -6,6 +6,7 @@
 #include "GameObject.h"
 #include <vector>
 #include <thread>
+#include "Terrain.h"
 
 // have to define it outside of Game
 // it messes up with method declaration
@@ -37,12 +38,13 @@ public:
 private:
 	static Game *inst;
 	static Graphics *graphics;
-	bool isVK = false;
+	bool isVK = true;
 
 	float oldTime;
 	vec2 oldMPos;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
+	vector<Terrain> terrains;
 
 	bool running;
 	struct ThreadInfo {

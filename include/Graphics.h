@@ -4,9 +4,8 @@
 #include "Camera.h"
 #include <vector>
 #include <string>
-#include <glm/gtx/hash.hpp>
 #include <unordered_map>
-
+#include "Vertex.h"
 
 using namespace std;
 using namespace glm;
@@ -17,7 +16,8 @@ const std::vector<string> shadersToLoad = {
 };
 const std::vector<string> modelsToLoad = {
 	"chalet",
-	"cube"
+	"cube",
+	"%t0"
 };
 const std::vector<string> texturesToLoad = {
 	"chalet.jpg",
@@ -71,36 +71,12 @@ typedef uint32_t TextureId;
 // forward declaring to resolve a circular dependency
 class GameObject;
 struct GLFWwindow;
-
-struct Vertex 
-{
-	vec3 pos;
-	vec2 uv;
-	vec3 normal;
-
-	bool operator==(const Vertex& other) const 
-	{
-		return pos == other.pos && uv == other.uv && normal == other.normal;
-	}
-};
-
-namespace std 
-{
-	template<> struct hash<Vertex> 
-	{
-		size_t operator()(Vertex const& vertex) const 
-		{
-			return ((hash<glm::vec3>()(vertex.pos) ^
-				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.uv) << 1);
-		}
-	};
-}
+class Terrain;
 
 class Graphics
 {
 public:
-	virtual void Init() = 0;
+	virtual void Init(vector<Terrain> terrains) = 0;
 	virtual void BeginGather() = 0;
 	virtual void Render(const Camera *cam, GameObject *go, const uint32_t threadId) = 0;
 	virtual void Display() = 0;
@@ -116,6 +92,10 @@ public:
 	float GetWidth() { return width; }
 	float GetHeight() { return height; }
 
+	static void LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius);
+	static unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
+	static void FreeTexture(void *data);
+
 protected:
 	GLFWwindow *window;
 	float width = 800, height = 600;
@@ -127,9 +107,6 @@ protected:
 
 	int renderCalls[maxThreads];
 
-	void LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius);
-	unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
-	void FreeTexture(void *data);
 	string readFile(const string& filename);
 
 	// need to have this copy here so that classes that 

@@ -12,8 +12,8 @@ class GraphicsGL : public Graphics
 public:
 	GraphicsGL() {}
 
-	void Init() override;
-	void BeginGather() override {};
+	void Init(vector<Terrain> terrains) override;
+	void BeginGather() override;
 	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
@@ -29,7 +29,7 @@ private:
 	vector<Shader> shaders;
 	vector<TextureId> textures;
 	vector<Model> vaos; //vertex array object (holds info on vbo and ebo)
-	void LoadResources();
+	void LoadResources(vector<Terrain> terrains);
 
 	// emulating a render queue
 	// should cache the shader's uniforms as well

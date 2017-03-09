@@ -2,6 +2,13 @@
 #include "Game.h"
 #include "Common.h"
 
+GameObject::~GameObject()
+{
+	for (auto comp : components)
+		delete comp;
+	components.clear();
+}
+
 void GameObject::Update(float deltaTime)
 {
 	
@@ -9,10 +16,10 @@ void GameObject::Update(float deltaTime)
 
 void GameObject::UpdateMatrix()
 {
-	if (!modelDirty)
+	if (renderer == nullptr || !modelDirty)
 		return;
 
-	vec3 center = Game::GetGraphics()->GetModelCenter(model);
+	vec3 center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
 
 	modelMatrix = translate(mat4(1), pos);
 	modelMatrix = rotate(modelMatrix, radians(rotation.x), vec3(1, 0, 0));
@@ -26,4 +33,9 @@ void GameObject::UpdateMatrix()
 	uniforms["model"] = val;
 
 	modelDirty = false;
+}
+
+void GameObject::AddComponent(ComponentBase *component)
+{
+	renderer = dynamic_cast<Renderer*>(component);
 }

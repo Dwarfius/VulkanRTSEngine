@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
+#include "Components\Renderer.h"
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -9,11 +10,15 @@ Game::Game()
 {
 	inst = this;
 
+	Terrain terr;
+	terr.Generate("assets/textures/heightmap.png", 1, vec3(), 2);
+	terrains.push_back(terr);
+
 	if (isVK)
 		graphics = new GraphicsVK();
 	else
 		graphics = new GraphicsGL();
-	graphics->Init();
+	graphics->Init(terrains);
 
 	camera = new Camera();
 	if(isVK)
@@ -38,34 +43,31 @@ Game::Game()
 void Game::Init()
 {
 	gameObjects.reserve(2000);
+	
 	GameObject *go = new GameObject();
-	go->SetModel(0);
-	go->SetShader(0);
-	go->SetTexture(0);
+	go->AddComponent(new Renderer(0, 0, 0));
 	go->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
-	go->SetModel(0);
-	go->SetShader(0);
-	go->SetTexture(0);
+	go->AddComponent(new Renderer(0, 0, 0));
 	go->SetPos(vec3(3, 0, 0));
 	go->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
-	go->SetModel(0);
-	go->SetShader(0);
-	go->SetTexture(0);
+	go->AddComponent(new Renderer(0, 0, 0));
 	go->SetPos(vec3(-3, 0, 0));
 	go->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
-	go->SetModel(1);
-	go->SetShader(0);
-	go->SetTexture(2);
+	go->AddComponent(new Renderer(1, 0, 2));
 	go->SetPos(vec3(0, 2, 0));
+	gameObjects.push_back(go);
+
+	go = new GameObject();
+	go->AddComponent(new Renderer(2, 0, 0));
 	gameObjects.push_back(go);
 
 	// activating our threads
@@ -138,6 +140,7 @@ void Game::Render()
 	// safe place to change up things
 	if (glfwGetKey(graphics->GetWindow(), GLFW_KEY_F1) == GLFW_PRESS)
 	{
+		printf("[Info] Switching renderer...\n");
 		isVK = !isVK;
 
 		graphics->CleanUp();
@@ -147,7 +150,7 @@ void Game::Render()
 			graphics = new GraphicsVK();
 		else
 			graphics = new GraphicsGL();
-		graphics->Init();
+		graphics->Init(terrains);
 		camera->InvertProj();
 	}
 

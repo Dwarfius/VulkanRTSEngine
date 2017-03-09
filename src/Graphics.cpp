@@ -93,7 +93,10 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 
 unsigned char* Graphics::LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels)
 {
-	return stbi_load(name.c_str(), x, y, channels, desiredChannels);
+	unsigned char* pixels = stbi_load(name.c_str(), x, y, channels, desiredChannels);
+	if (pixels == nullptr)
+		printf("[Error] Failed to load texture '%s'\n", name.c_str());
+	return pixels;
 }
 
 void Graphics::FreeTexture(void *data)

@@ -17,7 +17,7 @@ class GraphicsVK : public Graphics
 public:
 	GraphicsVK() {}
 
-	void Init() override;
+	void Init(vector<Terrain> terrains) override;
 	void BeginGather() override;
 	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
@@ -28,7 +28,7 @@ public:
 
 	vec3 GetModelCenter(ModelId m) override { return vec3(0, 0, 0); }
 private:
-	void LoadResources();
+	void LoadResources(vector<Terrain> terrains);
 
 	void WindowResized(int width, int height);
 	bool paused = false, gatherStarted = false;
@@ -152,7 +152,7 @@ private:
 	uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props);
 
 	// util buffer func
-	vk::CommandBuffer CreateOneTimeCmdBuffer();
+	vk::CommandBuffer CreateOneTimeCmdBuffer(vk::CommandBufferLevel level);
 	void EndOneTimeCmdBuffer(vk::CommandBuffer cmdBuff);
 
 	// Validation Layers related

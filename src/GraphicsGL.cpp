@@ -4,9 +4,10 @@
 #include <set>
 #include <fstream>
 #include <glm\gtc\type_ptr.hpp>
+#include "Terrain.h"
 
 // Public Methods
-void GraphicsGL::Init()
+void GraphicsGL::Init(vector<Terrain> terrains)
 {
 	activeGraphics = this;
 
@@ -48,23 +49,32 @@ void GraphicsGL::Init()
 
 	glViewport(0, 0, (int)width, (int)height);
 
-	LoadResources();
+	LoadResources(terrains);
 
 	glActiveTexture(GL_TEXTURE0);
 }
 
+void GraphicsGL::BeginGather()
+{
+	
+}
+
 void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
 {
+	Renderer *r = go->GetRenderer();
+	if (r == nullptr)
+		return;
+
 	vec3 scale = go->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });
-	float scaledRadius = vaos[go->GetModel()].sphereRadius * maxScale;
+	float scaledRadius = vaos[r->GetModel()].sphereRadius * maxScale;
 	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
 		return;
 
 	RenderJob job{
-		go->GetShader(),
-		go->GetTexture(),
-		go->GetModel(),
+		r->GetShader(),
+		r->GetTexture(),
+		r->GetModel(),
 	};
 
 	// copy the existing ones
@@ -149,6 +159,7 @@ void GraphicsGL::Display()
 		}
 		threadJobs[i].clear();
 	}
+
 	glfwSwapBuffers(window);
 	// clear the buffer for next frame render
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -193,7 +204,7 @@ void GraphicsGL::OnWindowResized(GLFWwindow * window, int width, int height)
 	((GraphicsGL*)activeGraphics)->OnResize(width, height);
 }
 
-void GraphicsGL::LoadResources()
+void GraphicsGL::LoadResources(vector<Terrain> terrains)
 {
 	// first, a couple base shaders
 	for(size_t i=0; i<shadersToLoad.size(); i++)
@@ -281,7 +292,18 @@ void GraphicsGL::LoadResources()
 		Model m;
 		vector<Vertex> vertices;
 		vector<uint32_t> indices;
-		LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
+
+		if (modelsToLoad[i].substr(0, 2) == "%t")
+		{
+			int index = stoi(modelsToLoad[i].substr(2), nullptr);
+			Terrain t = terrains[index];
+			vertices.insert(vertices.end(), t.GetVertBegin(), t.GetVertEnd());
+			indices.insert(indices.end(), t.GetIndBegin(), t.GetIndEnd());
+			m.center = t.GetCenter();
+			m.sphereRadius = t.GetRange();
+		}
+		else
+			LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
 
 		printf("[Info] Center: %f, %f, %f; Radius:%f\n", m.center.x, m.center.y, m.center.z, m.sphereRadius);
 		

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <set>
 #include <fstream>
+#include "Terrain.h"
 
 const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
@@ -15,7 +16,7 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 };
 
 // Public Methods
-void GraphicsVK::Init()
+void GraphicsVK::Init(vector<Terrain> terrains)
 {
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
@@ -38,12 +39,12 @@ void GraphicsVK::Init()
 	CreateCommandResources();
 	CreateUBO();
 	CreateDescriptorPool();
-	LoadResources();
+	LoadResources(terrains);
 	CreateSampler();
 	CreateDescriptorSet();
 }
 
-void GraphicsVK::LoadResources()
+void GraphicsVK::LoadResources(vector<Terrain> terrains)
 {
 	// same order as GraphicsGL
 	// shaders
@@ -79,7 +80,18 @@ void GraphicsVK::LoadResources()
 			m.vertexOffset = vertices.size();
 			m.indexOffset = indices.size();
 			
-			LoadModel(modelName, vertices, indices, m.center, m.sphereRadius);
+			if (modelName.substr(0, 2) == "%t")
+			{
+				int index = stoi(modelName.substr(2), nullptr);
+				Terrain t = terrains[index];
+				vertices.insert(vertices.end(), t.GetVertBegin(), t.GetVertEnd());
+				indices.insert(indices.end(), t.GetIndBegin(), t.GetIndEnd());
+				m.center = t.GetCenter();
+				m.sphereRadius = t.GetRange();
+			}
+			else
+				LoadModel(modelName, vertices, indices, m.center, m.sphereRadius);
+
 			m.vertexCount = vertices.size() - m.vertexOffset;
 			m.indexCount = indices.size() - m.indexOffset;
 
@@ -207,14 +219,13 @@ void GraphicsVK::BeginGather()
 	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
 	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
-	// start the render pass
+	// first we render all geometry - start the render pass
 	vk::RenderPassBeginInfo beginInfo{
 		renderPass,
 		swapchainFrameBuffers[currImgIndex],
 		{ { 0, 0 }, swapInfo.swapExtent },
 		(uint32_t)clearVals.size(), clearVals.data()
 	};
-	// has to be vk::SubpassContents::eSecondaryCommandBuffers
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 	// have to begin all secondary buffers here
@@ -265,17 +276,21 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	if (paused)
 		return;
 
+	Renderer *r = go->GetRenderer();
+	if (r == nullptr)
+		return;
+
 	vec3 scale = go->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });
-	float scaledRadius = models[go->GetModel()].sphereRadius * maxScale;
+	float scaledRadius = models[r->GetModel()].sphereRadius * maxScale;
 	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
 		return;
 
 	// get the vector of secondary buffers for thread
 	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId][currImgIndex];
 	// we need to find the corresponding secondary buffer
-	ShaderId pipelineInd = go->GetShader();
-	Model m = models[go->GetModel()];
+	ShaderId pipelineInd = r->GetShader();
+	Model m = models[r->GetModel()];
 	size_t index = go->GetIndex();
 
 	// update the uniforms
@@ -287,7 +302,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	
 	// draw out all the indices
 	array<vk::DescriptorSet, 2> setsToBind{
-		uboSets[index], samplerSets[go->GetTexture()]
+		uboSets[index], samplerSets[r->GetTexture()]
 	};
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
@@ -1148,7 +1163,7 @@ void GraphicsVK::CreateImage(uint32_t width, uint32_t height, vk::Format format,
 
 void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
-	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
 	
 	vk::ImageMemoryBarrier barrier;
 	// transfer from - to
@@ -1213,7 +1228,7 @@ void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLay
 // images must already be in Transfer Src/Dst Optimal layout
 void GraphicsVK::CopyImage(vk::Buffer srcBuff, vk::Image dstImage, uint32_t width, uint32_t height)
 {
-	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
 	
 	vk::ImageSubresourceLayers layers{
 		vk::ImageAspectFlagBits::eColor, 0, 0, 1
@@ -1309,7 +1324,7 @@ void GraphicsVK::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, v
 void GraphicsVK::CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size)
 {
 	// to copy it over a command buffer is needed
-	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer();
+	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
 	vk::BufferCopy region{
 		0, 0, size
 	};
@@ -1328,10 +1343,10 @@ uint32_t GraphicsVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
 	return -1;
 }
 
-vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer()
+vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer(vk::CommandBufferLevel level)
 {
 	vk::CommandBufferAllocateInfo info{
-		graphCmdPool, vk::CommandBufferLevel::ePrimary, 1
+		graphCmdPool, level, 1
 	};
 	vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info)[0];
 
