@@ -14,10 +14,11 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
 	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
 	glfwSetWindowSizeCallback(window, GraphicsGL::OnWindowResized);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	
 	glfwMakeContextCurrent(window);
 	glewExperimental = true;
@@ -80,11 +81,14 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 	// copy the existing ones
 	job.uniforms = go->GetUniforms();
 	// add add our own
-	mat4 mvp = cam->Get() * go->GetModelMatrix();
+	mat4 model = go->GetModelMatrix();
+	mat4 mvp = cam->Get() * model;
 
 	Shader::UniformValue uniform;
 	uniform.m = mvp;
 	job.uniforms["mvp"] = uniform;
+	uniform.m = model;
+	job.uniforms["Model"] = uniform;
 
 	// we don't actually render, we just create a render job, Display() does the rendering
 	threadJobs[threadId].push_back(job);

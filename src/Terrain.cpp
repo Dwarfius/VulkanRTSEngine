@@ -80,9 +80,7 @@ float Terrain::GetHeight(vec3 pos)
 	y -= yMin;
 	float botHeight = mix(v0.pos.y, v2.pos.y, x);
 	float topHeight = mix(v1.pos.y, v3.pos.y, x);
-	float height = mix(botHeight, topHeight, y);
-	printf("[Info] %f from (%f, %f, %f, %f) for (%f, %f)\n", height, v0.pos.y, v1.pos.y, v2.pos.y, v3.pos.y, x, y);
-	return height;
+	return mix(botHeight, topHeight, y);
 }
 
 vec3 Terrain::GetNormal(vec3 pos)
@@ -110,7 +108,12 @@ vec3 Terrain::GetNormal(vec3 pos)
 	Vertex v2 = verts[yMin * width + xMax];
 	Vertex v3 = verts[yMax * width + xMax];
 
-	return vec3();
+	// getting the normal
+	x -= xMin;
+	y -= yMin;
+	vec3 botNorm = mix(v0.normal, v2.normal, x);
+	vec3 topNorm = mix(v1.normal, v3.normal, x);
+	return mix(botNorm, topNorm, y);
 }
 
 void Terrain::Normalize()

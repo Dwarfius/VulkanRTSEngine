@@ -27,8 +27,9 @@ void GraphicsVK::Init(vector<Terrain> terrains)
 	activeGraphics = this;
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
-	
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetWindowSizeCallback(window, OnWindowResized);
+
 	CreateInstance();
 	CreateSurface();
 	CreateDevice();

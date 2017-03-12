@@ -11,8 +11,8 @@ using namespace std;
 using namespace glm;
 
 const std::vector<string> shadersToLoad = {
-	"base"
-	//"debug"
+	"base",
+	"debug"
 };
 const std::vector<string> modelsToLoad = {
 	"chalet",
