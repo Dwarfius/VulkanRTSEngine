@@ -14,7 +14,7 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
 	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
 	glfwSetWindowSizeCallback(window, GraphicsGL::OnWindowResized);

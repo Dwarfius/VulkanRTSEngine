@@ -7,7 +7,7 @@ Camera::Camera(bool orthoMode)
 {
 	yaw = -90; 
 	pitch = 0;
-	pos = vec3(0, 0, 5);
+	pos = vec3(0, 0, 0);
 	up = vec3(0, 1, 0);
 
 	//setting up the matrix for UI rendering

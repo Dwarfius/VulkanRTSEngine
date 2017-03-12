@@ -11,7 +11,7 @@ Game::Game()
 	inst = this;
 
 	Terrain terr;
-	terr.Generate("assets/textures/heightmap.png", 1, vec3(), 2);
+	terr.Generate("assets/textures/heightmap.png", 0.2f, vec3(), 2);
 	terrains.push_back(terr);
 
 	if (isVK)
@@ -67,7 +67,7 @@ void Game::Init()
 	gameObjects.push_back(go);
 
 	go = new GameObject();
-	go->AddComponent(new Renderer(2, 0, 0));
+	go->AddComponent(new Renderer(2, 0, 1));
 	gameObjects.push_back(go);
 
 	// activating our threads
@@ -122,7 +122,13 @@ void Game::Update()
 	glfwGetCursorPos(window, &x, &y);
 	vec2 curMPos = vec2(x, y);
 	vec2 deltaPos = curMPos - oldMPos;
-	camera->Rotate((float)deltaPos.x * mouseSens, (float)-deltaPos.y * mouseSens);
+	camera->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens);
+	
+	vec3 curPos = camera->GetPos();
+	curPos.y = terrains[0].GetHeight(curPos) + 1;
+	// printf("[Info] For (%f,%f): %f\n", curPos.x, curPos.z, curPos.y);
+	camera->SetPos(curPos);
+
 	oldMPos = curMPos;
 }
 

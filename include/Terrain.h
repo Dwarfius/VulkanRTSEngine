@@ -16,12 +16,17 @@ public:
 
 	vec3 GetCenter() { return center; }
 	float GetRange() { return range; }
+	float GetHeight(vec3 pos);
 
 private:
 	vector<Vertex> verts;
 	vector<uint32_t> indices;
 
+	int width, height;
+	vec3 start, end;
 	vec3 center;
-	float range;
+	float range, step;
+
+	float BilinearInterp(float f0, float f1, float f2, float f3, float x, float y);
 };
 #endif // !_TERRAIN_H
