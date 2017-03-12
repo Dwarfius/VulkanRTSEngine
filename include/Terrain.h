@@ -17,6 +17,7 @@ public:
 	vec3 GetCenter() { return center; }
 	float GetRange() { return range; }
 	float GetHeight(vec3 pos);
+	vec3 GetNormal(vec3 pos);
 
 private:
 	vector<Vertex> verts;
@@ -27,6 +28,6 @@ private:
 	vec3 center;
 	float range, step;
 
-	float BilinearInterp(float f0, float f1, float f2, float f3, float x, float y);
+	void Normalize();
 };
 #endif // !_TERRAIN_H

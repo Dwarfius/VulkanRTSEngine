@@ -46,6 +46,8 @@ void Terrain::Generate(string name, float step, vec3 offset, float yScale)
 			indices.push_back(bl);
 		}
 	}
+
+	Normalize();
 }
 
 float Terrain::GetHeight(vec3 pos)
@@ -76,16 +78,69 @@ float Terrain::GetHeight(vec3 pos)
 	// getting the height
 	x -= xMin;
 	y -= yMin;
-	float height = BilinearInterp(v0.pos.y, v1.pos.y, v2.pos.y, v3.pos.y, x, y);
+	float botHeight = mix(v0.pos.y, v2.pos.y, x);
+	float topHeight = mix(v1.pos.y, v3.pos.y, x);
+	float height = mix(botHeight, topHeight, y);
 	printf("[Info] %f from (%f, %f, %f, %f) for (%f, %f)\n", height, v0.pos.y, v1.pos.y, v2.pos.y, v3.pos.y, x, y);
 	return height;
 }
 
-// f0=f(0,0), f1=f(0,1), f2=f(1,0), f3=f(1,1) 
-float Terrain::BilinearInterp(float f0, float f1, float f2, float f3, float x, float y)
+vec3 Terrain::GetNormal(vec3 pos)
 {
-	return f0 * (1 - x) * (1 - y) +
-		f1 * x * (1 - y) +
-		f2 * (1 - x) * y +
-		f3 * x * y;
+	// finding the relative position
+	// + center cause rendering uses center anchors
+	float x = (pos.x + center.x) / step;
+	float y = (pos.z + center.z) / step;
+
+	// just to be safe - it's clamped to the edges
+	x = clamp(x, 0.f, width - 1.f);
+	y = clamp(y, 0.f, height - 1.f);
+
+	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
+
+	// getting the actual vert indices
+	int xMin = floor(x);
+	int xMax = xMin + 1;
+	int yMin = floor(y);
+	int yMax = yMin + 1;
+
+	// getting vertices for lerping
+	Vertex v0 = verts[yMin * width + xMin];
+	Vertex v1 = verts[yMax * width + xMin];
+	Vertex v2 = verts[yMin * width + xMax];
+	Vertex v3 = verts[yMax * width + xMax];
+
+	return vec3();
+}
+
+void Terrain::Normalize()
+{
+	//holds the sum of all surface normals per vertex
+	vector<vec3> surfNormals(indices.size(), vec3());
+	//gotta update the faces
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		int i1 = indices.at(i);
+		vec3 v1 = verts.at(i1).pos;
+		int i2 = indices.at(i + 1);
+		vec3 v2 = verts.at(i2).pos;
+		int i3 = indices.at(i + 2);
+		vec3 v3 = verts.at(i3).pos;
+
+		//calculating the surf normal
+		vec3 u = v2 - v1;
+		vec3 v = v3 - v1;
+
+		vec3 normal;
+		normal.x = u.y * v.z - u.z * v.y;
+		normal.y = u.z * v.x - u.x * v.z;
+		normal.z = u.x * v.y - u.y * v.x;
+
+		surfNormals[i1] += normal;
+		surfNormals[i2] += normal;
+		surfNormals[i3] += normal;
+	}
+
+	for (int vertInd = 0; vertInd < verts.size(); vertInd++)
+		verts.at(vertInd).normal = normalize(surfNormals[vertInd]);
 }
