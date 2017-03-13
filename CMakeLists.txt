@@ -29,11 +29,11 @@ find_package(Bullet REQUIRED) # FindBullet.cmake is provided with cmake installa
 add_executable(VulkanRTSEngine 
 	# Our own sources...
 	src/main.cpp src/Camera.cpp src/Game.cpp src/GraphicsGL.cpp src/GraphicsVK.cpp src/Components/ComponentBase.cpp
-	src/GameObject.cpp src/Graphics.cpp src/Terrain.cpp
+	src/GameObject.cpp src/Graphics.cpp src/Terrain.cpp src/Input.cpp
 	# headers...
 	include/Common.h include/Camera.h include/Game.h include/Graphics.h include/GraphicsGL.h include/GraphicsVK.h 
 	include/GameObject.h include/Components/ComponentBase.h include/Terrain.h include/Vertex.h
-	include/Components/Renderer.h
+	include/Components/Renderer.h include/Input.h
 	# and 3rd-party stuff
 	src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
 

@@ -41,7 +41,6 @@ private:
 	bool isVK = false;
 
 	float oldTime;
-	vec2 oldMPos;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;

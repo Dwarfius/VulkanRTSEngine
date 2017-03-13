@@ -2,6 +2,7 @@
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
 #include "Components\Renderer.h"
+#include "Input.h"
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -19,6 +20,8 @@ Game::Game()
 	else
 		graphics = new GraphicsGL();
 	graphics->Init(terrains);
+	
+	Input::SetWindow(graphics->GetWindow());
 
 	camera = new Camera();
 	if(isVK)
@@ -78,9 +81,6 @@ void Game::Init()
 	}
 	// setting the up-to-date time
 	oldTime = glfwGetTime();
-	double x, y;
-	glfwGetCursorPos(graphics->GetWindow(), &x, &y);
-	oldMPos = vec2(x, y);
 
 	graphics->BeginGather();
 }
@@ -101,35 +101,37 @@ void Game::Update()
 	vec3 forward = camera->GetForward();
 	vec3 right = camera->GetRight();
 	vec3 up = camera->GetUp();
-	GLFWwindow *window = graphics->GetWindow();
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (Input::GetKey('W'))
 		camera->Translate(forward * deltaTime * speed);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	if (Input::GetKey('S'))
 		camera->Translate(-forward * deltaTime * speed);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	if (Input::GetKey('D'))
 		camera->Translate(right * deltaTime * speed);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	if (Input::GetKey('A'))
 		camera->Translate(-right * deltaTime * speed);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	if (Input::GetKey('Q'))
 		camera->Translate(-up * deltaTime * speed);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	if (Input::GetKey('E'))
 		camera->Translate(up * deltaTime * speed);
 
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	if (Input::GetKey('F'))
 		camera->LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
 
-	double x, y;
-	glfwGetCursorPos(window, &x, &y);
-	vec2 curMPos = vec2(x, y);
-	vec2 deltaPos = curMPos - oldMPos;
+	vec2 deltaPos = Input::GetMouseDelta();
 	camera->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens);
 	
 	vec3 curPos = camera->GetPos();
 	curPos.y = terrains[0].GetHeight(curPos) + 1;
-	// printf("[Info] For (%f,%f): %f\n", curPos.x, curPos.z, curPos.y);
 	camera->SetPos(curPos);
 
-	oldMPos = curMPos;
+	if(Input::GetMouseBtnPressed(0))
+		printf("[Info] Mouse btn 0 pressed down\n");
+	if (Input::GetMouseBtn(0))
+		printf("[Info] Mouse btn 0 held down\n");
+	if(Input::GetMouseBtnReleased(0))
+		printf("[Info] Mouse btn 0 released\n");
+
+	Input::Update();
 }
 
 void Game::Render()
