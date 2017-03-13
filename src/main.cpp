@@ -16,11 +16,9 @@ int main()
 	{
 		glfwPollEvents();
 
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			break;
-
 		game->Update();
-		game->Render();
+		if(game->IsRunning())
+			game->Render();
 	}
 	game->CleanUp();
 	delete game;

@@ -82,7 +82,7 @@ void Input::KeyCallback(GLFWwindow *window, int key, int scanCode, int action, i
 	if (key < 0 || key >= 400)
 		printf("[Warning] Unrecognized key pressed(key: %d, scanCode: %d)\n", key, scanCode);
 	else
-		kbState[key] = action == GLFW_PRESS || action == GLFW_REPEAT;
+		kbState[RemapKey(key)] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }
 
 void Input::MouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -91,4 +91,21 @@ void Input::MouseCallback(GLFWwindow *window, int button, int action, int mods)
 		printf("[Warning] Unrecognized mouse btn pressed(btn: %d)\n", button);
 	else
 		mState[button] = action == GLFW_PRESS;
+}
+
+int Input::RemapKey(int key)
+{
+	switch (key)
+	{
+	case GLFW_KEY_ESCAPE:
+		return 27;
+	case GLFW_KEY_ENTER:
+		return 10;
+	case GLFW_KEY_LEFT_SHIFT:
+		return 11;
+	case GLFW_KEY_RIGHT_SHIFT:
+		return 12;
+	default:
+		return key;
+	}
 }

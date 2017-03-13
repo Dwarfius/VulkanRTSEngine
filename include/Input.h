@@ -37,6 +37,7 @@ private:
 
 	static void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods);
 	static void MouseCallback(GLFWwindow *window, int button, int action, int mods);
+	static int RemapKey(int key);
 };
 
 #endif

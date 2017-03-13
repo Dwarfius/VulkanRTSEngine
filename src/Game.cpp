@@ -87,6 +87,12 @@ void Game::Init()
 
 void Game::Update()
 {
+	if (Input::GetKey(27))
+	{
+		running = false;
+		return;
+	}
+
 	const float time = glfwGetTime();
 	const float deltaTime = time - oldTime;
 	oldTime = time;
@@ -236,5 +242,7 @@ void Game::Work(uint infoInd)
 			break;
 		}
 	}
+	ThreadInfo &info = threadInfos[infoInd];
+	info.stage = Stage::WaitingToSubmit;
 	printf("[Info] Worker thread %d ending\n", infoInd);
 }
