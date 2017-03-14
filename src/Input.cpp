@@ -4,7 +4,7 @@
 GLFWwindow* Input::window = nullptr;
 bool Input::kbState[400], Input::kbOldState[400];
 bool Input::mState[8], Input::mOldState[8];
-vec2 Input::oldPos;
+vec2 Input::oldPos, Input::pos;
 
 void Input::SetWindow(GLFWwindow *w)
 {
@@ -31,7 +31,8 @@ void Input::Update()
 	memcpy(kbOldState, kbState, sizeof(kbState));
 	memcpy(mOldState, mState, sizeof(mState));
 
-	oldPos = GetMousePos();
+	oldPos = pos;
+	pos = GetMousePos();
 }
 
 bool Input::GetKey(char asciiCode)
@@ -58,7 +59,7 @@ vec2 Input::GetMousePos()
 
 vec2 Input::GetMouseDelta()
 {
-	return GetMousePos() - oldPos;
+	return pos - oldPos;
 }
 
 bool Input::GetMouseBtn(char btn)

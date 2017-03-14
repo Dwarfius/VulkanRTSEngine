@@ -33,7 +33,7 @@ private:
 
 	static bool kbState[400], kbOldState[400];
 	static bool mState[8], mOldState[8];
-	static vec2 oldPos;
+	static vec2 oldPos, pos;
 
 	static void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods);
 	static void MouseCallback(GLFWwindow *window, int button, int action, int mods);

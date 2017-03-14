@@ -99,22 +99,31 @@ void Game::Update()
 		return;
 	}
 
+	// checking if threads are idle - means we can start a new frame
+	bool threadsIdle = true;
+	for (ThreadInfo info : threadInfos)
+		threadsIdle &= info.stage == Stage::Idle;
+
+	// if it's not - don't rush it
+	if (!threadsIdle)
+		return;
+
 	const float time = glfwGetTime();
 	const float deltaTime = time - oldTime;
 	oldTime = time;
+	Input::Update();
 
 	for (uint i = 0; i < threadInfos.size(); i++)
 	{
 		ThreadInfo &info = threadInfos[i];
 		info.deltaTime = deltaTime;
+		info.stage = Stage::Update;
 	}
-
-	Input::Update();
 }
 
 void Game::Render()
 {
-	// checking if threads are idle - means they finished submitting work
+	// checking if threads are waiting to submit - means they finished submitting work
 	bool threadsIdle = true;
 	for (ThreadInfo info : threadInfos)
 		threadsIdle &= info.stage == Stage::WaitingToSubmit;
@@ -211,11 +220,13 @@ void Game::Work(uint infoInd)
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::WaitingToSubmit:
+			// we have to wait until the render thread finishes processing the submitted commands
+			// otherwise we'll overflow the command buffers
 			break;
 		case Stage::Render:
 			for (size_t i = start; i < end; i++)
 				graphics->Render(camera, gameObjects[i], infoInd);
-			info.stage = Stage::Update;
+			info.stage = Stage::Idle;
 			break;
 		}
 	}
