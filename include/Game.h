@@ -34,6 +34,9 @@ public:
 	size_t GetGameObjectCount() { return gameObjects.size(); }
 	const static uint32_t maxObjects = 4000;
 
+	Camera* GetCamera() { return camera; }
+	Terrain *GetTerrain(vec3 pos);
+
 	static Graphics* GetGraphics() { return graphics; }
 private:
 	static Game *inst;
@@ -54,10 +57,6 @@ private:
 	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;
 	void Work(uint infoInd);
-
-	// just general settings
-	const float speed = 1;
-	const float mouseSens = 0.2f;
 };
 
 #endif // !_GAME_H

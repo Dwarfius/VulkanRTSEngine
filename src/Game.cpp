@@ -1,8 +1,10 @@
 #include "Game.h"
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
-#include "Components\Renderer.h"
 #include "Input.h"
+
+#include "Components\Renderer.h"
+#include "Components\PlayerTank.h"
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -73,6 +75,10 @@ void Game::Init()
 	go->AddComponent(new Renderer(2, 0, 1));
 	gameObjects.push_back(go);
 
+	go = new GameObject();
+	go->AddComponent(new PlayerTank());
+	gameObjects.push_back(go);
+
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
 	{
@@ -102,40 +108,6 @@ void Game::Update()
 		ThreadInfo &info = threadInfos[i];
 		info.deltaTime = deltaTime;
 	}
-
-	// update the camera
-	vec3 forward = camera->GetForward();
-	vec3 right = camera->GetRight();
-	vec3 up = camera->GetUp();
-	if (Input::GetKey('W'))
-		camera->Translate(forward * deltaTime * speed);
-	if (Input::GetKey('S'))
-		camera->Translate(-forward * deltaTime * speed);
-	if (Input::GetKey('D'))
-		camera->Translate(right * deltaTime * speed);
-	if (Input::GetKey('A'))
-		camera->Translate(-right * deltaTime * speed);
-	if (Input::GetKey('Q'))
-		camera->Translate(-up * deltaTime * speed);
-	if (Input::GetKey('E'))
-		camera->Translate(up * deltaTime * speed);
-
-	if (Input::GetKey('F'))
-		camera->LookAt(gameObjects[gameObjects.size() - 1]->GetPos());
-
-	vec2 deltaPos = Input::GetMouseDelta();
-	camera->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens);
-	
-	vec3 curPos = camera->GetPos();
-	curPos.y = terrains[0].GetHeight(curPos) + 1;
-	camera->SetPos(curPos);
-
-	if(Input::GetMouseBtnPressed(0))
-		printf("[Info] Mouse btn 0 pressed down\n");
-	if (Input::GetMouseBtn(0))
-		printf("[Info] Mouse btn 0 held down\n");
-	if(Input::GetMouseBtnReleased(0))
-		printf("[Info] Mouse btn 0 released\n");
 
 	Input::Update();
 }
@@ -207,6 +179,11 @@ void Game::CleanUp()
 	graphics->CleanUp();
 
 	delete camera;
+}
+
+Terrain* Game::GetTerrain(vec3 pos)
+{
+	return &terrains[0];
 }
 
 void Game::Work(uint infoInd)

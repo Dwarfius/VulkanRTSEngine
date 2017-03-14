@@ -5,13 +5,17 @@
 GameObject::~GameObject()
 {
 	for (auto comp : components)
+	{
+		comp->Destroy();
 		delete comp;
+	}
 	components.clear();
 }
 
 void GameObject::Update(float deltaTime)
 {
-	
+	for (auto comp : components)
+		comp->Update(deltaTime);
 }
 
 void GameObject::UpdateMatrix()
@@ -37,5 +41,7 @@ void GameObject::UpdateMatrix()
 
 void GameObject::AddComponent(ComponentBase *component)
 {
+	component->Init(this);
+	components.push_back(component);
 	renderer = dynamic_cast<Renderer*>(component);
 }
