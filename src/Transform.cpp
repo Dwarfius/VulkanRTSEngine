@@ -41,7 +41,7 @@ void Transform::UpdateModel()
 		UpdateRot();
 
 	modelM = translate(mat4(1), pos);
-	modelM = rotM * modelM;
+	modelM = modelM * rotM;
 	modelM = scale(modelM, size);
 
 	dirtyModel = false;
