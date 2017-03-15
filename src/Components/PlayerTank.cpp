@@ -13,9 +13,9 @@ void PlayerTank::Update(float deltaTime)
 	Transform *ownTransf = owner->GetTransform();
 
 	// update the camera
-	vec3 forward = camTransf->GetForward();
-	vec3 right = camTransf->GetRight();
-	vec3 up = camTransf->GetUp();
+	vec3 forward = ownTransf->GetForward();
+	vec3 right = ownTransf->GetRight();
+	vec3 up = ownTransf->GetUp();
 
 	// move the gameobject
 	if (Input::GetKey('W'))
@@ -30,9 +30,11 @@ void PlayerTank::Update(float deltaTime)
 		ownTransf->Translate(-up * deltaTime * speed);
 	if (Input::GetKey('E'))
 		ownTransf->Translate(up * deltaTime * speed);
+	if (Input::GetKey('L'))
+		camTransf->LookAt(ownTransf->GetPos());
 
 	vec2 deltaPos = Input::GetMouseDelta();
-	camTransf->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens, 0);
+	camTransf->Rotate(-deltaPos.x * mouseSens, deltaPos.y * mouseSens, 0);
 
 	Terrain *terrain = Game::GetInstance()->GetTerrain(owner->GetTransform()->GetPos());
 	vec3 curPos = camTransf->GetPos();
