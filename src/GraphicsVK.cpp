@@ -281,10 +281,10 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	if (r == nullptr)
 		return;
 
-	vec3 scale = go->GetScale();
+	vec3 scale = go->GetTransform()->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });
 	float scaledRadius = models[r->GetModel()].sphereRadius * maxScale;
-	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
+	if (!cam->CheckSphere(go->GetTransform()->GetPos(), scaledRadius))
 		return;
 
 	// get the vector of secondary buffers for thread
@@ -297,7 +297,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	// update the uniforms
 	auto uniforms = go->GetUniforms();
 	MatUBO matrices;
-	matrices.model = go->GetModelMatrix();
+	matrices.model = uniforms["Model"].m;
 	matrices.mvp = cam->Get() * matrices.model;
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	

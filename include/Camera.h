@@ -1,9 +1,7 @@
 #ifndef _CAMERA_H
 #define _CAMERA_H
 
-#include <glm\glm.hpp>
-
-using namespace glm;
+#include "Transform.h"
 
 struct Frustrum
 {
@@ -71,8 +69,7 @@ class Camera
 {
 private:
 	const float sensX = 1, sensY = 1;
-	float yaw, pitch;
-	vec3 pos, up, forward, right;
+	Transform transf;
 	mat4 projMatrix, viewMatrix, VP;
 
 	bool orthoMode = false;
@@ -84,17 +81,7 @@ public:
 
 	mat4 Get() const { return VP; }
 
-	vec3 GetForward() const { return forward; }
-	vec3 GetRight() const { return right; }
-	vec3 GetUp() const { return up; }
-
-	vec3 GetPos() const { return pos; }
-	void Translate(vec3 delta) { pos += delta; }
-	void SetPos(vec3 newPos) { pos = newPos; }
-
-	void LookAt(vec3 target);
-
-	void Rotate(float deltaYaw, float deltaPitch) { yaw += deltaYaw * sensX; pitch += deltaPitch * sensY; }
+	Transform* GetTransform() { return &transf; }
 
 	void Recalculate();
 	mat4 GetView() const { return viewMatrix; }

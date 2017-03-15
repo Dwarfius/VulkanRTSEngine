@@ -16,27 +16,18 @@ void GameObject::Update(float deltaTime)
 {
 	for (auto comp : components)
 		comp->Update(deltaTime);
-}
 
-void GameObject::UpdateMatrix()
-{
-	if (renderer == nullptr || !modelDirty)
-		return;
+	if (renderer)
+	{
+		vec3 center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
 
-	vec3 center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
+		mat4 model = transf.GetModelMatrix();
+		model = translate(model, -center);
 
-	modelMatrix = translate(mat4(1), pos);
-	modelMatrix = rotate(modelMatrix, radians(rotation.x), vec3(1, 0, 0));
-	modelMatrix = rotate(modelMatrix, radians(rotation.y), vec3(0, 1, 0));
-	modelMatrix = rotate(modelMatrix, radians(rotation.z), vec3(0, 0, 1));
-	modelMatrix = scale(modelMatrix, size);
-	modelMatrix = translate(modelMatrix, -center);
-
-	Shader::UniformValue val;
-	val.m = modelMatrix;
-	uniforms["model"] = val;
-
-	modelDirty = false;
+		Shader::UniformValue val;
+		val.m = model;
+		uniforms["Model"] = val;
+	}
 }
 
 void GameObject::AddComponent(ComponentBase *component)

@@ -1,6 +1,7 @@
 #ifndef _GAME_OBJECT_H
 #define _GAME_OBJECT_H
 
+#include "Transform.h"
 #include "Graphics.h"
 #include "Components\ComponentBase.h"
 #include "Components\Renderer.h"
@@ -8,24 +9,11 @@
 class GameObject
 {
 public:
-	GameObject() : pos(vec3(0, 0, 0)), size(vec3(1, 1, 1)) {}
 	~GameObject();
 
 	void Update(float deltaTime);
 
-	vec3 GetPos() const { return pos; }
-	void SetPos(vec3 pPos) { pos = pPos; modelDirty = true; }
-	void Move(vec3 delta) { pos += delta; modelDirty = true; }
-
-	vec3 GetRotation() const { return rotation; }
-	void SetRotation(vec3 pRotation) { rotation = pRotation; modelDirty = true; }
-	void AddRotation(vec3 delta) { rotation += delta; modelDirty = true; }
-
-	vec3 GetScale() const { return size; }
-	void SetScale(vec3 pScale) { size = pScale; modelDirty = true; }
-	void AddScale(vec3 delta) { size += delta; modelDirty = true; }
-
-	mat4 GetModelMatrix() { if (modelDirty) UpdateMatrix(); return modelMatrix; }
+	Transform* GetTransform() { return &transf; }
 
 	void SetIndex(size_t newInd) { index = newInd; }
 	size_t GetIndex() { return index; }
@@ -40,10 +28,7 @@ public:
 private:
 	size_t index;
 	
-	vec3 pos, rotation, size;
-	mat4 modelMatrix;
-	bool modelDirty = true;
-	void UpdateMatrix();
+	Transform transf;
 
 	unordered_map<string, Shader::UniformValue> uniforms;
 

@@ -9,29 +9,33 @@ void PlayerTank::Update(float deltaTime)
 	const float mouseSens = 0.2f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
+	Transform *camTransf = cam->GetTransform();
+	Transform *ownTransf = owner->GetTransform();
 
 	// update the camera
-	vec3 forward = cam->GetForward();
-	vec3 right = cam->GetRight();
-	vec3 up = cam->GetUp();
+	vec3 forward = camTransf->GetForward();
+	vec3 right = camTransf->GetRight();
+	vec3 up = camTransf->GetUp();
+
+	// move the gameobject
 	if (Input::GetKey('W'))
-		cam->Translate(forward * deltaTime * speed);
+		ownTransf->Translate(forward * deltaTime * speed);
 	if (Input::GetKey('S'))
-		cam->Translate(-forward * deltaTime * speed);
+		ownTransf->Translate(-forward * deltaTime * speed);
 	if (Input::GetKey('D'))
-		cam->Translate(right * deltaTime * speed);
+		ownTransf->Translate(right * deltaTime * speed);
 	if (Input::GetKey('A'))
-		cam->Translate(-right * deltaTime * speed);
+		ownTransf->Translate(-right * deltaTime * speed);
 	if (Input::GetKey('Q'))
-		cam->Translate(-up * deltaTime * speed);
+		ownTransf->Translate(-up * deltaTime * speed);
 	if (Input::GetKey('E'))
-		cam->Translate(up * deltaTime * speed);
+		ownTransf->Translate(up * deltaTime * speed);
 
 	vec2 deltaPos = Input::GetMouseDelta();
-	cam->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens);
+	camTransf->Rotate(deltaPos.x * mouseSens, -deltaPos.y * mouseSens, 0);
 
-	Terrain *terrain = Game::GetInstance()->GetTerrain(owner->GetPos());
-	vec3 curPos = cam->GetPos();
+	Terrain *terrain = Game::GetInstance()->GetTerrain(owner->GetTransform()->GetPos());
+	vec3 curPos = camTransf->GetPos();
 	curPos.y = terrain->GetHeight(curPos) + 1;
-	cam->SetPos(curPos);
+	camTransf->SetPos(curPos);
 }

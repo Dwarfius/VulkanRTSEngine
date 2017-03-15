@@ -51,24 +51,24 @@ void Game::Init()
 	
 	GameObject *go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
-	go->SetRotation(vec3(-90, 0, 0));
+	go->GetTransform()->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
-	go->SetPos(vec3(3, 0, 0));
-	go->SetRotation(vec3(-90, 0, 0));
+	go->GetTransform()->SetPos(vec3(3, 0, 0));
+	go->GetTransform()->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
-	go->SetPos(vec3(-3, 0, 0));
-	go->SetRotation(vec3(-90, 0, 0));
+	go->GetTransform()->SetPos(vec3(-3, 0, 0));
+	go->GetTransform()->SetRotation(vec3(-90, 0, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(1, 0, 2));
-	go->SetPos(vec3(0, 2, 0));
+	go->GetTransform()->SetPos(vec3(0, 2, 0));
 	gameObjects.push_back(go);
 
 	go = new GameObject();
@@ -77,6 +77,7 @@ void Game::Init()
 
 	go = new GameObject();
 	go->AddComponent(new PlayerTank());
+	go->AddComponent(new Renderer(1, 0, 2));
 	gameObjects.push_back(go);
 
 	// activating our threads

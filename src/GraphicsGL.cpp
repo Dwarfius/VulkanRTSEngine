@@ -66,10 +66,10 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 	if (r == nullptr)
 		return;
 
-	vec3 scale = go->GetScale();
+	vec3 scale = go->GetTransform()->GetScale();
 	float maxScale = max({ scale.x, scale.y, scale.z });
 	float scaledRadius = vaos[r->GetModel()].sphereRadius * maxScale;
-	if (!cam->CheckSphere(go->GetPos(), scaledRadius))
+	if (!cam->CheckSphere(go->GetTransform()->GetPos(), scaledRadius))
 		return;
 
 	RenderJob job{
@@ -81,14 +81,12 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 	// copy the existing ones
 	job.uniforms = go->GetUniforms();
 	// add add our own
-	mat4 model = go->GetModelMatrix();
+	mat4 model = job.uniforms["Model"].m;
 	mat4 mvp = cam->Get() * model;
 
 	Shader::UniformValue uniform;
 	uniform.m = mvp;
 	job.uniforms["mvp"] = uniform;
-	uniform.m = model;
-	job.uniforms["Model"] = uniform;
 
 	// we don't actually render, we just create a render job, Display() does the rendering
 	threadJobs[threadId].push_back(job);
