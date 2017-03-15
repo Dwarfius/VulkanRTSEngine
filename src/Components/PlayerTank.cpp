@@ -13,23 +13,23 @@ void PlayerTank::Update(float deltaTime)
 	Transform *ownTransf = owner->GetTransform();
 
 	// update the camera
-	vec3 forward = ownTransf->GetForward();
-	vec3 right = ownTransf->GetRight();
-	vec3 up = ownTransf->GetUp();
+	vec3 forward = camTransf->GetForward();
+	vec3 right = camTransf->GetRight();
+	vec3 up = camTransf->GetUp();
 
 	// move the gameobject
 	if (Input::GetKey('W'))
-		ownTransf->Translate(forward * deltaTime * speed);
+		camTransf->Translate(forward * deltaTime * speed);
 	if (Input::GetKey('S'))
-		ownTransf->Translate(-forward * deltaTime * speed);
+		camTransf->Translate(-forward * deltaTime * speed);
 	if (Input::GetKey('D'))
-		ownTransf->Translate(right * deltaTime * speed);
+		camTransf->Translate(right * deltaTime * speed);
 	if (Input::GetKey('A'))
-		ownTransf->Translate(-right * deltaTime * speed);
+		camTransf->Translate(-right * deltaTime * speed);
 	if (Input::GetKey('Q'))
-		ownTransf->Translate(-up * deltaTime * speed);
+		camTransf->Translate(-up * deltaTime * speed);
 	if (Input::GetKey('E'))
-		ownTransf->Translate(up * deltaTime * speed);
+		camTransf->Translate(up * deltaTime * speed);
 	if (Input::GetKey('L'))
 		camTransf->LookAt(ownTransf->GetPos());
 

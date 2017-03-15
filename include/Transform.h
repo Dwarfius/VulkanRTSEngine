@@ -38,7 +38,7 @@ public:
 	void SetRotation(float y, float p, float r) { yaw = y; pitch = p; roll = r; dirtyDirs = true; }
 	void SetRotation(vec3 r) { yaw = r.x; pitch = r.y; roll = r.z; dirtyDirs = true; }
 
-	mat4 GetModelMatrix() { if (dirtyModel || dirtyDirs) UpdateModel(); return modelM; }
+	mat4 GetModelMatrix(vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
 
 private:
 	vec3 pos;
@@ -50,7 +50,7 @@ private:
 	mat4 rotM, modelM;
 
 	void UpdateRot();
-	void UpdateModel();
+	void UpdateModel(vec3 center);
 };
 
 #endif

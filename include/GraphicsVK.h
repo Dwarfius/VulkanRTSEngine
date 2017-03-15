@@ -26,6 +26,7 @@ public:
 	// this is a trampoline to the actual implementation
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
+	// TO-DO: This causes strange location behavior in Vulkan
 	vec3 GetModelCenter(ModelId m) override { return vec3(0, 0, 0); }
 private:
 	void LoadResources(vector<Terrain> terrains);

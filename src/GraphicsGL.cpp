@@ -57,7 +57,8 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 
 void GraphicsGL::BeginGather()
 {
-	
+	// clear the buffer for next frame render
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
@@ -95,6 +96,7 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 
 void GraphicsGL::Display()
 {
+	size_t count = 0;
 	for (uint i = 0; i < maxThreads; i++)
 	{
 		for (RenderJob r : threadJobs[i])
@@ -159,12 +161,10 @@ void GraphicsGL::Display()
 			
 			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
 		}
+		count += threadJobs[i].size();
 		threadJobs[i].clear();
 	}
-
 	glfwSwapBuffers(window);
-	// clear the buffer for next frame render
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void GraphicsGL::CleanUp()
@@ -307,8 +307,6 @@ void GraphicsGL::LoadResources(vector<Terrain> terrains)
 		else
 			LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
 
-		printf("[Info] Center: %f, %f, %f; Radius:%f\n", m.center.x, m.center.y, m.center.z, m.sphereRadius);
-		
 		m.vertexCount = vertices.size();
 		m.indexCount = indices.size();
 		

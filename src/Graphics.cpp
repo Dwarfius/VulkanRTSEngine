@@ -39,9 +39,8 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 	}
 
 	vertices.reserve(vertices.size() + attrib.vertices.size());
-	vec3 newCenter;
+	vec3 min, max;
 	float maxLen = 0;
-	size_t vertsAdded = 0;
 	unordered_map<Vertex, uint> uniqueVerts;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
@@ -51,7 +50,6 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
-			newCenter += vertex.pos;
 
 			if (index.texcoord_index != -1)
 			{
@@ -73,7 +71,20 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 			// checking for vertex duplication
 			if (uniqueVerts.count(vertex) == 0)
 			{
-				vertsAdded++;
+				if (vertex.pos.x < min.x)
+					min.x = vertex.pos.x;
+				if (vertex.pos.y < min.y)
+					min.y = vertex.pos.y;
+				if (vertex.pos.z < min.z)
+					min.z = vertex.pos.z;
+
+				if (vertex.pos.x > max.x)
+					max.x = vertex.pos.x;
+				if (vertex.pos.y > max.y)
+					max.y = vertex.pos.y;
+				if (vertex.pos.z > max.z)
+					max.z = vertex.pos.z;
+
 				uniqueVerts[vertex] = vertices.size(); // marking that new vertex is at this index
 				vertices.push_back(vertex); // adding it at the marked position
 
@@ -86,8 +97,9 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 			indices.push_back(uniqueVerts[vertex]);
 		}
 	}
-	newCenter /= vertsAdded;
-	center = newCenter;
+	//printf("[Info] Min: %f, %f, %f; Max: %f, %f, %f\n", min.x, min.y, min.z, max.x, max.y, max.z);
+	center = (max + min) / 2.f;
+	//printf("[Info] Center was %f, %f, %f for %s\n", center.x, center.y, center.z, name.c_str());
 	radius = maxLen;
 }
 

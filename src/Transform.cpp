@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include <string>
 
 Transform::Transform()
 {
@@ -29,7 +30,7 @@ void Transform::UpdateRot()
 	rotM = rotate(rotM,    radians(pitch), vec3(1, 0, 0));
 	rotM = rotate(rotM,    radians(roll),  vec3(0, 0, 1));
 
-	// why does this has to be -1?
+	// why does this has to be inverted?
 	right   = rotM * vec4(-1, 0, 0, 0);
 	up      = rotM * vec4(0, 1, 0, 0);
 	forward = rotM * vec4(0, 0, 1, 0);
@@ -37,7 +38,7 @@ void Transform::UpdateRot()
 	dirtyDirs = false;
 }
 
-void Transform::UpdateModel()
+void Transform::UpdateModel(vec3 center)
 {
 	if (dirtyDirs)
 		UpdateRot();
@@ -45,6 +46,7 @@ void Transform::UpdateModel()
 	modelM = translate(mat4(1), pos);
 	modelM = modelM * rotM;
 	modelM = scale(modelM, size);
+	modelM = translate(modelM, -center);
 
 	dirtyModel = false;
 }

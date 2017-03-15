@@ -20,9 +20,7 @@ void GameObject::Update(float deltaTime)
 	if (renderer)
 	{
 		vec3 center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
-
-		mat4 model = transf.GetModelMatrix();
-		model = translate(model, -center);
+		mat4 model = transf.GetModelMatrix(center);
 
 		Shader::UniformValue val;
 		val.m = model;
