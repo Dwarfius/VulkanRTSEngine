@@ -41,7 +41,6 @@ void PlayerTank::Update(float deltaTime)
 	// terrain facing
 	vec3 newUp = terrain->GetNormal(curPos);
 
-
 	// 3rd person camera
 	vec2 deltaPos = Input::GetMouseDelta();
 	const float dist = 2;
