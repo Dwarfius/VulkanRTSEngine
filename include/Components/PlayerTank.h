@@ -5,7 +5,11 @@
 
 class PlayerTank : public ComponentBase
 {
+public:
 	void Update(float deltaTime) override;
+
+private:
+	float heightOffset = 0;
 };
 
 #endif

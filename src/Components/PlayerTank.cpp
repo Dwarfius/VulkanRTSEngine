@@ -6,7 +6,7 @@ void PlayerTank::Update(float deltaTime)
 {
 	// just general settings
 	const float speed = 1;
-	const float mouseSens = 0.2f;
+	const float mouseSens = 1;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
 	Transform *camTransf = cam->GetTransform();
@@ -19,25 +19,39 @@ void PlayerTank::Update(float deltaTime)
 
 	// move the gameobject
 	if (Input::GetKey('W'))
-		camTransf->Translate(forward * deltaTime * speed);
+		ownTransf->Translate(forward * deltaTime * speed);
 	if (Input::GetKey('S'))
-		camTransf->Translate(-forward * deltaTime * speed);
+		ownTransf->Translate(-forward * deltaTime * speed);
 	if (Input::GetKey('D'))
-		camTransf->Translate(right * deltaTime * speed);
+		ownTransf->Translate(right * deltaTime * speed);
 	if (Input::GetKey('A'))
-		camTransf->Translate(-right * deltaTime * speed);
+		ownTransf->Translate(-right * deltaTime * speed);
 	if (Input::GetKey('Q'))
-		camTransf->Translate(-up * deltaTime * speed);
+		ownTransf->Translate(-up * deltaTime * speed);
 	if (Input::GetKey('E'))
-		camTransf->Translate(up * deltaTime * speed);
-	if (Input::GetKey('L'))
-		camTransf->LookAt(ownTransf->GetPos());
+		ownTransf->Translate(up * deltaTime * speed);
+	
+	// terrain walking
+	float yOffset = owner->GetCenter().y * ownTransf->GetScale().y;
+	Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
+	vec3 curPos = ownTransf->GetPos();
+	curPos.y = terrain->GetHeight(curPos) + yOffset;
+	ownTransf->SetPos(curPos);
 
+	// terrain facing
+	vec3 newUp = terrain->GetNormal(curPos);
+
+
+	// 3rd person camera
 	vec2 deltaPos = Input::GetMouseDelta();
-	camTransf->Rotate(-deltaPos.x * mouseSens, deltaPos.y * mouseSens, 0);
+	const float dist = 2;
 
-	Terrain *terrain = Game::GetInstance()->GetTerrain(owner->GetTransform()->GetPos());
-	vec3 curPos = camTransf->GetPos();
-	curPos.y = terrain->GetHeight(curPos) + 1;
-	camTransf->SetPos(curPos);
+	ownTransf->Rotate(-deltaPos.x * mouseSens * 10.f * deltaTime, 0, 0);
+	vec3 tankForward = ownTransf->GetForward();
+	heightOffset -= deltaPos.y * mouseSens * 0.1f * deltaTime;
+	heightOffset = clamp(heightOffset, 0.f, 1.f);
+
+	vec3 camOffset = normalize(vec3(tankForward.x, -0.5f + heightOffset, tankForward.z));
+	camTransf->SetPos(ownTransf->GetPos() - dist * camOffset);
+	camTransf->LookAt(ownTransf->GetPos());
 }

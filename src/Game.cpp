@@ -52,32 +52,33 @@ void Game::Init()
 	GameObject *go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
 	go->GetTransform()->SetRotation(vec3(0, -90, 0));
-	gameObjects.push_back(go);
+	//gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
 	go->GetTransform()->SetPos(vec3(3, 0, 0));
 	go->GetTransform()->SetRotation(vec3(0, 0, 90));
-	gameObjects.push_back(go);
+	//gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
 	go->GetTransform()->SetPos(vec3(-3, 0, 0));
 	go->GetTransform()->SetRotation(vec3(90, 0, 0));
-	gameObjects.push_back(go);
+	//gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(1, 0, 2));
 	go->GetTransform()->SetPos(vec3(0, 2, 0));
-	gameObjects.push_back(go);
+	//gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(2, 0, 1));
-	//gameObjects.push_back(go);
+	gameObjects.push_back(go);
 
 	go = new GameObject();
 	go->AddComponent(new PlayerTank());
 	go->AddComponent(new Renderer(1, 0, 2));
+	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
 	gameObjects.push_back(go);
 
 	// activating our threads

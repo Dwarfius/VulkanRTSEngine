@@ -14,6 +14,7 @@ public:
 	void Update(float deltaTime);
 
 	Transform* GetTransform() { return &transf; }
+	vec3 GetCenter() { return center; }
 
 	void SetIndex(size_t newInd) { index = newInd; }
 	size_t GetIndex() { return index; }
@@ -29,6 +30,7 @@ private:
 	size_t index;
 	
 	Transform transf;
+	vec3 center;
 
 	unordered_map<string, Shader::UniformValue> uniforms;
 

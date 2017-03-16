@@ -19,11 +19,8 @@ void GameObject::Update(float deltaTime)
 
 	if (renderer)
 	{
-		vec3 center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
-		mat4 model = transf.GetModelMatrix(center);
-
 		Shader::UniformValue val;
-		val.m = model;
+		val.m = transf.GetModelMatrix(center);
 		uniforms["Model"] = val;
 	}
 }
@@ -33,4 +30,6 @@ void GameObject::AddComponent(ComponentBase *component)
 	component->Init(this);
 	components.push_back(component);
 	renderer = dynamic_cast<Renderer*>(component);
+	if (renderer)
+		center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
 }
