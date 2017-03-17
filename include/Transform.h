@@ -3,6 +3,7 @@
 
 #include <glm\glm.hpp>
 #include <glm\gtx\transform.hpp>
+#include <glm\gtx\quaternion.hpp>
 
 using namespace glm;
 
@@ -25,25 +26,18 @@ public:
 
 	void LookAt(vec3 target);
 
-	float GetYaw() const { return yaw; }
-	void SetYaw(float newYaw) { yaw = newYaw; dirtyDirs = true; }
-
-	float GetPitch() const { return pitch; }
-	void SetPitch(float newPitch) { pitch = newPitch; dirtyDirs = true; }
-
-	float GetRoll() const { return roll; }
-	void SetRoll(float newRoll) { roll = newRoll; dirtyDirs = true; }
-
-	void Rotate(float deltaYaw, float deltaPitch, float deltaRoll) { yaw += deltaYaw; pitch += deltaPitch; roll += deltaRoll; dirtyDirs = true; }
-	void SetRotation(float y, float p, float r) { yaw = y; pitch = p; roll = r; dirtyDirs = true; }
-	void SetRotation(vec3 r) { yaw = r.x; pitch = r.y; roll = r.z; dirtyDirs = true; }
+	vec3 GetRotation() { return euler; }
+	void Rotate(vec3 deltaEuler) { euler += deltaEuler; dirtyDirs = true; }
+	void SetRotation(vec3 euler) { this->euler = euler; dirtyDirs = true; }
 
 	mat4 GetModelMatrix(vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
 
 private:
 	vec3 pos;
 	vec3 size;
-	float yaw, pitch, roll;
+
+	vec3 euler;
+	quat quaternion;
 	vec3 up, forward, right;
 
 	bool dirtyDirs, dirtyModel;

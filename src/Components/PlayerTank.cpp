@@ -6,7 +6,7 @@ void PlayerTank::Update(float deltaTime)
 {
 	// just general settings
 	const float speed = 1;
-	const float mouseSens = 1;
+	const float mouseSens = 0.75f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
 	Transform *camTransf = cam->GetTransform();
@@ -45,12 +45,19 @@ void PlayerTank::Update(float deltaTime)
 	vec2 deltaPos = Input::GetMouseDelta();
 	const float dist = 2;
 
-	ownTransf->Rotate(-deltaPos.x * mouseSens * 10.f * deltaTime, 0, 0);
+	ownTransf->Rotate(vec3(0, -deltaPos.x * mouseSens * 10.f * deltaTime, 0));
 	vec3 tankForward = ownTransf->GetForward();
 	heightOffset -= deltaPos.y * mouseSens * 0.1f * deltaTime;
 	heightOffset = clamp(heightOffset, 0.f, 1.f);
 
-	vec3 camOffset = normalize(vec3(tankForward.x, -0.5f + heightOffset, tankForward.z));
-	camTransf->SetPos(ownTransf->GetPos() - dist * camOffset);
-	camTransf->LookAt(ownTransf->GetPos());
+	//vec3 camOffset = normalize(vec3(tankForward.x, -0.5f + heightOffset, tankForward.z));
+	//camTransf->SetPos(ownTransf->GetPos() - dist * camOffset);
+	//camTransf->LookAt(ownTransf->GetPos());
+
+	curPos = camTransf->GetPos();
+	curPos.y = terrain->GetHeight(curPos) + 1;
+	camTransf->SetPos(curPos);
+	camTransf->Rotate(vec3(deltaPos.y * mouseSens, -deltaPos.x * mouseSens, 0) * deltaTime);
+	vec3 r = camTransf->GetRotation();
+	printf("[Info] rot: %f %f %f\n", r.x, r.y, r.z);
 }
