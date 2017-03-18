@@ -36,8 +36,18 @@ void Transform::LookAt(vec3 target)
 	UpdateRot();
 }
 
+void Transform::RotateToUp(vec3 newUp)
+{
+	quat extraRot = RotationBetweenVectors(GetUp(), newUp);
+	quaternion = extraRot * quaternion;
+	UpdateRot();
+}
+
 void Transform::UpdateRot()
 {
+	// NOTE: to fix the roll accumulating for fps camera, should do later:
+	// quat = orienX * quat * orienY;
+
 	// making sure that it's a proper unit quat
 	quaternion = normalize(quaternion);
 	rotM = mat4_cast(quaternion);
@@ -62,6 +72,8 @@ void Transform::UpdateModel(vec3 center)
 
 	dirtyModel = false;
 }
+
+
 
 // the quaternion needed to rotate v1 so that it matches v2
 // thank you http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/

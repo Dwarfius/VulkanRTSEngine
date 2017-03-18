@@ -25,13 +25,13 @@ public:
 	void AddScale(vec3 delta) { size += delta; dirtyModel = true; }
 
 	void LookAt(vec3 target);
+	void RotateToUp(vec3 newUp);
 
 	quat GetRotation() { return quaternion; }
 	vec3 GetEuler() { return degrees(eulerAngles(quaternion)); }
 	void Rotate(vec3 deltaEuler) { SetRotation(quat(radians(deltaEuler)) * quaternion); }
 	void SetRotation(vec3 euler) { SetRotation(quat(radians(euler))); }
 	void SetRotation(quat rot) { quaternion = rot; dirtyDirs = true; }
-	quat RotationBetweenVectors(vec3 start, vec3 dest);
 
 	mat4 GetModelMatrix(vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
 
@@ -46,6 +46,8 @@ private:
 
 	void UpdateRot();
 	void UpdateModel(vec3 center);
+
+	quat RotationBetweenVectors(vec3 start, vec3 dest);
 };
 
 #endif
