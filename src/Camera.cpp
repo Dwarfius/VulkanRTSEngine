@@ -16,8 +16,7 @@ Camera::Camera(bool orthoMode)
 
 void Camera::Recalculate()
 {
-	vec3 angles = transf.GetRotation();
-	angles.x = clamp(angles.x, -89.f, 89.f);
+	vec3 angles = transf.GetEuler();
 	transf.SetRotation(angles);
 
 	vec3 pos = transf.GetPos();

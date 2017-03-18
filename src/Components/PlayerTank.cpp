@@ -50,14 +50,14 @@ void PlayerTank::Update(float deltaTime)
 	heightOffset -= deltaPos.y * mouseSens * 0.1f * deltaTime;
 	heightOffset = clamp(heightOffset, 0.f, 1.f);
 
-	//vec3 camOffset = normalize(vec3(tankForward.x, -0.5f + heightOffset, tankForward.z));
-	//camTransf->SetPos(ownTransf->GetPos() - dist * camOffset);
-	//camTransf->LookAt(ownTransf->GetPos());
+	vec3 camOffset = normalize(vec3(tankForward.x, -0.5f + heightOffset, tankForward.z));
+	camTransf->SetPos(ownTransf->GetPos() - dist * camOffset);
+	camTransf->LookAt(ownTransf->GetPos());
 
-	curPos = camTransf->GetPos();
+	/*curPos = camTransf->GetPos();
 	curPos.y = terrain->GetHeight(curPos) + 1;
 	camTransf->SetPos(curPos);
 	camTransf->Rotate(vec3(deltaPos.y * mouseSens, -deltaPos.x * mouseSens, 0) * deltaTime);
-	vec3 r = camTransf->GetRotation();
-	printf("[Info] rot: %f %f %f\n", r.x, r.y, r.z);
+	vec3 r = camTransf->GetEuler();
+	printf("[Info] rot: %f %f %f\n", r.x, r.y, r.z);*/
 }

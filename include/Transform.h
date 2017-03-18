@@ -26,17 +26,18 @@ public:
 
 	void LookAt(vec3 target);
 
-	vec3 GetRotation() { return euler; }
-	void Rotate(vec3 deltaEuler) { euler += deltaEuler; dirtyDirs = true; }
-	void SetRotation(vec3 euler) { this->euler = euler; dirtyDirs = true; }
+	quat GetRotation() { return quaternion; }
+	vec3 GetEuler() { return degrees(eulerAngles(quaternion)); }
+	void Rotate(vec3 deltaEuler) { SetRotation(quat(radians(deltaEuler)) * quaternion); }
+	void SetRotation(vec3 euler) { SetRotation(quat(radians(euler))); }
+	void SetRotation(quat rot) { quaternion = rot; dirtyDirs = true; }
+	quat RotationBetweenVectors(vec3 start, vec3 dest);
 
 	mat4 GetModelMatrix(vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
 
 private:
 	vec3 pos;
 	vec3 size;
-
-	vec3 euler;
 	quat quaternion;
 	vec3 up, forward, right;
 
