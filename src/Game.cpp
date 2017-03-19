@@ -49,7 +49,7 @@ void Game::Init()
 {
 	gameObjects.reserve(2000);
 	
-	GameObject *go = /*new GameObject();
+	GameObject *go; /* = new GameObject();
 	go->AddComponent(new Renderer(0, 0, 0));
 	go->GetTransform()->SetRotation(vec3(0, -90, 0));
 	gameObjects.push_back(go);

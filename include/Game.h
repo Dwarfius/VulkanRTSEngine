@@ -41,14 +41,14 @@ public:
 private:
 	static Game *inst;
 	static Graphics *graphics;
-	bool isVK = true;
+	bool isVK = false;
 
 	float oldTime;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
 
-	bool running;
+	bool running = true;
 	struct ThreadInfo {
 		uint totalThreads;
 		Stage stage;
