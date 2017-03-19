@@ -41,7 +41,7 @@ public:
 private:
 	static Game *inst;
 	static Graphics *graphics;
-	bool isVK = false;
+	bool isVK = true;
 
 	float oldTime;
 	Camera *camera;

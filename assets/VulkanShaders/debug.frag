@@ -10,5 +10,5 @@ layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-    outColor = texture(tex, uv);
+    outColor = vec4(normalOut, 1);
 }
