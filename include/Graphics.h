@@ -22,7 +22,8 @@ const std::vector<string> modelsToLoad = {
 const std::vector<string> texturesToLoad = {
 	"chalet.jpg",
 	"test.jpg",
-	"CubeUnwrap.jpg"
+	"CubeUnwrap.jpg",
+	"wireframe.png"
 };
 
 const int maxThreads = 16;

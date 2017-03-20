@@ -14,7 +14,7 @@ Game::Game()
 	inst = this;
 
 	Terrain terr;
-	terr.Generate("assets/textures/heightmap.png", 0.2f, vec3(), 2);
+	terr.Generate("assets/textures/heightmap.png", 0.05f, vec3(), 0.5f, 1);
 	terrains.push_back(terr);
 
 	if (isVK)
@@ -72,7 +72,7 @@ void Game::Init()
 	gameObjects.push_back(go);*/
 
 	go = new GameObject();
-	go->AddComponent(new Renderer(1, 0, 1));
+	go->AddComponent(new Renderer(1, 0, 3));
 	gameObjects.push_back(go);
 
 	go = new GameObject();

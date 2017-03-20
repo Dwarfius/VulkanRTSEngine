@@ -5,7 +5,7 @@
 void PlayerTank::Update(float deltaTime)
 {
 	// just general settings
-	const float speed = 1;
+	const float speed = 0.5f;
 	const float mouseSens = 0.75f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();

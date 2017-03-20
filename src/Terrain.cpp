@@ -1,7 +1,7 @@
 #include "Terrain.h"
 #include "Graphics.h"
 
-void Terrain::Generate(string name, float step, vec3 offset, float yScale)
+void Terrain::Generate(string name, float step, vec3 offset, float yScale, float uvScale)
 {
 	this->step = step;
 	int channels;
@@ -19,8 +19,8 @@ void Terrain::Generate(string name, float step, vec3 offset, float yScale)
 			v.pos.x = x * step + offset.x;
 			v.pos.z = y * step + offset.z;
 			v.pos.y = pixels[y * width + x] / 255.f * yScale + offset.y;
-			v.uv.x = x % 2;
-			v.uv.y = y % 2;
+			v.uv.x = Wrap(x, uvScale);
+			v.uv.y = Wrap(y, uvScale);
 			verts.push_back(v);
 		}
 	}
@@ -146,4 +146,11 @@ void Terrain::Normalize()
 
 	for (int vertInd = 0; vertInd < verts.size(); vertInd++)
 		verts.at(vertInd).normal = normalize(surfNormals[vertInd]);
+}
+
+float Terrain::Wrap(float val, float range)
+{
+	float cosA = cos((val / range) * pi<float>() / 2);
+	float normalized = (cosA + 1) / 2;
+	return normalized;
 }

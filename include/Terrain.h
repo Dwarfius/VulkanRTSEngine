@@ -7,7 +7,7 @@
 class Terrain
 {
 public:
-	void Generate(string name, float step, vec3 offest, float yScale);
+	void Generate(string name, float step, vec3 offest, float yScale, float uvScale);
 	
 	auto GetVertBegin() { return verts.begin(); }
 	auto GetVertEnd() { return verts.end(); }
@@ -29,5 +29,8 @@ private:
 	float range, step;
 
 	void Normalize();
+
+	// wraps the val value around [0;range] range
+	float Wrap(float val, float range);
 };
 #endif // !_TERRAIN_H
