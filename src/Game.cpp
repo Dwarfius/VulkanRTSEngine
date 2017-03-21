@@ -6,6 +6,8 @@
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
 
+#include <chrono>
+
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
 
@@ -105,6 +107,52 @@ void Game::Update()
 	}
 
 	Input::Update();
+
+	//collCheckTimer += deltaTime;
+	if (collCheckTimer >= collCheckRate)
+	{
+		shouldCollCheck = true;
+		const float startTime = glfwGetTime();
+		//first, check if we're awaiting on the collision update
+		bool threadsWaitingForCol = false;
+		while (!threadsWaitingForCol)
+		{
+			threadsWaitingForCol = true;
+			for (ThreadInfo info : threadInfos)
+				threadsWaitingForCol &= info.stage == Stage::CollStage0;
+		}
+		shouldCollCheck = false; // signal no longer needed
+
+		// signal workers to get start seeding objects in to grid
+		for (uint i = 0; i < threadInfos.size(); i++)
+		{
+			ThreadInfo &info = threadInfos[i];
+			info.stage = Stage::CollStage1;
+		}
+
+		threadsWaitingForCol = false;
+		while (!threadsWaitingForCol)
+		{
+			threadsWaitingForCol = true;
+			for (ThreadInfo info : threadInfos)
+				threadsWaitingForCol &= info.stage == Stage::CollStage2;
+		}
+
+		// flush the grid in respective locations on the main thread
+		grid->Flush();
+
+		// signal workers to get start processing grid cells
+		for (uint i = 0; i < threadInfos.size(); i++)
+		{
+			ThreadInfo &info = threadInfos[i];
+			info.stage = Stage::CollStage3;
+		}
+
+		const float endTime = glfwGetTime();
+		collCheckTimer = endTime - startTime;
+	}
+	else
+		collCheckTime = 0;
 }
 
 void Game::Render()
@@ -113,21 +161,6 @@ void Game::Render()
 	bool threadsIdle = false;
 	while (!threadsIdle)
 	{
-		//first, check if we're awaiting on the collision update
-		bool threadsWaitingForCol = true;
-		for (ThreadInfo info : threadInfos)
-			threadsWaitingForCol &= info.stage == Stage::WaitForColl;
-		if (threadsWaitingForCol)
-		{
-			grid->Flush();
-			// signal workers to get start processing cells
-			for (uint i = 0; i < threadInfos.size(); i++)
-			{
-				ThreadInfo &info = threadInfos[i];
-				info.stage = Stage::CheckColls;
-			}
-		}
-
 		threadsIdle = true;
 		for (ThreadInfo info : threadInfos)
 			threadsIdle &= info.stage == Stage::WaitingToSubmit;
@@ -167,7 +200,7 @@ void Game::Render()
 		info.stage = Stage::Render;
 	}
 	const float endTime = glfwGetTime();
-	deltaTime = endTime - startTime;
+	deltaTime = endTime - startTime + collCheckTime;
 }
 
 void Game::CleanUp()
@@ -200,6 +233,7 @@ Terrain* Game::GetTerrain(vec3 pos)
 	return &terrains[0];
 }
 
+#define DEBUG_THREADS
 void Game::Work(uint infoInd)
 {
 	while (running)
@@ -217,36 +251,59 @@ void Game::Work(uint infoInd)
 		switch (info.stage)
 		{
 		case Stage::Update:
+#ifdef DEBUG_THREADS
+			printf("[Info] Update(%d)\n", infoInd);
+#endif
 			for (size_t i = start; i < end; i++)
 			{
 				gameObjects[i]->SetIndex(i);
 				gameObjects[i]->Update(deltaTime);
 			}
-			info.stage = Stage::CollisionUpdate;
+			info.stage = Stage::WaitingToSubmit;
 			break;
-		case Stage::CollisionUpdate:
-			if (shouldColCheck)
-			{
-				for (size_t i = start; i < end; i++)
-					grid->Add(gameObjects[i], infoInd);
-				info.stage = Stage::WaitForColl;
-			}
-			else
-				info.stage = Stage::WaitingToSubmit;
-			break;
-		case Stage::WaitForColl:
+		case Stage::CollStage0:
+#ifdef DEBUG_THREADS
+			printf("[Info] CollStage0(%d)\n", infoInd);
+			this_thread::sleep_for(chrono::milliseconds(10));
+#endif
 			// againt, threads must be synchronized to avoid racing conditions
 			break;
-		case Stage::CheckColls:
+		case Stage::CollStage1:
+#ifdef DEBUG_THREADS
+			printf("[Info] CollStage1(%d)\n", infoInd);
+#endif
+			for (size_t i = start; i < end; i++)
+				grid->Add(gameObjects[i], infoInd);
+			info.stage = Stage::CollStage2;
+			break;
+		case Stage::CollStage2:
+#ifdef DEBUG_THREADS
+			printf("[Info] CollStage2(%d)\n", infoInd);
+			this_thread::sleep_for(chrono::milliseconds(10));
+#endif
+			break;
+		case Stage::CollStage3:
+#ifdef DEBUG_THREADS
+			printf("[Info] CollStage3(%d)\n", infoInd);
+#endif
 			// process the actual collisions here
-
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::WaitingToSubmit:
+#ifdef DEBUG_THREADS
+			printf("[Info] WaitingToSubmit(%d)\n", infoInd);
+			this_thread::sleep_for(chrono::milliseconds(10));
+#endif
 			// we have to wait until the render thread finishes processing the submitted commands
 			// otherwise we'll overflow the command buffers
+			// in case collision check was triggered, jump back
+			if (shouldCollCheck)
+				info.stage = Stage::CollStage0;
 			break;
 		case Stage::Render:
+#ifdef DEBUG_THREADS
+			printf("[Info] Render(%d)\n", infoInd);
+#endif
 			for (size_t i = start; i < end; i++)
 				graphics->Render(camera, gameObjects[i], infoInd);
 			info.stage = Stage::Update;

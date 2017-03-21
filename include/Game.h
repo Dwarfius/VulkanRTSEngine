@@ -14,9 +14,10 @@
 enum Stage {
 	Idle,
 	Update,
-	CollisionUpdate,
-	WaitForColl,
-	CheckColls,
+	CollStage0,
+	CollStage1,
+	CollStage2,
+	CollStage3,
 	WaitingToSubmit,
 	Render
 };
@@ -44,7 +45,8 @@ public:
 	static Graphics* GetGraphics() { return graphics; }
 private:
 	const float collCheckRate = 0.033f; //30col/s
-	bool shouldColCheck = false;
+	float collCheckTimer = 0;
+	bool shouldCollCheck = false;
 
 	static Game *inst;
 	static Graphics *graphics;
@@ -52,6 +54,7 @@ private:
 	bool isVK = false;
 
 	float deltaTime = 0;
+	float collCheckTime = 0;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
