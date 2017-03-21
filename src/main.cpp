@@ -17,6 +17,7 @@ int main()
 		glfwPollEvents();
 
 		game->Update();
+		game->CollisionUpdate();
 		if(game->IsRunning())
 			game->Render();
 	}

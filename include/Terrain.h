@@ -19,6 +19,8 @@ public:
 	float GetHeight(vec3 pos);
 	vec3 GetNormal(vec3 pos);
 
+	bool Collides(vec3 pos, float range);
+
 private:
 	vector<Vertex> verts;
 	vector<uint32_t> indices;

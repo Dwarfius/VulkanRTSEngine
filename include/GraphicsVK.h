@@ -26,8 +26,6 @@ public:
 	// this is a trampoline to the actual implementation
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
-	vec3 GetModelCenter(ModelId m) override { return models[m].center; }
-
 private:
 	void LoadResources(vector<Terrain> terrains);
 
@@ -147,7 +145,6 @@ private:
 	// LoadResources handles the vbo/ibo creation
 	vk::Buffer vbo, ibo;
 	vk::DeviceMemory vboMem, iboMem;
-	vector<Model> models;
 	void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Buffer &buff, vk::DeviceMemory &mem);
 	void CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props);

@@ -67,10 +67,7 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 	if (r == nullptr)
 		return;
 
-	vec3 scale = go->GetTransform()->GetScale();
-	float maxScale = max({ scale.x, scale.y, scale.z });
-	float scaledRadius = vaos[r->GetModel()].sphereRadius * maxScale;
-	if (!cam->CheckSphere(go->GetTransform()->GetPos(), scaledRadius))
+	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
 		return;
 
 	RenderJob job{
@@ -101,7 +98,7 @@ void GraphicsGL::Display()
 	{
 		for (RenderJob r : threadJobs[i])
 		{
-			Model vao = vaos[r.model];
+			Model vao = models[r.model];
 			Shader shader = shaders[r.shader];
 			TextureId texture = textures[r.texture];
 
@@ -177,12 +174,12 @@ void GraphicsGL::CleanUp()
 	}
 	shaders.clear();
 
-	for (Model m : vaos)
+	for (Model m : models)
 	{
 		glDeleteBuffers(m.buffers.size(), m.buffers.data());
 		glDeleteBuffers(1, &m.id);
 	}
-	vaos.clear();
+	models.clear();
 
 	glDeleteTextures(textures.size(), textures.data());
 	textures.clear();
@@ -338,7 +335,7 @@ void GraphicsGL::LoadResources(vector<Terrain> terrains)
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)(offsetof(Vertex, normal)));
 
 		glBindVertexArray(0);
-		vaos.push_back(m);
+		models.push_back(m);
 	}
 
 	// lastly, the textures

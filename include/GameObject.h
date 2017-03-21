@@ -9,12 +9,15 @@
 class GameObject
 {
 public:
+	GameObject();
 	~GameObject();
 
 	void Update(float deltaTime);
 
 	Transform* GetTransform() { return &transf; }
+	// This is model's center
 	vec3 GetCenter() { return center; }
+	float GetRadius();
 
 	void SetIndex(size_t newInd) { index = newInd; }
 	size_t GetIndex() { return index; }
@@ -26,11 +29,16 @@ public:
 	void AddComponent(ComponentBase *component);
 	Renderer* GetRenderer() { return renderer; }
 
+	void SetCollisionsEnabled(bool val) { collisionsEnabled = val; }
+	bool GetCollisionsEnabled() { return collisionsEnabled; }
+
 private:
 	size_t index;
 	
 	Transform transf;
 	vec3 center;
+
+	bool collisionsEnabled = false;
 
 	unordered_map<string, Shader::UniformValue> uniforms;
 

@@ -281,10 +281,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	if (r == nullptr)
 		return;
 
-	vec3 scale = go->GetTransform()->GetScale();
-	float maxScale = max({ scale.x, scale.y, scale.z });
-	float scaledRadius = models[r->GetModel()].sphereRadius * maxScale;
-	if (!cam->CheckSphere(go->GetTransform()->GetPos(), scaledRadius))
+	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
 		return;
 
 	// get the vector of secondary buffers for thread

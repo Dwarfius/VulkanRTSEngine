@@ -25,6 +25,17 @@ void GameObject::Update(float deltaTime)
 	}
 }
 
+float GameObject::GetRadius()
+{
+	if (!renderer)
+		return 0;
+
+	vec3 scale = transf.GetScale();
+	float maxScale = max({ scale.x, scale.y, scale.z });
+	float radius = Game::GetGraphics()->GetModelRadius(renderer->GetModel());
+	return maxScale * radius;
+}
+
 void GameObject::AddComponent(ComponentBase *component)
 {
 	component->Init(this);

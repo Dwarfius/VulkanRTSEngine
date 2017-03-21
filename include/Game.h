@@ -7,12 +7,16 @@
 #include <vector>
 #include <thread>
 #include "Terrain.h"
+#include "Grid.h"
 
 // have to define it outside of Game
 // it messes up with method declaration
 enum Stage {
 	Idle,
 	Update,
+	CollisionUpdate,
+	WaitForColl,
+	CheckColls,
 	WaitingToSubmit,
 	Render
 };
@@ -27,6 +31,7 @@ public:
 
 	void Init();
 	void Update();
+	void CollisionUpdate();
 	void Render();
 	void CleanUp();
 
@@ -39,14 +44,18 @@ public:
 
 	static Graphics* GetGraphics() { return graphics; }
 private:
+	const float collCheckRate = 0.033f; //30col/s
+
 	static Game *inst;
 	static Graphics *graphics;
+
 	bool isVK = false;
 
 	float oldTime;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
+	Grid *grid;
 
 	bool running = true;
 	struct ThreadInfo {

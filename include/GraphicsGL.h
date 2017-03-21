@@ -20,15 +20,12 @@ public:
 
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
-	vec3 GetModelCenter(ModelId m) override { return vaos[m].center; }
-
 private:
 
 	void OnResize(int width, int height);
 
 	vector<Shader> shaders;
 	vector<TextureId> textures;
-	vector<Model> vaos; //vertex array object (holds info on vbo and ebo)
 	void LoadResources(vector<Terrain> terrains);
 
 	// emulating a render queue

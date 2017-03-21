@@ -13,6 +13,8 @@ Game::Game()
 {
 	inst = this;
 
+	grid = new Grid(vec3(-10, -10, -10), vec3(10, 10, 10), vec3(1, 1, 1));
+
 	Terrain terr;
 	terr.Generate("assets/textures/heightmap.png", 0.05f, vec3(), 0.5f, 1);
 	terrains.push_back(terr);
@@ -121,6 +123,31 @@ void Game::Update()
 		info.deltaTime = deltaTime;
 		info.stage = Stage::Update;
 	}
+
+	
+}
+
+void Game::CollisionUpdate()
+{
+	// checking if threads are idle - means we can start collision checks
+	bool threadsIdle = true;
+	for (ThreadInfo info : threadInfos)
+		// this time, it can be in waitingToSubmit, but then we have to skip collision update
+		threadsIdle &= info.stage == Stage::WaitForColl && info.stage != Stage::WaitingToSubmit;
+
+	// if it's not - don't rush it
+	if (!threadsIdle)
+		return;
+
+	// flush the grid on the main thread
+	grid->Flush();
+	
+	// signal workers to get start processing cells
+	for (uint i = 0; i < threadInfos.size(); i++)
+	{
+		ThreadInfo &info = threadInfos[i];
+		info.stage = Stage::CheckColls;
+	}
 }
 
 void Game::Render()
@@ -135,7 +162,7 @@ void Game::Render()
 		return;
 
 	// safe place to change up things
-	if (glfwGetKey(graphics->GetWindow(), GLFW_KEY_F1) == GLFW_PRESS)
+	if (Input::GetKeyPressed(GLFW_KEY_F1))
 	{
 		printf("[Info] Switching renderer...\n");
 		isVK = !isVK;
@@ -190,6 +217,7 @@ void Game::CleanUp()
 	graphics->CleanUp();
 
 	delete camera;
+	delete grid;
 }
 
 Terrain* Game::GetTerrain(vec3 pos)
@@ -199,6 +227,7 @@ Terrain* Game::GetTerrain(vec3 pos)
 
 void Game::Work(uint infoInd)
 {
+	float collisionTimer = 0;
 	while (running)
 	{
 		ThreadInfo &info = threadInfos[infoInd];
@@ -219,6 +248,26 @@ void Game::Work(uint infoInd)
 				gameObjects[i]->SetIndex(i);
 				gameObjects[i]->Update(info.deltaTime);
 			}
+			info.stage = Stage::CollisionUpdate;
+			break;
+		case Stage::CollisionUpdate:
+			collisionTimer += info.deltaTime;
+			if (collisionTimer > collCheckRate)
+			{
+				for (size_t i = start; i < end; i++)
+					grid->Add(gameObjects[i], infoInd);
+				collisionTimer = 0;
+				info.stage = Stage::WaitForColl;
+			}
+			else
+				info.stage = Stage::WaitingToSubmit;
+			break;
+		case Stage::WaitForColl:
+			// againt, threads must be synchronized to avoid racing conditions
+			break;
+		case Stage::CheckColls:
+			// process the actual collisions here
+
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::WaitingToSubmit:

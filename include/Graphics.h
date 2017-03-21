@@ -83,7 +83,8 @@ public:
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
-	virtual vec3 GetModelCenter(ModelId m) = 0;
+	vec3 GetModelCenter(ModelId m) { return models[m].center; }
+	float GetModelRadius(ModelId m) { return models[m].sphereRadius; }
 
 	GLFWwindow* GetWindow() { return window; }
 	
@@ -105,6 +106,8 @@ protected:
 	static ModelId currModel;
 	static ShaderId currShader;
 	static TextureId currTexture;
+
+	vector<Model> models;
 
 	int renderCalls[maxThreads];
 
