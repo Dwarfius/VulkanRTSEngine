@@ -17,7 +17,6 @@ enum Stage {
 	CollStage0,
 	CollStage1,
 	CollStage2,
-	CollStage3,
 	WaitingToSubmit,
 	Render
 };
@@ -46,7 +45,6 @@ public:
 private:
 	const float collCheckRate = 0.033f; //30col/s
 	float collCheckTimer = 0;
-	bool shouldCollCheck = false;
 
 	static Game *inst;
 	static Graphics *graphics;
