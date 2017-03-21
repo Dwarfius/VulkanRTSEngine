@@ -28,7 +28,10 @@ void Grid::SetTreadBufferCount(uint32_t threads)
 {
 	buffers.resize(threads);
 	for (uint32_t i = 0; i < threads; i++)
+	{
+		buffers[i] = new vector<ResolvedGO>();
 		buffers[i]->reserve(4000);
+	}
 }
 
 void Grid::Add(GameObject *go, uint32_t threadId)
@@ -72,7 +75,7 @@ void Grid::Flush()
 		grid[i]->clear();
 
 	// going through each queue
-	uint32_t total = buffers.size();
+	total = buffers.size();
 	for (uint32_t i = 0; i < total; i++)
 	{
 		// processing individual queue

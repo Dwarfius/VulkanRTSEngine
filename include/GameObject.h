@@ -9,7 +9,6 @@
 class GameObject
 {
 public:
-	GameObject();
 	~GameObject();
 
 	void Update(float deltaTime);

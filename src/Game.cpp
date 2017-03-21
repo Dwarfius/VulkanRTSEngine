@@ -13,8 +13,6 @@ Game::Game()
 {
 	inst = this;
 
-	grid = new Grid(vec3(-10, -10, -10), vec3(10, 10, 10), vec3(1, 1, 1));
-
 	Terrain terr;
 	terr.Generate("assets/textures/heightmap.png", 0.05f, vec3(), 0.5f, 1);
 	terrains.push_back(terr);
@@ -31,6 +29,8 @@ Game::Game()
 	if(isVK)
 		camera->InvertProj();
 
+	grid = new Grid(vec3(-10, -10, -10), vec3(10, 10, 10), vec3(1, 1, 1));
+
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
 	{
@@ -39,12 +39,16 @@ Game::Game()
 		threads.resize(maxThreads);
 		for (uint i = 0; i < maxThreads; i++)
 		{
-			threadInfos.push_back({ maxThreads, Stage::Idle, 0 });
+			threadInfos.push_back({ maxThreads, Stage::Idle });
 			threads[i] = thread(&Game::Work, this, i);
 		}
+		grid->SetTreadBufferCount(maxThreads);
 	}
 	else
+	{
+		grid->SetTreadBufferCount(1);
 		printf("[Info] Using single-thread mode\n");
+	}
 }
 
 void Game::Init()
@@ -89,9 +93,6 @@ void Game::Init()
 		ThreadInfo &info = threadInfos[i];
 		info.stage = Stage::Update;
 	}
-	// setting the up-to-date time
-	oldTime = glfwGetTime();
-
 	graphics->BeginGather();
 }
 
@@ -103,64 +104,36 @@ void Game::Update()
 		return;
 	}
 
-	// checking if threads are idle - means we can start a new frame
-	bool threadsIdle = true;
-	for (ThreadInfo info : threadInfos)
-		threadsIdle &= info.stage == Stage::Idle;
-
-	// if it's not - don't rush it
-	if (!threadsIdle)
-		return;
-
-	const float time = glfwGetTime();
-	const float deltaTime = time - oldTime;
-	oldTime = time;
 	Input::Update();
-
-	for (uint i = 0; i < threadInfos.size(); i++)
-	{
-		ThreadInfo &info = threadInfos[i];
-		info.deltaTime = deltaTime;
-		info.stage = Stage::Update;
-	}
-
-	
-}
-
-void Game::CollisionUpdate()
-{
-	// checking if threads are idle - means we can start collision checks
-	bool threadsIdle = true;
-	for (ThreadInfo info : threadInfos)
-		// this time, it can be in waitingToSubmit, but then we have to skip collision update
-		threadsIdle &= info.stage == Stage::WaitForColl && info.stage != Stage::WaitingToSubmit;
-
-	// if it's not - don't rush it
-	if (!threadsIdle)
-		return;
-
-	// flush the grid on the main thread
-	grid->Flush();
-	
-	// signal workers to get start processing cells
-	for (uint i = 0; i < threadInfos.size(); i++)
-	{
-		ThreadInfo &info = threadInfos[i];
-		info.stage = Stage::CheckColls;
-	}
 }
 
 void Game::Render()
 {
 	// checking if threads are waiting to submit - means they finished submitting work
-	bool threadsIdle = true;
-	for (ThreadInfo info : threadInfos)
-		threadsIdle &= info.stage == Stage::WaitingToSubmit;
-	
-	// if it's not - don't rush the display
-	if (!threadsIdle)
-		return;
+	bool threadsIdle = false;
+	while (!threadsIdle)
+	{
+		//first, check if we're awaiting on the collision update
+		bool threadsWaitingForCol = true;
+		for (ThreadInfo info : threadInfos)
+			threadsWaitingForCol &= info.stage == Stage::WaitForColl;
+		if (threadsWaitingForCol)
+		{
+			grid->Flush();
+			// signal workers to get start processing cells
+			for (uint i = 0; i < threadInfos.size(); i++)
+			{
+				ThreadInfo &info = threadInfos[i];
+				info.stage = Stage::CheckColls;
+			}
+		}
 
+		threadsIdle = true;
+		for (ThreadInfo info : threadInfos)
+			threadsIdle &= info.stage == Stage::WaitingToSubmit;
+	}
+
+	const float startTime = glfwGetTime();
 	// safe place to change up things
 	if (Input::GetKeyPressed(GLFW_KEY_F1))
 	{
@@ -193,6 +166,8 @@ void Game::Render()
 		ThreadInfo &info = threadInfos[i];
 		info.stage = Stage::Render;
 	}
+	const float endTime = glfwGetTime();
+	deltaTime = endTime - startTime;
 }
 
 void Game::CleanUp()
@@ -227,7 +202,6 @@ Terrain* Game::GetTerrain(vec3 pos)
 
 void Game::Work(uint infoInd)
 {
-	float collisionTimer = 0;
 	while (running)
 	{
 		ThreadInfo &info = threadInfos[infoInd];
@@ -246,17 +220,15 @@ void Game::Work(uint infoInd)
 			for (size_t i = start; i < end; i++)
 			{
 				gameObjects[i]->SetIndex(i);
-				gameObjects[i]->Update(info.deltaTime);
+				gameObjects[i]->Update(deltaTime);
 			}
 			info.stage = Stage::CollisionUpdate;
 			break;
 		case Stage::CollisionUpdate:
-			collisionTimer += info.deltaTime;
-			if (collisionTimer > collCheckRate)
+			if (shouldColCheck)
 			{
 				for (size_t i = start; i < end; i++)
 					grid->Add(gameObjects[i], infoInd);
-				collisionTimer = 0;
 				info.stage = Stage::WaitForColl;
 			}
 			else
@@ -277,7 +249,7 @@ void Game::Work(uint infoInd)
 		case Stage::Render:
 			for (size_t i = start; i < end; i++)
 				graphics->Render(camera, gameObjects[i], infoInd);
-			info.stage = Stage::Idle;
+			info.stage = Stage::Update;
 			break;
 		}
 	}

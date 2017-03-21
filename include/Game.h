@@ -31,7 +31,6 @@ public:
 
 	void Init();
 	void Update();
-	void CollisionUpdate();
 	void Render();
 	void CleanUp();
 
@@ -45,13 +44,14 @@ public:
 	static Graphics* GetGraphics() { return graphics; }
 private:
 	const float collCheckRate = 0.033f; //30col/s
+	bool shouldColCheck = false;
 
 	static Game *inst;
 	static Graphics *graphics;
 
 	bool isVK = false;
 
-	float oldTime;
+	float deltaTime = 0;
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
@@ -61,8 +61,8 @@ private:
 	struct ThreadInfo {
 		uint totalThreads;
 		Stage stage;
-		float deltaTime;
 	};
+	
 	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;
 	void Work(uint infoInd);
