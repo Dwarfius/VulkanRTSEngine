@@ -70,13 +70,14 @@ void Grid::Add(GameObject *go, uint32_t threadId)
 void Grid::Flush()
 {
 	// clearing out all previous objects
-	uint32_t total = GetTotal();
-	for (uint32_t i = 0; i < total; i++)
+	size_t totalObjsInGrid = GetTotal();
+	for (uint32_t i = 0; i < totalObjsInGrid; i++)
 		grid[i]->clear();
 
 	// going through each queue
-	total = buffers.size();
-	for (uint32_t i = 0; i < total; i++)
+	size_t totalObjs = 0;
+	size_t buffersSize = buffers.size();
+	for (uint32_t i = 0; i < buffersSize; i++)
 	{
 		// processing individual queue
 		vector<ResolvedGO> *buffer = buffers[i];
@@ -90,7 +91,9 @@ void Grid::Flush()
 					for (uint32_t z = r.coordsStart.z; z <= r.coordsEnd.z; z++)
 						grid[x + width * (y + height * z)]->push_back(r.go);
 		}
+		totalObjs += size;
 		// cleanup of the queue
 		buffer->clear();
 	}
+	//printf("[Info] Objects in the grid: %zd\n", totalObjs);
 }

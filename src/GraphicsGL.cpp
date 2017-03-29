@@ -21,6 +21,7 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(0); // turning off vsync
 	glewExperimental = true;
 	GLenum err = glewInit();
 	if (err != GLEW_OK)

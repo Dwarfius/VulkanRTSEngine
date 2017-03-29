@@ -21,7 +21,7 @@ public:
 	// clears the grid and flushes the queues in to the grid
 	void Flush();
 
-	uint32_t GetTotal() { return width * height * depth; }
+	size_t GetTotal() { return width * height * depth; }
 	vector<GameObject*>* GetCell(uint32_t index) { return grid[index]; }
 
 private:

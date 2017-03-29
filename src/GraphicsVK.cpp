@@ -305,6 +305,9 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
 	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
+
+	// command issuing is done, record the render call
+	renderCalls[threadId]++;
 }
 
 void GraphicsVK::Display()

@@ -16,7 +16,6 @@ enum Stage {
 	Update,
 	CollStage0,
 	CollStage1,
-	CollStage2,
 	WaitingToSubmit,
 	Render
 };
@@ -51,8 +50,12 @@ private:
 
 	bool isVK = false;
 
+	// timer measurements
+	float frameStart = 0;
 	float deltaTime = 0;
 	float collCheckTime = 0;
+	float waitTime = 0;
+
 	Camera *camera;
 	vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
