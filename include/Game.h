@@ -48,7 +48,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
-	bool isVK = false;
+	bool isVK = true;
 
 	// timer measurements
 	float frameStart = 0;

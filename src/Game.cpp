@@ -12,8 +12,8 @@
 //#define DEBUG_THREADS
 
 // should the engine put main thread to sleep 
-// for 100 nanoseconds during waiting for workers to finish
-//#define USE_SLEEP
+// for 1 nanosecond during waiting for workers to finish
+#define USE_SLEEP
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -23,7 +23,7 @@ Game::Game()
 	inst = this;
 
 	Terrain terr;
-	terr.Generate("assets/textures/heightmap.png", 0.05f, vec3(), 0.5f, 1);
+	terr.Generate("assets/textures/heightmap.png", 0.1f, vec3(), 0.5f, 1);
 	terrains.push_back(terr);
 
 	if (isVK)
@@ -38,7 +38,7 @@ Game::Game()
 	if(isVK)
 		camera->InvertProj();
 
-	grid = new Grid(vec3(-10, -10, -10), vec3(10, 10, 10), vec3(1, 1, 1));
+	grid = new Grid(vec3(-10, -1, -10), vec3(10, 1, 10), vec3(1, 1, 1));
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -86,6 +86,16 @@ void Game::Init()
 	go->GetTransform()->SetPos(vec3(0, 2, 0));
 	gameObjects.push_back(go);*/
 
+	for (int i = 0; i < 1000; i++)
+	{
+		go = new GameObject();
+		go->AddComponent(new Renderer(0, 0, 2));
+		go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
+		go->GetTransform()->SetPos(vec3(rand() % 100 - 50, 1, rand() % 100 - 50));
+		gameObjects.push_back(go);
+	}
+
+
 	go = new GameObject();
 	go->AddComponent(new Renderer(1, 0, 3));
 	go->SetCollisionsEnabled(false);
@@ -95,12 +105,6 @@ void Game::Init()
 	go->AddComponent(new PlayerTank());
 	go->AddComponent(new Renderer(0, 0, 2));
 	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
-	gameObjects.push_back(go);
-
-	go = new GameObject();
-	go->AddComponent(new Renderer(0, 0, 2));
-	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
-	go->GetTransform()->SetPos(vec3(0, 0, 5));
 	gameObjects.push_back(go);
 
 	// activating our threads
@@ -134,7 +138,7 @@ void Game::Update()
 		while (!threadsWaitingForCol)
 		{
 #ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(100));
+			this_thread::sleep_for(chrono::microseconds(1));
 #endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
@@ -154,7 +158,7 @@ void Game::Update()
 		while (!threadsWaitingForCol)
 		{
 #ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(100));
+			this_thread::sleep_for(chrono::microseconds(1));
 #endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
@@ -188,7 +192,7 @@ void Game::Render()
 	while (!threadsIdle)
 	{
 #ifdef USE_SLEEP
-		this_thread::sleep_for(chrono::microseconds(100));
+		this_thread::sleep_for(chrono::microseconds(1));
 #endif
 		threadsIdle = true;
 		for (ThreadInfo info : threadInfos)
@@ -301,11 +305,7 @@ void Game::Work(uint infoInd)
 			printf("[Info] CollStage0(%d)\n", infoInd);
 #endif
 			for (size_t i = start; i < end; i++)
-			{
-				GameObject *go = gameObjects[i];
-				go->PreCollision();
-				grid->Add(go, infoInd);
-			}
+				grid->Add(gameObjects[i], infoInd);
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::CollStage1: // actual collision processing
@@ -347,6 +347,9 @@ void Game::Work(uint infoInd)
 		case Stage::WaitingToSubmit:
 #ifdef DEBUG_THREADS
 			printf("[Info] WaitingToSubmit(%d)\n", infoInd);
+#endif
+#ifdef USE_SLEEP
+			this_thread::sleep_for(chrono::microseconds(1));
 #endif
 			// we have to wait until the render thread finishes processing the submitted commands
 			// otherwise we'll overflow the command buffers

@@ -5,6 +5,7 @@
 
 int main()
 {
+	srand(time(0));
 	glfwInit();
 
 	glfwSetTime(0);

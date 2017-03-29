@@ -20,7 +20,7 @@ void GraphicsVK::Init(vector<Terrain> terrains)
 {
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
-		printf("[Error] Vulkan loader unavailable");
+		printf("[Error] Vulkan loader unavailable\n");
 		return;
 	}
 

@@ -58,8 +58,8 @@ float Terrain::GetHeight(vec3 pos)
 	float y = (pos.z + center.z) / step;
 
 	// just to be safe - it's clamped to the edges
-	x = clamp(x, 0.f, width - 1.f);
-	y = clamp(y, 0.f, height - 1.f);
+	x = clamp(x, 0.f, width - 2.f);
+	y = clamp(y, 0.f, height - 2.f);
 
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
@@ -91,8 +91,8 @@ vec3 Terrain::GetNormal(vec3 pos)
 	float y = (pos.z + center.z) / step;
 
 	// just to be safe - it's clamped to the edges
-	x = clamp(x, 0.f, width - 1.f);
-	y = clamp(y, 0.f, height - 1.f);
+	x = clamp(x, 0.f, width - 2.f);
+	y = clamp(y, 0.f, height - 2.f);
 
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
