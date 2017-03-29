@@ -32,8 +32,7 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	printf("[Info] OpenGL context found, version: %s\n", glGetString(GL_VERSION));
 	printf("[Info] GLEW initialized, version: %s\n", glewGetString(GLEW_VERSION));
 
-	// Smooth shading
-	glShadeModel(GL_SMOOTH);
+	// clear settings
 	glClearColor(0, 0, 0, 0);
 	glClearDepth(1);
 
@@ -54,6 +53,8 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	LoadResources(terrains);
 
 	glActiveTexture(GL_TEXTURE0);
+
+	ResetRenderCalls();
 }
 
 void GraphicsGL::BeginGather()

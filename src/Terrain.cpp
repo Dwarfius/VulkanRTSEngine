@@ -154,3 +154,9 @@ float Terrain::Wrap(float val, float range)
 	float normalized = (cosA + 1) / 2;
 	return normalized;
 }
+
+bool Terrain::Collides(vec3 pos, float range)
+{
+	float height = GetHeight(pos);
+	return height < range;
+}

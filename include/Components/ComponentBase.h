@@ -9,6 +9,8 @@ public:
 	virtual void Init(GameObject *o);
 	virtual void Update(float deltaTime);
 	virtual void Destroy();
+	virtual void OnCollideWithTerrain();
+	virtual void OnCollideWithGO(GameObject *other);
 
 	GameObject* GetOwner() { return owner; }
 protected:

@@ -62,3 +62,8 @@ void PlayerTank::Update(float deltaTime)
 	camTransf->SetPos(camPos);
 	camTransf->LookAt(ownTransf->GetPos());
 }
+
+void PlayerTank::OnCollideWithTerrain()
+{
+	//printf("[Info] Colliding with terrain\n");
+}

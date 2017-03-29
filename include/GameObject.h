@@ -15,29 +15,36 @@ public:
 
 	Transform* GetTransform() { return &transf; }
 	// This is model's center
-	vec3 GetCenter() { return center; }
-	float GetRadius();
+	vec3 GetCenter() const { return center; }
+	float GetRadius() const;
 
 	void SetIndex(size_t newInd) { index = newInd; }
-	size_t GetIndex() { return index; }
+	size_t GetIndex() const { return index; }
 
 	// compiler should perform RVO, so please do it
 	// https://web.archive.org/web/20130930101140/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value
 	auto GetUniforms() const { return uniforms; }
 
 	void AddComponent(ComponentBase *component);
-	Renderer* GetRenderer() { return renderer; }
+	Renderer* GetRenderer() const { return renderer; }
 
 	void SetCollisionsEnabled(bool val) { collisionsEnabled = val; }
-	bool GetCollisionsEnabled() { return collisionsEnabled; }
+	bool GetCollisionsEnabled() const { return collisionsEnabled; }
+	void CollidedWithTerrain();
+	void CollidedWithGO(GameObject *go);
+
+	static bool Collide(GameObject *g1, GameObject *g2);
+
+	bool IsDead() const { return dead; }
+	void Die() { dead = true; }
 
 private:
 	size_t index;
-	
+	bool dead = false;
 	Transform transf;
 	vec3 center;
 
-	bool collisionsEnabled = false;
+	bool collisionsEnabled = true;
 
 	unordered_map<string, Shader::UniformValue> uniforms;
 

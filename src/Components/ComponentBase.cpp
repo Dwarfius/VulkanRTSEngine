@@ -14,3 +14,13 @@ void ComponentBase::Destroy()
 {
 
 }
+
+void ComponentBase::OnCollideWithTerrain()
+{
+
+}
+
+void ComponentBase::OnCollideWithGO(GameObject *other)
+{
+
+}

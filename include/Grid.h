@@ -22,7 +22,7 @@ public:
 	void Flush();
 
 	size_t GetTotal() { return width * height * depth; }
-	vector<GameObject*>* GetCell(uint32_t index) { return grid[index]; }
+	vector<GameObject*>* GetCell(size_t index) { return grid[index]; }
 
 private:
 	vec3 start, end, cellSize;

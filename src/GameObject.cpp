@@ -25,14 +25,14 @@ void GameObject::Update(float deltaTime)
 	}
 }
 
-float GameObject::GetRadius()
+float GameObject::GetRadius() const
 {
 	if (!renderer)
 		return 0;
 
-	vec3 scale = transf.GetScale();
-	float maxScale = max({ scale.x, scale.y, scale.z });
-	float radius = Game::GetGraphics()->GetModelRadius(renderer->GetModel());
+	const vec3 scale = transf.GetScale();
+	const float maxScale = max({ scale.x, scale.y, scale.z });
+	const float radius = Game::GetGraphics()->GetModelRadius(renderer->GetModel());
 	return maxScale * radius;
 }
 
@@ -43,4 +43,29 @@ void GameObject::AddComponent(ComponentBase *component)
 	renderer = dynamic_cast<Renderer*>(component);
 	if (renderer)
 		center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
+}
+
+void GameObject::CollidedWithTerrain()
+{
+	for (ComponentBase *base : components)
+		base->OnCollideWithTerrain();
+}
+
+void GameObject::CollidedWithGO(GameObject *go)
+{
+	for (ComponentBase *base : components)
+		base->OnCollideWithGO(go);
+}
+
+bool GameObject::Collide(GameObject *g1, GameObject *g2)
+{
+	const vec3 g1Pos = g1->GetTransform()->GetPos();
+	const vec3 g2Pos = g2->GetTransform()->GetPos();
+
+	const float g1Rad = g1->GetRadius();
+	const float g2Rad = g2->GetRadius();
+
+	// simple bounding sphere check
+	const float radiiSum = g2Rad + g1Rad;
+	return length2(g2Pos - g1Pos) < radiiSum * radiiSum;
 }

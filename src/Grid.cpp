@@ -36,6 +36,9 @@ void Grid::SetTreadBufferCount(uint32_t threads)
 
 void Grid::Add(GameObject *go, uint32_t threadId)
 {
+	if (!go->GetCollisionsEnabled())
+		return;
+
 	// getting our bounding sphere definition
 	vec3 loc = go->GetTransform()->GetPos();
 	float radius = go->GetRadius();
@@ -48,6 +51,10 @@ void Grid::Add(GameObject *go, uint32_t threadId)
 	// constraining coords to edges, if needed
 	AABBStart = clamp(AABBStart, start, end);
 	AABBEnd = clamp(AABBEnd, start, end);
+
+	// converting to grid local coords
+	AABBStart -= start;
+	AABBEnd -= start;
 
 	// figuring out which cell it goes to
 	vec3 coordsStart = vec3(
@@ -86,9 +93,9 @@ void Grid::Flush()
 		{
 			// processing resolved game object from the queue - adding it to respective cells
 			ResolvedGO r = buffer->at(j);
-			for (uint32_t x = r.coordsStart.x; x <= r.coordsEnd.x; x++)
-				for (uint32_t y = r.coordsStart.y; y <= r.coordsEnd.y; y++)
-					for (uint32_t z = r.coordsStart.z; z <= r.coordsEnd.z; z++)
+			for (int x = r.coordsStart.x; x <= r.coordsEnd.x; x++)
+				for (int y = r.coordsStart.y; y <= r.coordsEnd.y; y++)
+					for (int z = r.coordsStart.z; z <= r.coordsEnd.z; z++)
 						grid[x + width * (y + height * z)]->push_back(r.go);
 		}
 		totalObjs += size;

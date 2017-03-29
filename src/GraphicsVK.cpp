@@ -43,6 +43,8 @@ void GraphicsVK::Init(vector<Terrain> terrains)
 	LoadResources(terrains);
 	CreateSampler();
 	CreateDescriptorSet();
+
+	ResetRenderCalls();
 }
 
 void GraphicsVK::LoadResources(vector<Terrain> terrains)

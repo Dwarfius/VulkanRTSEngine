@@ -30,7 +30,6 @@ Game::Game()
 		graphics = new GraphicsVK();
 	else
 		graphics = new GraphicsGL();
-	graphics->ResetRenderCalls();
 	graphics->Init(terrains);
 	
 	Input::SetWindow(graphics->GetWindow());
@@ -89,6 +88,7 @@ void Game::Init()
 
 	go = new GameObject();
 	go->AddComponent(new Renderer(1, 0, 3));
+	go->SetCollisionsEnabled(false);
 	gameObjects.push_back(go);
 
 	go = new GameObject();
@@ -290,7 +290,7 @@ void Game::Work(uint infoInd)
 			}
 			info.stage = Stage::WaitingToSubmit;
 			break;
-		case Stage::CollStage0:
+		case Stage::CollStage0: // collision preprocessing - sorting of objects to grid
 #ifdef DEBUG_THREADS
 			printf("[Info] CollStage0(%d)\n", infoInd);
 #endif
@@ -298,14 +298,41 @@ void Game::Work(uint infoInd)
 				grid->Add(gameObjects[i], infoInd);
 			info.stage = Stage::WaitingToSubmit;
 			break;
-		case Stage::CollStage1:
+		case Stage::CollStage1: // actual collision processing
 #ifdef DEBUG_THREADS
 			printf("[Info] CollStage1(%d)\n", infoInd);
 #endif
-			// process the actual collisions here
+			// figure out which cells to process
+			size = ceil(grid->GetTotal() / (float)info.totalThreads);
+			start = size * infoInd;
+			end = start + size;
+			if (end > grid->GetTotal()) // just a safety precaution
+				end = grid->GetTotal();
+			for (size_t i = start; i < end; i++)
+			{
+				vector<GameObject*> *cell = grid->GetCell(i);
+				size_t cellSize = cell->size();
+				for (size_t j = 0; j < cellSize; j++)
+				{
+					// first, check terrain collision
+					GameObject *go = cell->at(j);
+					Transform *t = go->GetTransform();
+					Terrain *terrain = GetTerrain(t->GetPos());
+					if (terrain->Collides(t->GetPos(), go->GetRadius()))
+						go->CollidedWithTerrain();
 
+					for (size_t k = j + 1; k < cellSize; k++)
+					{
+						GameObject *other = cell->at(k);
+						if (GameObject::Collide(go, other))
+						{
+							go->CollidedWithGO(other);
+							other->CollidedWithGO(go);
+						}
+					}
+				}
+			}
 			info.stage = Stage::WaitingToSubmit;
-			break;
 			break;
 		case Stage::WaitingToSubmit:
 #ifdef DEBUG_THREADS
