@@ -97,6 +97,12 @@ void Game::Init()
 	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
 	gameObjects.push_back(go);
 
+	go = new GameObject();
+	go->AddComponent(new Renderer(0, 0, 2));
+	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
+	go->GetTransform()->SetPos(vec3(0, 0, 5));
+	gameObjects.push_back(go);
+
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
 	{
@@ -295,7 +301,11 @@ void Game::Work(uint infoInd)
 			printf("[Info] CollStage0(%d)\n", infoInd);
 #endif
 			for (size_t i = start; i < end; i++)
-				grid->Add(gameObjects[i], infoInd);
+			{
+				GameObject *go = gameObjects[i];
+				go->PreCollision();
+				grid->Add(go, infoInd);
+			}
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::CollStage1: // actual collision processing

@@ -5,10 +5,12 @@
 #include "Graphics.h"
 #include "Components\ComponentBase.h"
 #include "Components\Renderer.h"
+#include <unordered_set>
 
 class GameObject
 {
 public:
+	GameObject();
 	~GameObject();
 
 	void Update(float deltaTime);
@@ -32,6 +34,7 @@ public:
 	bool GetCollisionsEnabled() const { return collisionsEnabled; }
 	void CollidedWithTerrain();
 	void CollidedWithGO(GameObject *go);
+	void PreCollision();
 
 	static bool Collide(GameObject *g1, GameObject *g2);
 
@@ -44,9 +47,11 @@ private:
 	Transform transf;
 	vec3 center;
 
-	bool collisionsEnabled = true;
-
 	unordered_map<string, Shader::UniformValue> uniforms;
+
+	bool collisionsEnabled = true;
+	bool collidedWithTerrain = false;
+	unordered_set<GameObject*> objsCollidedWith;
 
 	vector<ComponentBase*> components;
 	Renderer *renderer;

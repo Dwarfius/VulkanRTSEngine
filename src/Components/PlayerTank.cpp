@@ -67,3 +67,8 @@ void PlayerTank::OnCollideWithTerrain()
 {
 	//printf("[Info] Colliding with terrain\n");
 }
+
+void PlayerTank::OnCollideWithGO(GameObject *other)
+{
+	printf("[Info] Colliding with other GO\n");
+}

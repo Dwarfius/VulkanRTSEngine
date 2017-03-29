@@ -2,6 +2,11 @@
 #include "Game.h"
 #include "Common.h"
 
+GameObject::GameObject()
+{
+	objsCollidedWith.reserve(20);
+}
+
 GameObject::~GameObject()
 {
 	for (auto comp : components)
@@ -47,14 +52,28 @@ void GameObject::AddComponent(ComponentBase *component)
 
 void GameObject::CollidedWithTerrain()
 {
+	if (collidedWithTerrain)
+		return;
+
+	collidedWithTerrain = true;
 	for (ComponentBase *base : components)
 		base->OnCollideWithTerrain();
 }
 
 void GameObject::CollidedWithGO(GameObject *go)
 {
+	if (objsCollidedWith.count(go))
+		return;
+
+	objsCollidedWith.insert(go);
 	for (ComponentBase *base : components)
 		base->OnCollideWithGO(go);
+}
+
+void GameObject::PreCollision()
+{
+	collidedWithTerrain = false;
+	objsCollidedWith.clear();
 }
 
 bool GameObject::Collide(GameObject *g1, GameObject *g2)
