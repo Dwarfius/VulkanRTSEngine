@@ -24,32 +24,27 @@ find_package(OpenGL REQUIRED) # FindOpenGL.cmake is provided with cmake installa
 find_package(GLEW REQUIRED) # FindGLEW.cmake is provided with cmake installation
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
-find_package(Bullet REQUIRED) # FindBullet.cmake is provided with cmake installation
+find_package(OpenAL REQUIRED)
+
+file(GLOB SRC "src/*.cpp")
+file(GLOB SRC_COMP "src/Components/*.cpp")
+file(GLOB INC "include/*.h")
+file(GLOB INC_COMP "include/Components/*.h")
 
 add_executable(VulkanRTSEngine 
 	# Our own sources...
-	src/main.cpp src/Camera.cpp src/Game.cpp src/GraphicsGL.cpp src/GraphicsVK.cpp src/Components/ComponentBase.cpp
-	src/GameObject.cpp src/Graphics.cpp src/Terrain.cpp src/Input.cpp src/Components/PlayerTank.cpp
-	src/Transform.cpp src/Grid.cpp
-	# headers...
-	include/Common.h include/Camera.h include/Game.h include/Graphics.h include/GraphicsGL.h include/GraphicsVK.h 
-	include/GameObject.h include/Components/ComponentBase.h include/Terrain.h include/Vertex.h
-	include/Components/Renderer.h include/Input.h include/Components/PlayerTank.h
-	include/Transform.h include/Grid.h
-	# and 3rd-party stuff
-	src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
+	${SRC} ${SRC_COMP}
+	# headers
+	${INC} ${INC_COMP})
 
 # just to make our life a little bit more organized, group files
-source_group("Components" FILES 
-	src/Components/ComponentBase.cpp src/Components/Renderer.cpp src/Components/PlayerTank.cpp
-	include/Components/ComponentBase.h include/Components/Renderer.h include/Components/PlayerTank.h)
-source_group("Extra" FILES src/Extra/tinyxml2.cpp include/Extra/tinyxml2.h)
+source_group("Components" FILES ${SRC_COMP}	${INC_COMP})
 
 include_directories(VulkanRTSEngine include/ include/extra 
 	${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}
-	${VULKAN_INCLUDE_DIR} ${BULLET_INCLUDE_DIRS})
+	${VULKAN_INCLUDE_DIR} ${OPENAL_INCLUDE_DIR})
 target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}
-	${VULKAN_LIBRARY} ${BULLET_LIBRARIES})
+	${VULKAN_LIBRARY} ${OPENAL_LIBRARY})
 
 add_custom_command(TARGET VulkanRTSEngine PRE_BUILD COMMAND ${CMAKE_COMMAND}
 					-E copy_directory ${CMAKE_SOURCE_DIR}/assets

@@ -5,15 +5,17 @@
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
+#include "Components\Tank.h"
 
 #include <chrono>
 
 // prints out the thread states to track transitions
 //#define DEBUG_THREADS
 
-// should the engine put main thread to sleep 
+// should the engine put main thread to sleep instead of yielding it
 // for 1 nanosecond during waiting for workers to finish
-#define USE_SLEEP
+// yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
+//#define USE_SLEEP
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -90,6 +92,7 @@ void Game::Init()
 	{
 		go = new GameObject();
 		go->AddComponent(new Renderer(0, 0, 2));
+		go->AddComponent(new Tank());
 		go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
 		go->GetTransform()->SetPos(vec3(rand() % 100 - 50, 1, rand() % 100 - 50));
 		gameObjects.push_back(go);
@@ -139,6 +142,8 @@ void Game::Update()
 		{
 #ifdef USE_SLEEP
 			this_thread::sleep_for(chrono::microseconds(1));
+#else
+			this_thread::yield();
 #endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
@@ -159,6 +164,8 @@ void Game::Update()
 		{
 #ifdef USE_SLEEP
 			this_thread::sleep_for(chrono::microseconds(1));
+#else
+			this_thread::yield();
 #endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
@@ -193,6 +200,8 @@ void Game::Render()
 	{
 #ifdef USE_SLEEP
 		this_thread::sleep_for(chrono::microseconds(1));
+#else
+		this_thread::yield();
 #endif
 		threadsIdle = true;
 		for (ThreadInfo info : threadInfos)
@@ -279,7 +288,14 @@ void Game::Work(uint infoInd)
 	{
 		ThreadInfo &info = threadInfos[infoInd];
 		if (info.stage == Stage::Idle)
+		{
+#ifdef USE_SLEEP
+			this_thread::sleep_for(chrono::microseconds(1));
+#else
+			this_thread::yield();
+#endif
 			continue;
+		}
 
 		size_t size = ceil(gameObjects.size() / (float)info.totalThreads);
 		size_t start = size * infoInd;
@@ -350,6 +366,8 @@ void Game::Work(uint infoInd)
 #endif
 #ifdef USE_SLEEP
 			this_thread::sleep_for(chrono::microseconds(1));
+#else
+			this_thread::yield();
 #endif
 			// we have to wait until the render thread finishes processing the submitted commands
 			// otherwise we'll overflow the command buffers

@@ -45,9 +45,14 @@ void GameObject::AddComponent(ComponentBase *component)
 {
 	component->Init(this);
 	components.push_back(component);
-	renderer = dynamic_cast<Renderer*>(component);
-	if (renderer)
+	Renderer *newRenderer = dynamic_cast<Renderer*>(component);
+	if (newRenderer && !renderer)
+	{
+		renderer = newRenderer;
 		center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
+	}
+	else if (newRenderer && renderer)
+		printf("[Warning] Attempting to attach a renderer to a component with a renderer, ignoring\n");
 }
 
 void GameObject::CollidedWithTerrain()
@@ -85,6 +90,7 @@ bool GameObject::Collide(GameObject *g1, GameObject *g2)
 	const float g2Rad = g2->GetRadius();
 
 	// simple bounding sphere check
+	// using squares to avoid expensive sqrt
 	const float radiiSum = g2Rad + g1Rad;
 	return length2(g2Pos - g1Pos) < radiiSum * radiiSum;
 }

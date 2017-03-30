@@ -54,7 +54,7 @@ private:
 	unordered_set<GameObject*> objsCollidedWith;
 
 	vector<ComponentBase*> components;
-	Renderer *renderer;
+	Renderer *renderer = nullptr;
 };
 
 #endif // !_GAME_OBJECT_H
