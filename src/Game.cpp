@@ -64,51 +64,29 @@ Game::Game()
 
 void Game::Init()
 {
-	gameObjects.reserve(2000);
+	gameObjects.reserve(maxObjects);
 	
-	GameObject *go; /* = new GameObject();
-	go->AddComponent(new Renderer(0, 0, 0));
-	go->GetTransform()->SetRotation(vec3(0, -90, 0));
-	gameObjects.push_back(go);
-
-	go = new GameObject();
-	go->AddComponent(new Renderer(0, 0, 0));
-	go->GetTransform()->SetPos(vec3(3, 0, 0));
-	go->GetTransform()->SetRotation(vec3(0, 0, 90));
-	gameObjects.push_back(go);
-
-	go = new GameObject();
-	go->AddComponent(new Renderer(0, 0, 0));
-	go->GetTransform()->SetPos(vec3(-3, 0, 0));
-	go->GetTransform()->SetRotation(vec3(90, 0, 0));
-	gameObjects.push_back(go);
-
-	go = new GameObject();
-	go->AddComponent(new Renderer(1, 0, 2));
-	go->GetTransform()->SetPos(vec3(0, 2, 0));
-	gameObjects.push_back(go);*/
-
-	for (int i = 0; i < 1000; i++)
+	GameObject *go; 
+	const vec3 halfScale = vec3(0.5f);
+	// basic tanks
+	/*for (int i = 0; i < 1000; i++)
 	{
-		go = new GameObject();
+		vec3 pos = vec3(rand() % 100 - 50, 1, rand() % 100 - 50);
+		go = Instantiate(pos, vec3(), halfScale);
 		go->AddComponent(new Renderer(0, 0, 2));
 		go->AddComponent(new Tank());
-		go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
-		go->GetTransform()->SetPos(vec3(rand() % 100 - 50, 1, rand() % 100 - 50));
-		gameObjects.push_back(go);
-	}
+	}*/
 
-
-	go = new GameObject();
+	// terrain
+	go = Instantiate();
 	go->AddComponent(new Renderer(1, 0, 3));
 	go->SetCollisionsEnabled(false);
-	gameObjects.push_back(go);
 
-	go = new GameObject();
+	// player
+	go = Instantiate(vec3(), vec3(), halfScale);
 	go->AddComponent(new PlayerTank());
 	go->AddComponent(new Renderer(0, 0, 2));
-	go->GetTransform()->SetScale(vec3(0.5f, 0.5f, 0.5f));
-	gameObjects.push_back(go);
+	go->GetTransform()->SetScale(halfScale);
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -275,6 +253,21 @@ void Game::CleanUp()
 
 	delete camera;
 	delete grid;
+}
+
+GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
+{
+	if (gameObjects.size() == maxObjects - 1)
+		return nullptr;
+
+	GameObject *go = new GameObject();
+	Transform *t = go->GetTransform();
+	t->SetPos(pos);
+	t->SetRotation(rot);
+	t->SetScale(scale);
+	gameObjects.push_back(go);
+
+	return go;
 }
 
 Terrain* Game::GetTerrain(vec3 pos)

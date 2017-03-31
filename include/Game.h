@@ -9,6 +9,9 @@
 #include "Terrain.h"
 #include "Grid.h"
 
+#include <tbb\tbb.h>
+#undef max
+
 // have to define it outside of Game
 // it messes up with method declaration
 enum Stage {
@@ -35,12 +38,14 @@ public:
 
 	bool IsRunning() { return running; }
 	size_t GetGameObjectCount() { return gameObjects.size(); }
+	GameObject* Instantiate(vec3 pos = vec3(), vec3 rot = vec3(), vec3 scale = vec3(1));
 	const static uint32_t maxObjects = 4000;
 
 	Camera* GetCamera() { return camera; }
 	Terrain *GetTerrain(vec3 pos);
 
 	static Graphics* GetGraphics() { return graphics; }
+
 private:
 	const float collCheckRate = 0.033f; //30col/s
 	float collCheckTimer = 0;
@@ -48,7 +53,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
-	bool isVK = true;
+	bool isVK = false;
 
 	// timer measurements
 	float frameStart = 0;
@@ -57,7 +62,7 @@ private:
 	float waitTime = 0;
 
 	Camera *camera;
-	vector<GameObject*> gameObjects;
+	tbb::concurrent_vector<GameObject*> gameObjects;
 	vector<Terrain> terrains;
 	Grid *grid;
 

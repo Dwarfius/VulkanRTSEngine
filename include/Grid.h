@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <glm\glm.hpp>
+#include <tbb\concurrent_vector.h>
 
 using namespace std;
 using namespace glm;

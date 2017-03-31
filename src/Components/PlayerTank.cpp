@@ -1,6 +1,7 @@
 #include "Components\PlayerTank.h"
 #include "Game.h"
 #include "Input.h"
+#include "Components\Tank.h"
 
 void PlayerTank::Update(float deltaTime)
 {
@@ -61,6 +62,14 @@ void PlayerTank::Update(float deltaTime)
 
 	camTransf->SetPos(camPos);
 	camTransf->LookAt(ownTransf->GetPos());
+
+	if(Input::GetMouseBtn(0))
+	{
+		vec3 pos = vec3(rand() % 100 - 50, 1, rand() % 100 - 50);
+		GameObject *go = Game::GetInstance()->Instantiate(pos, vec3(), vec3(0.5f));
+		go->AddComponent(new Renderer(0, 0, 2));
+		go->AddComponent(new Tank());
+	}
 }
 
 void PlayerTank::OnCollideWithTerrain()
