@@ -118,14 +118,18 @@ void Game::Update()
 		bool threadsWaitingForCol = false;
 		while (!threadsWaitingForCol)
 		{
-#ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(1));
-#else
-			this_thread::yield();
-#endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
 				threadsWaitingForCol &= info.stage == Stage::WaitingToSubmit;
+
+			if (!threadsWaitingForCol)
+			{
+#ifdef USE_SLEEP
+				this_thread::sleep_for(chrono::microseconds(1));
+#else
+				this_thread::yield();
+#endif
+			}
 		}
 		waitTime += glfwGetTime() - startWait;
 
@@ -140,14 +144,18 @@ void Game::Update()
 		threadsWaitingForCol = false;
 		while (!threadsWaitingForCol)
 		{
-#ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(1));
-#else
-			this_thread::yield();
-#endif
 			threadsWaitingForCol = true;
 			for (ThreadInfo info : threadInfos)
 				threadsWaitingForCol &= info.stage == Stage::WaitingToSubmit;
+
+			if (!threadsWaitingForCol)
+			{
+#ifdef USE_SLEEP
+				this_thread::sleep_for(chrono::microseconds(1));
+#else
+				this_thread::yield();
+#endif
+			}
 		}
 		waitTime += glfwGetTime() - startWait;
 
@@ -176,14 +184,18 @@ void Game::Render()
 	bool threadsIdle = false;
 	while (!threadsIdle)
 	{
-#ifdef USE_SLEEP
-		this_thread::sleep_for(chrono::microseconds(1));
-#else
-		this_thread::yield();
-#endif
 		threadsIdle = true;
 		for (ThreadInfo info : threadInfos)
 			threadsIdle &= info.stage == Stage::WaitingToSubmit;
+
+		if (!threadsIdle)
+		{
+#ifdef USE_SLEEP
+			this_thread::sleep_for(chrono::microseconds(1));
+#else
+			this_thread::yield();
+#endif
+		}
 	}
 	waitTime += glfwGetTime() - startWait;
 
