@@ -4,10 +4,18 @@
 Tank::Tank()
 {
 	navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
+	life = rand() % 5 + 1;
 }
 
 void Tank::Update(float deltaTime)
 {
+	life -= deltaTime;
+	if (life < 0)
+	{
+		owner->Die();
+		return;
+	}
+
 	const float moveSpeed = 1;
 
 	Transform *ownTransf = owner->GetTransform();

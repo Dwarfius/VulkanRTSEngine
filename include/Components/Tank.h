@@ -16,6 +16,7 @@ public:
 
 private:
 	vec3 navTarget;
+	float life = 10;
 };
 
 #endif

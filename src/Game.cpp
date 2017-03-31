@@ -57,9 +57,13 @@ Game::Game()
 	}
 	else
 	{
-		grid->SetTreadBufferCount(1);
-		printf("[Info] Using single-thread mode\n");
+		printf("[Error] Machine must have more than 1 hardware thread to run\n");
+		running = false;
+		// grid->SetTreadBufferCount(1);
+		// printf("[Info] Using single-thread mode\n");
 	}
+
+	aliveGOs.reserve(maxObjects);
 }
 
 void Game::Init()
@@ -221,12 +225,29 @@ void Game::Render()
 	graphics->Display();
 	float renderLength = glfwGetTime() - renderStart;
 
-	printf("[Info] Render calls: %d\n", graphics->GetRenderCalls());
+	printf("[Info] Render calls: %d (of %zd total)\n", graphics->GetRenderCalls(), gameObjects.size());
 	graphics->ResetRenderCalls();
 
 	// update the mvp
 	camera->Recalculate();
 	
+	// this is the place to clear out our gameobjects
+	// the render calls that have been scheduled have been consumed
+	// so no extra references are left
+	// can't use parallel_for because it seems to break down the rendering loop
+	// because there's no way that I know of atm to wait until the parallel_for finishes
+	for(GameObject *go : gameObjects) 
+	{
+		if (!go->IsDead())
+			aliveGOs.push_back(go);
+	}
+
+	// swap
+	size_t objsDeleted = gameObjects.size() - aliveGOs.size();
+	gameObjects.swap(aliveGOs);
+	aliveGOs.clear(); // clean it up for the next iteration to fill it out
+	printf("[Info] Objects deleted: %zd\n", objsDeleted);
+
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -306,7 +327,7 @@ void Game::Work(uint infoInd)
 		size_t start = size * infoInd;
 		size_t end = start + size;
 		if (end > gameObjects.size()) // just a safety precaution
-			end = gameObjects.size();
+			end = gameObjects.size() - 1;
 
 		switch (info.stage)
 		{
@@ -338,7 +359,7 @@ void Game::Work(uint infoInd)
 			start = size * infoInd;
 			end = start + size;
 			if (end > grid->GetTotal()) // just a safety precaution
-				end = grid->GetTotal();
+				end = grid->GetTotal() - 1;
 			for (size_t i = start; i < end; i++)
 			{
 				vector<GameObject*> *cell = grid->GetCell(i);

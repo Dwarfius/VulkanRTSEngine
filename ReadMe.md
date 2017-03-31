@@ -10,6 +10,7 @@ Intel TBB can be fast found using TBB_ROOT_DIR entry.
 Tasks
 =====
 * Start working on collisions
+* There is a rendering bug which appeared after Intel's TBB was added - some object weren't in the render queue
 
 ### OpenGL
 * Animations

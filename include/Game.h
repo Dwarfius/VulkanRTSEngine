@@ -63,6 +63,10 @@ private:
 
 	Camera *camera;
 	tbb::concurrent_vector<GameObject*> gameObjects;
+	// don't use this vector directly, it's always empty
+	// it's here to avoid constant memory allocations
+	// to store maxObjects objects
+	tbb::concurrent_vector<GameObject*> aliveGOs;
 	vector<Terrain> terrains;
 	Grid *grid;
 
