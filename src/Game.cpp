@@ -25,7 +25,7 @@ Game::Game()
 	inst = this;
 
 	Terrain terr;
-	terr.Generate("assets/textures/heightmap.png", 0.1f, vec3(), 0.5f, 1);
+	terr.Generate("assets/textures/heightmap.png", 0.3f, vec3(), 2.f, 1);
 	terrains.push_back(terr);
 
 	if (isVK)
@@ -89,8 +89,8 @@ void Game::Init()
 	// player
 	go = Instantiate(vec3(), vec3(), halfScale);
 	go->AddComponent(new PlayerTank());
-	go->AddComponent(new Renderer(0, 0, 2));
-	go->GetTransform()->SetScale(halfScale);
+	go->AddComponent(new Renderer(2, 0, 4));
+	go->GetTransform()->SetScale(vec3(0.005f));
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -359,7 +359,7 @@ void Game::Work(uint infoInd)
 			start = size * infoInd;
 			end = start + size;
 			if (end > grid->GetTotal()) // just a safety precaution
-				end = grid->GetTotal() - 1;
+				end = grid->GetTotal();
 			for (size_t i = start; i < end; i++)
 			{
 				vector<GameObject*> *cell = grid->GetCell(i);
@@ -384,6 +384,14 @@ void Game::Work(uint infoInd)
 					}
 				}
 			}
+
+			// we messed up our indexes, so recalculate them
+			size = ceil(gameObjects.size() / (float)info.totalThreads);
+			start = size * infoInd;
+			end = start + size;
+			if (end > gameObjects.size()) // just a safety precaution
+				end = gameObjects.size();
+
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::WaitingToSubmit:

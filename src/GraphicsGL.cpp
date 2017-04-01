@@ -66,7 +66,7 @@ void GraphicsGL::BeginGather()
 void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
 {
 	Renderer *r = go->GetRenderer();
-	if (r == nullptr)
+	if (r == nullptr || go->GetIndex() == numeric_limits<size_t>::max())
 		return;
 
 	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
@@ -95,7 +95,6 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 
 void GraphicsGL::Display()
 {
-	size_t count = 0;
 	for (uint i = 0; i < maxThreads; i++)
 	{
 		for (RenderJob r : threadJobs[i])
@@ -160,7 +159,6 @@ void GraphicsGL::Display()
 			
 			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
 		}
-		count += threadJobs[i].size();
 		threadJobs[i].clear();
 	}
 	glfwSwapBuffers(window);

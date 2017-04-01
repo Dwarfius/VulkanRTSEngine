@@ -29,14 +29,17 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
 
-	string fullName = "assets/objects/" + name + ".obj";
+	const string baseDir = "assets/objects/";
+	string fullName = baseDir + name + ".obj";
 	string err;
-	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str());
-	if (!err.empty() || !ret)
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), baseDir.c_str());
+	if (!ret)
 	{
-		printf("[Error] Failed to load %s: %s\n", name, err);
+		printf("[Error] Failed to load %s: %s\n", name.c_str(), err.c_str());
 		return;
 	}
+	if (!err.empty())
+		printf("[Warning] Model loading warning: %s\n", err.c_str());
 
 	vertices.reserve(vertices.size() + attrib.vertices.size());
 	vec3 min, max;

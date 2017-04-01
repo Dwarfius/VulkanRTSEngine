@@ -4,7 +4,6 @@
 
 GameObject::GameObject()
 {
-	objsCollidedWith.reserve(20);
 }
 
 GameObject::~GameObject()

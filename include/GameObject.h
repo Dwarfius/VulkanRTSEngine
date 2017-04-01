@@ -5,7 +5,7 @@
 #include "Graphics.h"
 #include "Components\ComponentBase.h"
 #include "Components\Renderer.h"
-#include <unordered_set>
+#include <tbb\concurrent_unordered_set.h>
 
 class GameObject
 {
@@ -42,7 +42,7 @@ public:
 	void Die() { dead = true; }
 
 private:
-	size_t index;
+	size_t index = numeric_limits<size_t>::max();
 	bool dead = false;
 	Transform transf;
 	vec3 center;
@@ -51,7 +51,7 @@ private:
 
 	bool collisionsEnabled = true;
 	bool collidedWithTerrain = false;
-	unordered_set<GameObject*> objsCollidedWith;
+	tbb::concurrent_unordered_set<GameObject*> objsCollidedWith;
 
 	vector<ComponentBase*> components;
 	Renderer *renderer = nullptr;

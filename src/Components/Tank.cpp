@@ -4,7 +4,7 @@
 Tank::Tank()
 {
 	navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
-	life = rand() % 5 + 1;
+	life = rand() % 5 + 10;
 }
 
 void Tank::Update(float deltaTime)

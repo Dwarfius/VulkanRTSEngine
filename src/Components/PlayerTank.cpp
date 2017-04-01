@@ -66,8 +66,8 @@ void PlayerTank::Update(float deltaTime)
 	if(Input::GetMouseBtn(0))
 	{
 		vec3 pos = vec3(rand() % 100 - 50, 1, rand() % 100 - 50);
-		GameObject *go = Game::GetInstance()->Instantiate(pos, vec3(), vec3(0.5f));
-		go->AddComponent(new Renderer(0, 0, 2));
+		GameObject *go = Game::GetInstance()->Instantiate(pos, vec3(), vec3(0.005f));
+		go->AddComponent(new Renderer(2, 0, 5));
 		go->AddComponent(new Tank());
 	}
 }

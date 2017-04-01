@@ -280,7 +280,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 		return;
 
 	Renderer *r = go->GetRenderer();
-	if (r == nullptr)
+	if (r == nullptr || go->GetIndex() == numeric_limits<size_t>::max())
 		return;
 
 	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
