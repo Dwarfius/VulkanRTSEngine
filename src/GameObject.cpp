@@ -2,10 +2,6 @@
 #include "Game.h"
 #include "Common.h"
 
-GameObject::GameObject()
-{
-}
-
 GameObject::~GameObject()
 {
 	for (auto comp : components)

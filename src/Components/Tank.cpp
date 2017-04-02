@@ -1,5 +1,7 @@
 #include "Components\Tank.h"
 #include "Game.h"
+#include "Components\GameMode.h"
+#include "Audio.h"
 
 Tank::Tank()
 {
@@ -28,12 +30,18 @@ void Tank::Update(float deltaTime)
 
 void Tank::OnCollideWithGO(GameObject *other)
 {
-
+	if (other == GameMode::GetInstance()->GetOwner())
+	{
+		owner->Die();
+		other->Die();
+	}
 }
 
 void Tank::Destroy()
 {
-	if(onDeathCallback && Game::GetInstance()->IsRunning())
+	Audio::Play(0, owner->GetTransform()->GetPos());
+
+	if (onDeathCallback && Game::GetInstance()->IsRunning())
 		onDeathCallback(this);
 	onDeathCallback = nullptr;
 }

@@ -3,13 +3,14 @@
 #include "Input.h"
 #include "Components\Tank.h"
 #include "Components\Missile.h"
+#include "Audio.h"
 
 void PlayerTank::Update(float deltaTime)
 {
 	// just general settings
-	const float speed = 2.f;
+	const float speed = 2.5f;
 	const float mouseSens = 1.f;
-	const float rotSpeed = 45.f;
+	const float rotSpeed = 60.f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
 	Transform *camTransf = cam->GetTransform();
@@ -65,16 +66,8 @@ void PlayerTank::Update(float deltaTime)
 		vec3 shootDir = forward + vec3(0, 0.2f, 0);
 		go->AddComponent(new Missile(shootDir * 10.f, owner));
 
+		Audio::Play(1, curPos);
+
 		shootTimer = shootRate;
 	}
-}
-
-void PlayerTank::OnCollideWithTerrain()
-{
-	//printf("[Info] Colliding with terrain\n");
-}
-
-void PlayerTank::OnCollideWithGO(GameObject *other)
-{
-	//printf("[Info] Colliding with other GO\n");
 }

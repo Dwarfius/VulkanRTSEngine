@@ -9,6 +9,11 @@ GameMode::GameMode()
 	instance = this;
 }
 
+void GameMode::Destroy()
+{
+	instance = nullptr;
+}
+
 void GameMode::Update(float deltaTime)
 {
 	spawnRate += spawnRateAccel * deltaTime;
@@ -30,12 +35,13 @@ void GameMode::Update(float deltaTime)
 			if (go) // we might exceed game's hard limit of Game::maxObjects objects
 			{
 				Tank *tank = new Tank();
-				tank->SetOnDeathCallback([&](ComponentBase* comp) {
-					GameObject *go = comp->GetOwner();
-					enemyTanks.erase(go);
+				tank->SetOnDeathCallback([this](ComponentBase* comp) {
+					if(instance) // check if GameMode is still alive
+						enemyTanks.erase(comp->GetOwner());
 				});
 				go->AddComponent(tank);
 				go->AddComponent(new Renderer(2, 0, 5));
+				enemyTanks.insert(go);
 			}
 		}
 	}

@@ -10,8 +10,6 @@ class PlayerTank : public ComponentBase
 {
 public:
 	void Update(float deltaTime) override;
-	void OnCollideWithTerrain() override;
-	void OnCollideWithGO(GameObject *other) override;
 
 private:
 	const float shootRate = 1;

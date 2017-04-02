@@ -2,6 +2,7 @@
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
 #include "Input.h"
+#include "Audio.h"
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
@@ -27,6 +28,9 @@ Graphics *Game::graphics;
 Game::Game()
 {
 	inst = this;
+
+	Audio::Init();
+	Audio::SetMusicTrack(2);
 
 	Terrain terr;
 	terr.Generate("assets/textures/heightmap.png", 0.3f, vec3(), 2.f, 1);
@@ -247,6 +251,8 @@ void Game::Render()
 	{
 		if (!go->IsDead())
 			aliveGOs.push_back(go);
+		else
+			delete go;
 	}
 
 	// swap
@@ -256,6 +262,9 @@ void Game::Render()
 #ifdef PRINT_GAME_INFO
 	printf("[Info] Objects deleted: %zd\n", objsDeleted);
 #endif
+
+	// play out the audio
+	Audio::PlayQueue(camera->GetTransform());
 
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();

@@ -9,12 +9,19 @@ using namespace std;
 
 class GameObject;
 
+struct GOHash {
+	size_t operator()(const GameObject* goPointer) const {
+		return (size_t)goPointer;
+	}
+};
+
 class GameMode : public ComponentBase
 {
 public:
 	GameMode();
 
 	void Update(float deltaTime) override;
+	void Destroy() override;
 
 	static GameMode* GetInstance() { return instance; }
 

@@ -30,7 +30,7 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
-find_package(OpenAL REQUIRED)
+find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 find_package(TBB REQUIRED) # FindTBB.cmake is from https://github.com/justusc/FindTBB
 
 file(GLOB SRC "src/*.cpp")
@@ -49,9 +49,9 @@ source_group("Components" FILES ${SRC_COMP}	${INC_COMP})
 
 include_directories(VulkanRTSEngine include/ include/extra 
 	${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}
-	${VULKAN_INCLUDE_DIR} ${OPENAL_INCLUDE_DIR} ${TBB_INCLUDE_DIRS})
+	${VULKAN_INCLUDE_DIR} ${ALUT_INCLUDE_DIRS} ${TBB_INCLUDE_DIRS})
 target_link_libraries(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}
-	${VULKAN_LIBRARY} ${OPENAL_LIBRARY} ${TBB_LIBRARIES_DEBUG} ${TBB_LIBRARIES_RELEASE})
+	${VULKAN_LIBRARY} ${ALUT_LIBRARIES} ${TBB_LIBRARIES_DEBUG} ${TBB_LIBRARIES_RELEASE})
 
 add_custom_command(TARGET VulkanRTSEngine PRE_BUILD COMMAND ${CMAKE_COMMAND}
 					-E copy_directory ${CMAKE_SOURCE_DIR}/assets
@@ -84,4 +84,12 @@ if (MSVC)
                     $<$<CONFIG:Debug>:"${TBB_DLL_PATH}/tbb_debug.dll">$<$<NOT:$<CONFIG:Debug>>:"${TBB_DLL_PATH}/tbb.dll"> "$<TARGET_FILE_DIR:VulkanRTSEngine>/tbb_debug.dll")
 
 	unset(TBB_DLL_PATH)
+
+	if(EXISTS "${ALUT_ROOT_DIR}/bin/")
+		add_custom_command(TARGET VulkanRTSEngine POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy
+                    "${ALUT_ROOT_DIR}/bin/alut.dll" "$<TARGET_FILE_DIR:VulkanRTSEngine>/alut.dll")
+	else()
+		message(FATAL_ERROR "ALUT_ROOT_DIR not set, can't copy dll")
+	endif()
 endif()
