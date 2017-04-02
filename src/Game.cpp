@@ -6,6 +6,7 @@
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
 #include "Components\Tank.h"
+#include "Components\GameMode.h"
 
 #include <chrono>
 
@@ -16,6 +17,9 @@
 // for 1 nanosecond during waiting for workers to finish
 // yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
 //#define USE_SLEEP
+
+// a define controlling the print out of some general information
+//#define PRINT_GAME_INFO
 
 Game* Game::inst = nullptr;
 Graphics *Game::graphics;
@@ -89,6 +93,7 @@ void Game::Init()
 	// player
 	go = Instantiate(vec3(), vec3(), halfScale);
 	go->AddComponent(new PlayerTank());
+	go->AddComponent(new GameMode());
 	go->AddComponent(new Renderer(2, 0, 4));
 	go->GetTransform()->SetScale(vec3(0.005f));
 
@@ -225,7 +230,9 @@ void Game::Render()
 	graphics->Display();
 	float renderLength = glfwGetTime() - renderStart;
 
+#ifdef PRINT_GAME_INFO
 	printf("[Info] Render calls: %d (of %zd total)\n", graphics->GetRenderCalls(), gameObjects.size());
+#endif
 	graphics->ResetRenderCalls();
 
 	// update the mvp
@@ -246,7 +253,9 @@ void Game::Render()
 	size_t objsDeleted = gameObjects.size() - aliveGOs.size();
 	gameObjects.swap(aliveGOs);
 	aliveGOs.clear(); // clean it up for the next iteration to fill it out
+#ifdef PRINT_GAME_INFO
 	printf("[Info] Objects deleted: %zd\n", objsDeleted);
+#endif
 
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
@@ -256,7 +265,9 @@ void Game::Render()
 		info.stage = Stage::Render;
 	}
 	deltaTime = glfwGetTime() - frameStart;
+#ifdef PRINT_GAME_INFO
 	printf("[Info] Render Rendering: %.2fms, Collisions: %.2fms, Wait: %.2fms (Total: %.2fms)\n", renderLength * 1000.f, collCheckTime * 1000.f, waitTime * 1000.f, deltaTime * 1000.f);
+#endif
 
 	// resetting our timers
 	collCheckTime = 0;

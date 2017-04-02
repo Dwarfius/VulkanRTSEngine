@@ -4,19 +4,11 @@
 Tank::Tank()
 {
 	navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
-	life = rand() % 5 + 10;
 }
 
 void Tank::Update(float deltaTime)
 {
-	life -= deltaTime;
-	if (life < 0)
-	{
-		owner->Die();
-		return;
-	}
-
-	const float moveSpeed = 1;
+	const float moveSpeed = 2.f;
 
 	Transform *ownTransf = owner->GetTransform();
 	vec3 pos = ownTransf->GetPos();
@@ -37,4 +29,11 @@ void Tank::Update(float deltaTime)
 void Tank::OnCollideWithGO(GameObject *other)
 {
 
+}
+
+void Tank::Destroy()
+{
+	if(onDeathCallback && Game::GetInstance()->IsRunning())
+		onDeathCallback(this);
+	onDeathCallback = nullptr;
 }

@@ -73,7 +73,12 @@ void Transform::UpdateModel(vec3 center)
 	dirtyModel = false;
 }
 
-
+vec3 Transform::RotateAround(vec3 point, vec3 refPoint, vec3 angles)
+{
+	point -= refPoint;
+	point = quat(angles) * point;
+	return point + refPoint;
+}
 
 // the quaternion needed to rotate v1 so that it matches v2
 // thank you http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/

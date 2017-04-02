@@ -35,6 +35,8 @@ public:
 
 	mat4 GetModelMatrix(vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
 
+	static vec3 RotateAround(vec3 point, vec3 refPoint, vec3 angles);
+
 private:
 	vec3 pos;
 	vec3 size;
