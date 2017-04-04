@@ -23,7 +23,12 @@ public:
 	static void SetMusicTrack(ALint track) { musicTrack = track; }
 	static void Cleanup();
 
+	static void IncreaseVolume() { if (volume <= 0.9f) volume += 0.1f; }
+	static void DecreaseVolume() { if (volume >= 0.1f) volume -= 0.1f; }
+
 private:
+	static float volume;
+
 	static void CheckSources();
 	static void CheckError(uint32_t line);
 

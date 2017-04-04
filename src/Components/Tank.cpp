@@ -14,10 +14,12 @@ void Tank::Update(float deltaTime)
 
 	Transform *ownTransf = owner->GetTransform();
 	vec3 pos = ownTransf->GetPos();
-	if (length2(navTarget - pos) < 1)
+	vec3 diff = navTarget - pos;
+	diff.y = 0; // we don't care about height difference
+	if (length2(diff) < 1)
 		navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
 
-	pos += normalize(navTarget - pos) * moveSpeed * deltaTime;
+	pos += normalize(diff) * moveSpeed * deltaTime;
 
 	float yOffset = owner->GetCenter().y * ownTransf->GetScale().y;
 	Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
@@ -30,7 +32,8 @@ void Tank::Update(float deltaTime)
 
 void Tank::OnCollideWithGO(GameObject *other)
 {
-	if (other == GameMode::GetInstance()->GetOwner())
+	GameMode *mode = GameMode::GetInstance();
+	if (mode && other == mode->GetOwner())
 	{
 		owner->Die();
 		other->Die();
@@ -39,9 +42,10 @@ void Tank::OnCollideWithGO(GameObject *other)
 
 void Tank::Destroy()
 {
-	Audio::Play(0, owner->GetTransform()->GetPos());
-
 	if (onDeathCallback && Game::GetInstance()->IsRunning())
+	{
+		Audio::Play(0, owner->GetTransform()->GetPos());
 		onDeathCallback(this);
+	}
 	onDeathCallback = nullptr;
 }

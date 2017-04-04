@@ -44,6 +44,9 @@ public:
 	Camera* GetCamera() { return camera; }
 	Terrain *GetTerrain(vec3 pos);
 
+	// utility method for accessing the time across game
+	float GetTime();
+
 	static Graphics* GetGraphics() { return graphics; }
 
 private:
@@ -53,7 +56,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
-	bool isVK = true;
+	bool isVK = false;
 
 	// timer measurements
 	float frameStart = 0;

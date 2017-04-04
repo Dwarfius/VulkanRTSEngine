@@ -14,7 +14,7 @@ GameObject::~GameObject()
 
 void GameObject::Update(float deltaTime)
 {
-	for (auto comp : components)
+	for (ComponentBase *comp : components)
 		comp->Update(deltaTime);
 
 	if (renderer)

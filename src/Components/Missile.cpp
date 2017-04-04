@@ -1,6 +1,8 @@
 #include "Components\Missile.h"
 #include "GameObject.h"
 #include "Audio.h"
+#include "Game.h"
+#include "Components\GameMode.h"
 
 Missile::Missile(vec3 vel, GameObject *shooter)
 {
@@ -19,6 +21,7 @@ void Missile::Update(float deltaTime)
 void Missile::OnCollideWithTerrain()
 {
 	owner->Die();
+	Audio::Play(0, owner->GetTransform()->GetPos());
 }
 
 void Missile::OnCollideWithGO(GameObject *go)
@@ -30,5 +33,8 @@ void Missile::OnCollideWithGO(GameObject *go)
 
 		owner->Die();
 		go->Die();
+
+		GameMode::GetInstance()->IncreaseScore();
+		printf("New score: %d\n", GameMode::GetInstance()->GetScore());
 	}
 }

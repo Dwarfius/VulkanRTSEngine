@@ -17,6 +17,7 @@ private:
 
 	float heightOffset = 0;
 	vec3 angles;
+	float holdStart = -1;
 };
 
 #endif

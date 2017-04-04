@@ -31,7 +31,7 @@ void GraphicsGL::Init(vector<Terrain> terrains)
 	}
 	printf("[Info] OpenGL context found, version: %s\n", glGetString(GL_VERSION));
 	printf("[Info] GLEW initialized, version: %s\n", glewGetString(GLEW_VERSION));
-
+	
 	// clear settings
 	glClearColor(0, 0, 0, 0);
 	glClearDepth(1);

@@ -1,5 +1,6 @@
 #include "Audio.h"
 
+float Audio::volume = 0.4f;
 vector<ALuint> Audio::buffers;
 vector<Audio::AudioSource> Audio::sources;
 tbb::concurrent_queue<Audio::AudioCommand> Audio::playCommands;
@@ -21,6 +22,7 @@ void Audio::Init(int *argc, char **argv)
 
 	bgSource = { 0, 0, AL_STOPPED };
 	alGenSources(1, &bgSource.source);
+	
 }
 
 void Audio::Play(uint32_t audioInd, vec3 pos)
@@ -49,6 +51,7 @@ void Audio::PlayQueue(Transform *transf)
 	{
 		// update it's position to camera's
 		alSource3f(bgSource.source, AL_POSITION, pos.x, pos.y, pos.z);
+		alSourcef(bgSource.source, AL_GAIN, volume);
 
 		// if it was switched - update it
 		ALuint buffer = buffers[musicTrack];
@@ -65,6 +68,11 @@ void Audio::PlayQueue(Transform *transf)
 			alSourcePlay(bgSource.source);
 	}
 
+	// updating volume
+	for (AudioSource src : sources)
+		if(src.state == AL_PLAYING)
+			alSourcef(src.source, AL_GAIN, volume);
+
 	AudioCommand cmd;
 	while (playCommands.try_pop(cmd))
 	{
@@ -75,6 +83,7 @@ void Audio::PlayQueue(Transform *transf)
 			if (cmd.audioInd == src.boundBuffer && src.state == AL_STOPPED)
 			{
 				alSource3f(src.source, AL_POSITION, cmd.pos.x, cmd.pos.y, cmd.pos.z);
+				alSourcef(src.source, AL_GAIN, volume);
 				alSourcePlay(src.source);
 				src.state = AL_PLAYING;
 				found = true;
@@ -88,6 +97,7 @@ void Audio::PlayQueue(Transform *transf)
 			src.boundBuffer = buffers[cmd.audioInd];
 			alGenSources(1, &src.source);
 			alSourcei(src.source, AL_BUFFER, src.boundBuffer);
+			alSourcef(src.source, AL_GAIN, volume);
 
 			alSource3f(src.source, AL_POSITION, cmd.pos.x, cmd.pos.y, cmd.pos.z);
 			alSourcePlay(src.source);

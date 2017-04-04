@@ -15,7 +15,7 @@ Audio files were found here:
 
 Tasks
 =====
-* There is a rendering bug which appeared after Intel's TBB was added - some object weren't in the render queue
+
 
 ### OpenGL
 * Animations

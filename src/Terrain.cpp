@@ -158,5 +158,5 @@ float Terrain::Wrap(float val, float range)
 bool Terrain::Collides(vec3 pos, float range)
 {
 	float height = GetHeight(pos);
-	return height < range;
+	return height > pos.y - range;
 }

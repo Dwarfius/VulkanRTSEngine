@@ -120,7 +120,21 @@ void Game::Update()
 		return;
 	}
 
-	Input::Update();
+	// audio controls
+	if (Input::GetKeyPressed('U'))
+		Audio::IncreaseVolume();
+	if (Input::GetKeyPressed('J'))
+		Audio::DecreaseVolume();
+
+	// game-mode restart
+	if (!GameMode::GetInstance() && Input::GetKeyPressed('R'))
+	{
+		GameObject *go = Instantiate(vec3(), vec3(), vec3(0.5f));
+		go->AddComponent(new PlayerTank());
+		go->AddComponent(new GameMode());
+		go->AddComponent(new Renderer(2, 0, 4));
+		go->GetTransform()->SetScale(vec3(0.005f));
+	}
 
 	collCheckTimer += deltaTime;
 	if (collCheckTimer >= collCheckRate)
@@ -210,11 +224,14 @@ void Game::Render()
 #endif
 		}
 	}
+	// flush the input buffers
+	Input::Update();
+
 	waitTime += glfwGetTime() - startWait;
 
 	const float startTime = glfwGetTime();
 	// safe place to change up things
-	if (Input::GetKeyPressed(GLFW_KEY_F1))
+	if (Input::GetKeyPressed('G'))
 	{
 		printf("[Info] Switching renderer...\n");
 		isVK = !isVK;
@@ -222,12 +239,14 @@ void Game::Render()
 		graphics->CleanUp();
 		delete graphics;
 
+		printf("\n");
 		if (isVK)
 			graphics = new GraphicsVK();
 		else
 			graphics = new GraphicsGL();
 		graphics->Init(terrains);
 		camera->InvertProj();
+		Input::SetWindow(graphics->GetWindow());
 	}
 
 	float renderStart = glfwGetTime();
@@ -259,9 +278,6 @@ void Game::Render()
 	size_t objsDeleted = gameObjects.size() - aliveGOs.size();
 	gameObjects.swap(aliveGOs);
 	aliveGOs.clear(); // clean it up for the next iteration to fill it out
-#ifdef PRINT_GAME_INFO
-	printf("[Info] Objects deleted: %zd\n", objsDeleted);
-#endif
 
 	// play out the audio
 	Audio::PlayQueue(camera->GetTransform());
@@ -328,6 +344,11 @@ Terrain* Game::GetTerrain(vec3 pos)
 	return &terrains[0];
 }
 
+float Game::GetTime()
+{
+	return glfwGetTime();
+}
+
 void Game::Work(uint infoInd)
 {
 	while (running)
@@ -347,7 +368,7 @@ void Game::Work(uint infoInd)
 		size_t start = size * infoInd;
 		size_t end = start + size;
 		if (end > gameObjects.size()) // just a safety precaution
-			end = gameObjects.size() - 1;
+			end = gameObjects.size();
 
 		switch (info.stage)
 		{

@@ -58,16 +58,28 @@ void PlayerTank::Update(float deltaTime)
 	if(shootTimer > 0)
 		shootTimer -= deltaTime;
 
-	if(shootTimer <= 0 && Input::GetMouseBtn(0))
+	if (shootTimer <= 0)
 	{
-		vec3 spawnPos = curPos + forward * 0.6f + vec3(0, 0.25f, 0);
-		GameObject *go = Game::GetInstance()->Instantiate(spawnPos, vec3(), vec3(0.1f));
-		go->AddComponent(new Renderer(3, 0, 6));
-		vec3 shootDir = forward + vec3(0, 0.2f, 0);
-		go->AddComponent(new Missile(shootDir * 10.f, owner));
+		if (holdStart == -1 && Input::GetMouseBtn(0))
+			holdStart = Game::GetInstance()->GetTime();
 
-		Audio::Play(1, curPos);
+		if (holdStart >= 0 && !Input::GetMouseBtn(0))
+		{
+			float holdLength = Game::GetInstance()->GetTime() - holdStart;
+			if (holdLength > 2)
+				holdLength = 2;
+			float force = mix(5, 20, holdLength / 2);
 
-		shootTimer = shootRate;
+			vec3 spawnPos = curPos + forward * 0.6f + vec3(0, 0.25f, 0);
+			GameObject *go = Game::GetInstance()->Instantiate(spawnPos, vec3(), vec3(0.1f));
+			go->AddComponent(new Renderer(3, 0, 6));
+			vec3 shootDir = forward + vec3(0, 0.2f, 0);
+			go->AddComponent(new Missile(shootDir * force, owner));
+
+			Audio::Play(1, curPos);
+
+			shootTimer = shootRate;
+			holdStart = -1;
+		}
 	}
 }
