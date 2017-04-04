@@ -9,7 +9,7 @@ GameMode::GameMode()
 	instance = this;
 	string msg = "\nWelcome to this small arcade survival game. The goal is to survive as long as possible";
 	msg += "and to destroy as many tanks as possible. Controls are WSAD to move, mouse to aim and shoot";
-	msg += "(hold to charge), U and J are volume controls. Good luck!\n";
+	msg += "(hold to charge), U and J are volume controls, I and K change mouse sensitivity. Good luck!\n";
 	printf(msg.c_str());
 }
 

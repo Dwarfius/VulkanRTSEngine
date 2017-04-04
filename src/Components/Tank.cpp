@@ -5,7 +5,7 @@
 
 Tank::Tank()
 {
-	navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
+	navTarget = vec3(rand() % 150 - 75, 0, rand() % 150 - 75);
 }
 
 void Tank::Update(float deltaTime)
@@ -17,7 +17,7 @@ void Tank::Update(float deltaTime)
 	vec3 diff = navTarget - pos;
 	diff.y = 0; // we don't care about height difference
 	if (length2(diff) < 1)
-		navTarget = vec3(rand() % 100 - 50, 0, rand() % 100 - 50);
+		navTarget = vec3(rand() % 150 - 75, 0, rand() % 150 - 75);
 
 	pos += normalize(diff) * moveSpeed * deltaTime;
 
@@ -37,15 +37,14 @@ void Tank::OnCollideWithGO(GameObject *other)
 	{
 		owner->Die();
 		other->Die();
+
+		Audio::Play(0, owner->GetTransform()->GetPos());
 	}
 }
 
 void Tank::Destroy()
 {
 	if (onDeathCallback && Game::GetInstance()->IsRunning())
-	{
-		Audio::Play(0, owner->GetTransform()->GetPos());
 		onDeathCallback(this);
-	}
 	onDeathCallback = nullptr;
 }

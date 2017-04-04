@@ -46,12 +46,15 @@ public:
 
 	// utility method for accessing the time across game
 	float GetTime();
+	float GetSensitivity() { return sensitivity; }
 
 	static Graphics* GetGraphics() { return graphics; }
 
 private:
 	const float collCheckRate = 0.033f; //30col/s
 	float collCheckTimer = 0;
+
+	float sensitivity = 2.5f;
 
 	static Game *inst;
 	static Graphics *graphics;

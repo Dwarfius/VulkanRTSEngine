@@ -1,6 +1,6 @@
 #include "Audio.h"
 
-float Audio::volume = 0.4f;
+float Audio::volume = 0.2f;
 vector<ALuint> Audio::buffers;
 vector<Audio::AudioSource> Audio::sources;
 tbb::concurrent_queue<Audio::AudioCommand> Audio::playCommands;

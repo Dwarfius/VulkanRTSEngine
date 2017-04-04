@@ -9,7 +9,6 @@ void PlayerTank::Update(float deltaTime)
 {
 	// just general settings
 	const float speed = 2.5f;
-	const float mouseSens = 1.f;
 	const float rotSpeed = 60.f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
@@ -40,8 +39,8 @@ void PlayerTank::Update(float deltaTime)
 	ownTransf->RotateToUp(newUp);
 
 	// 3rd person camera
-	vec2 deltaPos = Input::GetMouseDelta();
-	const float camDist = 2;
+	vec2 deltaPos = Input::GetMouseDelta() * Game::GetInstance()->GetSensitivity();
+	const float camDist = 3;
 
 	angles += vec3(deltaPos.y, -deltaPos.x, 0) * deltaTime;
 	vec3 camPos = curPos - vec3(0, 0, camDist);

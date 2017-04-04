@@ -126,6 +126,11 @@ void Game::Update()
 	if (Input::GetKeyPressed('J'))
 		Audio::DecreaseVolume();
 
+	if (Input::GetKeyPressed('I'))
+		sensitivity += 0.3f;
+	if (Input::GetKeyPressed('K') && sensitivity >= 0.3f)
+		sensitivity -= 0.3f;
+
 	// game-mode restart
 	if (!GameMode::GetInstance() && Input::GetKeyPressed('R'))
 	{
@@ -224,9 +229,9 @@ void Game::Render()
 #endif
 		}
 	}
-	// flush the input buffers
-	Input::Update();
 
+	
+	
 	waitTime += glfwGetTime() - startWait;
 
 	const float startTime = glfwGetTime();
@@ -248,6 +253,9 @@ void Game::Render()
 		camera->InvertProj();
 		Input::SetWindow(graphics->GetWindow());
 	}
+
+	// flush the input buffers
+	Input::Update();
 
 	float renderStart = glfwGetTime();
 	graphics->Display();

@@ -86,6 +86,6 @@ bool GameObject::Collide(GameObject *g1, GameObject *g2)
 
 	// simple bounding sphere check
 	// using squares to avoid expensive sqrt
-	const float radiiSum = g2Rad + g1Rad;
+	const float radiiSum = g2Rad * 0.5f + g1Rad * 0.5f; // halving it because the models used have huge bounding spheres (antenna messes it up)
 	return length2(g2Pos - g1Pos) < radiiSum * radiiSum;
 }
