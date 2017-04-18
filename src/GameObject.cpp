@@ -17,6 +17,8 @@ GameObject::~GameObject()
 		delete comp;
 	}
 	components.clear();
+
+	Game::GetInstance()->ReturnId(index);
 }
 
 void GameObject::Update(float deltaTime)

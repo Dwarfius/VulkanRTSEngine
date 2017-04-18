@@ -28,6 +28,8 @@ Graphics *Game::graphics;
 Game::Game()
 {
 	inst = this;
+	for (size_t i = 0; i < Game::maxObjects; i++)
+		ids.push(i);
 
 	file.open("log.csv");
 	if (!file.is_open())
@@ -333,6 +335,7 @@ GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
 		return nullptr;
 
 	GameObject *go = new GameObject(pos, rot, scale);
+	go->SetIndex(ClaimId());
 	gameObjects.push_back(go);
 
 	return go;
@@ -378,7 +381,6 @@ void Game::Work(uint infoInd)
 			for (size_t i = start; i < end; i++)
 			{
 				GameObject *go = gameObjects[i];
-				go->SetIndex(i);
 				go->Update(deltaTime);
 			}
 			info.start = start;
@@ -474,4 +476,17 @@ void Game::LogToFile(string s)
 {
 	if (file.is_open())
 		file << s << endl;
+}
+
+void Game::ReturnId(size_t id)
+{
+	ids.push(id);
+}
+
+size_t Game::ClaimId()
+{
+	size_t id;
+	if (!ids.try_pop(id))
+		id = numeric_limits<size_t>::max();
+	return id;
 }

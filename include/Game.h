@@ -50,6 +50,9 @@ public:
 	float GetTime();
 	float GetSensitivity() { return sensitivity; }
 
+	void ReturnId(size_t id);
+	size_t ClaimId();
+
 	static Graphics* GetGraphics() { return graphics; }
 
 private:
@@ -86,6 +89,7 @@ private:
 		size_t start, end;
 	};
 	
+	tbb::concurrent_queue<size_t> ids;
 	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;
 	void Work(uint infoInd);

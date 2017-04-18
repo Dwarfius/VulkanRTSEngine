@@ -276,7 +276,7 @@ void GraphicsVK::BeginGather()
 
 void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
 {
-	if (paused || !go)
+	if (paused)
 		return;
 
 	Renderer *r = go->GetRenderer();
@@ -295,8 +295,8 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	MatUBO matrices;
 	matrices.model = uniforms["Model"].m;
 	matrices.mvp = cam->Get() * matrices.model;
-	if (r->GetModel() == 2 && matrices.model[1][1] >= 0.01f)
-		printf("[Info] For %.4d(val = % .5f) got %.7zd\n", index, matrices.model[0][0], GetAlignedOffset(index, sizeof(MatUBO)));
+	//if (matrices.model[1][1] >= 0.005f)
+	//	printf("[Info] For %.4d(val = % .5f, model %d) got %.7zd\n", index, matrices.model[1][1], r->GetModel(), GetAlignedOffset(index, sizeof(MatUBO)));
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
