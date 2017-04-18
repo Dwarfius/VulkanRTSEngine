@@ -13,6 +13,10 @@ public:
 	virtual void OnCollideWithGO(GameObject *other);
 
 	GameObject* GetOwner() { return owner; }
+
+	virtual int GetComponentType() { return Type; }
+	const static int Type;
+
 protected:
 	GameObject *owner;
 };

@@ -2,6 +2,13 @@
 #include "Game.h"
 #include "Common.h"
 
+GameObject::GameObject(vec3 pos, vec3 rot, vec3 scale)
+{
+	transf.SetPos(pos);
+	transf.SetRotation(rot);
+	transf.SetScale(scale);
+}
+
 GameObject::~GameObject()
 {
 	for (auto comp : components)
@@ -14,8 +21,8 @@ GameObject::~GameObject()
 
 void GameObject::Update(float deltaTime)
 {
-	for (ComponentBase *comp : components)
-		comp->Update(deltaTime);
+	for (int i=0; i<components.size(); i++)
+		components[i]->Update(deltaTime);
 
 	if (renderer)
 	{
@@ -48,6 +55,16 @@ void GameObject::AddComponent(ComponentBase *component)
 	}
 	else if (newRenderer && renderer)
 		printf("[Warning] Attempting to attach a renderer to a component with a renderer, ignoring\n");
+}
+
+ComponentBase* GameObject::GetComponent(int type) const
+{
+	for (ComponentBase* comp : components)
+	{
+		if (comp->GetComponentType() == type)
+			return comp;
+	}
+	return nullptr;
 }
 
 void GameObject::CollidedWithTerrain()

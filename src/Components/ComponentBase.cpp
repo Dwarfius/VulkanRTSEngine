@@ -1,5 +1,7 @@
 #include "Components\ComponentBase.h"
 
+const int ComponentBase::Type = 0;
+
 void ComponentBase::Init(GameObject *o)
 {
 	owner = o;

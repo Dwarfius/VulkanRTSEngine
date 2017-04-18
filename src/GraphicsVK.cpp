@@ -276,14 +276,11 @@ void GraphicsVK::BeginGather()
 
 void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
 {
-	if (paused)
+	if (paused || !go)
 		return;
 
 	Renderer *r = go->GetRenderer();
-	if (r == nullptr || go->GetIndex() == numeric_limits<size_t>::max())
-		return;
-
-	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
+	if (!r)
 		return;
 
 	// get the vector of secondary buffers for thread
@@ -298,6 +295,8 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	MatUBO matrices;
 	matrices.model = uniforms["Model"].m;
 	matrices.mvp = cam->Get() * matrices.model;
+	if (r->GetModel() == 2 && matrices.model[1][1] >= 0.01f)
+		printf("[Info] For %.4d(val = % .5f) got %.7zd\n", index, matrices.model[0][0], GetAlignedOffset(index, sizeof(MatUBO)));
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
@@ -415,8 +414,10 @@ void GraphicsVK::CleanUp()
 	
 	device.destroyPipelineLayout(pipelineLayout);
 	device.destroyRenderPass(renderPass);
-	device.destroyShaderModule(vertShader);
-	device.destroyShaderModule(fragShader);
+
+	for (auto shaderMod : shaderModules)
+		device.destroyShaderModule(shaderMod);
+	shaderModules.clear();
 
 	for (auto v : imgViews)
 		device.destroyImageView(v);
@@ -425,7 +426,9 @@ void GraphicsVK::CleanUp()
 	instance.destroySurfaceKHR(surface);
 
 	device.destroy();
+#ifdef _DEBUG
 	DestroyDebugReportCallback(instance, debugCallback, nullptr);
+#endif
 	instance.destroy();
 
 	glfwDestroyWindow(window);
@@ -880,8 +883,11 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	string vert = readFile("assets/VulkanShaders/" + name + "-vert.spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
-	vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
-	fragShader = device.createShaderModule({ {}, frag.size(), (const uint32_t*)frag.data() });
+	vk::ShaderModule vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
+	vk::ShaderModule fragShader = device.createShaderModule({ {}, frag.size(), (const uint32_t*)frag.data() });
+
+	shaderModules.push_back(vertShader);
+	shaderModules.push_back(fragShader);
 
 	// now, to link them up
 	vector<vk::PipelineShaderStageCreateInfo> stages = {
@@ -1130,6 +1136,7 @@ void GraphicsVK::CreateDescriptorSet()
 void GraphicsVK::CreateUBO()
 {
 	size_t uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	printf("[Info] Ubo size: %zd(for %d)\n", uboSize, Game::maxObjects);
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
 
 	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});

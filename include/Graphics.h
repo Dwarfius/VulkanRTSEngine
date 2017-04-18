@@ -34,6 +34,7 @@ const vector<string> texturesToLoad = {
 const int maxThreads = 16;
 
 // providing unified interfaces (just to make it easier to see/track)
+// Model
 typedef uint32_t ModelId;
 struct Model 
 {
@@ -43,15 +44,20 @@ struct Model
 	vec3 center;
 	float sphereRadius;
 
-	vector<uint32_t> buffers; // OpenGL resource tracking
+	// OpenGL resource tracking
+	vector<uint32_t> buffers; 
 };
 
+// Shader
 typedef uint32_t ShaderId;
 struct Shader 
 {
 	uint32_t id;
 
-	enum UniformType { Int, Float, Vec2, Vec3, Vec4, Mat4 };
+	enum UniformType { 
+		Int, Float, Vec2, 
+		Vec3, Vec4, Mat4 
+	};
 	union UniformValue {
 		int32_t i;
 		float f;
@@ -69,9 +75,11 @@ struct Shader
 	};
 	unordered_map<string, BindPoint> uniforms;
 
-	vector<uint32_t> shaderSources; // OpenGL resource tracking
+	// OpenGL resource tracking
+	vector<uint32_t> shaderSources; 
 };
 
+// Texture
 typedef uint32_t TextureId;
 
 // forward declaring to resolve a circular dependency

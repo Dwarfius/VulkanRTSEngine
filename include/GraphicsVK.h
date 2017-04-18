@@ -78,7 +78,7 @@ private:
 	// Graphic Pipeline
 	vector<vk::Pipeline> pipelines;
 	vk::PipelineLayout pipelineLayout;
-	vk::ShaderModule vertShader, fragShader;
+	vector<vk::ShaderModule> shaderModules;
 	vk::Pipeline CreatePipeline(string name);
 
 	// Render Frame Buffers

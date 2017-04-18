@@ -66,10 +66,7 @@ void GraphicsGL::BeginGather()
 void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
 {
 	Renderer *r = go->GetRenderer();
-	if (r == nullptr || go->GetIndex() == numeric_limits<size_t>::max())
-		return;
-
-	if (!cam->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
+	if (!r)
 		return;
 
 	RenderJob job{
@@ -347,15 +344,15 @@ void GraphicsGL::LoadResources(vector<Terrain> terrains)
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		int texWidth, texHeight, texChannels;
 		string name = "assets/textures/" + texturesToLoad[i];
 		void *pixels = LoadTexture(name, &texWidth, &texHeight, &texChannels, STBI_rgb);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-		glGenerateMipmap(GL_TEXTURE_2D);
+		//glGenerateMipmap(GL_TEXTURE_2D);
 
 		FreeTexture(pixels);
 

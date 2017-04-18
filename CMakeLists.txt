@@ -12,7 +12,7 @@ set(TBB_ROOT_DIR "" CACHE PATH "Path to root of TBB directory")
 
 # Turning on Full Optimization to help with model loading
 if(MSVC)
-	# spexicy all optimizations
+	# specify all optimizations
 	string(REPLACE "/Od" "/Ox" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 	# turn of conflicting Run Time Checks
 	string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")

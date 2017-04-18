@@ -29,8 +29,13 @@ Game::Game()
 {
 	inst = this;
 
+	file.open("log.csv");
+	if (!file.is_open())
+		printf("[Warning] Log file didn't open\n");
+	LogToFile("Time, Render(ms), Physics(ms), Idle(ms), Total(ms), Visible, Total");
+
 	Audio::Init();
-	Audio::SetMusicTrack(2);
+	//Audio::SetMusicTrack(2);
 
 	Terrain terr;
 	terr.Generate("assets/textures/heightmap.png", 0.3f, vec3(), 2.f, 1);
@@ -48,7 +53,7 @@ Game::Game()
 	if(isVK)
 		camera->InvertProj();
 
-	grid = new Grid(vec3(-10, -1, -10), vec3(10, 1, 10), vec3(1, 1, 1));
+	grid = new Grid(vec3(-50, 0, -50), vec3(50, 1, 50), vec3(1, 1, 1));
 
 	uint maxThreads = thread::hardware_concurrency();
 	if (maxThreads > 1)
@@ -58,7 +63,7 @@ Game::Game()
 		threads.resize(maxThreads);
 		for (uint i = 0; i < maxThreads; i++)
 		{
-			threadInfos.push_back({ maxThreads, Stage::Idle });
+			threadInfos.push_back({ maxThreads, Stage::Idle, 0, 0 });
 			threads[i] = thread(&Game::Work, this, i);
 		}
 		grid->SetTreadBufferCount(maxThreads);
@@ -77,17 +82,9 @@ Game::Game()
 void Game::Init()
 {
 	gameObjects.reserve(maxObjects);
+	aliveGOs.reserve(maxObjects);
 	
 	GameObject *go; 
-	const vec3 halfScale = vec3(0.5f);
-	// basic tanks
-	/*for (int i = 0; i < 1000; i++)
-	{
-		vec3 pos = vec3(rand() % 100 - 50, 1, rand() % 100 - 50);
-		go = Instantiate(pos, vec3(), halfScale);
-		go->AddComponent(new Renderer(0, 0, 2));
-		go->AddComponent(new Tank());
-	}*/
 
 	// terrain
 	go = Instantiate();
@@ -95,11 +92,8 @@ void Game::Init()
 	go->SetCollisionsEnabled(false);
 
 	// player
-	go = Instantiate(vec3(), vec3(), halfScale);
-	go->AddComponent(new PlayerTank());
+	go = Instantiate();
 	go->AddComponent(new GameMode());
-	go->AddComponent(new Renderer(2, 0, 4));
-	go->GetTransform()->SetScale(vec3(0.005f));
 
 	// activating our threads
 	for (uint i = 0; i < threadInfos.size(); i++)
@@ -116,9 +110,14 @@ void Game::Update()
 
 	if (Input::GetKey(27))
 	{
-		running = false;
+		paused = running = false;
 		return;
 	}
+
+	if (Input::GetKeyPressed('B'))
+		paused = !paused;
+	if (paused)
+		return;
 
 	// audio controls
 	if (Input::GetKeyPressed('U'))
@@ -130,16 +129,6 @@ void Game::Update()
 		sensitivity += 0.3f;
 	if (Input::GetKeyPressed('K') && sensitivity >= 0.3f)
 		sensitivity -= 0.3f;
-
-	// game-mode restart
-	if (!GameMode::GetInstance() && Input::GetKeyPressed('R'))
-	{
-		GameObject *go = Instantiate(vec3(), vec3(), vec3(0.5f));
-		go->AddComponent(new PlayerTank());
-		go->AddComponent(new GameMode());
-		go->AddComponent(new Renderer(2, 0, 4));
-		go->GetTransform()->SetScale(vec3(0.005f));
-	}
 
 	collCheckTimer += deltaTime;
 	if (collCheckTimer >= collCheckRate)
@@ -229,8 +218,6 @@ void Game::Render()
 #endif
 		}
 	}
-
-	
 	
 	waitTime += glfwGetTime() - startWait;
 
@@ -256,6 +243,8 @@ void Game::Render()
 
 	// flush the input buffers
 	Input::Update();
+	if (paused)
+		return;
 
 	float renderStart = glfwGetTime();
 	graphics->Display();
@@ -285,6 +274,7 @@ void Game::Render()
 	// swap
 	size_t objsDeleted = gameObjects.size() - aliveGOs.size();
 	gameObjects.swap(aliveGOs);
+	//printf("[Info] was %zd, after delete %zd\n", aliveGOs.size(), gameObjects.size());
 	aliveGOs.clear(); // clean it up for the next iteration to fill it out
 
 	// play out the audio
@@ -318,13 +308,18 @@ void Game::CleanUp()
 			threadsIdle &= info.stage == Stage::WaitingToSubmit;
 	}
 
+	LogToFile("Ending\n");
+	if(file.is_open())
+		file.close();
+
 	// we can mark that the engine is done - wrap the threads
 	running = false;
 	for (size_t i = 0; i < threads.size(); i++)
 		threads[i].join();
-
-	for (size_t i = 0; i < gameObjects.size(); i++)
-		delete gameObjects[i];
+	
+	for (GameObject *go : gameObjects)
+		delete go;
+	gameObjects.clear();
 
 	graphics->CleanUp();
 
@@ -337,11 +332,7 @@ GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
 	if (gameObjects.size() == maxObjects - 1)
 		return nullptr;
 
-	GameObject *go = new GameObject();
-	Transform *t = go->GetTransform();
-	t->SetPos(pos);
-	t->SetRotation(rot);
-	t->SetScale(scale);
+	GameObject *go = new GameObject(pos, rot, scale);
 	gameObjects.push_back(go);
 
 	return go;
@@ -386,9 +377,12 @@ void Game::Work(uint infoInd)
 #endif
 			for (size_t i = start; i < end; i++)
 			{
-				gameObjects[i]->SetIndex(i);
-				gameObjects[i]->Update(deltaTime);
+				GameObject *go = gameObjects[i];
+				go->SetIndex(i);
+				go->Update(deltaTime);
 			}
+			info.start = start;
+			info.end = end;
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::CollStage0: // collision preprocessing - sorting of objects to grid
@@ -400,13 +394,14 @@ void Game::Work(uint infoInd)
 			info.stage = Stage::WaitingToSubmit;
 			break;
 		case Stage::CollStage1: // actual collision processing
+		{
 #ifdef DEBUG_THREADS
 			printf("[Info] CollStage1(%d)\n", infoInd);
 #endif
 			// figure out which cells to process
-			size = ceil(grid->GetTotal() / (float)info.totalThreads);
-			start = size * infoInd;
-			end = start + size;
+			size_t size = ceil(grid->GetTotal() / (float)info.totalThreads);
+			size_t start = size * infoInd;
+			size_t end = start + size;
 			if (end > grid->GetTotal()) // just a safety precaution
 				end = grid->GetTotal();
 			for (size_t i = start; i < end; i++)
@@ -434,15 +429,9 @@ void Game::Work(uint infoInd)
 				}
 			}
 
-			// we messed up our indexes, so recalculate them
-			size = ceil(gameObjects.size() / (float)info.totalThreads);
-			start = size * infoInd;
-			end = start + size;
-			if (end > gameObjects.size()) // just a safety precaution
-				end = gameObjects.size();
-
 			info.stage = Stage::WaitingToSubmit;
-			break;
+		}
+		break;
 		case Stage::WaitingToSubmit:
 #ifdef DEBUG_THREADS
 			printf("[Info] WaitingToSubmit(%d)\n", infoInd);
@@ -457,16 +446,32 @@ void Game::Work(uint infoInd)
 			// in case collision check was triggered, jump back - handled in Update
 			break;
 		case Stage::Render:
+			{
+			size_t start = info.start;
+			size_t end = info.end < gameObjects.size() ? info.end : gameObjects.size();
 #ifdef DEBUG_THREADS
-			printf("[Info] Render(%d)\n", infoInd);
+				printf("[Info] Render(%d) from %zd to %zd\n", infoInd, start, end);
 #endif
-			for (size_t i = start; i < end; i++)
-				graphics->Render(camera, gameObjects[i], infoInd);
-			info.stage = Stage::Update;
+				//printf("[Info] Render(%d) from %zd to %zd\n", infoInd, start, end);
+				for (size_t i = start; i < end; i++)
+				{
+					GameObject *go = gameObjects[i];
+					if (go->GetIndex() != numeric_limits<size_t>::max() &&
+						camera->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
+						graphics->Render(camera, go, infoInd);
+				}
+				info.stage = Stage::Update;
+			}
 			break;
 		}
 	}
 	ThreadInfo &info = threadInfos[infoInd];
 	info.stage = Stage::WaitingToSubmit;
 	printf("[Info] Worker thread %d ending\n", infoInd);
+}
+
+void Game::LogToFile(string s)
+{
+	if (file.is_open())
+		file << s << endl;
 }

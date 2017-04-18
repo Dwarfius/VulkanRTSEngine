@@ -8,6 +8,7 @@
 #include <thread>
 #include "Terrain.h"
 #include "Grid.h"
+#include <fstream>
 
 #include <tbb\tbb.h>
 #undef max
@@ -17,8 +18,8 @@
 enum Stage {
 	Idle,
 	Update,
-	CollStage0,
-	CollStage1,
+	CollStage0, // pre-seed
+	CollStage1, // cell-process
 	WaitingToSubmit,
 	Render
 };
@@ -37,6 +38,7 @@ public:
 	void CleanUp();
 
 	bool IsRunning() { return running; }
+	bool IsPaused() { return paused; }
 	size_t GetGameObjectCount() { return gameObjects.size(); }
 	GameObject* Instantiate(vec3 pos = vec3(), vec3 rot = vec3(), vec3 scale = vec3(1));
 	const static uint32_t maxObjects = 4000;
@@ -59,7 +61,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
-	bool isVK = false;
+	bool isVK = true;
 
 	// timer measurements
 	float frameStart = 0;
@@ -77,14 +79,20 @@ private:
 	Grid *grid;
 
 	bool running = true;
+	bool paused = false;
 	struct ThreadInfo {
 		uint totalThreads;
 		Stage stage;
+		size_t start, end;
 	};
 	
 	vector<ThreadInfo> threadInfos;
 	vector<thread> threads;
 	void Work(uint infoInd);
+
+	// logging
+	void LogToFile(string s);
+	ofstream file;
 };
 
 #endif // !_GAME_H

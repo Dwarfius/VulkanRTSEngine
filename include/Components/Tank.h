@@ -11,16 +11,23 @@ using namespace std;
 class Tank : public ComponentBase
 {
 public:
-	Tank();
+	Tank(bool newTeam) : team(newTeam) {}
 
 	void Update(float deltaTime) override;
-	void OnCollideWithGO(GameObject *other) override;
 	void Destroy() override;
 
 	void SetOnDeathCallback(function<void(ComponentBase*)> callback) { onDeathCallback = callback; }
+	void SetNavTarget(vec3 target) { navTarget = target; }
+	bool GetTeam() { return team; }
+
+	int GetComponentType() override { return Type; }
+	const static int Type;
 
 private:
 	vec3 navTarget;
+	float shootTimer = 0;
+	float shootRate = 1;
+	bool team;
 
 	function<void(ComponentBase*)> onDeathCallback = nullptr;
 };

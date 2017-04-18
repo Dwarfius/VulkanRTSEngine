@@ -2,11 +2,9 @@
 #include "Game.h"
 #include "Components\GameMode.h"
 #include "Audio.h"
+#include "Components\Missile.h"
 
-Tank::Tank()
-{
-	navTarget = vec3(rand() % 150 - 75, 0, rand() % 150 - 75);
-}
+const int Tank::Type = 1;
 
 void Tank::Update(float deltaTime)
 {
@@ -17,7 +15,7 @@ void Tank::Update(float deltaTime)
 	vec3 diff = navTarget - pos;
 	diff.y = 0; // we don't care about height difference
 	if (length2(diff) < 1)
-		navTarget = vec3(rand() % 150 - 75, 0, rand() % 150 - 75);
+		owner->Die();
 
 	pos += normalize(diff) * moveSpeed * deltaTime;
 
@@ -28,17 +26,26 @@ void Tank::Update(float deltaTime)
 
 	ownTransf->LookAt(navTarget);
 	ownTransf->RotateToUp(terrain->GetNormal(pos));
-}
 
-void Tank::OnCollideWithGO(GameObject *other)
-{
-	GameMode *mode = GameMode::GetInstance();
-	if (mode && other == mode->GetOwner())
+	// shoot logic
+	if (shootTimer > 0)
+		shootTimer -= deltaTime;
+	
+	if (shootTimer <= 0)
 	{
-		owner->Die();
-		other->Die();
+		const float force = 10;
+		vec3 forward = ownTransf->GetForward();
 
-		Audio::Play(0, owner->GetTransform()->GetPos());
+		vec3 spawnPos = pos + forward * 0.6f + vec3(0, 0.25f, 0);
+		GameObject *go = Game::GetInstance()->Instantiate(spawnPos, vec3(), vec3(0.1f));
+		if (go)
+		{
+			go->AddComponent(new Renderer(3, 0, 6));
+			vec3 shootDir = forward + vec3(0, 0.2f, 0);
+			go->AddComponent(new Missile(shootDir * force, owner, team));
+
+			shootTimer = shootRate;
+		}
 	}
 }
 

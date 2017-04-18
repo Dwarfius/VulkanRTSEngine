@@ -3,11 +3,15 @@
 #include "Audio.h"
 #include "Game.h"
 #include "Components\GameMode.h"
+#include "Components\Tank.h"
 
-Missile::Missile(vec3 vel, GameObject *shooter)
+const int Missile::Type = 2;
+
+Missile::Missile(vec3 vel, GameObject *shooter, bool ownerTeam)
 {
 	velocity = vel;
 	this->shooter = shooter;
+	team = ownerTeam;
 }
 
 void Missile::Update(float deltaTime)
@@ -21,7 +25,6 @@ void Missile::Update(float deltaTime)
 void Missile::OnCollideWithTerrain()
 {
 	owner->Die();
-	Audio::Play(0, owner->GetTransform()->GetPos());
 }
 
 void Missile::OnCollideWithGO(GameObject *go)
@@ -29,12 +32,11 @@ void Missile::OnCollideWithGO(GameObject *go)
 	// avoid hitting ourselves
 	if (go != shooter)
 	{
-		Audio::Play(0, owner->GetTransform()->GetPos());
-
-		owner->Die();
-		go->Die();
-
-		GameMode::GetInstance()->IncreaseScore();
-		printf("New score: %d\n", GameMode::GetInstance()->GetScore());
+		Tank* other = static_cast<Tank*>(go->GetComponent(Tank::Type));
+		if (other && other->GetTeam() != team)
+		{
+			owner->Die();
+			go->Die();
+		}
 	}
 }

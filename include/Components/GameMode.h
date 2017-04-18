@@ -25,13 +25,16 @@ public:
 private:
 	static GameMode *instance;
 
-	const float spawnRateAccel = 0.01f;
+	const float spawnRateAccel = 0.05f;
 
 	int score = 0;
 
-	float spawnRadius = 20;
-	float spawnRate = 0.5;
+	float spawnRate = 75.f;
 	float accumSpawn = 0;
+
+	bool teamTurn;
+
+	vec3 angles;
 
 	// access to this is consecutive, no need for TBB
 	unordered_set<GameObject*> enemyTanks;

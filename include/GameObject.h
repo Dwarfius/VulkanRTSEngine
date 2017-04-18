@@ -10,6 +10,7 @@
 class GameObject
 {
 public:
+	GameObject(vec3 pos, vec3 rot, vec3 scale);
 	~GameObject();
 
 	void Update(float deltaTime);
@@ -27,6 +28,7 @@ public:
 	auto GetUniforms() const { return uniforms; }
 
 	void AddComponent(ComponentBase *component);
+	ComponentBase* GetComponent(int type) const;
 	Renderer* GetRenderer() const { return renderer; }
 
 	void SetCollisionsEnabled(bool val) { collisionsEnabled = val; }
@@ -56,4 +58,4 @@ private:
 	Renderer *renderer = nullptr;
 };
 
-#endif // !_GAME_OBJECT_H
+#endif // !_GAME_OBJECT

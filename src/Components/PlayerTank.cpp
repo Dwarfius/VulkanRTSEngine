@@ -73,7 +73,7 @@ void PlayerTank::Update(float deltaTime)
 			GameObject *go = Game::GetInstance()->Instantiate(spawnPos, vec3(), vec3(0.1f));
 			go->AddComponent(new Renderer(3, 0, 6));
 			vec3 shootDir = forward + vec3(0, 0.2f, 0);
-			go->AddComponent(new Missile(shootDir * force, owner));
+			go->AddComponent(new Missile(shootDir * force, owner, true));
 
 			Audio::Play(1, curPos);
 
