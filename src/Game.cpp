@@ -110,7 +110,7 @@ void Game::Update()
 {
 	frameStart = glfwGetTime();
 
-	if (Input::GetKey(27))
+	if (Input::GetKey(27) || shouldEnd)
 	{
 		paused = running = false;
 		return;

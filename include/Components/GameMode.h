@@ -19,18 +19,14 @@ public:
 
 	static GameMode* GetInstance() { return instance; }
 
-	void IncreaseScore() { ++score; } // this isn't thread safe but we don't really care, chance of occurance is too small
-	int GetScore() { return score; }
-
 private:
 	static GameMode *instance;
 
 	const float spawnRateAccel = 0.05f;
 
-	int score = 0;
-
 	float spawnRate = 75.f;
 	float accumSpawn = 0;
+	float accumTime = 0;
 
 	bool teamTurn;
 

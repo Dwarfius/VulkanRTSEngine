@@ -38,6 +38,7 @@ public:
 	void CleanUp();
 
 	bool IsRunning() { return running; }
+	void EndGame() { shouldEnd = true; }
 	bool IsPaused() { return paused; }
 	size_t GetGameObjectCount() { return gameObjects.size(); }
 	GameObject* Instantiate(vec3 pos = vec3(), vec3 rot = vec3(), vec3 scale = vec3(1));
@@ -64,7 +65,7 @@ private:
 	static Game *inst;
 	static Graphics *graphics;
 
-	bool isVK = true;
+	bool isVK = false;
 
 	// timer measurements
 	float frameStart = 0;
@@ -81,7 +82,7 @@ private:
 	vector<Terrain> terrains;
 	Grid *grid;
 
-	bool running = true;
+	bool running = true, shouldEnd = false;
 	bool paused = false;
 	struct ThreadInfo {
 		uint totalThreads;
