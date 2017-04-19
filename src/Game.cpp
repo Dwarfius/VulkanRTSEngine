@@ -31,10 +31,10 @@ Game::Game()
 	for (size_t i = 0; i < Game::maxObjects; i++)
 		ids.push(i);
 
-	file.open("log.csv");
+	file.open(isVK ? "logVK.csv" : "logGL.csv");
 	if (!file.is_open())
 		printf("[Warning] Log file didn't open\n");
-	LogToFile("Time, Render(ms), Physics(ms), Idle(ms), Total(ms), Visible, Total");
+	LogToFile("Time(ms), Render(ms), Collisions(ms), Idle(ms), Total(ms), Visible Objects, Total Objects");
 
 	Audio::Init();
 	//Audio::SetMusicTrack(2);
@@ -255,6 +255,8 @@ void Game::Render()
 #ifdef PRINT_GAME_INFO
 	printf("[Info] Render calls: %d (of %zd total)\n", graphics->GetRenderCalls(), gameObjects.size());
 #endif
+	size_t renderCalls = graphics->GetRenderCalls();
+	size_t totalGOs = gameObjects.size();
 	graphics->ResetRenderCalls();
 
 	// update the mvp
@@ -293,6 +295,18 @@ void Game::Render()
 #ifdef PRINT_GAME_INFO
 	printf("[Info] Render Rendering: %.2fms, Collisions: %.2fms, Wait: %.2fms (Total: %.2fms)\n", renderLength * 1000.f, collCheckTime * 1000.f, waitTime * 1000.f, deltaTime * 1000.f);
 #endif
+	float renderTime = renderLength * 1000.f;
+	float collisTime = collCheckTime * 1000.f;
+	float waitinTime = waitTime * 1000.f;
+	float totalDTime = deltaTime * 1000.f;
+	auto now = chrono::high_resolution_clock::now();
+	auto nanos = now.time_since_epoch().count();
+	float ms = nanos / 1000000000.f;
+	char c[150];
+	//"Time, Render(ms), Collisions(ms), Idle(ms), Total(ms), Visible Objects, Total Objects"
+	snprintf(c, 150, "%f, %.2f, %.2f, %.2f, %.2f, %zd, %zd", ms, renderTime, collisTime, waitinTime, totalDTime, renderCalls, totalGOs);
+	LogToFile(string(c));
+	//printf("[Info] %s\n", c);
 
 	// resetting our timers
 	collCheckTime = 0;
@@ -310,7 +324,6 @@ void Game::CleanUp()
 			threadsIdle &= info.stage == Stage::WaitingToSubmit;
 	}
 
-	LogToFile("Ending\n");
 	if(file.is_open())
 		file.close();
 

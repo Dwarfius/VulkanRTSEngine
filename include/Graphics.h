@@ -15,7 +15,6 @@ const vector<string> shadersToLoad = {
 	"debug"
 };
 const vector<string> modelsToLoad = {
-	//"chalet",
 	"cube",
 	"%t0",
 	"Tank",
