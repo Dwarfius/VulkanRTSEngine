@@ -208,7 +208,7 @@ void GraphicsVK::BeginGather()
 	// acquire image to render to
 	currImgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
 
-	// before we start recording the command buffer, need to make sure that it has finished working
+	// before we start recording the command buffer, need to make sure that it has finished being executed
 	device.waitForFences(1, &cmdFences[currImgIndex], false, ~0ull);
 	device.resetFences(1, &cmdFences[currImgIndex]);
 
