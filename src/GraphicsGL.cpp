@@ -1,13 +1,12 @@
+#include "Common.h"
 #include "GraphicsGL.h"
 #include "GameObject.h"
-#include <algorithm>
-#include <set>
-#include <fstream>
-#include <glm\gtc\type_ptr.hpp>
-#include "Terrain.h"
+#include "Camera.h"
+
+#include "Components/Renderer.h"
 
 // Public Methods
-void GraphicsGL::Init(vector<Terrain> terrains)
+void GraphicsGL::Init(const vector<Terrain>& terrains)
 {
 	activeGraphics = this;
 
@@ -200,7 +199,7 @@ void GraphicsGL::OnWindowResized(GLFWwindow * window, int width, int height)
 	((GraphicsGL*)activeGraphics)->OnResize(width, height);
 }
 
-void GraphicsGL::LoadResources(vector<Terrain> terrains)
+void GraphicsGL::LoadResources(const vector<Terrain>& terrains)
 {
 	// first, a couple base shaders
 	for(size_t i=0; i<shadersToLoad.size(); i++)

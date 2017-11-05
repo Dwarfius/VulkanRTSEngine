@@ -1,7 +1,4 @@
-#ifndef _INPUT_H
-#define _INPUT_H
-
-#include "Common.h"
+#pragma once
 
 struct GLFWwindow;
 
@@ -39,5 +36,3 @@ private:
 	static void MouseCallback(GLFWwindow *window, int button, int action, int mods);
 	static int RemapKey(int key);
 };
-
-#endif

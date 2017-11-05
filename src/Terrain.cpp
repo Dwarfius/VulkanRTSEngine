@@ -1,3 +1,4 @@
+#include "Common.h"
 #include "Terrain.h"
 #include "Graphics.h"
 

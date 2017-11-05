@@ -1,14 +1,11 @@
-#ifndef _GRAPHICS_H
-#define _GRAPHICS_H
+#pragma once
 
-#include "Camera.h"
-#include <vector>
-#include <string>
-#include <unordered_map>
+#include "Terrain.h"
 #include "Vertex.h"
 
-using namespace std;
-using namespace glm;
+class GameObject;
+struct GLFWwindow;
+class Camera;
 
 const vector<string> shadersToLoad = {
 	"base",
@@ -81,15 +78,10 @@ struct Shader
 // Texture
 typedef uint32_t TextureId;
 
-// forward declaring to resolve a circular dependency
-class GameObject;
-struct GLFWwindow;
-class Terrain;
-
 class Graphics
 {
 public:
-	virtual void Init(vector<Terrain> terrains) = 0;
+	virtual void Init(const vector<Terrain>& terrains) = 0;
 	virtual void BeginGather() = 0;
 	virtual void Render(const Camera *cam, GameObject *go, const uint32_t threadId) = 0;
 	virtual void Display() = 0;
@@ -138,4 +130,3 @@ protected:
 		STBI_rgb_alpha = 4
 	};
 };
-#endif // !_GRAPHICS_H

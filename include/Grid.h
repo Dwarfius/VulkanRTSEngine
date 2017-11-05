@@ -1,12 +1,4 @@
-#ifndef _GRID_H
-#define _GRID_H
-
-#include <vector>
-#include <glm\glm.hpp>
-#include <tbb\concurrent_vector.h>
-
-using namespace std;
-using namespace glm;
+#pragma once
 
 class GameObject;
 
@@ -37,5 +29,3 @@ private:
 	};
 	vector<vector<ResolvedGO>*> buffers;
 };
-
-#endif

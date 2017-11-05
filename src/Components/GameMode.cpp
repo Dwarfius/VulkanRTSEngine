@@ -1,6 +1,12 @@
-#include "Components\GameMode.h"
+#include "Common.h"
+#include "Components/GameMode.h"
+
 #include "Game.h"
-#include "Components\Tank.h"
+#include "GameObject.h"
+#include "Camera.h"
+
+#include "Components/Tank.h"
+#include "Components/Renderer.h"
 
 GameMode* GameMode::instance = nullptr;
 

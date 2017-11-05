@@ -1,8 +1,14 @@
+#include "Common.h"
 #include "Game.h"
+#include "Grid.h"
+#include "Graphics.h"
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
 #include "Input.h"
 #include "Audio.h"
+#include "GameObject.h"
+#include "Camera.h"
+#include "Terrain.h"
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
@@ -34,9 +40,9 @@ Game::Game()
 	file.open(isVK ? "logVK.csv" : "logGL.csv");
 	if (!file.is_open())
 		printf("[Warning] Log file didn't open\n");
-	LogToFile("Time(ms), Render(ms), Collisions(ms), Idle(ms), Total(ms), Visible Objects, Total Objects");
+	LogToFile("Render(ms), Collisions(ms), Visible Objects, Total Objects");
 
-	Audio::Init();
+	//Audio::Init();
 	//Audio::SetMusicTrack(2);
 
 	Terrain terr;
@@ -122,10 +128,10 @@ void Game::Update()
 		return;
 
 	// audio controls
-	if (Input::GetKeyPressed('U'))
-		Audio::IncreaseVolume();
-	if (Input::GetKeyPressed('J'))
-		Audio::DecreaseVolume();
+	//if (Input::GetKeyPressed('U'))
+		//Audio::IncreaseVolume();
+	//if (Input::GetKeyPressed('J'))
+		//Audio::DecreaseVolume();
 
 	if (Input::GetKeyPressed('I'))
 		sensitivity += 0.3f;
@@ -282,7 +288,7 @@ void Game::Render()
 	aliveGOs.clear(); // clean it up for the next iteration to fill it out
 
 	// play out the audio
-	Audio::PlayQueue(camera->GetTransform());
+	//Audio::PlayQueue(camera->GetTransform());
 
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
@@ -297,14 +303,10 @@ void Game::Render()
 #endif
 	float renderTime = renderLength * 1000.f;
 	float collisTime = collCheckTime * 1000.f;
-	float waitinTime = waitTime * 1000.f;
-	float totalDTime = deltaTime * 1000.f;
 	auto now = chrono::high_resolution_clock::now();
-	auto nanos = now.time_since_epoch().count();
-	float ms = nanos / 1000000000.f;
 	char c[150];
 	//"Time, Render(ms), Collisions(ms), Idle(ms), Total(ms), Visible Objects, Total Objects"
-	snprintf(c, 150, "%f, %.2f, %.2f, %.2f, %.2f, %zd, %zd", ms, renderTime, collisTime, waitinTime, totalDTime, renderCalls, totalGOs);
+	snprintf(c, 150, "%.2f, %.2f, %zd, %zd", renderTime, collisTime, renderCalls, totalGOs);
 	LogToFile(string(c));
 	//printf("[Info] %s\n", c);
 

@@ -1,12 +1,6 @@
-#ifndef _AUDIO_H
-#define _AUDIO_H
+#pragma once
 
-#include "Transform.h"
-#include <AL/alut.h>
-#include <vector>
-#include <tbb\concurrent_queue.h>
-
-using namespace std;
+class Transform;
 
 const vector<string> audioFiles{
 	"explosion.wav",
@@ -49,5 +43,3 @@ private:
 	};
 	static tbb::concurrent_queue<AudioCommand> playCommands;
 };
-
-#endif

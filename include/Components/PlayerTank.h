@@ -1,10 +1,6 @@
-#ifndef _PLAYER_TANK_H
-#define _PLAYER_TANK_H
+#pragma once
 
-#include "Components\ComponentBase.h"
-#include <glm\vec3.hpp>
-
-using namespace glm;
+#include "Components/ComponentBase.h"
 
 class PlayerTank : public ComponentBase
 {
@@ -19,5 +15,3 @@ private:
 	vec3 angles;
 	float holdStart = -1;
 };
-
-#endif

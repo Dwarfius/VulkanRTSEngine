@@ -1,8 +1,4 @@
-#ifndef _VERTEX_H
-#define _VERTEX_H
-
-#include "Common.h"
-#include <glm/gtx/hash.hpp>
+#pragma once
 
 struct Vertex
 {
@@ -28,4 +24,3 @@ namespace std
 		}
 	};
 }
-#endif

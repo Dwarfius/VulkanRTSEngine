@@ -1,9 +1,10 @@
+#include "Common.h"
 #include "GraphicsVK.h"
 #include "GameObject.h"
-#include <algorithm>
-#include <set>
-#include <fstream>
-#include "Terrain.h"
+#include "Camera.h"
+#include "Game.h"
+
+#include "Components/Renderer.h"
 
 const vector<const char *> GraphicsVK::requiredLayers = {
 #ifdef _DEBUG
@@ -16,7 +17,7 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 };
 
 // Public Methods
-void GraphicsVK::Init(vector<Terrain> terrains)
+void GraphicsVK::Init(const vector<Terrain>& terrains)
 {
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
@@ -47,7 +48,7 @@ void GraphicsVK::Init(vector<Terrain> terrains)
 	ResetRenderCalls();
 }
 
-void GraphicsVK::LoadResources(vector<Terrain> terrains)
+void GraphicsVK::LoadResources(const vector<Terrain>& terrains)
 {
 	// same order as GraphicsGL
 	// shaders

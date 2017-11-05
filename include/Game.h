@@ -1,17 +1,11 @@
-#ifndef _GAME_H
-#define _GAME_H
+#pragma once
 
-#include "Camera.h"
-#include "Graphics.h"
-#include "GameObject.h"
-#include <vector>
-#include <thread>
 #include "Terrain.h"
-#include "Grid.h"
-#include <fstream>
 
-#include <tbb\tbb.h>
-#undef max
+class Camera;
+class GameObject;
+class Grid;
+class Graphics;
 
 // have to define it outside of Game
 // it messes up with method declaration
@@ -45,7 +39,7 @@ public:
 	const static uint32_t maxObjects = 4000;
 
 	Camera* GetCamera() { return camera; }
-	Terrain *GetTerrain(vec3 pos);
+	Terrain* GetTerrain(vec3 pos);
 
 	// utility method for accessing the time across game
 	float GetTime();
@@ -62,10 +56,10 @@ private:
 
 	float sensitivity = 2.5f;
 
-	static Game *inst;
-	static Graphics *graphics;
+	static Game* inst;
+	static Graphics* graphics;
 
-	bool isVK = false;
+	bool isVK = true;
 
 	// timer measurements
 	float frameStart = 0;
@@ -99,5 +93,3 @@ private:
 	void LogToFile(string s);
 	ofstream file;
 };
-
-#endif // !_GAME_H

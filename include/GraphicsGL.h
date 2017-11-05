@@ -1,18 +1,13 @@
-#ifndef _GRAPHICS_GL_H
-#define _GRAPHICS_GL_H
+#pragma once
 
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include "Graphics.h"
-#include "Common.h"
 
 class GraphicsGL : public Graphics
 {
 public:
 	GraphicsGL() {}
 
-	void Init(vector<Terrain> terrains) override;
+	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
 	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
@@ -26,7 +21,7 @@ private:
 
 	vector<Shader> shaders;
 	vector<TextureId> textures;
-	void LoadResources(vector<Terrain> terrains);
+	void LoadResources(const vector<Terrain>& terrains);
 
 	// emulating a render queue
 	// should cache the shader's uniforms as well
@@ -42,5 +37,3 @@ private:
 	// might want to multi-buffer this
 	vector<RenderJob> threadJobs[maxThreads];
 };
-
-#endif // !_GRAPHICS_GL_H

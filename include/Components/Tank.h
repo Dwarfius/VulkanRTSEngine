@@ -1,12 +1,6 @@
-#ifndef _TANK_H
-#define _TANK_H
+#pragma once
 
-#include "Components\ComponentBase.h"
-#include <functional>
-#include <glm\glm.hpp>
-
-using namespace glm;
-using namespace std;
+#include "Components/ComponentBase.h"
 
 class Tank : public ComponentBase
 {
@@ -31,5 +25,3 @@ private:
 
 	function<void(ComponentBase*)> onDeathCallback = nullptr;
 };
-
-#endif

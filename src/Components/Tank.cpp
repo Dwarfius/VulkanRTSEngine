@@ -1,8 +1,14 @@
-#include "Components\Tank.h"
+#include "Common.h"
+#include "Components/Tank.h"
+
 #include "Game.h"
-#include "Components\GameMode.h"
 #include "Audio.h"
-#include "Components\Missile.h"
+#include "GameObject.h"
+#include "Terrain.h"
+
+#include "Components/GameMode.h"
+#include "Components/Missile.h"
+#include "Components/Renderer.h"
 
 const int Tank::Type = 1;
 

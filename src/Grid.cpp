@@ -1,5 +1,7 @@
+#include "Common.h"
 #include "Grid.h"
 #include "Game.h"
+#include "GameObject.h"
 
 Grid::Grid(vec3 start, vec3 end, vec3 cellSize) : start(start), end(end), cellSize(cellSize)
 {

@@ -1,8 +1,6 @@
-#ifndef _RENDERER_H
-#define _RENDERER_H
+#pragma once
 
 #include "Components/ComponentBase.h"
-#include "Graphics.h"
 
 class Renderer : public ComponentBase
 {
@@ -23,5 +21,3 @@ private:
 	ShaderId shader;
 	TextureId texture;
 };
-
-#endif

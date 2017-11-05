@@ -1,28 +1,5 @@
+#include "Common.h"
 #include "Components\ComponentBase.h"
+#include "GameObject.h"
 
 const int ComponentBase::Type = 0;
-
-void ComponentBase::Init(GameObject *o)
-{
-	owner = o;
-}
-
-void ComponentBase::Update(float deltaTime)
-{
-
-}
-
-void ComponentBase::Destroy()
-{
-
-}
-
-void ComponentBase::OnCollideWithTerrain()
-{
-
-}
-
-void ComponentBase::OnCollideWithGO(GameObject *other)
-{
-
-}

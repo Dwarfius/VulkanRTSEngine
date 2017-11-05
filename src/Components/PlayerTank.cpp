@@ -1,9 +1,15 @@
-#include "Components\PlayerTank.h"
+#include "Common.h"
+#include "Components/PlayerTank.h"
+
 #include "Game.h"
 #include "Input.h"
-#include "Components\Tank.h"
-#include "Components\Missile.h"
 #include "Audio.h"
+#include "GameObject.h"
+#include "Camera.h"
+
+#include "Components/Tank.h"
+#include "Components/Missile.h"
+#include "Components/Renderer.h"
 
 void PlayerTank::Update(float deltaTime)
 {
@@ -75,7 +81,7 @@ void PlayerTank::Update(float deltaTime)
 			vec3 shootDir = forward + vec3(0, 0.2f, 0);
 			go->AddComponent(new Missile(shootDir * force, owner, true));
 
-			Audio::Play(1, curPos);
+			//Audio::Play(1, curPos);
 
 			shootTimer = shootRate;
 			holdStart = -1;

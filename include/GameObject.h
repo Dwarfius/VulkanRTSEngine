@@ -1,11 +1,10 @@
-#ifndef _GAME_OBJECT_H
-#define _GAME_OBJECT_H
+#pragma once
 
-#include "Transform.h"
 #include "Graphics.h"
-#include "Components\ComponentBase.h"
-#include "Components\Renderer.h"
-#include <tbb\concurrent_unordered_set.h>
+#include "Transform.h"
+
+class Renderer;
+class ComponentBase;
 
 class GameObject
 {
@@ -15,6 +14,7 @@ public:
 
 	void Update(float deltaTime);
 
+	// TODO: change this to &
 	Transform* GetTransform() { return &transf; }
 	// This is model's center
 	vec3 GetCenter() const { return center; }
@@ -55,7 +55,5 @@ private:
 	tbb::concurrent_unordered_set<GameObject*> objsCollidedWith;
 
 	vector<ComponentBase*> components;
-	Renderer *renderer = nullptr;
+	Renderer* renderer = nullptr;
 };
-
-#endif // !_GAME_OBJECT

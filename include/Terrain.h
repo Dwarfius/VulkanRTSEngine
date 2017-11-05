@@ -1,7 +1,5 @@
-#ifndef _TERRAIN_H
-#define _TERRAIN_H
+#pragma once
 
-#include "Common.h"
 #include "Vertex.h"
 
 class Terrain
@@ -35,4 +33,3 @@ private:
 	// wraps the val value around [0;range] range
 	float Wrap(float val, float range);
 };
-#endif // !_TERRAIN_H

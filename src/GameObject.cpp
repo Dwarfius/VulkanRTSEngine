@@ -1,12 +1,15 @@
+#include "Common.h"
 #include "GameObject.h"
 #include "Game.h"
-#include "Common.h"
+#include "Graphics.h"
+#include "Transform.h"
+
+#include "Components/ComponentBase.h"
+#include "Components/Renderer.h"
 
 GameObject::GameObject(vec3 pos, vec3 rot, vec3 scale)
+	: transf(pos, rot, scale)
 {
-	transf.SetPos(pos);
-	transf.SetRotation(rot);
-	transf.SetScale(scale);
 }
 
 GameObject::~GameObject()

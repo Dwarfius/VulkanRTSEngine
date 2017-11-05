@@ -1,4 +1,6 @@
+#include "Common.h"
 #include "Audio.h"
+#include "Transform.h"
 
 float Audio::volume = 0.2f;
 vector<ALuint> Audio::buffers;

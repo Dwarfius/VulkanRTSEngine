@@ -1,5 +1,4 @@
-#ifndef _CAMERA_H
-#define _CAMERA_H
+#pragma once
 
 #include "Transform.h"
 
@@ -81,6 +80,7 @@ public:
 
 	mat4 Get() const { return VP; }
 
+	// TODO: return ref
 	Transform* GetTransform() { return &transf; }
 
 	void Recalculate();
@@ -97,4 +97,3 @@ public:
 
 	bool CheckSphere(const vec3& pos, const float rad) const { return frustrum.CheckSphere(pos, rad); }
 };
-#endif

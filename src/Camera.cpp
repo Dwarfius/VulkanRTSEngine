@@ -1,5 +1,5 @@
-#include "Camera.h"
 #include "Common.h"
+#include "Camera.h"
 #include "Game.h"
 #include "Graphics.h"
 

@@ -1,5 +1,5 @@
+#include "Common.h"
 #include "Input.h"
-#include <GLFW/glfw3.h>
 
 GLFWwindow* Input::window = nullptr;
 bool Input::kbState[400], Input::kbOldState[400];

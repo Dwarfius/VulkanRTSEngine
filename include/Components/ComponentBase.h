@@ -1,16 +1,15 @@
-#ifndef _COMPONENT_BASE_H
-#define _COMPONENT_BASE_H
+#pragma once
 
 class GameObject;
 
 class ComponentBase
 {
 public:
-	virtual void Init(GameObject *o);
-	virtual void Update(float deltaTime);
-	virtual void Destroy();
-	virtual void OnCollideWithTerrain();
-	virtual void OnCollideWithGO(GameObject *other);
+	virtual void Init(GameObject *o) { owner = o; };
+	virtual void Update(float deltaTime) {};
+	virtual void Destroy() {};
+	virtual void OnCollideWithTerrain() {};
+	virtual void OnCollideWithGO(GameObject *other) {};
 
 	GameObject* GetOwner() { return owner; }
 
@@ -20,5 +19,3 @@ public:
 protected:
 	GameObject *owner;
 };
-
-#endif

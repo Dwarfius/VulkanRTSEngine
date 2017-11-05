@@ -1,23 +1,16 @@
-#ifndef _GRAPHICS_VK_H
-#define _GRAPHICS_VK_H
+#pragma once
 
-// Forcing this define for 32bit typesafe conversions, as in
-// being able to construct c++ classes based of vulkan c handles
-// theoretically this is unsafe - check vulkan.hpp for more info
-#define VULKAN_HPP_TYPESAFE_CONVERSION
-#include <vulkan/vulkan.hpp>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include "Graphics.h"
-#include "Common.h"
-#include "Game.h"
+
+class Camera;
+class GameObject;
 
 class GraphicsVK : public Graphics
 {
 public:
 	GraphicsVK() {}
 
-	void Init(vector<Terrain> terrains) override;
+	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
 	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
@@ -27,7 +20,7 @@ public:
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
 private:
-	void LoadResources(vector<Terrain> terrains);
+	void LoadResources(const vector<Terrain>& terrains);
 
 	void WindowResized(int width, int height);
 	bool paused = false, gatherStarted = false;
@@ -170,5 +163,3 @@ private:
 		const char* msg,
 		void* userData);
 };
-
-#endif // !_GRAPHICS_VK_H

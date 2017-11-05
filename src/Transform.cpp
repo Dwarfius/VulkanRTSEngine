@@ -1,18 +1,28 @@
+#include "Common.h"
 #include "Transform.h"
-#include <string>
 
 Transform::Transform()
+	: dirtyModel(true)
+	, dirtyDirs(true)
+	, myPos(0)
+	, myScale(0)
+	, myRotation(vec3(0))
 {
-	dirtyModel = dirtyDirs = true;
+}
 
-	pos = vec3(0, 0, 0);
-	size = vec3(1, 1, 1);
-	quaternion = quat(vec3(0, 0, 0));
+Transform::Transform(vec3 pos, vec3 rot, vec3 scale)
+	: dirtyModel(true)
+	, dirtyDirs(true)
+	, myPos(pos)
+	, myScale(scale)
+	, myRotation(vec3(rot))
+{
+
 }
 
 void Transform::LookAt(vec3 target)
 {
-	forward = normalize(target - pos);
+	forward = normalize(target - myPos);
 	if (length2(forward) < 0.0001f)
 		return;
 
@@ -31,7 +41,7 @@ void Transform::LookAt(vec3 target)
 	quat rot2 = RotationBetweenVectors(newUp, desiredUp);
 
 	// Apply them
-	quaternion = rot2 * rot1; // remember, in reverse order.
+	myRotation = rot2 * rot1; // remember, in reverse order.
 
 	UpdateRot();
 }
@@ -39,7 +49,7 @@ void Transform::LookAt(vec3 target)
 void Transform::RotateToUp(vec3 newUp)
 {
 	quat extraRot = RotationBetweenVectors(GetUp(), newUp);
-	quaternion = extraRot * quaternion;
+	myRotation = extraRot * myRotation;
 	UpdateRot();
 }
 
@@ -49,8 +59,8 @@ void Transform::UpdateRot()
 	// quat = orienX * quat * orienY;
 
 	// making sure that it's a proper unit quat
-	quaternion = normalize(quaternion);
-	rotM = mat4_cast(quaternion);
+	myRotation = normalize(myRotation);
+	rotM = mat4_cast(myRotation);
 
 	// why does this has to be inverted?
 	right   = rotM * vec4(-1, 0, 0, 0);
@@ -65,9 +75,9 @@ void Transform::UpdateModel(vec3 center)
 	if (dirtyDirs)
 		UpdateRot();
 
-	modelM = translate(mat4(1), pos);
+	modelM = translate(mat4(1), myPos);
 	modelM = modelM * rotM;
-	modelM = scale(modelM, size);
+	modelM = scale(modelM, myScale);
 	modelM = translate(modelM, -center);
 
 	dirtyModel = false;

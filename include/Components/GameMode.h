@@ -1,11 +1,6 @@
-#ifndef _GAME_MODE_H
-#define _GAME_MODE_H
+#pragma once
 
-#include "Components\ComponentBase.h"
-#include <unordered_set>
-#include "Transform.h"
-
-using namespace std;
+#include "Components/ComponentBase.h"
 
 class GameObject;
 
@@ -35,5 +30,3 @@ private:
 	// access to this is consecutive, no need for TBB
 	unordered_set<GameObject*> enemyTanks;
 };
-
-#endif
