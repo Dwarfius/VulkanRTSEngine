@@ -6,6 +6,8 @@ Graphics* Graphics::activeGraphics = NULL;
 ModelId Graphics::currModel;
 ShaderId Graphics::currShader;
 TextureId Graphics::currTexture;
+int Graphics::width = 800;
+int Graphics::height = 600;
 
 int Graphics::GetRenderCalls() const
 {
@@ -42,7 +44,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 	vertices.reserve(vertices.size() + attrib.vertices.size());
 	vec3 min, max;
 	float maxLen = 0;
-	unordered_map<Vertex, uint> uniqueVerts;
+	unordered_map<Vertex, uint32_t> uniqueVerts;
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex;
@@ -86,7 +88,7 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 				if (vertex.pos.z > max.z)
 					max.z = vertex.pos.z;
 
-				uniqueVerts[vertex] = vertices.size(); // marking that new vertex is at this index
+				uniqueVerts[vertex] = static_cast<uint32_t>(vertices.size()); // marking that new vertex is at this index
 				vertices.push_back(vertex); // adding it at the marked position
 
 				float len = length(vertex.pos);

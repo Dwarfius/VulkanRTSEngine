@@ -118,7 +118,7 @@ void Audio::Cleanup()
 		alDeleteSources(1, &src.source);
 
 	// then all the buffers
-	alDeleteBuffers(buffers.size(), buffers.data());
+	alDeleteBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
 	CheckError(__LINE__);
 }
 

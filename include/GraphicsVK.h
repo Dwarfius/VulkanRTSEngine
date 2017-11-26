@@ -12,7 +12,7 @@ public:
 
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
+	void Render(const Camera& cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
 
@@ -118,7 +118,7 @@ private:
 	vk::DeviceMemory uboMem;
 	void CreateUBO();
 	void DestroyUBO();
-	size_t GetAlignedOffset(size_t ind, size_t step) { return ind * ceil(step * 1.f / limits.minUniformBufferOffsetAlignment) * limits.minUniformBufferOffsetAlignment; }
+	size_t GetAlignedOffset(size_t ind, size_t step) const;
 
 	// Textures
 	vk::Sampler sampler;

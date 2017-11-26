@@ -3,15 +3,18 @@
 #include "Game.h"
 #include "GameObject.h"
 
-Grid::Grid(vec3 start, vec3 end, vec3 cellSize) : start(start), end(end), cellSize(cellSize)
+Grid::Grid(ivec3 start, ivec3 end, vec3 cellSize) 
+	: start(start)
+	, end(end)
+	, cellSize(cellSize)
 {
-	width = (end.x - start.x) / cellSize.x;
-	height = (end.y - start.y) / cellSize.y;
-	depth = (end.z - start.z) / cellSize.z;
+	width = static_cast<uint32_t>((end.x - start.x) / cellSize.x);
+	height = static_cast<uint32_t>((end.y - start.y) / cellSize.y);
+	depth = static_cast<uint32_t>((end.z - start.z) / cellSize.z);
 
-	uint32_t total = GetTotal();
+	size_t total = GetTotal();
 	grid.resize(total);
-	for (uint32_t i = 0; i < total; i++)
+	for (size_t i = 0; i < total; i++)
 	{
 		grid[i] = new vector<GameObject*>();
 		grid[i]->reserve(2000); // prealloc just to be safe
@@ -20,8 +23,8 @@ Grid::Grid(vec3 start, vec3 end, vec3 cellSize) : start(start), end(end), cellSi
 
 Grid::~Grid()
 {
-	uint32_t total = GetTotal();
-	for (uint32_t i = 0; i < total; i++)
+	size_t total = GetTotal();
+	for (size_t i = 0; i < total; i++)
 		delete grid[i];
 	grid.clear();
 }
@@ -36,6 +39,7 @@ void Grid::SetTreadBufferCount(uint32_t threads)
 	}
 }
 
+// TODO: fix the grid utility
 void Grid::Add(GameObject *go, uint32_t threadId)
 {
 	if (!go->GetCollisionsEnabled())

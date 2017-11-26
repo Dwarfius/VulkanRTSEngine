@@ -3,15 +3,15 @@
 #include "Game.h"
 #include "Graphics.h"
 
-Camera::Camera(bool orthoMode)
+Camera::Camera(float width, float height, bool orthoMode)
 {
 	//setting up the matrix for UI rendering
 	//call Recalculate to get proper perspective matrix
 	this->orthoMode = orthoMode;
 	if (orthoMode)
-		SetProjOrtho(0, Game::GetGraphics()->GetWidth(), 0, Game::GetGraphics()->GetHeight());
+		SetProjOrtho(0, width, 0, height);
 	else
-		SetProjPersp(45, Game::GetGraphics()->GetWidth() / Game::GetGraphics()->GetHeight(), 0.1f, 1000.f);
+		SetProjPersp(45, width / height, 0.1f, 1000.f);
 }
 
 void Camera::Recalculate()

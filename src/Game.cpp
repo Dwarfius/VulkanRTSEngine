@@ -2,8 +2,6 @@
 #include "Game.h"
 #include "Grid.h"
 #include "Graphics.h"
-#include "GraphicsGL.h"
-#include "GraphicsVK.h"
 #include "Input.h"
 #include "Audio.h"
 #include "GameObject.h"
@@ -25,11 +23,7 @@
 // yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
 //#define USE_SLEEP
 
-// a define controlling the print out of some general information
-//#define PRINT_GAME_INFO
-
 Game* Game::inst = nullptr;
-Graphics *Game::graphics;
 
 Game::Game()
 {
@@ -39,8 +33,7 @@ Game::Game()
 
 	file.open(isVK ? "logVK.csv" : "logGL.csv");
 	if (!file.is_open())
-		printf("[Warning] Log file didn't open\n");
-	LogToFile("Render(ms), Collisions(ms), Visible Objects, Total Objects");
+		std::printf("[Warning] Log file didn't open\n");
 
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
@@ -49,42 +42,14 @@ Game::Game()
 	terr.Generate("assets/textures/heightmap.png", 0.3f, vec3(), 2.f, 1);
 	terrains.push_back(terr);
 
-	if (isVK)
-		graphics = new GraphicsVK();
-	else
-		graphics = new GraphicsGL();
-	graphics->Init(terrains);
-	
-	Input::SetWindow(graphics->GetWindow());
+	renderThread = make_unique<RenderThread>();
 
-	camera = new Camera();
-	if(isVK)
-		camera->InvertProj();
+	camera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
 
 	grid = new Grid(vec3(-50, 0, -50), vec3(50, 1, 50), vec3(1, 1, 1));
-
-	uint maxThreads = thread::hardware_concurrency();
-	if (maxThreads > 1)
-	{
-		maxThreads--;
-		printf("[Info] Spawning %d threads\n", maxThreads);
-		threads.resize(maxThreads);
-		for (uint i = 0; i < maxThreads; i++)
-		{
-			threadInfos.push_back({ maxThreads, Stage::Idle, 0, 0 });
-			threads[i] = thread(&Game::Work, this, i);
-		}
-		grid->SetTreadBufferCount(maxThreads);
-	}
-	else
-	{
-		printf("[Error] Machine must have more than 1 hardware thread to run\n");
-		running = false;
-		// grid->SetTreadBufferCount(1);
-		// printf("[Info] Using single-thread mode\n");
-	}
-
 	aliveGOs.reserve(maxObjects);
+
+	taskManager = make_unique<GameTaskManager>();
 }
 
 void Game::Init()
@@ -92,6 +57,10 @@ void Game::Init()
 	gameObjects.reserve(maxObjects);
 	aliveGOs.reserve(maxObjects);
 	
+	renderThread->Init(isVK, &terrains);
+	while (!renderThread->HasInitialised())
+		this_thread::yield();
+
 	GameObject *go; 
 
 	// terrain
@@ -103,19 +72,72 @@ void Game::Init()
 	go = Instantiate();
 	go->AddComponent(new GameMode());
 
-	// activating our threads
-	for (uint i = 0; i < threadInfos.size(); i++)
-	{
-		ThreadInfo &info = threadInfos[i];
-		info.stage = Stage::Update;
-	}
-	graphics->BeginGather();
+	GameTask task = GameTask(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
+	taskManager->AddTask(task);
+
+	task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
+	task.AddDependency(GameTask::UpdateInput);
+	taskManager->AddTask(task);
+
+	// TODO: need to fix collisions
+	task = GameTask(GameTask::CollisionUpdate, bind(&Game::CollisionUpdate, this));
+	task.AddDependency(GameTask::GameUpdate);
+	taskManager->AddTask(task);
+
+	task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
+	task.AddDependency(GameTask::GameUpdate);
+	task.AddDependency(GameTask::CollisionUpdate);
+	taskManager->AddTask(task);
+
+	task = GameTask(GameTask::Render, bind(&Game::Render, this));
+	task.AddDependency(GameTask::UpdateEnd);
+	taskManager->AddTask(task);
+
+	// TODO: will need to fix up audio
+	task = GameTask(GameTask::UpdateAudio, bind(&Game::UpdateAudio, this));
+	task.AddDependency(GameTask::UpdateEnd);
+	taskManager->AddTask(task);
+
+	// TODO: finish this task
+	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
+	task.AddDependency(GameTask::Render);
+	taskManager->AddTask(task);
+
+	taskManager->ResolveDependencies();
+}
+
+void Game::RunTaskGraph()
+{
+	taskManager->Run();
+}
+
+void Game::CleanUp()
+{
+	if (file.is_open())
+		file.close();
+
+	// we can mark that the engine is done - wrap the threads
+	running = false;
+	for (size_t i = 0; i < threads.size(); i++)
+		threads[i].join();
+
+	for (GameObject *go : gameObjects)
+		delete go;
+	gameObjects.clear();
+
+	delete camera;
+	delete grid;
+}
+
+void Game::UpdateInput()
+{
+	frameStart = static_cast<float>(glfwGetTime());
+	// TODO: fix up input update
+	Input::Update();
 }
 
 void Game::Update()
 {
-	frameStart = glfwGetTime();
-
 	if (Input::GetKey(27) || shouldEnd)
 	{
 		paused = running = false;
@@ -127,79 +149,61 @@ void Game::Update()
 	if (paused)
 		return;
 
-	// audio controls
-	//if (Input::GetKeyPressed('U'))
-		//Audio::IncreaseVolume();
-	//if (Input::GetKeyPressed('J'))
-		//Audio::DecreaseVolume();
-
 	if (Input::GetKeyPressed('I'))
 		sensitivity += 0.3f;
 	if (Input::GetKeyPressed('K') && sensitivity >= 0.3f)
 		sensitivity -= 0.3f;
 
+	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
+	for (size_t i = 0, end = gameObjects.size(); i < end; i++)
+	{
+		GameObject *go = gameObjects[i];
+		go->Update(deltaTime);
+	}
+}
+
+void Game::CollisionUpdate()
+{
+	// TODO: need to fix up collision detection
+	return;
+
 	collCheckTimer += deltaTime;
 	if (collCheckTimer >= collCheckRate)
 	{
-		const float startTime = glfwGetTime();
-		//first, check if we're awaiting on the collision update
-		float startWait = glfwGetTime();
-		bool threadsWaitingForCol = false;
-		while (!threadsWaitingForCol)
-		{
-			threadsWaitingForCol = true;
-			for (ThreadInfo info : threadInfos)
-				threadsWaitingForCol &= info.stage == Stage::WaitingToSubmit;
-
-			if (!threadsWaitingForCol)
-			{
-#ifdef USE_SLEEP
-				this_thread::sleep_for(chrono::microseconds(1));
-#else
-				this_thread::yield();
-#endif
-			}
-		}
-		waitTime += glfwGetTime() - startWait;
-
-		// signal workers to get start seeding objects in to grid
-		for (uint i = 0; i < threadInfos.size(); i++)
-		{
-			ThreadInfo &info = threadInfos[i];
-			info.stage = Stage::CollStage0;
-		}
-
-		startWait = glfwGetTime();
-		threadsWaitingForCol = false;
-		while (!threadsWaitingForCol)
-		{
-			threadsWaitingForCol = true;
-			for (ThreadInfo info : threadInfos)
-				threadsWaitingForCol &= info.stage == Stage::WaitingToSubmit;
-
-			if (!threadsWaitingForCol)
-			{
-#ifdef USE_SLEEP
-				this_thread::sleep_for(chrono::microseconds(1));
-#else
-				this_thread::yield();
-#endif
-			}
-		}
-		waitTime += glfwGetTime() - startWait;
+		const float startTime = static_cast<float>(glfwGetTime());
+		
+		for (size_t i = 0, end = gameObjects.size(); i < end; i++)
+			grid->Add(gameObjects[i], 0);
 
 		// flush the grid in respective locations on the main thread
 		grid->Flush();
 
-		// signal workers to get start processing grid cells
-		for (uint i = 0; i < threadInfos.size(); i++)
+		// TODO: parrallelize it
+		// figure out which cells to process
+		for (size_t i = 0, end = grid->GetTotal(); i < end; i++)
 		{
-			ThreadInfo &info = threadInfos[i];
-			info.stage = Stage::CollStage1;
-		}
+			vector<GameObject*> *cell = grid->GetCell(i);
+			size_t cellSize = cell->size();
+			for (size_t j = 0; j < cellSize; j++)
+			{
+				// first, check terrain collision
+				GameObject *go = cell->at(j);
+				Transform *t = go->GetTransform();
+				const Terrain *terrain = GetTerrain(t->GetPos());
+				if (terrain->Collides(t->GetPos(), go->GetRadius()))
+					go->CollidedWithTerrain();
 
-		const float endTime = glfwGetTime();
-		collCheckTime = endTime - startTime;
+				for (size_t k = j + 1; k < cellSize; k++)
+				{
+					GameObject *other = cell->at(k);
+					if (GameObject::Collide(go, other))
+					{
+						go->CollidedWithGO(other);
+						other->CollidedWithGO(go);
+					}
+				}
+			}
+		}
 
 		// reset the timer of collision checking
 		collCheckTimer = 0;
@@ -208,72 +212,39 @@ void Game::Update()
 
 void Game::Render()
 {
-	// checking if threads are waiting to submit - means they finished submitting work
-	float startWait = glfwGetTime();
-	bool threadsIdle = false;
-	while (!threadsIdle)
-	{
-		threadsIdle = true;
-		for (ThreadInfo info : threadInfos)
-			threadsIdle &= info.stage == Stage::WaitingToSubmit;
+	// we have to wait until the render thread finishes processing the submitted commands
+	// otherwise we'll overflow the command buffers
+	while (renderThread->IsBusy())
+		tbb::this_tbb_thread::yield();
 
-		if (!threadsIdle)
-		{
-#ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(1));
-#else
-			this_thread::yield();
-#endif
-		}
-	}
-	
-	waitTime += glfwGetTime() - startWait;
+	renderThread->Work();
+}
 
-	const float startTime = glfwGetTime();
-	// safe place to change up things
-	if (Input::GetKeyPressed('G'))
-	{
-		printf("[Info] Switching renderer...\n");
-		isVK = !isVK;
+void Game::UpdateAudio()
+{
+	// audio controls
+	//if (Input::GetKeyPressed('U'))
+	//Audio::IncreaseVolume();
+	//if (Input::GetKeyPressed('J'))
+	//Audio::DecreaseVolume();
 
-		graphics->CleanUp();
-		delete graphics;
+	// play out the audio
+	//Audio::PlayQueue(camera->GetTransform());
+}
 
-		printf("\n");
-		if (isVK)
-			graphics = new GraphicsVK();
-		else
-			graphics = new GraphicsGL();
-		graphics->Init(terrains);
-		camera->InvertProj();
-		Input::SetWindow(graphics->GetWindow());
-	}
+void Game::UpdateEnd()
+{
+	deltaTime = static_cast<float>(glfwGetTime()) - frameStart;
+}
 
-	// flush the input buffers
-	Input::Update();
-	if (paused)
-		return;
-
-	float renderStart = glfwGetTime();
-	graphics->Display();
-	float renderLength = glfwGetTime() - renderStart;
-
-#ifdef PRINT_GAME_INFO
-	printf("[Info] Render calls: %d (of %zd total)\n", graphics->GetRenderCalls(), gameObjects.size());
-#endif
-	size_t renderCalls = graphics->GetRenderCalls();
-	size_t totalGOs = gameObjects.size();
-	graphics->ResetRenderCalls();
-
-	// update the mvp
-	camera->Recalculate();
-	
+void Game::RemoveGameObjects()
+{
 	// this is the place to clear out our gameobjects
 	// the render calls that have been scheduled have been consumed
 	// so no extra references are left
 	// can't use parallel_for because it seems to break down the rendering loop
 	// because there's no way that I know of atm to wait until the parallel_for finishes
-	for(GameObject *go : gameObjects) 
+	for (GameObject *go : gameObjects)
 	{
 		if (!go->IsDead())
 			aliveGOs.push_back(go);
@@ -286,62 +257,6 @@ void Game::Render()
 	gameObjects.swap(aliveGOs);
 	//printf("[Info] was %zd, after delete %zd\n", aliveGOs.size(), gameObjects.size());
 	aliveGOs.clear(); // clean it up for the next iteration to fill it out
-
-	// play out the audio
-	//Audio::PlayQueue(camera->GetTransform());
-
-	// the current render queue has been used up, we can fill it up again
-	graphics->BeginGather();
-	for (uint i = 0; i < threadInfos.size(); i++)
-	{
-		ThreadInfo &info = threadInfos[i];
-		info.stage = Stage::Render;
-	}
-	deltaTime = glfwGetTime() - frameStart;
-#ifdef PRINT_GAME_INFO
-	printf("[Info] Render Rendering: %.2fms, Collisions: %.2fms, Wait: %.2fms (Total: %.2fms)\n", renderLength * 1000.f, collCheckTime * 1000.f, waitTime * 1000.f, deltaTime * 1000.f);
-#endif
-	float renderTime = renderLength * 1000.f;
-	float collisTime = collCheckTime * 1000.f;
-	auto now = chrono::high_resolution_clock::now();
-	char c[150];
-	//"Time, Render(ms), Collisions(ms), Idle(ms), Total(ms), Visible Objects, Total Objects"
-	snprintf(c, 150, "%.2f, %.2f, %zd, %zd", renderTime, collisTime, renderCalls, totalGOs);
-	LogToFile(string(c));
-	//printf("[Info] %s\n", c);
-
-	// resetting our timers
-	collCheckTime = 0;
-	waitTime = 0;
-}
-
-void Game::CleanUp()
-{
-	// checking if threads are idle - means they finished submitting work and we can clean em up
-	bool threadsIdle = false;
-	while (!threadsIdle)
-	{
-		threadsIdle = true;
-		for (ThreadInfo info : threadInfos)
-			threadsIdle &= info.stage == Stage::WaitingToSubmit;
-	}
-
-	if(file.is_open())
-		file.close();
-
-	// we can mark that the engine is done - wrap the threads
-	running = false;
-	for (size_t i = 0; i < threads.size(); i++)
-		threads[i].join();
-	
-	for (GameObject *go : gameObjects)
-		delete go;
-	gameObjects.clear();
-
-	graphics->CleanUp();
-
-	delete camera;
-	delete grid;
 }
 
 GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
@@ -356,135 +271,14 @@ GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
 	return go;
 }
 
-Terrain* Game::GetTerrain(vec3 pos)
+const Terrain* Game::GetTerrain(vec3 pos) const
 {
 	return &terrains[0];
 }
 
-float Game::GetTime()
+float Game::GetTime() const
 {
-	return glfwGetTime();
-}
-
-void Game::Work(uint infoInd)
-{
-	while (running)
-	{
-		ThreadInfo &info = threadInfos[infoInd];
-		if (info.stage == Stage::Idle)
-		{
-#ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(1));
-#else
-			this_thread::yield();
-#endif
-			continue;
-		}
-
-		size_t size = ceil(gameObjects.size() / (float)info.totalThreads);
-		size_t start = size * infoInd;
-		size_t end = start + size;
-		if (end > gameObjects.size()) // just a safety precaution
-			end = gameObjects.size();
-
-		switch (info.stage)
-		{
-		case Stage::Update:
-#ifdef DEBUG_THREADS
-			printf("[Info] Update(%d)\n", infoInd);
-#endif
-			for (size_t i = start; i < end; i++)
-			{
-				GameObject *go = gameObjects[i];
-				go->Update(deltaTime);
-			}
-			info.start = start;
-			info.end = end;
-			info.stage = Stage::WaitingToSubmit;
-			break;
-		case Stage::CollStage0: // collision preprocessing - sorting of objects to grid
-#ifdef DEBUG_THREADS
-			printf("[Info] CollStage0(%d)\n", infoInd);
-#endif
-			for (size_t i = start; i < end; i++)
-				grid->Add(gameObjects[i], infoInd);
-			info.stage = Stage::WaitingToSubmit;
-			break;
-		case Stage::CollStage1: // actual collision processing
-		{
-#ifdef DEBUG_THREADS
-			printf("[Info] CollStage1(%d)\n", infoInd);
-#endif
-			// figure out which cells to process
-			size_t size = ceil(grid->GetTotal() / (float)info.totalThreads);
-			size_t start = size * infoInd;
-			size_t end = start + size;
-			if (end > grid->GetTotal()) // just a safety precaution
-				end = grid->GetTotal();
-			for (size_t i = start; i < end; i++)
-			{
-				vector<GameObject*> *cell = grid->GetCell(i);
-				size_t cellSize = cell->size();
-				for (size_t j = 0; j < cellSize; j++)
-				{
-					// first, check terrain collision
-					GameObject *go = cell->at(j);
-					Transform *t = go->GetTransform();
-					Terrain *terrain = GetTerrain(t->GetPos());
-					if (terrain->Collides(t->GetPos(), go->GetRadius()))
-						go->CollidedWithTerrain();
-
-					for (size_t k = j + 1; k < cellSize; k++)
-					{
-						GameObject *other = cell->at(k);
-						if (GameObject::Collide(go, other))
-						{
-							go->CollidedWithGO(other);
-							other->CollidedWithGO(go);
-						}
-					}
-				}
-			}
-
-			info.stage = Stage::WaitingToSubmit;
-		}
-		break;
-		case Stage::WaitingToSubmit:
-#ifdef DEBUG_THREADS
-			printf("[Info] WaitingToSubmit(%d)\n", infoInd);
-#endif
-#ifdef USE_SLEEP
-			this_thread::sleep_for(chrono::microseconds(1));
-#else
-			this_thread::yield();
-#endif
-			// we have to wait until the render thread finishes processing the submitted commands
-			// otherwise we'll overflow the command buffers
-			// in case collision check was triggered, jump back - handled in Update
-			break;
-		case Stage::Render:
-			{
-			size_t start = info.start;
-			size_t end = info.end < gameObjects.size() ? info.end : gameObjects.size();
-#ifdef DEBUG_THREADS
-				printf("[Info] Render(%d) from %zd to %zd\n", infoInd, start, end);
-#endif
-				//printf("[Info] Render(%d) from %zd to %zd\n", infoInd, start, end);
-				for (size_t i = start; i < end; i++)
-				{
-					GameObject *go = gameObjects[i];
-					if (go->GetIndex() != numeric_limits<size_t>::max() &&
-						camera->CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
-						graphics->Render(camera, go, infoInd);
-				}
-				info.stage = Stage::Update;
-			}
-			break;
-		}
-	}
-	ThreadInfo &info = threadInfos[infoInd];
-	info.stage = Stage::WaitingToSubmit;
-	printf("[Info] Worker thread %d ending\n", infoInd);
+	return static_cast<float>(glfwGetTime());
 }
 
 void Game::LogToFile(string s)
@@ -504,4 +298,14 @@ size_t Game::ClaimId()
 	if (!ids.try_pop(id))
 		id = numeric_limits<size_t>::max();
 	return id;
+}
+
+Graphics* Game::GetGraphicsRaw()
+{
+	return renderThread->GetGraphicsRaw();
+}
+
+const Graphics* Game::GetGraphics() const
+{
+	return renderThread->GetGraphics();
 }

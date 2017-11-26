@@ -62,7 +62,7 @@ void GraphicsGL::BeginGather()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t threadId)
+void GraphicsGL::Render(const Camera& cam, GameObject* go, const uint32_t threadId)
 {
 	Renderer *r = go->GetRenderer();
 	if (!r)
@@ -78,7 +78,7 @@ void GraphicsGL::Render(const Camera *cam, GameObject* go, const uint32_t thread
 	job.uniforms = go->GetUniforms();
 	// add add our own
 	mat4 model = job.uniforms["Model"].m;
-	mat4 mvp = cam->Get() * model;
+	mat4 mvp = cam.Get() * model;
 
 	Shader::UniformValue uniform;
 	uniform.m = mvp;
@@ -153,7 +153,7 @@ void GraphicsGL::Display()
 				}
 			}
 			
-			glDrawElements(GL_TRIANGLES, vao.indexCount, GL_UNSIGNED_INT, 0);
+			glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(vao.indexCount), GL_UNSIGNED_INT, 0);
 		}
 		threadJobs[i].clear();
 	}
@@ -172,12 +172,12 @@ void GraphicsGL::CleanUp()
 
 	for (Model m : models)
 	{
-		glDeleteBuffers(m.buffers.size(), m.buffers.data());
+		glDeleteBuffers(static_cast<GLsizei>(m.buffers.size()), m.buffers.data());
 		glDeleteBuffers(1, &m.id);
 	}
 	models.clear();
 
-	glDeleteTextures(textures.size(), textures.data());
+	glDeleteTextures(static_cast<GLsizei>(textures.size()), textures.data());
 	textures.clear();
 
 	glfwDestroyWindow(window);

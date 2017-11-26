@@ -9,7 +9,7 @@ public:
 
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	void Render(const Camera *cam, GameObject *go, const uint32_t threadId) override;
+	void Render(const Camera& cam, GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
 

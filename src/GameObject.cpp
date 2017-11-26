@@ -44,7 +44,7 @@ float GameObject::GetRadius() const
 
 	const vec3 scale = transf.GetScale();
 	const float maxScale = max({ scale.x, scale.y, scale.z });
-	const float radius = Game::GetGraphics()->GetModelRadius(renderer->GetModel());
+	const float radius = Game::GetInstance()->GetGraphics()->GetModelRadius(renderer->GetModel());
 	return maxScale * radius;
 }
 
@@ -56,7 +56,7 @@ void GameObject::AddComponent(ComponentBase *component)
 	if (newRenderer && !renderer)
 	{
 		renderer = newRenderer;
-		center = Game::GetGraphics()->GetModelCenter(renderer->GetModel());
+		center = Game::GetInstance()->GetGraphics()->GetModelCenter(renderer->GetModel());
 	}
 	else if (newRenderer && renderer)
 		printf("[Warning] Attempting to attach a renderer to a component with a renderer, ignoring\n");

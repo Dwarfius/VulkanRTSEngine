@@ -5,21 +5,19 @@
 
 int main()
 {
-	srand(time(0));
+	srand(static_cast<uint32_t>(time(0)));
 	glfwInit();
 
 	glfwSetTime(0);
 
 	Game *game = new Game();
 	game->Init();
-	GLFWwindow *window = Game::GetGraphics()->GetWindow();
+	GLFWwindow *window = game->GetGraphicsRaw()->GetWindow();
 	while (!glfwWindowShouldClose(window) && game->IsRunning())
 	{
 		glfwPollEvents();
 
-		game->Update();
-		if(game->IsRunning())
-			game->Render();
+		game->RunTaskGraph();
 	}
 	game->CleanUp();
 	delete game;

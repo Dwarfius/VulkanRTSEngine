@@ -5,7 +5,7 @@ class GameObject;
 class Grid
 {
 public:
-	Grid(vec3 start, vec3 end, vec3 cellSize);
+	Grid(ivec3 start, ivec3 end, vec3 cellSize);
 	~Grid();
 
 	void SetTreadBufferCount(uint32_t threads);
@@ -24,8 +24,8 @@ private:
 	struct ResolvedGO
 	{
 		GameObject *go;
-		vec3 coordsStart;
-		vec3 coordsEnd;
+		ivec3 coordsStart;
+		ivec3 coordsEnd;
 	};
 	vector<vector<ResolvedGO>*> buffers;
 };

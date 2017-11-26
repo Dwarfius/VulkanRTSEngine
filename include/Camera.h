@@ -75,7 +75,7 @@ private:
 	Frustrum frustrum;
 
 public:
-	Camera(bool orthoMode = false);
+	Camera(float width, float height, bool orthoMode = false);
 	~Camera() {}
 
 	mat4 Get() const { return VP; }

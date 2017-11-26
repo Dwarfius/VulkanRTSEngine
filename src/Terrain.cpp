@@ -5,35 +5,36 @@
 void Terrain::Generate(string name, float step, vec3 offset, float yScale, float uvScale)
 {
 	this->step = step;
+	unsigned char* pixels;
 	int channels;
-	unsigned char *pixels = Graphics::LoadTexture(name, &width, &height, &channels, 1);
+	pixels = Graphics::LoadTexture(name, &width, &height, &channels, 1);
 
 	//first, creating the vertices
 	start = offset;
 	end = start + vec3((width - 1) * step, 0, (height - 1) * step);
 	verts.reserve(height * width);
-	for (uint32_t y = 0; y < height; y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (uint32_t x = 0; x < width; x++)
+		for (int x = 0; x < width; x++)
 		{
 			Vertex v;
 			v.pos.x = x * step + offset.x;
 			v.pos.z = y * step + offset.z;
 			v.pos.y = pixels[y * width + x] / 255.f * yScale + offset.y;
-			v.uv.x = Wrap(x, uvScale);
-			v.uv.y = Wrap(y, uvScale);
+			v.uv.x = Wrap(static_cast<float>(x), uvScale);
+			v.uv.y = Wrap(static_cast<float>(y), uvScale);
 			verts.push_back(v);
 		}
 	}
 
 	center = offset + (end - start) / 2.f;
-	range = sqrt(width * width + height * height);
+	range = static_cast<float>(sqrt(width * width + height * height));
 
 	//now creating indices
 	indices.reserve((height - 1) * (width - 1) * 6);
-	for (uint32_t y = 0; y < height - 1; y++)
+	for (int y = 0; y < height - 1; y++)
 	{
-		for (uint32_t x = 0; x < width - 1; x++)
+		for (int x = 0; x < width - 1; x++)
 		{
 			uint32_t tl = y * width + x;
 			uint32_t tr = tl + 1;
@@ -51,7 +52,7 @@ void Terrain::Generate(string name, float step, vec3 offset, float yScale, float
 	Normalize();
 }
 
-float Terrain::GetHeight(vec3 pos)
+float Terrain::GetHeight(vec3 pos) const
 {
 	// finding the relative position
 	// + center cause rendering uses center anchors
@@ -65,9 +66,9 @@ float Terrain::GetHeight(vec3 pos)
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
 	// getting the actual vert indices
-	int xMin = floor(x);
+	int xMin = static_cast<int>(floor(x));
 	int xMax = xMin + 1;
-	int yMin = floor(y);
+	int yMin = static_cast<int>(floor(y));
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
@@ -84,7 +85,7 @@ float Terrain::GetHeight(vec3 pos)
 	return mix(botHeight, topHeight, y);
 }
 
-vec3 Terrain::GetNormal(vec3 pos)
+vec3 Terrain::GetNormal(vec3 pos) const
 {
 	// finding the relative position
 	// + center cause rendering uses center anchors
@@ -98,9 +99,9 @@ vec3 Terrain::GetNormal(vec3 pos)
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
 	// getting the actual vert indices
-	int xMin = floor(x);
+	int xMin = static_cast<int>(floor(x));
 	int xMax = xMin + 1;
-	int yMin = floor(y);
+	int yMin = static_cast<int>(floor(y));
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
@@ -149,14 +150,14 @@ void Terrain::Normalize()
 		verts.at(vertInd).normal = normalize(surfNormals[vertInd]);
 }
 
-float Terrain::Wrap(float val, float range)
+float Terrain::Wrap(float val, float range) const
 {
 	float cosA = cos((val / range) * pi<float>() / 2);
 	float normalized = (cosA + 1) / 2;
 	return normalized;
 }
 
-bool Terrain::Collides(vec3 pos, float range)
+bool Terrain::Collides(vec3 pos, float range) const
 {
 	float height = GetHeight(pos);
 	return height > pos.y - range;

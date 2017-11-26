@@ -275,7 +275,7 @@ void GraphicsVK::BeginGather()
 	gatherStarted = true;
 }
 
-void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t threadId)
+void GraphicsVK::Render(const Camera& cam, GameObject *go, const uint32_t threadId)
 {
 	if (paused)
 		return;
@@ -295,7 +295,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	auto uniforms = go->GetUniforms();
 	MatUBO matrices;
 	matrices.model = uniforms["Model"].m;
-	matrices.mvp = cam->Get() * matrices.model;
+	matrices.mvp = cam.Get() * matrices.model;
 	//if (matrices.model[1][1] >= 0.005f)
 	//	printf("[Info] For %.4d(val = % .5f, model %d) got %.7zd\n", index, matrices.model[1][1], r->GetModel(), GetAlignedOffset(index, sizeof(MatUBO)));
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
@@ -306,7 +306,7 @@ void GraphicsVK::Render(const Camera *cam, GameObject *go, const uint32_t thread
 	};
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
-	buffers[pipelineInd].drawIndexed(m.indexCount, 1, m.indexOffset, 0, 0);
+	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.indexCount), 1, static_cast<int32_t>(m.indexOffset), 0, 0);
 
 	// command issuing is done, record the render call
 	renderCalls[threadId]++;
@@ -501,7 +501,7 @@ void GraphicsVK::CreateInstance()
 #ifdef _DEBUG
 	if (LayersAvailable(requiredLayers))
 	{
-		instInfo.enabledLayerCount = requiredLayers.size();
+		instInfo.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size());
 		instInfo.ppEnabledLayerNames = requiredLayers.data();
 
 		// in order to receive the messages, we need a callback extension
@@ -509,7 +509,7 @@ void GraphicsVK::CreateInstance()
 	}
 #endif
 
-	instInfo.enabledExtensionCount = extensions.size();
+	instInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	instInfo.ppEnabledExtensionNames = extensions.data();
 
 	instance = vk::createInstance(instInfo);
@@ -537,7 +537,7 @@ void GraphicsVK::CreateDevice()
 		return;
 	}
 
-	printf("[Info] Found %d vulkan devices\n", devices.size());
+	printf("[Info] Found %zu vulkan devices\n", devices.size());
 	vk::PhysicalDevice pickedDevice = VK_NULL_HANDLE;
 	for (auto device : devices)
 	{
@@ -624,7 +624,7 @@ void GraphicsVK::CreateDevice()
 	for (auto fam : used)
 		queuesToCreate.push_back({ {}, fam, 1, &priority });
 	
-	printf("[Info] Creating %d queues\n", used.size());
+	printf("[Info] Creating %zu queues\n", used.size());
 
 	// now, finally the logical device creation
 	vk::PhysicalDeviceFeatures features;
@@ -816,7 +816,7 @@ void GraphicsVK::CreateSwapchain()
 
 	// swapchain creates the images for us to render to
 	images = device.getSwapchainImagesKHR(swapchain);
-	printf("[Info] Images acquired: %d\n", images.size());
+	printf("[Info] Images acquired: %zu\n", images.size());
 
 	// but in order to use them, we need imageviews
 	for(int i=0; i<images.size(); i++)
@@ -1137,7 +1137,7 @@ void GraphicsVK::CreateDescriptorSet()
 void GraphicsVK::CreateUBO()
 {
 	size_t uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
-	printf("[Info] Ubo size: %zd(for %d)\n", uboSize, Game::maxObjects);
+	printf("[Info] Ubo size: %zd(for %d, min alignment: %zd)\n", uboSize, Game::maxObjects, limits.minUniformBufferOffsetAlignment);
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
 
 	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});
@@ -1153,6 +1153,19 @@ void GraphicsVK::DestroyUBO()
 		device.destroyBuffer(ubo);
 		device.freeMemory(uboMem);
 	}
+}
+
+size_t GraphicsVK::GetAlignedOffset(size_t ind, size_t step) const
+{
+	size_t alignedStep = 0;
+	while (step > limits.minUniformBufferOffsetAlignment)
+	{
+		alignedStep += limits.minUniformBufferOffsetAlignment;
+		step -= limits.minUniformBufferOffsetAlignment;
+	}
+	// an entire min alignment block will remain, need to account for it
+	alignedStep += limits.minUniformBufferOffsetAlignment;
+	return ind * alignedStep;
 }
 
 void GraphicsVK::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem)

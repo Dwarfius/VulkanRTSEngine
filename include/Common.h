@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
+#include <atomic>
 
 #include <tbb/tbb.h>
 #undef max
@@ -29,7 +30,7 @@
 #include <GL/glew.h>
 
 // Forcing this define for 32bit typesafe conversions, as in
-// being able to construct c++ classes based of vulkan c handles
+// being able to construct c++ classes based of vulkan C handles
 // theoretically this is unsafe - check vulkan.hpp for more info
 #define VULKAN_HPP_TYPESAFE_CONVERSION
 #include <vulkan/vulkan.hpp>

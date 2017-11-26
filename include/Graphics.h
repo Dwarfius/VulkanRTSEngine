@@ -66,7 +66,7 @@ struct Shader
 	};
 	struct BindPoint 
 	{ 
-		uint loc; 
+		GLint loc; 
 		UniformType type;
 	};
 	unordered_map<string, BindPoint> uniforms;
@@ -83,20 +83,20 @@ class Graphics
 public:
 	virtual void Init(const vector<Terrain>& terrains) = 0;
 	virtual void BeginGather() = 0;
-	virtual void Render(const Camera *cam, GameObject *go, const uint32_t threadId) = 0;
+	virtual void Render(const Camera& cam, GameObject *go, const uint32_t threadId) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
-	vec3 GetModelCenter(ModelId m) { return models[m].center; }
-	float GetModelRadius(ModelId m) { return models[m].sphereRadius; }
+	vec3 GetModelCenter(ModelId m) const { return models[m].center; }
+	float GetModelRadius(ModelId m) const { return models[m].sphereRadius; }
 
 	GLFWwindow* GetWindow() { return window; }
 	
 	int GetRenderCalls() const;
 	void ResetRenderCalls();
 
-	float GetWidth() { return width; }
-	float GetHeight() { return height; }
+	static float GetWidth() { return static_cast<float>(width); }
+	static float GetHeight() { return static_cast<float>(height); }
 
 	static void LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius);
 	static unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
@@ -104,7 +104,7 @@ public:
 
 protected:
 	GLFWwindow *window;
-	float width = 800, height = 600;
+	static int width, height;
 
 	static Graphics *activeGraphics;
 	static ModelId currModel;

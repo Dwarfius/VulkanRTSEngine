@@ -26,7 +26,7 @@ void Tank::Update(float deltaTime)
 	pos += normalize(diff) * moveSpeed * deltaTime;
 
 	float yOffset = owner->GetCenter().y * ownTransf->GetScale().y;
-	Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
+	const Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
 	pos.y = terrain->GetHeight(pos) + yOffset;
 	ownTransf->SetPos(pos);
 

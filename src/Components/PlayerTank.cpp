@@ -35,7 +35,7 @@ void PlayerTank::Update(float deltaTime)
 	
 	// terrain walking
 	float yOffset = owner->GetCenter().y * ownTransf->GetScale().y;
-	Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
+	const Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
 	vec3 curPos = ownTransf->GetPos();
 	curPos.y = terrain->GetHeight(curPos) + yOffset;
 	ownTransf->SetPos(curPos);
@@ -73,7 +73,7 @@ void PlayerTank::Update(float deltaTime)
 			float holdLength = Game::GetInstance()->GetTime() - holdStart;
 			if (holdLength > 2)
 				holdLength = 2;
-			float force = mix(5, 20, holdLength / 2);
+			float force = mix(5.f, 20.f, holdLength / 2.f);
 
 			vec3 spawnPos = curPos + forward * 0.6f + vec3(0, 0.25f, 0);
 			GameObject *go = Game::GetInstance()->Instantiate(spawnPos, vec3(), vec3(0.1f));

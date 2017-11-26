@@ -38,7 +38,7 @@ void GameMode::Update(float deltaTime)
 
 		for (uint32_t i = 0; i < spawnCount; i++)
 		{
-			float side = teamTurn ? -1 : 1;
+			float side = teamTurn ? -1.f : 1.f;
 			vec3 spawnPoint = pos + vec3(side * halfSize, 0, rand() % fieldSize - halfSize);
 			GameObject *go = Game::GetInstance()->Instantiate(spawnPoint, vec3(), vec3(0.005f));
 			if (go) // we might exceed game's hard limit of Game::maxObjects objects
@@ -49,7 +49,7 @@ void GameMode::Update(float deltaTime)
 						enemyTanks.erase(comp->GetOwner());
 				});
 				spawnPoint.x *= -1;
-				spawnPoint.z = rand() % fieldSize - halfSize;
+				spawnPoint.z = static_cast<float>(rand() % fieldSize - halfSize);
 				tank->SetNavTarget(spawnPoint);
 				go->AddComponent(tank);
 				go->AddComponent(new Renderer(2, 0, teamTurn ? 4 : 5));
