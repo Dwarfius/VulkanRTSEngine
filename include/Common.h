@@ -20,6 +20,8 @@
 #include <unordered_set>
 #include <functional>
 #include <atomic>
+#include <random>
+#include <chrono>
 
 #include <tbb/tbb.h>
 #undef max

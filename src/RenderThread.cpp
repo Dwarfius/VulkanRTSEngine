@@ -27,6 +27,7 @@ void RenderThread::Init(bool useVulkan, const vector<Terrain>* aTerrainSet)
 {
 	usingVulkan = useVulkan;
 	terrains = aTerrainSet;
+	// TODO: Check if detaching is worth doing
 	renderThread = make_unique<thread>(&RenderThread::InternalLoop, this);
 }
 

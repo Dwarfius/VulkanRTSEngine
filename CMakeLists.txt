@@ -22,6 +22,7 @@ ADD_EXECUTABLE(VulkanRTSEngine ${SRC} ${SRC_COMP})
 if (MSVC)
    set_target_properties(VulkanRTSEngine PROPERTIES COMPILE_FLAGS "/YuCommon.h")
    set_source_files_properties("src/Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
+   SET(EXTRA_LIBS "IPHLPAPI.lib")
 endif(MSVC)
 
 # just to make our life a little bit more organized, group files
@@ -31,7 +32,7 @@ INCLUDE_DIRECTORIES(VulkanRTSEngine include/ include/extra
 	${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}
 	${Vulkan_INCLUDE_DIR} ${ALUT_INCLUDE_DIRS} ${TBB_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(VulkanRTSEngine ${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}
-	${Vulkan_LIBRARY} ${ALUT_LIBRARIES} ${TBB_IMPORTED_TARGETS})
+	${Vulkan_LIBRARY} ${ALUT_LIBRARIES} ${TBB_IMPORTED_TARGETS} ${EXTRA_LIBS})
 
 ADD_CUSTOM_COMMAND(TARGET VulkanRTSEngine PRE_BUILD COMMAND ${CMAKE_COMMAND}
 					-E copy_directory ${CMAKE_SOURCE_DIR}/assets

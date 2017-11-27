@@ -7,13 +7,12 @@
 #include "GameObject.h"
 #include "Camera.h"
 #include "Terrain.h"
+#include "UID.h"
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
 #include "Components\Tank.h"
 #include "Components\GameMode.h"
-
-#include <chrono>
 
 // prints out the thread states to track transitions
 //#define DEBUG_THREADS
@@ -28,6 +27,15 @@ Game* Game::inst = nullptr;
 Game::Game()
 {
 	inst = this;
+	UID::Init();
+	char uidText[33];
+	printf("Testing GUID generation:\n");
+	for (int i = 0; i < 30; i++)
+	{
+		UID uid = UID::Create();
+		uid.GetString(uidText);
+		printf("My uid: %s\n", uidText);
+	}
 	for (size_t i = 0; i < Game::maxObjects; i++)
 		ids.push(i);
 
