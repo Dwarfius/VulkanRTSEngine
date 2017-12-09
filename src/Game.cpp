@@ -4,10 +4,9 @@
 #include "Graphics.h"
 #include "Input.h"
 #include "Audio.h"
-#include "GameObject.h"
 #include "Camera.h"
 #include "Terrain.h"
-#include "UID.h"
+#include "GameObject.h"
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
@@ -23,22 +22,13 @@
 //#define USE_SLEEP
 
 Game* Game::inst = nullptr;
+bool Game::goDeleteEnabled = false;
 
 Game::Game()
 {
 	inst = this;
 	UID::Init();
-	char uidText[33];
-	printf("Testing GUID generation:\n");
-	for (int i = 0; i < 30; i++)
-	{
-		UID uid = UID::Create();
-		uid.GetString(uidText);
-		printf("My uid: %s\n", uidText);
-	}
-	for (size_t i = 0; i < Game::maxObjects; i++)
-		ids.push(i);
-
+	
 	file.open(isVK ? "logVK.csv" : "logGL.csv");
 	if (!file.is_open())
 		std::printf("[Warning] Log file didn't open\n");
@@ -55,7 +45,6 @@ Game::Game()
 	camera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
 
 	grid = new Grid(vec3(-50, 0, -50), vec3(50, 1, 50), vec3(1, 1, 1));
-	aliveGOs.reserve(maxObjects);
 
 	taskManager = make_unique<GameTaskManager>();
 }
@@ -63,11 +52,8 @@ Game::Game()
 void Game::Init()
 {
 	gameObjects.reserve(maxObjects);
-	aliveGOs.reserve(maxObjects);
-	
+
 	renderThread->Init(isVK, &terrains);
-	while (!renderThread->HasInitialised())
-		this_thread::yield();
 
 	GameObject *go; 
 
@@ -87,7 +73,7 @@ void Game::Init()
 	task.AddDependency(GameTask::UpdateInput);
 	taskManager->AddTask(task);
 
-	// TODO: need to fix collisions
+	// TODO: need to fix collisions, start using Bullet
 	task = GameTask(GameTask::CollisionUpdate, bind(&Game::CollisionUpdate, this));
 	task.AddDependency(GameTask::GameUpdate);
 	taskManager->AddTask(task);
@@ -97,8 +83,13 @@ void Game::Init()
 	task.AddDependency(GameTask::CollisionUpdate);
 	taskManager->AddTask(task);
 
+	// TODO: finish this task
+	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
+	task.AddDependency(GameTask::GameUpdate);
+	taskManager->AddTask(task);
+
 	task = GameTask(GameTask::Render, bind(&Game::Render, this));
-	task.AddDependency(GameTask::UpdateEnd);
+	task.AddDependency(GameTask::RemoveGameObjects);
 	taskManager->AddTask(task);
 
 	// TODO: will need to fix up audio
@@ -106,12 +97,19 @@ void Game::Init()
 	task.AddDependency(GameTask::UpdateEnd);
 	taskManager->AddTask(task);
 
-	// TODO: finish this task
-	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
-	task.AddDependency(GameTask::Render);
-	taskManager->AddTask(task);
-
 	taskManager->ResolveDependencies();
+	taskManager->Run();
+}
+
+void Game::RunMainThread()
+{
+	if (renderThread->HasWork())
+	{
+		renderThread->InternalLoop();
+
+		// TODO: need a semaphore for this, to disconnect from the render thread
+		RunTaskGraph();
+	}
 }
 
 void Game::RunTaskGraph()
@@ -126,11 +124,9 @@ void Game::CleanUp()
 
 	// we can mark that the engine is done - wrap the threads
 	running = false;
-	for (size_t i = 0; i < threads.size(); i++)
-		threads[i].join();
-
-	for (GameObject *go : gameObjects)
-		delete go;
+	goDeleteEnabled = true;
+	for (auto pair : gameObjects)
+		delete pair.second;
 	gameObjects.clear();
 
 	delete camera;
@@ -163,10 +159,9 @@ void Game::Update()
 		sensitivity -= 0.3f;
 
 	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
-	for (size_t i = 0, end = gameObjects.size(); i < end; i++)
+	for (auto pair : gameObjects)
 	{
-		GameObject *go = gameObjects[i];
-		go->Update(deltaTime);
+		pair.second->Update(deltaTime);
 	}
 }
 
@@ -180,8 +175,8 @@ void Game::CollisionUpdate()
 	{
 		const float startTime = static_cast<float>(glfwGetTime());
 		
-		for (size_t i = 0, end = gameObjects.size(); i < end; i++)
-			grid->Add(gameObjects[i], 0);
+		for (auto pair : gameObjects)
+			grid->Add(pair.second, 0);
 
 		// flush the grid in respective locations on the main thread
 		grid->Flush();
@@ -225,6 +220,30 @@ void Game::Render()
 	while (renderThread->IsBusy())
 		tbb::this_tbb_thread::yield();
 
+	{
+		goDeleteEnabled = true;
+		tbb::spin_mutex::scoped_lock spinlock(removeLock);
+		while (removeQueue.size())
+		{
+			GameObject* go = removeQueue.front();
+			renderThread->RemoveRenderable(go->GetUID());
+			gameObjects.erase(go->GetUID());
+			delete go;
+			removeQueue.pop();
+		}
+		goDeleteEnabled = false;
+	}
+
+	{
+		tbb::spin_mutex::scoped_lock spinlock(addLock);
+		while (addQueue.size())
+		{
+			GameObject* go = addQueue.front();
+			renderThread->AddRenderable(go);
+			addQueue.pop();
+		}
+	}
+
 	renderThread->Work();
 }
 
@@ -247,35 +266,19 @@ void Game::UpdateEnd()
 
 void Game::RemoveGameObjects()
 {
-	// this is the place to clear out our gameobjects
-	// the render calls that have been scheduled have been consumed
-	// so no extra references are left
-	// can't use parallel_for because it seems to break down the rendering loop
-	// because there's no way that I know of atm to wait until the parallel_for finishes
-	for (GameObject *go : gameObjects)
-	{
-		if (!go->IsDead())
-			aliveGOs.push_back(go);
-		else
-			delete go;
-	}
-
-	// swap
-	size_t objsDeleted = gameObjects.size() - aliveGOs.size();
-	gameObjects.swap(aliveGOs);
-	//printf("[Info] was %zd, after delete %zd\n", aliveGOs.size(), gameObjects.size());
-	aliveGOs.clear(); // clean it up for the next iteration to fill it out
+	
 }
 
 GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)
 {
-	if (gameObjects.size() == maxObjects - 1)
-		return nullptr;
-
-	GameObject *go = new GameObject(pos, rot, scale);
-	go->SetIndex(ClaimId());
-	gameObjects.push_back(go);
-
+	GameObject* go = nullptr;
+	if (gameObjects.size() < maxObjects)
+	{
+		tbb::spin_mutex::scoped_lock spinLock(addLock);
+		go = new GameObject(pos, rot, scale);
+		gameObjects[go->GetUID()] = go;
+		addQueue.emplace(go);
+	}
 	return go;
 }
 
@@ -289,31 +292,15 @@ float Game::GetTime() const
 	return static_cast<float>(glfwGetTime());
 }
 
+void Game::RemoveGameObject(GameObject* go)
+{
+	// TODO: need to make sure this won't get deadlocked
+	tbb::spin_mutex::scoped_lock spinLock(removeLock);
+	removeQueue.push(go);
+}
+
 void Game::LogToFile(string s)
 {
 	if (file.is_open())
 		file << s << endl;
-}
-
-void Game::ReturnId(size_t id)
-{
-	ids.push(id);
-}
-
-size_t Game::ClaimId()
-{
-	size_t id;
-	if (!ids.try_pop(id))
-		id = numeric_limits<size_t>::max();
-	return id;
-}
-
-Graphics* Game::GetGraphicsRaw()
-{
-	return renderThread->GetGraphicsRaw();
-}
-
-const Graphics* Game::GetGraphics() const
-{
-	return renderThread->GetGraphics();
 }

@@ -275,7 +275,7 @@ void GraphicsVK::BeginGather()
 	gatherStarted = true;
 }
 
-void GraphicsVK::Render(const Camera& cam, GameObject *go, const uint32_t threadId)
+void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t threadId)
 {
 	if (paused)
 		return;
@@ -309,7 +309,7 @@ void GraphicsVK::Render(const Camera& cam, GameObject *go, const uint32_t thread
 	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.indexCount), 1, static_cast<int32_t>(m.indexOffset), 0, 0);
 
 	// command issuing is done, record the render call
-	renderCalls[threadId]++;
+	renderCalls++;
 }
 
 void GraphicsVK::Display()

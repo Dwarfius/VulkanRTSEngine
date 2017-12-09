@@ -2,6 +2,7 @@
 
 #include "Graphics.h"
 #include "Transform.h"
+#include "UID.h"
 
 class Renderer;
 class ComponentBase;
@@ -16,10 +17,14 @@ public:
 
 	// TODO: change this to &
 	Transform* GetTransform() { return &transf; }
+	const Transform* GetTransform() const { return &transf; }
 	// This is model's center
 	vec3 GetCenter() const { return center; }
 	float GetRadius() const;
 
+	const UID& GetUID() const { return myUID; }
+
+	// TODO: fix this up for Vulkan, have it generate/track indices of memory locations
 	void SetIndex(size_t newInd) { index = newInd; }
 	size_t GetIndex() const { return index; }
 
@@ -40,9 +45,11 @@ public:
 	static bool Collide(GameObject *g1, GameObject *g2);
 
 	bool IsDead() const { return dead; }
-	void Die() { dead = true; }
+	void Die();
 
 private:
+	UID myUID;
+
 	size_t index = numeric_limits<size_t>::max();
 	bool dead = false;
 	Transform transf;

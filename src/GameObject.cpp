@@ -9,19 +9,21 @@
 
 GameObject::GameObject(vec3 pos, vec3 rot, vec3 scale)
 	: transf(pos, rot, scale)
+	, myUID()
 {
+	myUID = UID::Create();
 }
 
 GameObject::~GameObject()
 {
+	assert(Game::goDeleteEnabled);
+
 	for (auto comp : components)
 	{
 		comp->Destroy();
 		delete comp;
 	}
 	components.clear();
-
-	Game::GetInstance()->ReturnId(index);
 }
 
 void GameObject::Update(float deltaTime)
@@ -110,4 +112,10 @@ bool GameObject::Collide(GameObject *g1, GameObject *g2)
 	// using squares to avoid expensive sqrt
 	const float radiiSum = g2Rad * 0.5f + g1Rad * 0.5f; // halving it because the models used have huge bounding spheres (antenna messes it up)
 	return length2(g2Pos - g1Pos) < radiiSum * radiiSum;
+}
+
+void GameObject::Die()
+{
+	dead = true;
+	Game::GetInstance()->RemoveGameObject(this);
 }

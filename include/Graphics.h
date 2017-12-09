@@ -27,8 +27,6 @@ const vector<string> texturesToLoad = {
 	"gray.png"
 };
 
-const int maxThreads = 16;
-
 // providing unified interfaces (just to make it easier to see/track)
 // Model
 typedef uint32_t ModelId;
@@ -39,6 +37,18 @@ struct Model
 	size_t indexCount, indexOffset;
 	vec3 center;
 	float sphereRadius;
+
+	Model()
+		: id(0)
+		, vertexCount(0)
+		, vertexOffset(0)
+		, indexCount(0)
+		, indexOffset(0)
+		, center(0.f, 0.f, 0.f)
+		, sphereRadius(0)
+	{
+
+	}
 
 	// OpenGL resource tracking
 	vector<uint32_t> buffers; 
@@ -83,17 +93,17 @@ class Graphics
 public:
 	virtual void Init(const vector<Terrain>& terrains) = 0;
 	virtual void BeginGather() = 0;
-	virtual void Render(const Camera& cam, GameObject *go, const uint32_t threadId) = 0;
+	virtual void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
 	vec3 GetModelCenter(ModelId m) const { return models[m].center; }
 	float GetModelRadius(ModelId m) const { return models[m].sphereRadius; }
 
-	GLFWwindow* GetWindow() { return window; }
+	GLFWwindow* GetWindow() const { return window; }
 	
-	int GetRenderCalls() const;
-	void ResetRenderCalls();
+	int GetRenderCalls() const { return renderCalls; }
+	void ResetRenderCalls() { renderCalls = 0; }
 
 	static float GetWidth() { return static_cast<float>(width); }
 	static float GetHeight() { return static_cast<float>(height); }
@@ -113,7 +123,7 @@ protected:
 
 	vector<Model> models;
 
-	int renderCalls[maxThreads];
+	int renderCalls;
 
 	string readFile(const string& filename);
 

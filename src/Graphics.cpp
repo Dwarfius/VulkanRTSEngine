@@ -9,20 +9,6 @@ TextureId Graphics::currTexture;
 int Graphics::width = 800;
 int Graphics::height = 600;
 
-int Graphics::GetRenderCalls() const
-{
-	int callsTotal = 0;
-	for (int i = 0; i < maxThreads; i++)
-		callsTotal += renderCalls[i];
-	return callsTotal;
-}
-
-void Graphics::ResetRenderCalls()
-{
-	for (int i = 0; i < maxThreads; i++)
-		renderCalls[i] = 0;
-}
-
 void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius)
 {
 	tinyobj::attrib_t attrib;

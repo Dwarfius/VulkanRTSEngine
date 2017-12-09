@@ -5,11 +5,9 @@
 class GraphicsGL : public Graphics
 {
 public:
-	GraphicsGL() {}
-
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	void Render(const Camera& cam, GameObject *go, const uint32_t threadId) override;
+	void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
 
@@ -33,7 +31,7 @@ private:
 
 		unordered_map<string, Shader::UniformValue> uniforms;
 	};
-	// supporting max 16 threads
-	// might want to multi-buffer this
-	vector<RenderJob> threadJobs[maxThreads];
+	// TODO: replace this with a double/tripple buffer concept
+	vector<RenderJob> threadJobs;
+	tbb::spin_mutex jobsLock;
 };

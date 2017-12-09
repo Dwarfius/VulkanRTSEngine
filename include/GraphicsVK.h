@@ -12,7 +12,8 @@ public:
 
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	void Render(const Camera& cam, GameObject *go, const uint32_t threadId) override;
+	// TODO: get rid of threadId, try to deduce it automagically
+	void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) override;
 	void Display() override;
 	void CleanUp() override;
 
@@ -20,6 +21,8 @@ public:
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
 private:
+	const static int maxThreads = 16;
+
 	void LoadResources(const vector<Terrain>& terrains);
 
 	void WindowResized(int width, int height);

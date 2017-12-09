@@ -37,6 +37,13 @@ UID UID::Create()
 	return newUID;
 }
 
+UID::UID()
+	: mac(0)
+	, time(0)
+	, rndNum(0)
+{
+}
+
 void UID::GetString(char* string) const
 {
 	sprintf(string, "%0.16zX%0.8X%0.8X", mac, time, rndNum);

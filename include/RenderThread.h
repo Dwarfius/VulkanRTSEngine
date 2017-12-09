@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Terrain.h"
+#include "UID.h"
 
 class Graphics;
+class GameObject;
 
 // a proxy class that handles the render thread
 class RenderThread
@@ -14,20 +16,27 @@ public:
 	void Init(bool useVulkan, const vector<Terrain>* aTerrainSet);
 	void Work();
 	bool IsBusy() const { return workPending; }
-	bool HasInitialised() const { return initialised; }
 
 	Graphics* GetGraphicsRaw() { return graphics.get(); }
 	const Graphics* GetGraphics() const { return graphics.get(); }
+
+	// TODO: get rid of this once TrippleBuffer is in
+	void AddRenderable(const GameObject* go);
+	void RemoveRenderable(const UID& uid);
+
+	void InternalLoop();
+	bool HasWork() const { return workPending; }
 
 private:
 	const vector<Terrain>* terrains;
 	unique_ptr<Graphics> graphics;
 	bool usingVulkan;
 
-	unique_ptr<thread> renderThread;
-	atomic<bool> initialised;
+	// TODO: separate gameobject and renderable
+	// TODO: start using TrippleBuffer
+	unordered_map<UID, const GameObject*> myRenderables;
+
 	atomic<bool> needsSwitch;
 	atomic<bool> workPending;
-	void InternalLoop();
 };
 

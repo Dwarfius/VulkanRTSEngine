@@ -5,6 +5,13 @@
 
 #include "Components/Renderer.h"
 
+#define CHECK_GL()															\
+{																			\
+	const GLenum err = glGetError();										\
+	if (err != GL_NO_ERROR)													\
+		printf("GL error(%d) on line %d in %s", err, __LINE__, __FILE__);	\
+}
+
 // Public Methods
 void GraphicsGL::Init(const vector<Terrain>& terrains)
 {
@@ -62,7 +69,7 @@ void GraphicsGL::BeginGather()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsGL::Render(const Camera& cam, GameObject* go, const uint32_t threadId)
+void GraphicsGL::Render(const Camera& cam, const GameObject* go, const uint32_t threadId)
 {
 	Renderer *r = go->GetRenderer();
 	if (!r)
@@ -85,78 +92,80 @@ void GraphicsGL::Render(const Camera& cam, GameObject* go, const uint32_t thread
 	job.uniforms["mvp"] = uniform;
 
 	// we don't actually render, we just create a render job, Display() does the rendering
-	threadJobs[threadId].push_back(job);
-	renderCalls[threadId]++;
+	{
+		tbb::spin_mutex::scoped_lock spinLock(jobsLock);
+		threadJobs.push_back(job);
+		renderCalls++;
+	}
 }
 
 void GraphicsGL::Display()
 {
-	for (uint i = 0; i < maxThreads; i++)
+	// TODO: remove this once we have double/tripple buffering
+	tbb::spin_mutex::scoped_lock spinLock(jobsLock);
+	for (const RenderJob& r : threadJobs)
 	{
-		for (RenderJob r : threadJobs[i])
+		Model vao = models[r.model];
+		Shader shader = shaders[r.shader];
+		TextureId texture = textures[r.texture];
+
+		if (shader.id != currShader)
 		{
-			Model vao = models[r.model];
-			Shader shader = shaders[r.shader];
-			TextureId texture = textures[r.texture];
-
-			if (shader.id != currShader)
-			{
-				glUseProgram(shader.id);
-				currShader = shader.id;
-			}
-
-			if (texture != currTexture)
-			{
-				glBindTexture(GL_TEXTURE_2D, texture);
-				glUniform1i(shader.uniforms["tex"].loc, 0);
-				currTexture = texture;
-			}
-
-			if (vao.id != currModel)
-			{
-				glBindVertexArray(vao.id);
-				currModel = vao.id;
-			}
-
-			for (auto pair = r.uniforms.begin(); pair != r.uniforms.end(); ++pair)
-			{
-				// check to see if shader has this uniform bind point
-				auto iter = shader.uniforms.find(pair->first);
-				if (iter == shader.uniforms.end())
-					continue;
-
-				// shader has it, so use it
-				Shader::BindPoint bp = iter->second;
-				Shader::UniformValue u = pair->second;
-
-				// pass it's value
-				switch (bp.type)
-				{
-				case Shader::UniformType::Int:
-					glUniform1i(bp.loc, u.i);
-					break;
-				case Shader::UniformType::Float:
-					glUniform1f(bp.loc, u.f);
-					break;
-				case Shader::UniformType::Vec2:
-					glUniform2f(bp.loc, u.v2.x, u.v2.y);
-					break;
-				case Shader::UniformType::Vec3:
-					glUniform3f(bp.loc, u.v3.x, u.v3.y, u.v3.z);
-					break;
-				case Shader::UniformType::Vec4:
-					glUniform4f(bp.loc, u.v4.x, u.v4.y, u.v4.z, u.v4.w);
-					break;
-				case Shader::UniformType::Mat4:
-					glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.m));
-					break;
-				}
-			}
-			
-			glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(vao.indexCount), GL_UNSIGNED_INT, 0);
+			glUseProgram(shader.id);
+			currShader = shader.id;
 		}
-		threadJobs[i].clear();
+
+		if (texture != currTexture)
+		{
+			glBindTexture(GL_TEXTURE_2D, texture);
+			glUniform1i(shader.uniforms["tex"].loc, 0);
+			currTexture = texture;
+		}
+
+		if (vao.id != currModel)
+		{
+			glBindVertexArray(vao.id);
+			currModel = vao.id;
+		}
+
+		for (const pair<string, Shader::UniformValue>& pair : r.uniforms)
+		{
+			// check to see if shader has this uniform bind point
+			auto iter = shader.uniforms.find(pair.first);
+			if (iter == shader.uniforms.end())
+				continue;
+
+			// shader has it, so use it
+			Shader::BindPoint bp = iter->second;
+			Shader::UniformValue u = pair.second;
+
+			// pass it's value
+			switch (bp.type)
+			{
+			case Shader::UniformType::Int:
+				glUniform1i(bp.loc, u.i);
+				break;
+			case Shader::UniformType::Float:
+				glUniform1f(bp.loc, u.f);
+				break;
+			case Shader::UniformType::Vec2:
+				glUniform2f(bp.loc, u.v2.x, u.v2.y);
+				break;
+			case Shader::UniformType::Vec3:
+				glUniform3f(bp.loc, u.v3.x, u.v3.y, u.v3.z);
+				break;
+			case Shader::UniformType::Vec4:
+				glUniform4f(bp.loc, u.v4.x, u.v4.y, u.v4.z, u.v4.w);
+				break;
+			case Shader::UniformType::Mat4:
+				glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.m));
+				break;
+			}
+		}
+			
+		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(vao.indexCount), GL_UNSIGNED_INT, 0);
 	}
+	threadJobs.clear();
 	glfwSwapBuffers(window);
 }
 
