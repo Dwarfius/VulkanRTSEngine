@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Terrain.h"
-#include "UID.h"
+#include "TrippleBuffer.h"
 
 class Graphics;
 class GameObject;
@@ -20,9 +20,7 @@ public:
 	Graphics* GetGraphicsRaw() { return graphics.get(); }
 	const Graphics* GetGraphics() const { return graphics.get(); }
 
-	// TODO: get rid of this once TrippleBuffer is in
 	void AddRenderable(const GameObject* go);
-	void RemoveRenderable(const UID& uid);
 
 	void InternalLoop();
 	bool HasWork() const { return workPending; }
@@ -34,7 +32,7 @@ private:
 
 	// TODO: separate gameobject and renderable
 	// TODO: start using TrippleBuffer
-	unordered_map<UID, const GameObject*> myRenderables;
+	TrippleBuffer<const GameObject*> myTrippleRenderables;
 
 	atomic<bool> needsSwitch;
 	atomic<bool> workPending;

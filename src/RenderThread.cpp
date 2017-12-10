@@ -51,12 +51,7 @@ void RenderThread::Work()
 
 void RenderThread::AddRenderable(const GameObject* go)
 {
-	myRenderables[go->GetUID()] = go;
-}
-
-void RenderThread::RemoveRenderable(const UID& uid)
-{
-	myRenderables.erase(uid);
+	myTrippleRenderables.Add(go);
 }
 
 void RenderThread::InternalLoop()
@@ -96,11 +91,12 @@ void RenderThread::InternalLoop()
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
 
+	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetBuffer();
+	myTrippleRenderables.Advance();
+
 	const Camera& cam = *Game::GetInstance()->GetCamera();
-	// TODO: fix this parrallel for
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
-		[&](const pair<UID, const GameObject*> iterPair) {
-		const GameObject* go = iterPair.second;
+		[&](const GameObject* go) {
 		if (cam.CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
 			graphics->Render(cam, go, 0);
 	});

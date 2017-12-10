@@ -28,7 +28,6 @@ public:
 	void EndGame() { shouldEnd = true; }
 	bool IsPaused() { return paused; }
 
-	// TODO: fix thread-safetiness of this
 	const unordered_map<UID, GameObject*>& GetGameObjects() const { return gameObjects; }
 	size_t GetGameObjectCount() const { return gameObjects.size(); }
 	GameObject* Instantiate(vec3 pos = vec3(), vec3 rot = vec3(), vec3 scale = vec3(1));
@@ -49,6 +48,7 @@ public:
 	static bool goDeleteEnabled;
 
 private:
+	void AddGameObjects();
 	void UpdateInput();
 	void Update();
 	void CollisionUpdate();

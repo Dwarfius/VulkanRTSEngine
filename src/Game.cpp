@@ -66,11 +66,15 @@ void Game::Init()
 	go = Instantiate();
 	go->AddComponent(new GameMode());
 
-	GameTask task = GameTask(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
+	GameTask task(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
+	taskManager->AddTask(task);
+
+	task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
 	taskManager->AddTask(task);
 
 	task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
 	task.AddDependency(GameTask::UpdateInput);
+	task.AddDependency(GameTask::AddGameObjects);
 	taskManager->AddTask(task);
 
 	// TODO: need to fix collisions, start using Bullet
@@ -83,7 +87,6 @@ void Game::Init()
 	task.AddDependency(GameTask::CollisionUpdate);
 	taskManager->AddTask(task);
 
-	// TODO: finish this task
 	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
 	task.AddDependency(GameTask::GameUpdate);
 	taskManager->AddTask(task);
@@ -133,15 +136,30 @@ void Game::CleanUp()
 	delete grid;
 }
 
+void Game::AddGameObjects()
+{
+	tbb::spin_mutex::scoped_lock spinlock(addLock);
+	while (addQueue.size())
+	{
+		GameObject* go = addQueue.front();
+		addQueue.pop();
+	}
+}
+
 void Game::UpdateInput()
 {
-	frameStart = static_cast<float>(glfwGetTime());
 	// TODO: fix up input update
 	Input::Update();
 }
 
 void Game::Update()
 {
+	{
+		float newTime = static_cast<float>(glfwGetTime());
+		deltaTime = newTime - frameStart;
+		frameStart = newTime;
+	}
+
 	if (Input::GetKey(27) || shouldEnd)
 	{
 		paused = running = false;
@@ -215,34 +233,15 @@ void Game::CollisionUpdate()
 
 void Game::Render()
 {
+	for (const pair<UID, GameObject*>& elem : gameObjects)
+	{
+		renderThread->AddRenderable(elem.second);
+	}
+
 	// we have to wait until the render thread finishes processing the submitted commands
-	// otherwise we'll overflow the command buffers
+	// otherwise we'll screw the command buffers
 	while (renderThread->IsBusy())
 		tbb::this_tbb_thread::yield();
-
-	{
-		goDeleteEnabled = true;
-		tbb::spin_mutex::scoped_lock spinlock(removeLock);
-		while (removeQueue.size())
-		{
-			GameObject* go = removeQueue.front();
-			renderThread->RemoveRenderable(go->GetUID());
-			gameObjects.erase(go->GetUID());
-			delete go;
-			removeQueue.pop();
-		}
-		goDeleteEnabled = false;
-	}
-
-	{
-		tbb::spin_mutex::scoped_lock spinlock(addLock);
-		while (addQueue.size())
-		{
-			GameObject* go = addQueue.front();
-			renderThread->AddRenderable(go);
-			addQueue.pop();
-		}
-	}
 
 	renderThread->Work();
 }
@@ -261,12 +260,20 @@ void Game::UpdateAudio()
 
 void Game::UpdateEnd()
 {
-	deltaTime = static_cast<float>(glfwGetTime()) - frameStart;
 }
 
 void Game::RemoveGameObjects()
 {
-	
+	goDeleteEnabled = true;
+	tbb::spin_mutex::scoped_lock spinlock(removeLock);
+	while (removeQueue.size())
+	{
+		GameObject* go = removeQueue.front();
+		gameObjects.erase(go->GetUID());
+		delete go;
+		removeQueue.pop();
+	}
+	goDeleteEnabled = false;
 }
 
 GameObject* Game::Instantiate(vec3 pos, vec3 rot, vec3 scale)

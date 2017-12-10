@@ -15,13 +15,13 @@ FIND_PACKAGE(GLM REQUIRED)
 FIND_PACKAGE(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 FIND_PACKAGE(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
 
-FILE(GLOB SRC "src/*.cpp" "include/*.h")
+FILE(GLOB SRC "src/*.cpp" "include/*.h") 
 FILE(GLOB SRC_COMP "src/Components/*.cpp" "include/Components/*.h")
 
 ADD_EXECUTABLE(VulkanRTSEngine ${SRC} ${SRC_COMP})
 if (MSVC)
-   set_target_properties(VulkanRTSEngine PROPERTIES COMPILE_FLAGS "/YuCommon.h")
-   set_source_files_properties("src/Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
+   SET_TARGET_PROPERTIES(VulkanRTSEngine PROPERTIES COMPILE_FLAGS "/YuCommon.h")
+   SET_SOURCE_FILES_PROPERTIES("src/Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
    SET(EXTRA_LIBS "IPHLPAPI.lib")
 endif(MSVC)
 
@@ -47,4 +47,9 @@ if (MSVC)
 	else()
 		MESSAGE(FATAL_ERROR "ALUT_ROOT_DIR not set, can't copy dll")
 	endif()
+	# This is annoying, have to manually copy the the tbb dlls
+	SET(TBB_DLL_PATH "${TBB_DIR}/../bin/intel64/vc14")
+	ADD_CUSTOM_COMMAND(TARGET VulkanRTSEngine POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy
+					$<$<CONFIG:Debug>:"${TBB_DLL_PATH}/tbb_debug.dll">$<$<NOT:$<CONFIG:Debug>>:"${TBB_DLL_PATH}/tbb.dll"> "$<TARGET_FILE_DIR:VulkanRTSEngine>")
 endif()
