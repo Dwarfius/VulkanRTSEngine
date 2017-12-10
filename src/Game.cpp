@@ -168,7 +168,6 @@ void Game::Update()
 	if (Input::GetKeyPressed('B'))
 	{
 		paused = !paused;
-		printf("pause: %d\n", paused);
 	}
 	if (paused)
 		return;

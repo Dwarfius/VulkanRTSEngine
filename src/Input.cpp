@@ -80,7 +80,6 @@ bool Input::GetMouseBtnPressed(char btn)
 void Input::KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods)
 {
 	// safety check
-	printf("%d %d\n", key, action);
 	if (key < 0 || key >= 400)
 		printf("[Warning] Unrecognized key pressed(key: %d, scanCode: %d)\n", key, scanCode);
 	else
