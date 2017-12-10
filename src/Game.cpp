@@ -148,7 +148,6 @@ void Game::AddGameObjects()
 
 void Game::UpdateInput()
 {
-	// TODO: fix up input update
 	Input::Update();
 }
 
@@ -167,7 +166,10 @@ void Game::Update()
 	}
 
 	if (Input::GetKeyPressed('B'))
+	{
 		paused = !paused;
+		printf("pause: %d\n", paused);
+	}
 	if (paused)
 		return;
 
@@ -260,6 +262,7 @@ void Game::UpdateAudio()
 
 void Game::UpdateEnd()
 {
+	Input::PostUpdate();
 }
 
 void Game::RemoveGameObjects()
