@@ -106,6 +106,8 @@ private:
 	bool HasStencilComponent(vk::Format f) { return f == vk::Format::eD32SfloatS8Uint || f == vk::Format::eD24UnormS8Uint; }
 
 	// Descriptor Sets
+	tbb::spin_mutex slotIndexMutex;
+	size_t slotIndex;
 	struct MatUBO {
 		mat4 model;
 		mat4 mvp;

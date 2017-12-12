@@ -16,10 +16,9 @@ int main()
 
 	glfwSetTime(0);
 
-	Game *game = new Game();
+	Game* game = new Game();
 	game->Init();
-	GLFWwindow *window = glfwGetCurrentContext();
-	while (!glfwWindowShouldClose(window) && game->IsRunning())
+	while (!glfwWindowShouldClose(game->GetWIndow()) && game->IsRunning())
 	{
 		glfwPollEvents();
 

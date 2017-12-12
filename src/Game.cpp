@@ -136,6 +136,11 @@ void Game::CleanUp()
 	delete grid;
 }
 
+GLFWwindow* Game::GetWIndow() const
+{
+	return renderThread->GetWindow();
+}
+
 void Game::AddGameObjects()
 {
 	tbb::spin_mutex::scoped_lock spinlock(addLock);
@@ -234,6 +239,11 @@ void Game::CollisionUpdate()
 
 void Game::Render()
 {
+	if (Input::GetKeyPressed('G'))
+	{
+		renderThread->RequestSwitch();
+	}
+
 	for (const pair<UID, GameObject*>& elem : gameObjects)
 	{
 		renderThread->AddRenderable(elem.second);

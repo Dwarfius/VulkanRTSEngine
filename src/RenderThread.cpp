@@ -41,12 +41,12 @@ void RenderThread::Init(bool useVulkan, const vector<Terrain>* aTerrainSet)
 
 void RenderThread::Work()
 {
-	if (Input::GetKeyPressed('G'))
-	{
-		needsSwitch = true;
-	}
-
 	workPending = true;
+}
+
+GLFWwindow* RenderThread::GetWindow() const
+{
+	return graphics->GetWindow();
 }
 
 void RenderThread::AddRenderable(const GameObject* go)
@@ -59,7 +59,12 @@ void RenderThread::InternalLoop()
 	if (Game::GetInstance()->IsPaused() || !workPending)
 		this_thread::yield();
 
-	assert(glfwGetCurrentContext());
+	// TODO: introduce proper assert macros
+	if (!usingVulkan)
+	{
+		assert(glfwGetCurrentContext());
+	}
+	
 	if (needsSwitch)
 	{
 		printf("[Info] Switching renderer...\n");

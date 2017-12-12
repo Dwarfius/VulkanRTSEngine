@@ -23,10 +23,10 @@ public:
 	void RunTaskGraph();
 	void CleanUp();
 
-
 	bool IsRunning() { return running; }
 	void EndGame() { shouldEnd = true; }
 	bool IsPaused() { return paused; }
+	GLFWwindow* GetWIndow() const;
 
 	const unordered_map<UID, GameObject*>& GetGameObjects() const { return gameObjects; }
 	size_t GetGameObjectCount() const { return gameObjects.size(); }
@@ -66,7 +66,7 @@ private:
 	unique_ptr<RenderThread> renderThread;
 	unique_ptr<GameTaskManager> taskManager;
 
-	bool isVK = false;
+	const bool isVK = true;
 
 	// timer measurements
 	float frameStart = 0;

@@ -24,10 +24,6 @@ public:
 
 	const UID& GetUID() const { return myUID; }
 
-	// TODO: fix this up for Vulkan, have it generate/track indices of memory locations
-	void SetIndex(size_t newInd) { index = newInd; }
-	size_t GetIndex() const { return index; }
-
 	// compiler should perform RVO, so please do it
 	// https://web.archive.org/web/20130930101140/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value
 	auto GetUniforms() const { return uniforms; }

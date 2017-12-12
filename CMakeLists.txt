@@ -7,6 +7,9 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 SET(TBB_DIR "" CACHE PATH "Path to root of TBB directory")
 
+# use this for https://github.com/ocornut/imgui and others, potentially
+# https://stackoverflow.com/questions/38006584/how-to-clone-and-integrate-external-from-git-cmake-project-into-local-one
+
 FIND_PACKAGE(Vulkan REQUIRED) 
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(GLEW REQUIRED)

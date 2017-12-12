@@ -19,6 +19,7 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 // Public Methods
 void GraphicsVK::Init(const vector<Terrain>& terrains)
 {
+	slotIndex = 0;
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
 		printf("[Error] Vulkan loader unavailable\n");
@@ -289,15 +290,17 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t 
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = r->GetShader();
 	Model m = models[r->GetModel()];
-	size_t index = go->GetIndex();
+	size_t index = 0;
+	{
+		tbb::spin_mutex::scoped_lock lock(slotIndexMutex);
+		index = slotIndex++;
+	}
 
 	// update the uniforms
 	auto uniforms = go->GetUniforms();
 	MatUBO matrices;
 	matrices.model = uniforms["Model"].m;
 	matrices.mvp = cam.Get() * matrices.model;
-	//if (matrices.model[1][1] >= 0.005f)
-	//	printf("[Info] For %.4d(val = % .5f, model %d) got %.7zd\n", index, matrices.model[1][1], r->GetModel(), GetAlignedOffset(index, sizeof(MatUBO)));
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
@@ -361,6 +364,8 @@ void GraphicsVK::Display()
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
 	gatherStarted = false;
+
+	slotIndex = 0;
 }
 
 void GraphicsVK::CleanUp()

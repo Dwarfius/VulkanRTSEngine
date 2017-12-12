@@ -16,6 +16,8 @@ public:
 	void Init(bool useVulkan, const vector<Terrain>* aTerrainSet);
 	void Work();
 	bool IsBusy() const { return workPending; }
+	void RequestSwitch() { needsSwitch = true; }
+	GLFWwindow* GetWindow() const;
 
 	Graphics* GetGraphicsRaw() { return graphics.get(); }
 	const Graphics* GetGraphics() const { return graphics.get(); }
