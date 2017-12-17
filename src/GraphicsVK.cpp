@@ -19,14 +19,14 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 GraphicsVK::GraphicsVK()
 	: myMaxThreads(1)
 	, myThreadCounter(0)
+	, slotIndex(0)
+	, mappedUboMem(nullptr)
 {
-
 }
 
 // Public Methods
 void GraphicsVK::Init(const vector<Terrain>& terrains)
 {
-	slotIndex = 0;
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
 		printf("[Error] Vulkan loader unavailable\n");
@@ -224,6 +224,7 @@ void GraphicsVK::BeginGather()
 	device.resetFences(1, &fence);
 
 	// advance our buffer, since it has finished being used
+	slotIndex = 0;
 	cmdBuffers.Advance();
 	secCmdBuffers.Advance();
 
@@ -404,8 +405,6 @@ void GraphicsVK::Display()
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
 	gatherStarted = false;
-
-	slotIndex = 0;
 }
 
 void GraphicsVK::CleanUp()
@@ -1204,7 +1203,7 @@ void GraphicsVK::CreateDescriptorSet()
 void GraphicsVK::CreateUBO()
 {
 	size_t uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
-	printf("[Info] Ubo size: %zd(for %d, min alignment: %zd)\n", uboSize, Game::maxObjects, limits.minUniformBufferOffsetAlignment);
+	printf("[Info] Ubo size: %zd(for %d*3, min alignment: %zd)\n", uboSize, Game::maxObjects, limits.minUniformBufferOffsetAlignment);
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
 
 	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});
@@ -1224,15 +1223,8 @@ void GraphicsVK::DestroyUBO()
 
 size_t GraphicsVK::GetAlignedOffset(size_t ind, size_t step) const
 {
-	size_t alignedStep = 0;
-	while (step > limits.minUniformBufferOffsetAlignment)
-	{
-		alignedStep += limits.minUniformBufferOffsetAlignment;
-		step -= limits.minUniformBufferOffsetAlignment;
-	}
-	// an entire min alignment block will remain, need to account for it
-	alignedStep += limits.minUniformBufferOffsetAlignment;
-	return ind * alignedStep;
+	const float alignFraction = ceil(step * 1.f / limits.minUniformBufferOffsetAlignment);
+	return static_cast<size_t>(ind * alignFraction * limits.minUniformBufferOffsetAlignment);
 }
 
 void GraphicsVK::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem)

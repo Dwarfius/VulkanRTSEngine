@@ -66,7 +66,7 @@ private:
 	unique_ptr<RenderThread> renderThread;
 	unique_ptr<GameTaskManager> taskManager;
 
-	const bool isVK = false;
+	const bool isVK = true;
 
 	// timer measurements
 	float frameStart = 0;

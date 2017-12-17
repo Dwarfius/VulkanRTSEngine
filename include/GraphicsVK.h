@@ -125,7 +125,7 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSet();
 
-	void *mappedUboMem = nullptr;
+	void* mappedUboMem;
 	vk::Buffer ubo;
 	vk::DeviceMemory uboMem;
 	void CreateUBO();
