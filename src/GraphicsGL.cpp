@@ -84,7 +84,7 @@ void GraphicsGL::Render(const Camera& cam, const GameObject* go)
 	// copy the existing ones
 	job.uniforms = go->GetUniforms();
 	// add add our own
-	mat4 model = job.uniforms["Model"].m;
+	mat4 model = go->GetMatrix();
 	mat4 mvp = cam.Get() * model;
 
 	Shader::UniformValue uniform;

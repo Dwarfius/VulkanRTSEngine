@@ -18,6 +18,8 @@ public:
 	// TODO: change this to &
 	Transform* GetTransform() { return &transf; }
 	const Transform* GetTransform() const { return &transf; }
+
+	const glm::mat4 GetMatrix() const { return myCurrentMat; }
 	// This is model's center
 	vec3 GetCenter() const { return center; }
 	float GetRadius() const;
@@ -49,6 +51,7 @@ private:
 	size_t index = numeric_limits<size_t>::max();
 	bool dead = false;
 	Transform transf;
+	glm::mat4 myCurrentMat;
 	vec3 center;
 
 	unordered_map<string, Shader::UniformValue> uniforms;

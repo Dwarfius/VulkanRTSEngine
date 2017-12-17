@@ -10,6 +10,7 @@
 GameObject::GameObject(vec3 pos, vec3 rot, vec3 scale)
 	: transf(pos, rot, scale)
 	, myUID()
+	, myCurrentMat()
 {
 	myUID = UID::Create();
 }
@@ -31,10 +32,12 @@ void GameObject::Update(float deltaTime)
 	for (int i=0; i<components.size(); i++)
 		components[i]->Update(deltaTime);
 
+	myCurrentMat = transf.GetModelMatrix(center);
+
 	if (renderer)
 	{
 		Shader::UniformValue val;
-		val.m = transf.GetModelMatrix(center);
+		val.m = myCurrentMat;
 		uniforms["Model"] = val;
 	}
 }

@@ -9,8 +9,7 @@ public:
 	TrippleBuffer();
 
 	void Advance();
-	T& GetBuffer();
-	const T& GetBuffer() const;
+	T& GetCurrent() { return buffers[currBuffer]; }
 
 	InternalBuffer& GetInternalBuffer() { return buffers; }
 
@@ -32,16 +31,4 @@ void TrippleBuffer<T>::Advance()
 	currBuffer++;
 	if (currBuffer == 3)
 		currBuffer = 0;
-}
-
-template<typename T>
-T& TrippleBuffer<T>::GetBuffer()
-{
-	return buffers[currBuffer];
-}
-
-template<typename T>
-const T& TrippleBuffer<T>::GetBuffer() const
-{
-	return buffers[currBuffer];
 }

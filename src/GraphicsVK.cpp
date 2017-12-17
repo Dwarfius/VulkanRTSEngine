@@ -219,7 +219,7 @@ void GraphicsVK::BeginGather()
 
 	// before we start recording the command buffer, need to make sure that it has finished being executed
 	cmdFences.Advance();
-	vk::Fence& fence = cmdFences.GetBuffer();
+	const vk::Fence& fence = cmdFences.GetCurrent();
 	device.waitForFences(1, &fence, false, ~0ull);
 	device.resetFences(1, &fence);
 
@@ -234,7 +234,7 @@ void GraphicsVK::BeginGather()
 	clearVals[1] = vk::ClearValue({ 1, 0 });
 
 	// begin recording to command buffer
-	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetBuffer();
+	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetCurrent();
 	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
 	// first we render all geometry - start the render pass
@@ -247,10 +247,10 @@ void GraphicsVK::BeginGather()
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 	// have to begin all secondary buffers here
-	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
+	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
 	for(const PerPipelineCmdBuffers& perPipelineBuffers : perThreadBuffers)
 	{
-		for(uint32_t pipeline=0, length = perPipelineBuffers.size(); pipeline < length; pipeline++)
+		for(size_t pipeline=0, length = perPipelineBuffers.size(); pipeline < length; pipeline++)
 		{
 			const vk::CommandBuffer& buffer = perPipelineBuffers[pipeline];
 			// need inheritance info since secondary buffer
@@ -293,11 +293,15 @@ void GraphicsVK::BeginGather()
 void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 {
 	if (paused)
+	{
 		return;
+	}
 
 	Renderer *r = go->GetRenderer();
 	if (!r)
+	{
 		return;
+	}
 
 	bool exists = false;
 	uint& threadId = myThreadLocalIndices.local(exists);
@@ -308,7 +312,7 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	}
 
 	// get the vector of secondary buffers for thread
-	PerPipelineCmdBuffers& buffers = secCmdBuffers.GetBuffer()[threadId];
+	const PerPipelineCmdBuffers& buffers = secCmdBuffers.GetCurrent()[threadId];
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = r->GetShader();
 	Model m = models[r->GetModel()];
@@ -320,9 +324,8 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	}
 
 	// update the uniforms
-	auto uniforms = go->GetUniforms();
 	MatUBO matrices;
-	matrices.model = uniforms["Model"].m;
+	matrices.model = go->GetMatrix();
 	matrices.mvp = cam.Get() * matrices.model;
 	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
@@ -339,32 +342,34 @@ void GraphicsVK::Display()
 {
 	// early exit if no gather active - helps with resizing
 	if (!gatherStarted)
+	{
 		return;
+	}
 
 	// before we can execute them, have to end them
-	PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
-	for (PerPipelineCmdBuffers& threadBuffersPair : perThreadBuffers)
+	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
+	for (const PerPipelineCmdBuffers& threadBuffersPair : perThreadBuffers)
 	{
-		for (vk::CommandBuffer& perPipelineBuffers : threadBuffersPair)
+		for (const vk::CommandBuffer& perPipelineBuffers : threadBuffersPair)
 		{
 			perPipelineBuffers.end();
 		}
 	}
 
 	// draw out all the accumulated render calls
-	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetBuffer();
+	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetCurrent();
 	{
-		const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
+		const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
 		// we know how many there are total - every thread has per-pipeline command buffers
 		const size_t totalBuffers = perThreadBuffers.size() * pipelines.size();
 		vk::CommandBuffer* allBuffers = new vk::CommandBuffer[totalBuffers];
 		// rearrange them to avoid pipeline changes - they might still happen, but if they do,
 		// fixing it will be faster since this will accomodate it. 
-		// TODO: check if pipeline fixing still happens in the driver
+		// TODO: check if pipeline switching still happens in the driver
 		// TODO: Though the following code is not cache-friendly, not going to change it just yet 
 		// because it's should have a small amount of iterations for now (only 3 pipelines)
 		size_t currentSlot = 0;
-		for (int pipeline = 0, pipelinesLength = pipelines.size(); pipeline < pipelinesLength; pipeline++)
+		for (size_t pipeline = 0, pipelinesLength = pipelines.size(); pipeline < pipelinesLength; pipeline++)
 		{
 			for (int thread = 0; thread < myMaxThreads; thread++)
 			{
@@ -373,7 +378,7 @@ void GraphicsVK::Display()
 		}
 
 		// submit them all
-		primaryCmdBuffer.executeCommands(totalBuffers, allBuffers);
+		primaryCmdBuffer.executeCommands(static_cast<uint32_t>(totalBuffers), allBuffers);
 	}
 
 	// finish up the render pass
@@ -389,7 +394,7 @@ void GraphicsVK::Display()
 		1, &primaryCmdBuffer,
 		1, &renderFinished
 	};
-	queues.graphicsQueue.submit(1, &submitInfo, cmdFences.GetBuffer());
+	queues.graphicsQueue.submit(1, &submitInfo, cmdFences.GetCurrent());
 
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
@@ -1055,8 +1060,10 @@ void GraphicsVK::CreateCommandResources()
 {
 	// allocating a cmdBuffer per swapchain FBO
 	vector<vk::CommandBuffer> buffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
-	for (int bufferInd = 0, length = buffers.size(); bufferInd < length; bufferInd++)
+	for (size_t bufferInd = 0, length = buffers.size(); bufferInd < length; bufferInd++)
+	{
 		cmdBuffers.GetInternalBuffer()[bufferInd] = move(buffers[bufferInd]);
+	}
 
 	{
 		// now the secondary command buffers

@@ -52,7 +52,7 @@ GLFWwindow* RenderThread::GetWindow() const
 
 void RenderThread::AddRenderable(const GameObject* go)
 {
-	vector<const GameObject*>& buffer = myTrippleRenderables.GetBuffer();
+	vector<const GameObject*>& buffer = myTrippleRenderables.GetCurrent();
 	buffer.push_back(go);
 }
 
@@ -99,9 +99,9 @@ void RenderThread::InternalLoop()
 	// the current render queue has been used up, we can fill it up again
 	graphics->BeginGather();
 
-	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetBuffer();
+	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetCurrent();
 	myTrippleRenderables.Advance();
-	myTrippleRenderables.GetBuffer().clear();
+	myTrippleRenderables.GetCurrent().clear();
 
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
