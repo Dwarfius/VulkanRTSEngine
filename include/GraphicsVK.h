@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics.h"
+#include "TrippleBuffer.h"
 
 class Camera;
 class GameObject;
@@ -8,20 +9,24 @@ class GameObject;
 class GraphicsVK : public Graphics
 {
 public:
-	GraphicsVK() {}
+	GraphicsVK();
 
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	// TODO: get rid of threadId, try to deduce it automagically
-	void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) override;
+	void Render(const Camera& cam, const GameObject *go) override;
 	void Display() override;
 	void CleanUp() override;
+
+	void SetThreadingHint(uint maxThreads) override;
 
 	// this is a trampoline to the actual implementation
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 
 private:
-	const static int maxThreads = 16;
+	int myMaxThreads;
+	int myThreadCounter;
+	tbb::spin_mutex myThreadCounterSpinlock;
+	tbb::enumerable_thread_specific<uint> myThreadLocalIndices;
 
 	void LoadResources(const vector<Terrain>& terrains);
 
@@ -78,21 +83,23 @@ private:
 	vk::Pipeline CreatePipeline(string name);
 
 	// Render Frame Buffers
-	uint32_t currImgIndex;
+	uint32_t myCurrentImageIndex;
 	vector<vk::Framebuffer> swapchainFrameBuffers;
 	void CreateFrameBuffers();
 
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore imgAvailable, renderFinished;
-	array<vk::Fence, 3> cmdFences;
+	TrippleBuffer<vk::Fence> cmdFences;
 	vk::CommandPool graphCmdPool; 
 	// vk::CommandPool transfCmdPool; for now we only use the generic queue
 	vector<vk::CommandPool> graphSecCmdPools;
-	vector<vk::CommandBuffer> cmdBuffers; // for now we have a buffer per swapchain fbo
+	TrippleBuffer<vk::CommandBuffer> cmdBuffers; // for now we use tripple buffer
 	// it's a little strange, but essentially per each pipeline there's a secondary command buffer
 	// each thread has it's own version of pipeline-linked cmd buffer
 	// while also supporting triple buffering
-	vector<vk::CommandBuffer> secCmdBuffers[maxThreads][3]; // for recording 
+	typedef vector<vk::CommandBuffer> PerPipelineCmdBuffers;
+	typedef vector<PerPipelineCmdBuffers> PerThreadCmdBuffers;
+	TrippleBuffer<PerThreadCmdBuffers> secCmdBuffers; // for recording drawcalls per image per thread per pipeline
 	void CreateCommandResources();
 
 	// Depth texture

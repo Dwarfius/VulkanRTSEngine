@@ -69,7 +69,7 @@ void GraphicsGL::BeginGather()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsGL::Render(const Camera& cam, const GameObject* go, const uint32_t threadId)
+void GraphicsGL::Render(const Camera& cam, const GameObject* go)
 {
 	Renderer *r = go->GetRenderer();
 	if (!r)

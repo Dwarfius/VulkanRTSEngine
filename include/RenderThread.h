@@ -33,8 +33,7 @@ private:
 	bool usingVulkan;
 
 	// TODO: separate gameobject and renderable
-	// TODO: start using TrippleBuffer
-	TrippleBuffer<const GameObject*> myTrippleRenderables;
+	TrippleBuffer<vector<const GameObject*>> myTrippleRenderables;
 
 	atomic<bool> needsSwitch;
 	atomic<bool> workPending;

@@ -93,7 +93,7 @@ class Graphics
 public:
 	virtual void Init(const vector<Terrain>& terrains) = 0;
 	virtual void BeginGather() = 0;
-	virtual void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) = 0;
+	virtual void Render(const Camera& cam, const GameObject *go) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
@@ -111,6 +111,8 @@ public:
 	static void LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, vec3 &center, float &radius);
 	static unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
 	static void FreeTexture(void *data);
+
+	virtual void SetThreadingHint(uint maxThreads) = 0;
 
 protected:
 	GLFWwindow *window;

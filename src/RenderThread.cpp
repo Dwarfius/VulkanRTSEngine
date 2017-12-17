@@ -35,6 +35,7 @@ void RenderThread::Init(bool useVulkan, const vector<Terrain>* aTerrainSet)
 	{
 		graphics = make_unique<GraphicsGL>();
 	}
+	graphics->SetThreadingHint(thread::hardware_concurrency());
 	graphics->Init(*terrains);
 	Input::SetWindow(graphics->GetWindow());
 }
@@ -51,7 +52,8 @@ GLFWwindow* RenderThread::GetWindow() const
 
 void RenderThread::AddRenderable(const GameObject* go)
 {
-	myTrippleRenderables.Add(go);
+	vector<const GameObject*>& buffer = myTrippleRenderables.GetBuffer();
+	buffer.push_back(go);
 }
 
 void RenderThread::InternalLoop()
@@ -80,6 +82,7 @@ void RenderThread::InternalLoop()
 			graphics = make_unique<GraphicsGL>();
 			glfwMakeContextCurrent(graphics->GetWindow());
 		}
+		graphics->SetThreadingHint(thread::hardware_concurrency());
 		graphics->Init(*terrains);
 
 		Game::GetInstance()->GetCamera()->InvertProj();
@@ -98,12 +101,13 @@ void RenderThread::InternalLoop()
 
 	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetBuffer();
 	myTrippleRenderables.Advance();
+	myTrippleRenderables.GetBuffer().clear();
 
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
 		[&](const GameObject* go) {
 		if (cam.CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
-			graphics->Render(cam, go, 0);
+			graphics->Render(cam, go);
 	});
 
 	graphics->Display();

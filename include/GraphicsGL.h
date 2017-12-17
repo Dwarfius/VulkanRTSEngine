@@ -7,9 +7,11 @@ class GraphicsGL : public Graphics
 public:
 	void Init(const vector<Terrain>& terrains) override;
 	void BeginGather() override;
-	void Render(const Camera& cam, const GameObject *go, const uint32_t threadId) override;
+	void Render(const Camera& cam, const GameObject *go) override;
 	void Display() override;
 	void CleanUp() override;
+
+	void SetThreadingHint(uint maxThreads) override {}
 
 	static void OnWindowResized(GLFWwindow *window, int width, int height);
 

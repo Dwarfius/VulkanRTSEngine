@@ -16,6 +16,13 @@ const vector<const char *> GraphicsVK::requiredExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+GraphicsVK::GraphicsVK()
+	: myMaxThreads(1)
+	, myThreadCounter(0)
+{
+
+}
+
 // Public Methods
 void GraphicsVK::Init(const vector<Terrain>& terrains)
 {
@@ -208,11 +215,17 @@ void GraphicsVK::LoadResources(const vector<Terrain>& terrains)
 void GraphicsVK::BeginGather()
 {
 	// acquire image to render to
-	currImgIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
+	myCurrentImageIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
 
 	// before we start recording the command buffer, need to make sure that it has finished being executed
-	device.waitForFences(1, &cmdFences[currImgIndex], false, ~0ull);
-	device.resetFences(1, &cmdFences[currImgIndex]);
+	cmdFences.Advance();
+	vk::Fence& fence = cmdFences.GetBuffer();
+	device.waitForFences(1, &fence, false, ~0ull);
+	device.resetFences(1, &fence);
+
+	// advance our buffer, since it has finished being used
+	cmdBuffers.Advance();
+	secCmdBuffers.Advance();
 
 	// color and depth clear vals
 	array<vk::ClearValue, 2> clearVals;
@@ -221,28 +234,29 @@ void GraphicsVK::BeginGather()
 	clearVals[1] = vk::ClearValue({ 1, 0 });
 
 	// begin recording to command buffer
-	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
+	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetBuffer();
 	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
 	// first we render all geometry - start the render pass
 	vk::RenderPassBeginInfo beginInfo{
 		renderPass,
-		swapchainFrameBuffers[currImgIndex],
+		swapchainFrameBuffers[myCurrentImageIndex],
 		{ { 0, 0 }, swapInfo.swapExtent },
 		(uint32_t)clearVals.size(), clearVals.data()
 	};
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 	// have to begin all secondary buffers here
-	for (size_t thread = 0; thread < maxThreads; thread++)
+	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
+	for(const PerPipelineCmdBuffers& perPipelineBuffers : perThreadBuffers)
 	{
-		for (size_t pipeline = 0; pipeline < shadersToLoad.size(); pipeline++)
+		for(uint32_t pipeline=0, length = perPipelineBuffers.size(); pipeline < length; pipeline++)
 		{
-			vk::CommandBuffer buff = secCmdBuffers[thread][currImgIndex][pipeline];
+			const vk::CommandBuffer& buffer = perPipelineBuffers[pipeline];
 			// need inheritance info since secondary buffer
 			vk::CommandBufferInheritanceInfo inheritanceInfo{
 				renderPass, 0, // render using subpass#0 of renderpass
-				swapchainFrameBuffers[currImgIndex],
+				swapchainFrameBuffers[myCurrentImageIndex],
 				0
 			};
 			vk::CommandBufferBeginInfo info{
@@ -251,15 +265,15 @@ void GraphicsVK::BeginGather()
 					| vk::CommandBufferUsageFlagBits::eSimultaneousUse,
 				&inheritanceInfo
 			};
-			buff.begin(info);
+			buffer.begin(info);
 
 			// bind the vbo and ibo
 			vk::DeviceSize offset = 0;
-			buff.bindVertexBuffers(0, 1, &vbo, &offset);
-			buff.bindIndexBuffer(ibo, 0, vk::IndexType::eUint32);
+			buffer.bindVertexBuffers(0, 1, &vbo, &offset);
+			buffer.bindIndexBuffer(ibo, 0, vk::IndexType::eUint32);
 
 			// bind the pipeline for rendering with
-			buff.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[pipeline]);
+			buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[pipeline]);
 
 			// update the dynamic states
 			vk::Viewport viewport{
@@ -267,16 +281,16 @@ void GraphicsVK::BeginGather()
 				(float)swapInfo.swapExtent.width, (float)swapInfo.swapExtent.height,
 				0, 1
 			};
-			buff.setViewport(0, 1, &viewport);
+			buffer.setViewport(0, 1, &viewport);
 
 			vk::Rect2D scissor{ {}, swapInfo.swapExtent };
-			buff.setScissor(0, 1, &scissor);
+			buffer.setScissor(0, 1, &scissor);
 		}
 	}
 	gatherStarted = true;
 }
 
-void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t threadId)
+void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 {
 	if (paused)
 		return;
@@ -285,8 +299,16 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t 
 	if (!r)
 		return;
 
+	bool exists = false;
+	uint& threadId = myThreadLocalIndices.local(exists);
+	if(!exists)
+	{
+		tbb::spin_mutex::scoped_lock lock(myThreadCounterSpinlock);
+		threadId = myThreadCounter++;
+	}
+
 	// get the vector of secondary buffers for thread
-	vector<vk::CommandBuffer> buffers = secCmdBuffers[threadId][currImgIndex];
+	PerPipelineCmdBuffers& buffers = secCmdBuffers.GetBuffer()[threadId];
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = r->GetShader();
 	Model m = models[r->GetModel()];
@@ -294,6 +316,7 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t 
 	{
 		tbb::spin_mutex::scoped_lock lock(slotIndexMutex);
 		index = slotIndex++;
+		renderCalls++;
 	}
 
 	// update the uniforms
@@ -310,9 +333,6 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go, const uint32_t 
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
 	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.indexCount), 1, static_cast<int32_t>(m.indexOffset), 0, 0);
-
-	// command issuing is done, record the render call
-	renderCalls++;
 }
 
 void GraphicsVK::Display()
@@ -322,27 +342,42 @@ void GraphicsVK::Display()
 		return;
 
 	// before we can execute them, have to end them
-	for (size_t thread = 0; thread < maxThreads; thread++)
-		for (auto buffs : secCmdBuffers[thread][currImgIndex])
-			buffs.end();
+	PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
+	for (PerPipelineCmdBuffers& threadBuffersPair : perThreadBuffers)
+	{
+		for (vk::CommandBuffer& perPipelineBuffers : threadBuffersPair)
+		{
+			perPipelineBuffers.end();
+		}
+	}
 
 	// draw out all the accumulated render calls
-	vk::CommandBuffer primaryCmdBuffer = cmdBuffers[currImgIndex];
-	for (size_t pipelineInd = 0; pipelineInd < pipelines.size(); pipelineInd++)
+	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetBuffer();
 	{
-		vk::Pipeline pipeline = pipelines[pipelineInd];
+		const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetBuffer();
+		// we know how many there are total - every thread has per-pipeline command buffers
+		const size_t totalBuffers = perThreadBuffers.size() * pipelines.size();
+		vk::CommandBuffer* allBuffers = new vk::CommandBuffer[totalBuffers];
+		// rearrange them to avoid pipeline changes - they might still happen, but if they do,
+		// fixing it will be faster since this will accomodate it. 
+		// TODO: check if pipeline fixing still happens in the driver
+		// TODO: Though the following code is not cache-friendly, not going to change it just yet 
+		// because it's should have a small amount of iterations for now (only 3 pipelines)
+		size_t currentSlot = 0;
+		for (int pipeline = 0, pipelinesLength = pipelines.size(); pipeline < pipelinesLength; pipeline++)
+		{
+			for (int thread = 0; thread < myMaxThreads; thread++)
+			{
+				allBuffers[currentSlot++] = perThreadBuffers[thread][pipeline];
+			}
+		}
 
-		// bind the pipeline for rendering with
-		// primaryCmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-		// push the secondaries in to primary
-		for (size_t thread = 0; thread<maxThreads; thread++)
-			primaryCmdBuffer.executeCommands(1, &secCmdBuffers[thread][currImgIndex][pipelineInd]);
+		// submit them all
+		primaryCmdBuffer.executeCommands(totalBuffers, allBuffers);
 	}
 
 	// finish up the render pass
 	primaryCmdBuffer.endRenderPass();
-
 	// finish the recording
 	primaryCmdBuffer.end();
 
@@ -354,12 +389,12 @@ void GraphicsVK::Display()
 		1, &primaryCmdBuffer,
 		1, &renderFinished
 	};
-	queues.graphicsQueue.submit(1, &submitInfo, cmdFences[currImgIndex]);
+	queues.graphicsQueue.submit(1, &submitInfo, cmdFences.GetBuffer());
 
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
 		1, &renderFinished,
-		1, &swapchain, &currImgIndex,
+		1, &swapchain, &myCurrentImageIndex,
 		nullptr
 	};
 	queues.graphicsQueue.presentKHR(presentInfo);
@@ -395,7 +430,7 @@ void GraphicsVK::CleanUp()
 	device.destroyImage(depthImg);
 	device.freeMemory(depthImgMem);
 
-	for (auto fence : cmdFences)
+	for (auto fence : cmdFences.GetInternalBuffer())
 		device.destroyFence(fence);
 	device.destroyBuffer(vbo);
 	device.freeMemory(vboMem);
@@ -439,6 +474,11 @@ void GraphicsVK::CleanUp()
 
 	glfwDestroyWindow(window);
 	activeGraphics = NULL;
+}
+
+void GraphicsVK::SetThreadingHint(uint maxThreads)
+{
+	myMaxThreads = maxThreads;
 }
 
 void GraphicsVK::OnWindowResized(GLFWwindow * window, int width, int height)
@@ -1014,25 +1054,40 @@ void GraphicsVK::CreateFrameBuffers()
 void GraphicsVK::CreateCommandResources()
 {
 	// allocating a cmdBuffer per swapchain FBO
-	cmdBuffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, (uint32_t)swapchainFrameBuffers.size() });
+	vector<vk::CommandBuffer> buffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
+	for (int bufferInd = 0, length = buffers.size(); bufferInd < length; bufferInd++)
+		cmdBuffers.GetInternalBuffer()[bufferInd] = move(buffers[bufferInd]);
 
-	// now the secondary command buffers
-	// has to be an extra pool cause recording to buffer involves accessing pool, 
-	// concurrent use of which is prohibited
-	for (int i = 0; i < maxThreads; i++)
 	{
-		graphSecCmdPools.push_back(device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex }));
-		for (int j = 0; j < 3; j++)
-			secCmdBuffers[i][j] = device.allocateCommandBuffers({ graphSecCmdPools[i], vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() });
+		// now the secondary command buffers
+		// has to be an extra pool cause recording to buffer involves accessing pool, 
+		// concurrent use of which is prohibited
+		for (int thread = 0; thread < myMaxThreads; thread++)
+		{
+			graphSecCmdPools.push_back(device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex }));
+		}
+		TrippleBuffer<PerThreadCmdBuffers>::InternalBuffer& internalBuffer = secCmdBuffers.GetInternalBuffer();
+		for (int image = 0; image < 3; image++)
+		{
+			for (int thread = 0; thread < myMaxThreads; thread++)
+			{
+				internalBuffer[image].push_back(device.allocateCommandBuffers({ graphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() }));
+			}
+		}
 	}
 
 	// we will need semaphores for properly managing the async drawing
 	imgAvailable = device.createSemaphore({});
 	renderFinished = device.createSemaphore({});
 
-	// our 3 fences to synchronize command submission
-	for (size_t i = 0; i < cmdFences.size(); i++)
-		cmdFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
+	{
+		// our 3 fences to synchronize command submission
+		TrippleBuffer<vk::Fence>::InternalBuffer& internalBuffer = cmdFences.GetInternalBuffer();
+		for (size_t i = 0; i < 3; i++)
+		{
+			internalBuffer[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
+		}
+	}
 }
 
 void GraphicsVK::CreateDepthTexture()
