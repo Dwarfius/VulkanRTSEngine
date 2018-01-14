@@ -112,7 +112,7 @@ private:
 	vk::Format FindSupportedFormat(vk::ImageTiling tiling, vk::FormatFeatureFlags feats);
 	bool HasStencilComponent(vk::Format f) { return f == vk::Format::eD32SfloatS8Uint || f == vk::Format::eD24UnormS8Uint; }
 
-	// Descriptor Sets
+	// Descriptor Sets - tripple buffered to avoid syncing
 	tbb::spin_mutex slotIndexMutex;
 	size_t slotIndex;
 	struct MatUBO {
@@ -121,11 +121,14 @@ private:
 	};
 	vk::DescriptorSetLayout uboLayout, samplerLayout;
 	vk::DescriptorPool descriptorPool;
-	vector<vk::DescriptorSet> uboSets, samplerSets;
+	typedef vector<vk::DescriptorSet> DescriptorSets;
+	TrippleBuffer<DescriptorSets> uboSets;
+	DescriptorSets samplerSets;
 	void CreateDescriptorPool();
 	void CreateDescriptorSet();
 
-	void* mappedUboMem;
+	// since descriptors are written to mapped mem, it also has to be tripple buffered
+	TrippleBuffer<void*> mappedUboMem;
 	vk::Buffer ubo;
 	vk::DeviceMemory uboMem;
 	void CreateUBO();

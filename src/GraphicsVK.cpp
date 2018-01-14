@@ -20,8 +20,8 @@ GraphicsVK::GraphicsVK()
 	: myMaxThreads(1)
 	, myThreadCounter(0)
 	, slotIndex(0)
-	, mappedUboMem(nullptr)
 {
+	mappedUboMem.GetInternalBuffer()[0] = nullptr;
 }
 
 // Public Methods
@@ -214,6 +214,10 @@ void GraphicsVK::LoadResources(const vector<Terrain>& terrains)
 
 void GraphicsVK::BeginGather()
 {
+	// reset the thread infos in case another thread spooled up
+	myThreadLocalIndices.clear();
+	myThreadCounter = 0;
+
 	// acquire image to render to
 	myCurrentImageIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
 
@@ -227,6 +231,8 @@ void GraphicsVK::BeginGather()
 	slotIndex = 0;
 	cmdBuffers.Advance();
 	secCmdBuffers.Advance();
+	uboSets.Advance();
+	mappedUboMem.Advance();
 
 	// color and depth clear vals
 	array<vk::ClearValue, 2> clearVals;
@@ -310,6 +316,7 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	{
 		tbb::spin_mutex::scoped_lock lock(myThreadCounterSpinlock);
 		threadId = myThreadCounter++;
+		assert(threadId < myMaxThreads && "Unaccounted thread appeared, can't find thread-local info for it");
 	}
 
 	// get the vector of secondary buffers for thread
@@ -321,6 +328,7 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	{
 		tbb::spin_mutex::scoped_lock lock(slotIndexMutex);
 		index = slotIndex++;
+		assert(index < Game::maxObjects && "Managed to exceed memory capacity for objects!");
 		renderCalls++;
 	}
 
@@ -328,11 +336,11 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	MatUBO matrices;
 	matrices.model = go->GetMatrix();
 	matrices.mvp = cam.Get() * matrices.model;
-	memcpy((char*)mappedUboMem + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
+	memcpy((char*)mappedUboMem.GetCurrent() + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
 	array<vk::DescriptorSet, 2> setsToBind{
-		uboSets[index], samplerSets[r->GetTexture()]
+		uboSets.GetCurrent()[index], samplerSets[r->GetTexture()]
 	};
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
@@ -1124,12 +1132,13 @@ vk::Format GraphicsVK::FindSupportedFormat(vk::ImageTiling tiling, vk::FormatFea
 void GraphicsVK::CreateDescriptorPool()
 {
 	// at the moment only support uniform buffers, but should add img views as well
+	const uint32_t trippleBufferedGOs = Game::maxObjects * 3;
 	array<vk::DescriptorPoolSize, 2> poolSizes{
-		vk::DescriptorPoolSize { vk::DescriptorType::eUniformBuffer, Game::maxObjects },
+		vk::DescriptorPoolSize { vk::DescriptorType::eUniformBuffer, trippleBufferedGOs }, // to enable tripple buffering
 		vk::DescriptorPoolSize { vk::DescriptorType::eCombinedImageSampler, (uint32_t)texturesToLoad.size() }
 	};
 	vk::DescriptorPoolCreateInfo poolInfo{
-		{}, Game::maxObjects + (uint32_t)texturesToLoad.size(), (uint32_t)poolSizes.size(), poolSizes.data()
+		{}, trippleBufferedGOs + (uint32_t)texturesToLoad.size(), (uint32_t)poolSizes.size(), poolSizes.data()
 	};
 	descriptorPool = device.createDescriptorPool(poolInfo);
 
@@ -1148,31 +1157,39 @@ void GraphicsVK::CreateDescriptorPool()
 
 void GraphicsVK::CreateDescriptorSet()
 {
-	// every object will have it's own descriptor set
-	array<vk::DescriptorSetLayout, Game::maxObjects> uboLayouts;
+	// every object will have it's own descriptor set, supporting tripple buffering
+	const uint32_t trippleBufferedGOs = Game::maxObjects * 3;
+	array<vk::DescriptorSetLayout, trippleBufferedGOs> uboLayouts;
 	uboLayouts.fill(uboLayout);
 
 	vk::DescriptorSetAllocateInfo info{
 		descriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
 	};
-	uboSets = device.allocateDescriptorSets(info);
+	DescriptorSets tempUboSets = device.allocateDescriptorSets(info);
+	for (int buffer = 0; buffer < 3; buffer++)
+	{
+		uboSets.GetInternalBuffer()[buffer].insert(uboSets.GetInternalBuffer()[buffer].begin(), tempUboSets.begin() + buffer * Game::maxObjects, tempUboSets.begin() + (buffer + 1) * Game::maxObjects);
+	}
 
 	// now we have to update the descriptor's values location
 	vector<vk::DescriptorBufferInfo> bufferInfos;
-	bufferInfos.reserve(uboSets.size());
+	bufferInfos.reserve(trippleBufferedGOs);
 	vector<vk::WriteDescriptorSet> writeTargets;
-	writeTargets.reserve(uboSets.size());
-	for(size_t i=0; i<uboSets.size(); i++)
+	writeTargets.reserve(trippleBufferedGOs);
+	for (int buffer = 0; buffer < 3; buffer++)
 	{
-		// make descriptor point at buffer
-		bufferInfos.push_back({
-			ubo, GetAlignedOffset(i, sizeof(MatUBO)), sizeof(MatUBO)
-		});
-		// update descriptor with buffer binding
-		writeTargets.push_back({
-			uboSets[i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
-			nullptr, &bufferInfos[i], nullptr
-		});
+		for (size_t i = 0; i < Game::maxObjects; i++)
+		{
+			// make descriptor point at buffer
+			bufferInfos.push_back({
+				ubo, GetAlignedOffset(Game::maxObjects * buffer + i, sizeof(MatUBO)), sizeof(MatUBO)
+				});
+			// update descriptor with buffer binding
+			writeTargets.push_back({
+				uboSets.GetInternalBuffer()[buffer][i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
+				nullptr, &bufferInfos[Game::maxObjects * buffer + i], nullptr
+				});
+		}
 	}
 	device.updateDescriptorSets(writeTargets, nullptr);
 
@@ -1202,19 +1219,22 @@ void GraphicsVK::CreateDescriptorSet()
 
 void GraphicsVK::CreateUBO()
 {
-	size_t uboSize = GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	size_t uboSize = GetAlignedOffset(Game::maxObjects * 3, sizeof(MatUBO));
 	printf("[Info] Ubo size: %zd(for %d*3, min alignment: %zd)\n", uboSize, Game::maxObjects, limits.minUniformBufferOffsetAlignment);
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
 
-	mappedUboMem = device.mapMemory(uboMem, 0, uboSize, {});
+	void* mappedMemStart = device.mapMemory(uboMem, 0, uboSize, {});
+	mappedUboMem.GetInternalBuffer()[0] = mappedMemStart;
+	mappedUboMem.GetInternalBuffer()[1] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	mappedUboMem.GetInternalBuffer()[2] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * 2, sizeof(MatUBO));;
 }
 
 void GraphicsVK::DestroyUBO()
 {
-	if (mappedUboMem)
+	if (mappedUboMem.GetInternalBuffer()[0])
 	{
 		device.unmapMemory(uboMem);
-		mappedUboMem = nullptr;
+		mappedUboMem.GetInternalBuffer()[0] = nullptr;
 
 		device.destroyBuffer(ubo);
 		device.freeMemory(uboMem);
