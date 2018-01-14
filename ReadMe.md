@@ -3,7 +3,7 @@ Info
 
 This is a mutltithreaded engine project indended as a research in to Vulkan API. The engine features a OpenGL and Vulkan rendering backends with ability to switch them out at will. The engine executes a RTS-battle scenarion until stopped.
 
-Project uses CMake. You'll need VulkanSDK, GLEW, GLM, GLFW, OpenAL, freeglut and Intel's TBB. Tested on Windows, should be runnable on Linux(no Mac support because of Vulkan) too.
+Project uses CMake. You'll need VulkanSDK, GLEW, GLM, GLFW, OpenAL, freeglut and Intel's TBB. Tested on Windows, should be runnable on Linux too(no Mac support because of Vulkan).
 
 Intel TBB can be fast found using TBB_ROOT_DIR entry.
 
@@ -16,15 +16,18 @@ Audio files were found here:
 Tasks
 =====
 
-* Find the source of rendering artifacts, preliminary research points to incorrect TBB implementation
+### Engine
+* ~~Reimplement threading model of the engine to be task-based with a dependency tree~~
+* Integrate Bullet (with new threading model had to scrap own collision system, so currently there are no collision events firing)
+* Integrate DearIMGUI - having access to some runtime info/tools will be nice, can be built upon to make an editor interface
 
 ### OpenGL
 * Animations
 * Add debug drawing (sphere for now)
 
 ### Vulkan
+* ~~Fix concurrent GPU mem access~~
 * Figure out why can't reuse the swapchain when recreating it on resize
-* Terrain doesn't render properly
 * Animations
 * Add debug drawing (sphere for now)
 
