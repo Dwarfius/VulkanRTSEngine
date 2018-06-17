@@ -1,0 +1,26 @@
+# by Daniel Prihodko
+cmake_minimum_required (VERSION 3.8)
+project (Physics LANGUAGES CXX)
+set (CMAKE_CXX_STANDARD 14)
+
+find_package(BULLET REQUIRED)
+find_package(GLM REQUIRED)
+
+set(SRC "Common.cpp" "PhysicsEntity.cpp" "PhysicsWorld.cpp" "PhysicsShapeManager.cpp" 
+	"PhysicsShapes.cpp")
+set(HEADERS "Common.h" "PhysicsEntity.h" "PhysicsWorld.h" "PhysicsShapeManager.h" 
+	"PhysicsShapes.h")
+source_group("" FILES ${SRC} ${HEADERS})
+
+add_library(${PROJECT_NAME} STATIC ${SRC} ${HEADERS})
+if (MSVC)
+   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuCommon.h")
+   set_source_files_properties("Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
+endif(MSVC)
+
+# do this trick later, so that consumers have to write #include <libname/...>:
+# target_include_directories(libname INTERFACE include PRIVATE include/libname)
+target_include_directories(${PROJECT_NAME} 
+							PUBLIC . ${GLM_INCLUDE_DIR}
+							PRIVATE	${BULLET_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${BULLET_LIBRARIES})

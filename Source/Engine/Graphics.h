@@ -1,0 +1,144 @@
+#pragma once
+
+#include "Vertex.h"
+
+class GameObject;
+struct GLFWwindow;
+class Camera;
+class Terrain;
+
+const vector<string> shadersToLoad = {
+	"base",
+	"debug"
+};
+const vector<string> modelsToLoad = {
+	"cube",
+	"%t0",
+	"Tank",
+	"sphere"
+};
+const vector<string> texturesToLoad = {
+	"chalet.jpg",
+	"test.jpg",
+	"CubeUnwrap.jpg",
+	"wireframe.png",
+	"playerTank.png",
+	"enemyTank.png",
+	"gray.png"
+};
+
+// providing unified interfaces (just to make it easier to see/track)
+// Model
+typedef uint32_t ModelId;
+struct Model 
+{
+	uint32_t id;
+	size_t vertexCount, vertexOffset;
+	size_t indexCount, indexOffset;
+	glm::vec3 center;
+	float sphereRadius;
+
+	Model()
+		: id(0)
+		, vertexCount(0)
+		, vertexOffset(0)
+		, indexCount(0)
+		, indexOffset(0)
+		, center(0.f, 0.f, 0.f)
+		, sphereRadius(0)
+	{
+
+	}
+
+	// OpenGL resource tracking
+	vector<uint32_t> buffers; 
+};
+
+// Shader
+typedef uint32_t ShaderId;
+struct Shader 
+{
+	uint32_t id;
+
+	enum UniformType { 
+		Int, Float, Vec2, 
+		Vec3, Vec4, Mat4 
+	};
+	union UniformValue {
+		int32_t i;
+		float f;
+		glm::vec2 v2;
+		glm::vec3 v3;
+		glm::vec4 v4;
+		glm::mat4 m;
+
+		UniformValue() {}
+	};
+	struct BindPoint 
+	{ 
+		GLint loc; 
+		UniformType type;
+	};
+	unordered_map<string, BindPoint> uniforms;
+
+	// OpenGL resource tracking
+	vector<uint32_t> shaderSources; 
+};
+
+// Texture
+typedef uint32_t TextureId;
+
+class Graphics
+{
+public:
+	virtual void Init(const vector<Terrain*>& terrains) = 0;
+	virtual void BeginGather() = 0;
+	virtual void Render(const Camera& cam, const GameObject *go) = 0;
+	virtual void Display() = 0;
+	virtual void CleanUp() = 0;
+	
+	glm::vec3 GetModelCenter(ModelId m) const { return models[m].center; }
+	float GetModelRadius(ModelId m) const { return models[m].sphereRadius; }
+
+	GLFWwindow* GetWindow() const { return window; }
+	
+	int GetRenderCalls() const { return renderCalls; }
+	void ResetRenderCalls() { renderCalls = 0; }
+
+	static float GetWidth() { return static_cast<float>(width); }
+	static float GetHeight() { return static_cast<float>(height); }
+
+	static void LoadModel(string name, vector<Vertex>& vertices, vector<uint32_t>& indices, glm::vec3& center, float& radius);
+	static unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
+	static void FreeTexture(void *data);
+
+	virtual void SetThreadingHint(glm::uint maxThreads) = 0;
+
+protected:
+	GLFWwindow *window;
+	static int width, height;
+
+	static Graphics *activeGraphics;
+	static ModelId currModel;
+	static ShaderId currShader;
+	static TextureId currTexture;
+
+	vector<Model> models;
+
+	int renderCalls;
+
+	string readFile(const string& filename);
+
+	// need to have this copy here so that classes that 
+	// inherit from Graphics know what's available and 
+	// are not tied to stb. yes, it's not kosher, sorry.
+	enum
+	{
+		STBI_default = 0, // only used for req_comp
+
+		STBI_grey = 1,
+		STBI_grey_alpha = 2,
+		STBI_rgb = 3,
+		STBI_rgb_alpha = 4
+	};
+};
