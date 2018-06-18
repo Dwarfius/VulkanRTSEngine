@@ -33,12 +33,12 @@ public:
 	void WakeUp() { myIsSleeping = false; }
 
 	// Returns un-interpolated transform
-	glm::mat4 GetTransform() const;
+	const glm::mat4& GetTransform() const;
 	// Returns interpolated transform
-	glm::mat4 GetTransformInterp() const;
+	const glm::mat4& GetTransformInterp() const;
 	// Updates the position of rigidbody. Does not take effect until stepped,
 	// so if it needs to be fetched, use GetTransformInterp()
-	void SetTransform(glm::mat4 aTransf);
+	void SetTransform(const glm::mat4& aTransf);
 
 private:
 	friend class PhysicsWorld;

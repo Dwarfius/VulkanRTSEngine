@@ -21,6 +21,9 @@ void Input::SetWindow(GLFWwindow *w)
 
 	memset(kbState, 0, sizeof(kbState));
 	memset(mState, 0, sizeof(mState));
+
+	// Update them to the same value to avoid issues
+	pos = oldPos = GetMousePos();
 }
 
 void Input::Update()
@@ -36,12 +39,16 @@ void Input::PostUpdate()
 	for (int i = 0; i < keyCount; i++)
 	{
 		if (kbState[i] == GLFW_PRESS)
+		{
 			kbState[i] = GLFW_REPEAT;
+		}
 	}
 	for (int i = 0; i < mButtonCount; i++)
 	{
 		if (mState[i] == GLFW_PRESS)
+		{
 			mState[i] = GLFW_REPEAT;
+		}
 	}
 }
 

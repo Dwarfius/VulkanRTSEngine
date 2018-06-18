@@ -47,7 +47,7 @@ PhysicsEntity::~PhysicsEntity()
 	delete myShape;
 }
 
-glm::mat4 PhysicsEntity::GetTransform() const
+const glm::mat4& PhysicsEntity::GetTransform() const
 {
 	assert(myBody && myWorld);
 
@@ -60,7 +60,7 @@ glm::mat4 PhysicsEntity::GetTransform() const
 	return transf;
 }
 
-glm::mat4 PhysicsEntity::GetTransformInterp() const
+const glm::mat4& PhysicsEntity::GetTransformInterp() const
 {
 	assert(myBody && myWorld);
 
@@ -77,7 +77,7 @@ glm::mat4 PhysicsEntity::GetTransformInterp() const
 	return transf;
 }
 
-void PhysicsEntity::SetTransform(glm::mat4 aTransf)
+void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 {
 	assert(myBody && myWorld);
 

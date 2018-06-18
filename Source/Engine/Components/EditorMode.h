@@ -5,9 +5,9 @@
 class EditorMode : public ComponentBase
 {
 public:
-	void Update(float deltaTime) override;
+	void Update(float aDeltaTime) override;
 
 private:
-	const float myMouseSensitivity = 3.f;
+	const float myMouseSensitivity = 5.f;
 	const float myFlightSpeed = 2.f;
 };

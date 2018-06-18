@@ -1,12 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/hash.hpp>
-
 #include <iostream>
 #include <vector>
 #include <array>
@@ -24,6 +17,14 @@
 
 #include <tbb/tbb.h>
 #undef max
+#undef min
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <AL/alut.h>
 

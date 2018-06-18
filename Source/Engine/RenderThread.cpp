@@ -106,7 +106,7 @@ void RenderThread::InternalLoop()
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
 		[&](const GameObject* go) {
-		if (cam.CheckSphere(go->GetTransform()->GetPos(), go->GetRadius()))
+		if (cam.CheckSphere(go->GetTransform().GetPos(), go->GetRadius()))
 			graphics->Render(cam, go);
 	});
 

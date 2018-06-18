@@ -48,7 +48,7 @@ void Grid::Add(GameObject *go, uint32_t threadId)
 	go->PreCollision();
 
 	// getting our bounding sphere definition
-	glm::vec3 loc = go->GetTransform()->GetPos();
+	glm::vec3 loc = go->GetTransform().GetPos();
 	float radius = go->GetRadius() * 0.75f; // using a smaller radius to get back a bit of accuracy
 
 	// constucting an AABB around bounding sphere

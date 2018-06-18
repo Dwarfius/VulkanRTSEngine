@@ -66,34 +66,35 @@ struct Frustrum
 
 class Camera
 {
-private:
-	const float sensX = 1, sensY = 1;
-	Transform transf;
-	glm::mat4 projMatrix, viewMatrix, VP;
-
-	bool orthoMode = false;
-	Frustrum frustrum;
-
 public:
-	Camera(float width, float height, bool orthoMode = false);
+	Camera(float aWidth, float aHeight, bool anOrthoMode = false);
 	~Camera() {}
 
-	glm::mat4 Get() const { return VP; }
+	glm::mat4 Get() const { return myVP; }
 
-	// TODO: return ref
-	Transform* GetTransform() { return &transf; }
+	const Transform& GetTransform() const { return myTransform; }
+	Transform& GetTransform() { return myTransform; }
 
 	void Recalculate();
-	glm::mat4 GetView() const { return viewMatrix; }
-	glm::mat4 GetProj() const { return projMatrix; }
-	void InvertProj() { projMatrix[1][1] *= -1; }
+	glm::mat4 GetView() const { return myViewMatrix; }
+	glm::mat4 GetProj() const { return myProjMatrix; }
+	void InvertProj() { myProjMatrix[1][1] *= -1; }
 
-	bool IsOrtho() const { return orthoMode; }
+	bool IsOrtho() const { return myOrthoMode; }
 
 	//sets the perspective projection
-	void SetProjPersp(float fov, float ratio, float nearPlane, float farPlane);
+	void SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFarPlane);
 	//sets the ortho projection
-	void SetProjOrtho(float left, float right, float bottom, float top);
+	void SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop);
 
-	bool CheckSphere(const glm::vec3& pos, const float rad) const { return frustrum.CheckSphere(pos, rad); }
+	// checks a bounding sphere against the camera's frustum
+	bool CheckSphere(const glm::vec3& aPos, const float aRad) const { return myFrustrum.CheckSphere(aPos, aRad); }
+
+private:
+	const float sensX = 1, sensY = 1;
+	Transform myTransform;
+	glm::mat4 myProjMatrix, myViewMatrix, myVP;
+
+	bool myOrthoMode = false;
+	Frustrum myFrustrum;
 };

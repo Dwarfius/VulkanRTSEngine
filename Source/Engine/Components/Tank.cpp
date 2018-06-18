@@ -15,22 +15,25 @@ void Tank::Update(float deltaTime)
 {
 	const float moveSpeed = 2.f;
 
-	Transform *ownTransf = owner->GetTransform();
-	glm::vec3 pos = ownTransf->GetPos();
+	Transform& ownTransf = owner->GetTransform();
+	glm::vec3 pos = ownTransf.GetPos();
 	glm::vec3 diff = navTarget - pos;
 	diff.y = 0; // we don't care about height difference
 	if (glm::length2(diff) < 1)
+	{
+		// if we reached our destination - just die off
 		owner->Die();
+	}
 
 	pos += glm::normalize(diff) * moveSpeed * deltaTime;
 
-	float yOffset = owner->GetCenter().y * ownTransf->GetScale().y;
-	const Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf->GetPos());
+	float yOffset = owner->GetCenter().y * ownTransf.GetScale().y;
+	const Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf.GetPos());
 	pos.y = terrain->GetHeight(pos) + yOffset;
-	ownTransf->SetPos(pos);
+	ownTransf.SetPos(pos);
 
-	ownTransf->LookAt(navTarget);
-	ownTransf->RotateToUp(terrain->GetNormal(pos));
+	ownTransf.LookAt(navTarget);
+	ownTransf.RotateToUp(terrain->GetNormal(pos));
 
 	// shoot logic
 	if (shootTimer > 0)
@@ -39,7 +42,7 @@ void Tank::Update(float deltaTime)
 	if (shootTimer <= 0)
 	{
 		const float force = 10;
-		glm::vec3 forward = ownTransf->GetForward();
+		glm::vec3 forward = ownTransf.GetForward();
 
 		glm::vec3 spawnPos = pos + forward * 0.6f + glm::vec3(0, 0.25f, 0);
 		GameObject *go = Game::GetInstance()->Instantiate(spawnPos, glm::vec3(), glm::vec3(0.1f));
@@ -57,6 +60,8 @@ void Tank::Update(float deltaTime)
 void Tank::Destroy()
 {
 	if (onDeathCallback && Game::GetInstance()->IsRunning())
+	{
 		onDeathCallback(this);
+	}
 	onDeathCallback = nullptr;
 }

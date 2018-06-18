@@ -90,30 +90,21 @@ void GameObject::CollidedWithTerrain()
 void GameObject::CollidedWithGO(GameObject *go)
 {
 	if (objsCollidedWith.count(go))
+	{
 		return;
+	}
 
 	objsCollidedWith.insert(go);
 	for (ComponentBase *base : components)
+	{
 		base->OnCollideWithGO(go);
+	}
 }
 
 void GameObject::PreCollision()
 {
 	collidedWithTerrain = false;
 	objsCollidedWith.clear();
-}
-
-bool GameObject::Collide(GameObject *g1, GameObject *g2)
-{
-	const glm::vec3 g1Pos = g1->GetTransform()->GetPos();
-	const glm::vec3 g2Pos = g2->GetTransform()->GetPos();
-
-	const float g1Rad = g1->GetRadius();
-	const float g2Rad = g2->GetRadius();
-
-	// simple bounding sphere check
-	const float radiiSum = g2Rad * 0.5f + g1Rad * 0.5f; // halving it because the models used have huge bounding spheres (antenna messes it up)
-	return glm::length2(g2Pos - g1Pos) < radiiSum * radiiSum;
 }
 
 void GameObject::Die()

@@ -27,7 +27,7 @@ public:
 	void SetRotation(glm::vec3 euler) { SetRotation(glm::quat(glm::radians(euler))); }
 	void SetRotation(glm::quat rot) { myRotation = rot; dirtyDirs = true; }
 
-	glm::mat4 GetModelMatrix(glm::vec3 center) { if (dirtyModel || dirtyDirs) UpdateModel(center); return modelM; }
+	const glm::mat4& GetModelMatrix(glm::vec3 center);
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 point, glm::vec3 refPoint, glm::vec3 angles);

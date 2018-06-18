@@ -36,7 +36,7 @@ void TankArenaGameMode::Update(float deltaTime)
 		uint32_t spawnCount = (uint32_t)accumSpawn;
 		accumSpawn -= spawnCount;
 
-		glm::vec3 pos = owner->GetTransform()->GetPos();
+		const glm::vec3 pos = owner->GetTransform().GetPos();
 
 		for (uint32_t i = 0; i < spawnCount; i++)
 		{
@@ -66,7 +66,7 @@ void TankArenaGameMode::Update(float deltaTime)
 
 	// 3rd person camera
 	Camera *cam = Game::GetInstance()->GetCamera();
-	Transform *camTransf = cam->GetTransform();
+	Transform& camTransf = cam->GetTransform();
 	const float camDist = 20;
 	const float camSpeed = -0.3f;
 
@@ -77,8 +77,8 @@ void TankArenaGameMode::Update(float deltaTime)
 	camPos.y = camDist;
 
 	// making sure we don't go under terrain
-	camTransf->SetPos(camPos);
-	camTransf->LookAt(curPos);
+	camTransf.SetPos(camPos);
+	camTransf.LookAt(curPos);
 
 	accumTime += deltaTime;
 	if (accumTime > 60)

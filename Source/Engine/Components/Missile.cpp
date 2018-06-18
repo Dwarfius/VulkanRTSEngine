@@ -21,7 +21,7 @@ void Missile::Update(float deltaTime)
 	const float g = -9.81f;
 
 	velocity += glm::vec3(0, g, 0) * deltaTime;
-	owner->GetTransform()->Translate(velocity * deltaTime);
+	owner->GetTransform().Translate(velocity * deltaTime);
 }
 
 void Missile::OnCollideWithTerrain()

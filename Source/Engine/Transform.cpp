@@ -57,9 +57,6 @@ void Transform::RotateToUp(glm::vec3 newUp)
 
 void Transform::UpdateRot()
 {
-	// NOTE: to fix the roll accumulating for fps camera, should do later:
-	// quat = orienX * quat * orienY;
-
 	// making sure that it's a proper unit quat
 	myRotation = normalize(myRotation);
 	rotM = mat4_cast(myRotation);
@@ -83,6 +80,15 @@ void Transform::UpdateModel(glm::vec3 center)
 	modelM = translate(modelM, -center);
 
 	dirtyModel = false;
+}
+
+const glm::mat4& Transform::GetModelMatrix(glm::vec3 center)
+{
+	if (dirtyModel || dirtyDirs) 
+	{ 
+		UpdateModel(center); 
+	} 
+	return modelM;
 }
 
 glm::vec3 Transform::RotateAround(glm::vec3 point, glm::vec3 refPoint, glm::vec3 angles)

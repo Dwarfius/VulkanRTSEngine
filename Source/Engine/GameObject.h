@@ -15,9 +15,8 @@ public:
 
 	void Update(float deltaTime);
 
-	// TODO: change this to &
-	Transform* GetTransform() { return &transf; }
-	const Transform* GetTransform() const { return &transf; }
+	const Transform& GetTransform() const { return transf; }
+	Transform& GetTransform() { return transf; }
 
 	const glm::mat4 GetMatrix() const { return myCurrentMat; }
 	// This is model's center
@@ -39,8 +38,6 @@ public:
 	void CollidedWithTerrain();
 	void CollidedWithGO(GameObject *go);
 	void PreCollision();
-
-	static bool Collide(GameObject *g1, GameObject *g2);
 
 	bool IsDead() const { return dead; }
 	void Die();
