@@ -3,19 +3,19 @@
 #include "Game.h"
 #include "Graphics.h"
 
-Camera::Camera(float width, float height, bool orthoMode)
-	: myOrthoMode(orthoMode)
+Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)
+	: myOrthoMode(anOrthoMode)
 	, myTransform()
 {
 	//setting up the matrix for UI rendering
 	//call Recalculate to get proper perspective matrix
-	if (orthoMode)
+	if (myOrthoMode)
 	{
-		SetProjOrtho(0, width, 0, height);
+		SetProjOrtho(0, aWidth, 0, aHeight);
 	}
 	else
 	{
-		SetProjPersp(45, width / height, 0.1f, 1000.f);
+		SetProjPersp(45, aWidth / aHeight, 0.1f, 1000.f);
 	}
 }
 
@@ -31,18 +31,18 @@ void Camera::Recalculate()
 	myVP = myProjMatrix * myViewMatrix;
 }
 
-void Camera::SetProjPersp(float fov, float ratio, float nearPlane, float farPlane)
+void Camera::SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFarPlane)
 {
 	myOrthoMode = false;
 	
-	myProjMatrix = glm::perspective(fov, ratio, nearPlane, farPlane);
-	myFrustrum.SetFrustrumDef(fov, ratio, nearPlane, farPlane);
+	myProjMatrix = glm::perspective(aFov, aRatio, aNearPlane, fFarPlane);
+	myFrustrum.SetFrustrumDef(aFov, aRatio, aNearPlane, fFarPlane);
 }
 
-void Camera::SetProjOrtho(float left, float right, float bottom, float top)
+void Camera::SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop)
 {
 	myOrthoMode = true;
 
-	myProjMatrix = glm::ortho(left, right, bottom, top);
+	myProjMatrix = glm::ortho(aLeft, aRight, aBottom, aTop);
 	myVP = myProjMatrix;
 }

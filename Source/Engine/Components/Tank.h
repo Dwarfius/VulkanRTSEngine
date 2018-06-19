@@ -5,23 +5,23 @@
 class Tank : public ComponentBase
 {
 public:
-	Tank(bool newTeam) : team(newTeam) {}
+	Tank(bool aTeam);
 
-	void Update(float deltaTime) override;
+	void Update(float aDeltaTime) override;
 	void Destroy() override;
 
-	void SetOnDeathCallback(function<void(ComponentBase*)> callback) { onDeathCallback = callback; }
-	void SetNavTarget(glm::vec3 target) { navTarget = target; }
-	bool GetTeam() { return team; }
+	void SetOnDeathCallback(function<void(ComponentBase*)> aCallback) { myOnDeathCallback = aCallback; }
+	void SetNavTarget(glm::vec3 aTarget) { myNavTarget = aTarget; }
+	bool GetTeam() const { return myTeam; }
 
 	int GetComponentType() override { return Type; }
 	const static int Type;
 
 private:
-	glm::vec3 navTarget;
-	float shootTimer = 0;
-	float shootRate = 1;
-	bool team;
+	glm::vec3 myNavTarget;
+	float myShootTimer;
+	float myShootRate;
+	bool myTeam;
 
-	function<void(ComponentBase*)> onDeathCallback = nullptr;
+	function<void(ComponentBase*)> myOnDeathCallback;
 };

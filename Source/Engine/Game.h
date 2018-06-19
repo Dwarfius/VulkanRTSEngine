@@ -15,10 +15,10 @@ class Game
 public:
 	typedef void (*ReportError)(int, const char*);
 
-	Game(ReportError reporterFunc);
+	Game(ReportError aReporterFunc);
 	~Game();
 
-	static Game* GetInstance() { return inst; }
+	static Game* GetInstance() { return ourInstance; }
 
 	void Init();
 	void RunMainThread();
@@ -26,28 +26,29 @@ public:
 	void CleanUp();
 
 	bool IsRunning() const;
-	void EndGame() { shouldEnd = true; }
-	bool IsPaused() const { return paused; }
+	void EndGame() { myShouldEnd = true; }
+	bool IsPaused() const { return myIsPaused; }
 	GLFWwindow* GetWindow() const;
 
-	const unordered_map<UID, GameObject*>& GetGameObjects() const { return gameObjects; }
-	size_t GetGameObjectCount() const { return gameObjects.size(); }
+	const unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
+	size_t GetGameObjectCount() const { return myGameObjects.size(); }
 	GameObject* Instantiate(glm::vec3 pos = glm::vec3(), glm::vec3 rot = glm::vec3(), glm::vec3 scale = glm::vec3(1));
 	const static uint32_t maxObjects = 4000;
 
-	Camera* GetCamera() const { return camera; }
+	Camera* GetCamera() const { return myCamera; }
 	const Terrain* GetTerrain(glm::vec3 pos) const;
 
 	// utility method for accessing the time across game
 	float GetTime() const;
-	float GetSensitivity() const { return sensitivity; }
 
-	Graphics* GetGraphics() { return renderThread->GetGraphicsRaw(); }
-	const Graphics* GetGraphics() const { return renderThread->GetGraphics(); }
+	Graphics* GetGraphics() { return myRenderThread->GetGraphics(); }
+	// TODO: figure out a way to force render-thread to return const RenderThread*
+	const Graphics* GetGraphics() const { return myRenderThread->GetGraphics(); }
 
-	void RemoveGameObject(GameObject* go);
+	void RemoveGameObject(GameObject* aGo);
 
-	static bool goDeleteEnabled;
+	// TODO: need to hide it and gate it around #ifdef _DEBUG
+	static bool ourGODeleteEnabled;
 
 private:
 	void AddGameObjects();
@@ -59,33 +60,27 @@ private:
 	void UpdateEnd();
 	void RemoveGameObjects();
 
-	const float collCheckRate = 0.033f; //30col/s
-	float collCheckTimer = 0;
-
-	float sensitivity = 2.5f;
-
-	static Game* inst;
-	unique_ptr<RenderThread> renderThread;
-	unique_ptr<GameTaskManager> taskManager;
-
-	const bool isVK = true;
+	static Game* ourInstance;
+	unique_ptr<RenderThread> myRenderThread;
+	unique_ptr<GameTaskManager> myTaskManager;
 
 	// timer measurements
-	float frameStart = 0;
-	float deltaTime = 0;
+	float myFrameStart;
+	float myDeltaTime;
 
-	Camera *camera;
-	tbb::spin_mutex addLock, removeLock;
-	unordered_map<UID, GameObject*> gameObjects;
-	queue<GameObject*> addQueue;
-	queue<GameObject*> removeQueue;
-	vector<Terrain*> terrains;
+	Camera* myCamera;
+	tbb::spin_mutex myAddLock, myRemoveLock;
+	unordered_map<UID, GameObject*> myGameObjects;
+	queue<GameObject*> myAddQueue;
+	queue<GameObject*> myRemoveQueue;
+	vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
 
-	bool running = true, shouldEnd = false;
-	bool paused = false;
+	bool myIsRunning;
+	bool myShouldEnd;
+	bool myIsPaused;
 
 	// logging
-	void LogToFile(string s);
-	ofstream file;
+	void LogToFile(string aLine);
+	ofstream myFile;
 };

@@ -2,20 +2,23 @@
 
 class GameObject;
 
+// TODO: move logic from components to objects which are updated by manager. components will be data/state storages
 class ComponentBase
 {
 public:
-	virtual void Init(GameObject *o) { owner = o; };
-	virtual void Update(float deltaTime) {};
+	ComponentBase() : myOwner(nullptr) {}
+
+	virtual void Init(GameObject* anOwner) { myOwner = anOwner; };
+	virtual void Update(float aDeltaTime) {};
 	virtual void Destroy() {};
 	virtual void OnCollideWithTerrain() {};
 	virtual void OnCollideWithGO(GameObject *other) {};
 
-	GameObject* GetOwner() { return owner; }
+	GameObject* GetOwner() { return myOwner; }
 
 	virtual int GetComponentType() { return Type; }
 	const static int Type;
 
 protected:
-	GameObject *owner;
+	GameObject* myOwner;
 };

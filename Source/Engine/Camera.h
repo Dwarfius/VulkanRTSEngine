@@ -2,63 +2,69 @@
 
 #include "Transform.h"
 
-struct Frustrum
+struct Frustum
 {
-	glm::vec3 camPos;
-	glm::vec3 X, Y, Z; //camera directions
-	float nearPlane, farPlane, width, height, ratio;
+	glm::vec3 myCamPos;
+	glm::vec3 myRight, myUp, myForward; //camera directions
+	float myNearPlane, myFarPlane, myWidth, myHeight, myRatio;
 
 	//used to determine the width and height at distance between planes
-	float sphereFactorX, sphereFactorY;
+	float mySphereFactorX, mySphereFactorY;
 
 	//tangent used to calculate the height
-	float tang;
+	float myTangent;
 
 	//sets the frustrums parameters - near/far planes and near width/height
-	void SetFrustrumDef(float fov, float ratio, float nearPlane, float farPlane)
+	void SetFrustrumDef(float aFov, float aRatio, float aNearPlane, float aFarPlane)
 	{
-		this->ratio = ratio;
-		this->nearPlane = nearPlane;
-		this->farPlane = farPlane;
+		myRatio = aRatio;
+		myNearPlane = aNearPlane;
+		myFarPlane = aFarPlane;
 
 		//computing the vertical fov
-		tang = tan(glm::radians(fov));
-		sphereFactorY = 1.0f / cos(glm::radians(fov));
+		myTangent = glm::tan(glm::radians(aFov));
+		mySphereFactorY = 1.0f / glm::cos(glm::radians(aFov));
 
 		//computing horizontal fov
-		float angleX = atan(tang * ratio);
-		sphereFactorX = 1.0f / cos(angleX);
+		const float angleX = glm::atan(myTangent * myRatio);
+		mySphereFactorX = 1.0f / glm::cos(angleX);
 	}
 
 	//updates the frustrums directions and position
-	void UpdateFrustrum(const glm::vec3& pos, const glm::vec3& right, const glm::vec3& up, const glm::vec3& forward)
+	void UpdateFrustrum(glm::vec3 aPos, glm::vec3 aRight, glm::vec3 anUp, glm::vec3 aForward)
 	{
-		this->camPos = pos;
+		myCamPos = aPos;
 
-		X = right;
-		Y = up;
-		Z = forward;
+		myRight = aRight;
+		myUp = anUp;
+		myForward = aForward;
 	}
 
 	//check if sphere is intersecting the frustrum
-	bool CheckSphere(const glm::vec3& pos, const float rad) const
+	bool CheckSphere(glm::vec3 aPos, float aRadius) const
 	{
-		const glm::vec3 v = pos - camPos;
-		const float vZ = glm::dot(v, Z);
-		if (vZ < nearPlane - rad || vZ > farPlane + rad)
+		const glm::vec3 v = aPos - myCamPos;
+		const float vZ = glm::dot(v, myForward);
+		if (vZ < myNearPlane - aRadius || vZ > myFarPlane + aRadius)
+		{
 			return false;
+		}
 
-		const float vY = glm::dot(v, Y);
-		const float height = vZ * tang;
-		float d = sphereFactorY * rad; //distance from sphere center to yPlane
+		const float vY = glm::dot(v, myUp);
+		const float height = vZ * myTangent;
+		float d = mySphereFactorY * aRadius; //distance from sphere center to yPlane
 		if (vY < -height - d || vY > height + d)
+		{
 			return false;
+		}
 
-		const float vX = glm::dot(v, X);
-		const float width = height * ratio;
-		d = sphereFactorX * rad; //distance from sphere center to xPlane
+		const float vX = glm::dot(v, myRight);
+		const float width = height * myRatio;
+		d = mySphereFactorX * aRadius; //distance from sphere center to xPlane
 		if (vX < -width - d || vX > width + d)
+		{
 			return false;
+		}
 
 		return true;
 	}
@@ -91,10 +97,9 @@ public:
 	bool CheckSphere(const glm::vec3& aPos, const float aRad) const { return myFrustrum.CheckSphere(aPos, aRad); }
 
 private:
-	const float sensX = 1, sensY = 1;
 	Transform myTransform;
 	glm::mat4 myProjMatrix, myViewMatrix, myVP;
 
 	bool myOrthoMode = false;
-	Frustrum myFrustrum;
+	Frustum myFrustrum;
 };

@@ -2,111 +2,122 @@
 #include "Audio.h"
 #include "Transform.h"
 
-float Audio::volume = 0.2f;
-vector<ALuint> Audio::buffers;
-vector<Audio::AudioSource> Audio::sources;
-tbb::concurrent_queue<Audio::AudioCommand> Audio::playCommands;
-ALint Audio::musicTrack = -1;
-Audio::AudioSource Audio::bgSource;
+float Audio::ourVolume = 0.2f;
+vector<ALuint> Audio::ourBuffers;
+vector<Audio::AudioSource> Audio::ourSources;
+tbb::concurrent_queue<Audio::AudioCommand> Audio::ourPlayCommands;
+ALint Audio::ourMusicTrack = -1;
+Audio::AudioSource Audio::ourBgSource;
 
-void Audio::Init(int *argc, char **argv)
+// quick shortcut for error checking utility
+#define CHECK_ERROR() CheckError(__LINE__)
+
+void Audio::Init(int* anArgc /* =nullptr */, char** anArgv /* =nullptr */)
 {
-	alutInit(argc, argv);
-	CheckError(__LINE__);
+	alutInit(anArgc, anArgv);
+	CHECK_ERROR();
 
 	// load our audios
-	for (string name : audioFiles)
+	for (const string& name : AudioFiles)
 	{
-		string fullName = "assets/audio/" + name;
-		buffers.push_back(alutCreateBufferFromFile(fullName.c_str()));
-		CheckError(__LINE__);
+		const string fullName = "assets/audio/" + name;
+		ourBuffers.push_back(alutCreateBufferFromFile(fullName.c_str()));
+		CHECK_ERROR();
 	}
 
-	bgSource = { 0, 0, AL_STOPPED };
-	alGenSources(1, &bgSource.source);
-	
+	ourBgSource = { 0, 0, AL_STOPPED };
+	alGenSources(1, &ourBgSource.mySource);
 }
 
-void Audio::Play(uint32_t audioInd, glm::vec3 pos)
+void Audio::Play(uint32_t anAudioInd, glm::vec3 aPos)
 {
 	// enqueue a play command
-	playCommands.push({ audioInd, pos });
+	ourPlayCommands.push({ anAudioInd, aPos });
 }
 
-void Audio::PlayQueue(Transform *transf)
+// TODO: need more private utility methods to play/stop audio, and set volume
+void Audio::PlayQueue(Transform& aTransf)
 {
 	CheckSources();
 
 	// updating player related state
-	glm::vec3 pos = transf->GetPos();
+	glm::vec3 pos = aTransf.GetPos();
 	alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
-	CheckError(__LINE__);
+	CHECK_ERROR();
 
-	glm::vec3 forward = transf->GetForward();
-	glm::vec3 up = transf->GetUp();
+	glm::vec3 forward = aTransf.GetForward();
+	glm::vec3 up = aTransf.GetUp();
 	ALfloat alFacing[6] { forward.x, forward.y, forward.z, up.x, up.y, up.z };
 	alListenerfv(AL_ORIENTATION, alFacing);
-	CheckError(__LINE__);
+	CHECK_ERROR();
 
 	// background music
-	if (musicTrack != -1)
+	if (ourMusicTrack != -1)
 	{
 		// update it's position to camera's
-		alSource3f(bgSource.source, AL_POSITION, pos.x, pos.y, pos.z);
-		alSourcef(bgSource.source, AL_GAIN, volume);
+		alSource3f(ourBgSource.mySource, AL_POSITION, pos.x, pos.y, pos.z);
+		alSourcef(ourBgSource.mySource, AL_GAIN, ourVolume);
 
 		// if it was switched - update it
-		ALuint buffer = buffers[musicTrack];
-		if (buffer != bgSource.boundBuffer)
+		ALuint buffer = ourBuffers[ourMusicTrack];
+		if (buffer != ourBgSource.myBoundBuffer)
 		{
-			alSourceStop(bgSource.source);
-			bgSource.state = AL_STOPPED;
-			bgSource.boundBuffer = buffer;
-			alSourcei(bgSource.source, AL_BUFFER, bgSource.boundBuffer);
+			alSourceStop(ourBgSource.mySource);
+			ourBgSource.myState = AL_STOPPED;
+			ourBgSource.myBoundBuffer = buffer;
+			alSourcei(ourBgSource.mySource, AL_BUFFER, ourBgSource.myBoundBuffer);
 		}
 		// we'll do manual looping
-		alGetSourcei(bgSource.source, AL_SOURCE_STATE, &bgSource.state);
-		if (bgSource.state != AL_PLAYING)
-			alSourcePlay(bgSource.source);
+		alGetSourcei(ourBgSource.mySource, AL_SOURCE_STATE, &ourBgSource.myState);
+		if (ourBgSource.myState != AL_PLAYING)
+		{
+			alSourcePlay(ourBgSource.mySource);
+		}
 	}
 
+	// TODO: refactor to avoid constantly calling to change volume
 	// updating volume
-	for (AudioSource src : sources)
-		if(src.state == AL_PLAYING)
-			alSourcef(src.source, AL_GAIN, volume);
+	for (const AudioSource& src : ourSources)
+	{
+		if (src.myState == AL_PLAYING)
+		{
+			alSourcef(src.mySource, AL_GAIN, ourVolume);
+		}
+	}
 
 	AudioCommand cmd;
-	while (playCommands.try_pop(cmd))
+	while (ourPlayCommands.try_pop(cmd))
 	{
+		// TODO: revisit this lookup loop
 		// find our buffer
 		bool found = false;
-		for (AudioSource &src : sources)
+		for (AudioSource& src : ourSources)
 		{
-			if (cmd.audioInd == src.boundBuffer && src.state == AL_STOPPED)
+			if (cmd.myAudioInd == src.myBoundBuffer && src.myState == AL_STOPPED)
 			{
-				alSource3f(src.source, AL_POSITION, cmd.pos.x, cmd.pos.y, cmd.pos.z);
-				alSourcef(src.source, AL_GAIN, volume);
-				alSourcePlay(src.source);
-				src.state = AL_PLAYING;
+				alSource3f(src.mySource, AL_POSITION, cmd.myPos.x, cmd.myPos.y, cmd.myPos.z);
+				alSourcef(src.mySource, AL_GAIN, ourVolume);
+				alSourcePlay(src.mySource);
+				src.mySource = AL_PLAYING;
 				found = true;
-				CheckError(__LINE__);
+				CHECK_ERROR();
 			}
 		}
 		// we didn't find an available source to play it out, so create a new one and use it
 		if (!found)
 		{
 			AudioSource src;
-			src.boundBuffer = buffers[cmd.audioInd];
-			alGenSources(1, &src.source);
-			alSourcei(src.source, AL_BUFFER, src.boundBuffer);
-			alSourcef(src.source, AL_GAIN, volume);
+			src.myBoundBuffer = ourBuffers[cmd.myAudioInd];
+			alGenSources(1, &src.myBoundBuffer);
+			alSourcei(src.mySource, AL_BUFFER, src.myBoundBuffer);
+			alSourcef(src.mySource, AL_GAIN, ourVolume);
 
-			alSource3f(src.source, AL_POSITION, cmd.pos.x, cmd.pos.y, cmd.pos.z);
-			alSourcePlay(src.source);
-			src.state = AL_PLAYING;
+			alSource3f(src.mySource, AL_POSITION, cmd.myPos.x, cmd.myPos.y, cmd.myPos.z);
+			alSourcePlay(src.mySource);
+			src.myState = AL_PLAYING;
 
-			sources.push_back(src);
-			CheckError(__LINE__);
+			ourSources.push_back(src);
+			CHECK_ERROR();
 		}
 	}
 }
@@ -114,28 +125,34 @@ void Audio::PlayQueue(Transform *transf)
 void Audio::Cleanup()
 {
 	// first the sources, then the buffers
-	for (AudioSource src : sources)
-		alDeleteSources(1, &src.source);
+	for (AudioSource& src : ourSources)
+	{
+		alDeleteSources(1, &src.mySource);
+	}
 
 	// then all the buffers
-	alDeleteBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
-	CheckError(__LINE__);
+	alDeleteBuffers(static_cast<ALsizei>(ourBuffers.size()), ourBuffers.data());
+	CHECK_ERROR();
 }
 
 void Audio::CheckSources()
 {
 	// reset the state to signal that we can reuse it
-	for (AudioSource source : sources)
+	for (AudioSource& source : ourSources)
 	{
-		if (source.state == AL_PLAYING)
-			alGetSourcei(source.source, AL_SOURCE_STATE, &source.state);
+		if (source.myState == AL_PLAYING)
+		{
+			alGetSourcei(source.mySource, AL_SOURCE_STATE, &source.myState);
+		}
 	}
-	CheckError(__LINE__);
+	CHECK_ERROR();
 }
 
-void Audio::CheckError(uint32_t line)
+void Audio::CheckError(uint32_t aLine)
 {
 	ALenum error = alutGetError();
 	if (error != ALUT_ERROR_NO_ERROR)
-		printf("[Error] ALUT error at %d: %s\n", line, alutGetErrorString(error));
+	{
+		printf("[Error] ALUT error at %d: %s\n", aLine, alutGetErrorString(error));
+	}
 }

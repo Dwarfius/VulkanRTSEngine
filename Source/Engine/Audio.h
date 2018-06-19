@@ -2,44 +2,48 @@
 
 class Transform;
 
-const vector<string> audioFiles{
+const vector<string> AudioFiles 
+{
 	"explosion.wav",
 	"tankShot.wav",
 	"arcadeMusic.wav"
 };
 
+// TODO: need to review Audio for refactoring - should be singleton instead of a full-static class
 class Audio
 {
 public:
-	static void Init(int *argc = nullptr, char **argv = nullptr);
-	static void Play(uint32_t audioInd, glm::vec3 pos);
-	static void PlayQueue(Transform *transf);
-	static void SetMusicTrack(ALint track) { musicTrack = track; }
+	static void Init(int* anArgc = nullptr, char** anArgv = nullptr);
+	static void Play(uint32_t anAudioInd, glm::vec3 aPos);
+	/*	TODO: need to refactor Transform to get rid of lazy-caching
+		so I can properly pass it around as const& */
+	static void PlayQueue(Transform& aTransf);
+	static void SetMusicTrack(ALint aTrack) { ourMusicTrack = aTrack; }
 	static void Cleanup();
 
-	static void IncreaseVolume() { if (volume <= 0.9f) volume += 0.1f; }
-	static void DecreaseVolume() { if (volume >= 0.1f) volume -= 0.1f; }
+	static void IncreaseVolume() { if (ourVolume <= 0.9f) ourVolume += 0.1f; }
+	static void DecreaseVolume() { if (ourVolume >= 0.1f) ourVolume -= 0.1f; }
 
 private:
-	static float volume;
+	static float ourVolume;
 
 	static void CheckSources();
-	static void CheckError(uint32_t line);
+	static void CheckError(uint32_t aLine);
 
-	static ALint musicTrack;
+	static ALint ourMusicTrack;
 
-	static vector<ALuint> buffers;
+	static vector<ALuint> ourBuffers;
 	struct AudioSource {
-		ALuint source;
-		ALuint boundBuffer;
-		ALint state;
+		ALuint mySource;
+		ALuint myBoundBuffer;
+		ALint myState;
 	};
-	static vector<AudioSource> sources;
-	static AudioSource bgSource;
+	static vector<AudioSource> ourSources;
+	static AudioSource ourBgSource;
 
 	struct AudioCommand {
-		uint32_t audioInd;
-		glm::vec3 pos;
+		uint32_t myAudioInd;
+		glm::vec3 myPos;
 	};
-	static tbb::concurrent_queue<AudioCommand> playCommands;
+	static tbb::concurrent_queue<AudioCommand> ourPlayCommands;
 };

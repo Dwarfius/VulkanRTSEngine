@@ -8,58 +8,65 @@
 #include "Tank.h"
 #include "Renderer.h"
 
-TankArenaGameMode* TankArenaGameMode::instance = nullptr;
+TankArenaGameMode* TankArenaGameMode::ourInstance = nullptr;
 
 TankArenaGameMode::TankArenaGameMode()
+	: ComponentBase()
+	, myAngles(0.f)
+	, mySpawnRate(75.f)
+	, myAccumSpawn(0.f)
+	, myAccumTime(0.f)
+	, myTeamTurn(false)
 {
-	instance = this;
+	ourInstance = this;
 }
 
 void TankArenaGameMode::Destroy()
 {
-	for (GameObject *tank : enemyTanks)
+	for (GameObject *tank : myEnemyTanks)
 	{
 		tank->Die();
 	}
-	instance = nullptr;
+	ourInstance = nullptr;
 }
 
 void TankArenaGameMode::Update(float deltaTime)
 {
+	const float spawnRateAccel = 0.05f;
 	const int fieldSize = 80;
 	const int halfSize = fieldSize / 2;
 
-	spawnRate += spawnRateAccel * deltaTime;
-	accumSpawn += deltaTime * spawnRate;
-	if (accumSpawn > 1)
+	mySpawnRate += spawnRateAccel * deltaTime;
+	myAccumSpawn += deltaTime * mySpawnRate;
+	if (myAccumSpawn > 1)
 	{
-		uint32_t spawnCount = (uint32_t)accumSpawn;
-		accumSpawn -= spawnCount;
+		uint32_t spawnCount = (uint32_t)myAccumSpawn;
+		myAccumSpawn -= spawnCount;
 
-		const glm::vec3 pos = owner->GetTransform().GetPos();
+		const glm::vec3 pos = myOwner->GetTransform().GetPos();
 
 		for (uint32_t i = 0; i < spawnCount; i++)
 		{
-			float side = teamTurn ? -1.f : 1.f;
+			float side = myTeamTurn ? -1.f : 1.f;
 			glm::vec3 spawnPoint = pos + glm::vec3(side * halfSize, 0, rand() % fieldSize - halfSize);
 			GameObject *go = Game::GetInstance()->Instantiate(spawnPoint, glm::vec3(), glm::vec3(0.005f));
 			if (go) // we might exceed game's hard limit of Game::maxObjects objects
 			{
-				Tank *tank = new Tank(teamTurn);
-				tank->SetOnDeathCallback([this](ComponentBase* comp) {
-					if (instance) // check if GameMode is still alive
+				Tank* tank = new Tank(myTeamTurn);
+				tank->SetOnDeathCallback([this](ComponentBase* aComp) {
+					if (ourInstance) // check if GameMode is still alive
 					{
-						enemyTanks.erase(comp->GetOwner());
+						myEnemyTanks.erase(aComp->GetOwner());
 					}
 				});
-				spawnPoint.x *= -1;
+				spawnPoint.x *= -1.f;
 				spawnPoint.z = static_cast<float>(rand() % fieldSize - halfSize);
 				tank->SetNavTarget(spawnPoint);
 				go->AddComponent(tank);
-				go->AddComponent(new Renderer(2, 0, teamTurn ? 4 : 5));
-				enemyTanks.insert(go);
+				go->AddComponent(new Renderer(2, 0, myTeamTurn ? 4 : 5));
+				myEnemyTanks.insert(go);
 
-				teamTurn = !teamTurn;
+				myTeamTurn = !myTeamTurn;
 			}
 		}
 	}
@@ -70,18 +77,18 @@ void TankArenaGameMode::Update(float deltaTime)
 	const float camDist = 20;
 	const float camSpeed = -0.3f;
 
-	angles.y += camSpeed * deltaTime;
+	myAngles.y += camSpeed * deltaTime;
 	glm::vec3 curPos = glm::vec3();
 	glm::vec3 camPos = curPos - glm::vec3(0, 0, camDist);
-	camPos = Transform::RotateAround(camPos, curPos, angles);
+	camPos = Transform::RotateAround(camPos, curPos, myAngles);
 	camPos.y = camDist;
 
 	// making sure we don't go under terrain
 	camTransf.SetPos(camPos);
 	camTransf.LookAt(curPos);
 
-	accumTime += deltaTime;
-	if (accumTime > 60)
+	myAccumTime += deltaTime;
+	if (myAccumTime > 60.f)
 	{
 		Game::GetInstance()->EndGame();
 	}

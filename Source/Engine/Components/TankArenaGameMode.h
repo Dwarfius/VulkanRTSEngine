@@ -9,24 +9,21 @@ class TankArenaGameMode : public ComponentBase
 public:
 	TankArenaGameMode();
 
-	void Update(float deltaTime) override;
+	void Update(float aDeltaTime) override;
 	void Destroy() override;
 
-	static TankArenaGameMode* GetInstance() { return instance; }
+	static TankArenaGameMode* GetInstance() { return ourInstance; }
 
 private:
-	static TankArenaGameMode *instance;
+	static TankArenaGameMode* ourInstance;
 
-	const float spawnRateAccel = 0.05f;
+	glm::vec3 myAngles;
+	float mySpawnRate;
+	float myAccumSpawn;
+	float myAccumTime;
 
-	float spawnRate = 75.f;
-	float accumSpawn = 0;
-	float accumTime = 0;
-
-	bool teamTurn;
-
-	glm::vec3 angles;
+	bool myTeamTurn;
 
 	// access to this is consecutive, no need for TBB
-	unordered_set<GameObject*> enemyTanks;
+	unordered_set<GameObject*> myEnemyTanks;
 };

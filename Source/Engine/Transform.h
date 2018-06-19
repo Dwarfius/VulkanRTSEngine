@@ -3,46 +3,52 @@
 class Transform
 {
 public:
+	// Creates zero-initialized transform (identity matrix)
 	Transform();
-	Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
+	// Creates a transform from position, rotation (in radians) and scale
+	Transform(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale);
 
-	glm::vec3 GetForward() { if (dirtyDirs) UpdateRot(); return forward; }
-	glm::vec3 GetRight() { if (dirtyDirs) UpdateRot(); return right; }
-	glm::vec3 GetUp() { if (dirtyDirs) UpdateRot(); return up; }
+	// optional, allows to set a pivot for a transform
+	void SetCenter(glm::vec3 aCenter) { myCenter = aCenter; myDirtyModel = true; }
+
+	glm::vec3 GetForward() { if (myDirtyDirs) UpdateRot(); return myForward; }
+	glm::vec3 GetRight() { if (myDirtyDirs) UpdateRot(); return myRight; }
+	glm::vec3 GetUp() { if (myDirtyDirs) UpdateRot(); return myUp; }
 
 	glm::vec3 GetPos() const { return myPos; }
-	void Translate(glm::vec3 delta) { myPos += delta; dirtyModel = true; }
-	void SetPos(glm::vec3 newPos) { myPos = newPos; dirtyModel = true; }
+	void Translate(glm::vec3 delta) { myPos += delta; myDirtyModel = true; }
+	void SetPos(glm::vec3 newPos) { myPos = newPos; myDirtyModel = true; }
 
 	glm::vec3 GetScale() const { return myScale; }
-	void SetScale(glm::vec3 pScale) { myScale = pScale; dirtyModel = true; }
-	void AddScale(glm::vec3 delta) { myScale += delta; dirtyModel = true; }
+	void SetScale(glm::vec3 aScale) { myScale = aScale; myDirtyModel = true; }
 
-	void LookAt(glm::vec3 target);
-	void RotateToUp(glm::vec3 newUp);
+	void LookAt(glm::vec3 aTarget);
+	void RotateToUp(glm::vec3 aNewUp);
 
-	glm::quat GetRotation() { return myRotation; }
-	glm::vec3 GetEuler() { return glm::degrees(glm::eulerAngles(myRotation)); }
-	void Rotate(glm::vec3 deltaEuler) { SetRotation(glm::quat(glm::radians(deltaEuler)) * myRotation); }
-	void SetRotation(glm::vec3 euler) { SetRotation(glm::quat(glm::radians(euler))); }
-	void SetRotation(glm::quat rot) { myRotation = rot; dirtyDirs = true; }
+	glm::quat GetRotation() const { return myRotation; }
+	glm::vec3 GetEuler() const { return glm::degrees(glm::eulerAngles(myRotation)); }
+	void Rotate(glm::vec3 aDeltaEuler) { SetRotation(glm::quat(glm::radians(aDeltaEuler)) * myRotation); }
+	void SetRotation(glm::vec3 anEuler) { SetRotation(glm::quat(glm::radians(anEuler))); }
+	void SetRotation(glm::quat aRot) { myRotation = aRot; myDirtyDirs = true; }
 
-	const glm::mat4& GetModelMatrix(glm::vec3 center);
+	const glm::mat4& GetModelMatrix();
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 point, glm::vec3 refPoint, glm::vec3 angles);
 
 private:
+	glm::mat4 myRotM, myModelM;
+
 	glm::vec3 myPos;
 	glm::vec3 myScale;
 	glm::quat myRotation;
-	glm::vec3 up, forward, right;
+	glm::vec3 myUp, myForward, myRight;
+	glm::vec3 myCenter;
 
-	bool dirtyDirs, dirtyModel;
-	glm::mat4 rotM, modelM;
+	bool myDirtyDirs, myDirtyModel;
 
 	void UpdateRot();
-	void UpdateModel(glm::vec3 center);
+	void UpdateModel();
 
 	glm::quat RotationBetweenVectors(glm::vec3 start, glm::vec3 dest);
 };

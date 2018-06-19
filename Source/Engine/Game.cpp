@@ -24,35 +24,46 @@
 // yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
 //#define USE_SLEEP
 
-Game* Game::inst = nullptr;
-bool Game::goDeleteEnabled = false;
+Game* Game::ourInstance = nullptr;
+bool Game::ourGODeleteEnabled = false;
 
-Game::Game(ReportError reporterFunc)
+constexpr bool BootWithVK = true;
+
+Game::Game(ReportError aReporterFunc)
+	: myFrameStart(0.f)
+	, myDeltaTime(0.f)
+	, myCamera(nullptr)
+	, myIsRunning(true)
+	, myShouldEnd(false)
+	, myIsPaused(false)
 {
-	inst = this;
+	ourInstance = this;
 	UID::Init();
 
-	glfwSetErrorCallback(reporterFunc);
+	glfwSetErrorCallback(aReporterFunc);
 	glfwInit();
 
 	glfwSetTime(0);
 	
-	file.open(isVK ? "logVK.csv" : "logGL.csv");
-	if (!file.is_open())
-		std::printf("[Warning] Log file didn't open\n");
+	// TODO: Need to refactor out logging
+	myFile.open(BootWithVK ? "logVK.csv" : "logGL.csv");
+	if (!myFile.is_open())
+	{
+		printf("[Warning] Log file didn't open\n");
+	}
 
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
 
 	Terrain* terr = new Terrain();
 	terr->Generate("assets/textures/heightmap.png", 0.3f, glm::vec3(), 2.f, 1);
-	terrains.push_back(terr);
+	myTerrains.push_back(terr);
 
-	renderThread = make_unique<RenderThread>();
+	myRenderThread = make_unique<RenderThread>();
 
-	camera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
+	myCamera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
 
-	taskManager = make_unique<GameTaskManager>();
+	myTaskManager = make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
 }
@@ -64,9 +75,9 @@ Game::~Game()
 
 void Game::Init()
 {
-	gameObjects.reserve(maxObjects);
+	myGameObjects.reserve(maxObjects);
 
-	renderThread->Init(isVK, &terrains);
+	myRenderThread->Init(BootWithVK, &myTerrains);
 
 	GameObject *go; 
 
@@ -80,51 +91,51 @@ void Game::Init()
 	go->AddComponent(new EditorMode());
 
 	GameTask task(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
 	task.AddDependency(GameTask::UpdateInput);
 	task.AddDependency(GameTask::AddGameObjects);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	// TODO: Need to restructure the graph to get rid of game update dependency
 	// probably do AddGameObjects->PhysicsUpdate->GameUpdate
 	task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
 	task.AddDependency(GameTask::GameUpdate);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
 	task.AddDependency(GameTask::GameUpdate);
 	task.AddDependency(GameTask::PhysicsUpdate);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
 	task.AddDependency(GameTask::GameUpdate);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::Render, bind(&Game::Render, this));
 	task.AddDependency(GameTask::RemoveGameObjects);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
 	// TODO: will need to fix up audio
 	task = GameTask(GameTask::UpdateAudio, bind(&Game::UpdateAudio, this));
 	task.AddDependency(GameTask::UpdateEnd);
-	taskManager->AddTask(task);
+	myTaskManager->AddTask(task);
 
-	taskManager->ResolveDependencies();
-	taskManager->Run();
+	myTaskManager->ResolveDependencies();
+	myTaskManager->Run();
 }
 
 void Game::RunMainThread()
 {
 	glfwPollEvents();
 
-	if (renderThread->HasWork())
+	if (myRenderThread->HasWork())
 	{
-		renderThread->InternalLoop();
+		myRenderThread->InternalLoop();
 
 		// TODO: need a semaphore for this, to disconnect from the render thread
 		RunTaskGraph();
@@ -133,53 +144,54 @@ void Game::RunMainThread()
 
 void Game::RunTaskGraph()
 {
-	taskManager->Run();
+	myTaskManager->Run();
 }
 
 void Game::CleanUp()
 {
-	if (file.is_open())
+	if (myFile.is_open())
 	{
-		file.close();
+		myFile.close();
 	}
 
 	// we can mark that the engine is done - wrap the threads
-	running = false;
-	goDeleteEnabled = true;
-	for (auto pair : gameObjects)
+	myIsRunning = false;
+	ourGODeleteEnabled = true;
+	for (auto pair : myGameObjects)
 	{
 		delete pair.second;
 	}
-	gameObjects.clear();
+	myGameObjects.clear();
 
-	for (Terrain* terrain : terrains)
+	for (Terrain* terrain : myTerrains)
 	{
 		delete terrain;
 	}
-	terrains.clear();
+	myTerrains.clear();
 
-	delete camera;
+	delete myCamera;
 
 	delete myPhysWorld;
 }
 
 bool Game::IsRunning() const
 {
-	return !glfwWindowShouldClose(renderThread->GetWindow()) && running;
+	return !glfwWindowShouldClose(myRenderThread->GetWindow()) && myIsRunning;
 }
 
 GLFWwindow* Game::GetWindow() const
 {
-	return renderThread->GetWindow();
+	return myRenderThread->GetWindow();
 }
 
 void Game::AddGameObjects()
 {
-	tbb::spin_mutex::scoped_lock spinlock(addLock);
-	while (addQueue.size())
+	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
+	while (myAddQueue.size())
 	{
-		GameObject* go = addQueue.front();
-		addQueue.pop();
+		GameObject* go = myAddQueue.front();
+		myAddQueue.pop();
+		myGameObjects[go->GetUID()] = go;
 	}
 }
 
@@ -191,62 +203,60 @@ void Game::UpdateInput()
 void Game::Update()
 {
 	{
-		float newTime = static_cast<float>(glfwGetTime());
-		deltaTime = newTime - frameStart;
-		frameStart = newTime;
+		const float newTime = static_cast<float>(glfwGetTime());
+		myDeltaTime = newTime - myFrameStart;
+		myFrameStart = newTime;
 	}
 
-	if (Input::GetKey(27) || shouldEnd)
+	if (Input::GetKey(27) || myShouldEnd)
 	{
-		paused = running = false;
+		myIsPaused = myIsRunning = false;
 		return;
 	}
 
 	if (Input::GetKeyPressed('B'))
 	{
-		paused = !paused;
+		myIsPaused = !myIsPaused;
 	}
-	if (paused)
-		return;
 
-	if (Input::GetKeyPressed('I'))
-		sensitivity += 0.3f;
-	if (Input::GetKeyPressed('K') && sensitivity >= 0.3f)
-		sensitivity -= 0.3f;
+	if (myIsPaused)
+	{
+		return;
+	}
 
 	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
-	for (auto pair : gameObjects)
+	for (auto pair : myGameObjects)
 	{
-		pair.second->Update(deltaTime);
+		pair.second->Update(myDeltaTime);
 	}
 }
 
 void Game::PhysicsUpdate()
 {
 	// TODO: make it run at 30/s freq
-	myPhysWorld->Simulate(deltaTime);
+	myPhysWorld->Simulate(myDeltaTime);
 }
 
 void Game::Render()
 {
 	if (Input::GetKeyPressed('G'))
 	{
-		renderThread->RequestSwitch();
+		myRenderThread->RequestSwitch();
 	}
 
-	for (const pair<UID, GameObject*>& elem : gameObjects)
+	for (const pair<UID, GameObject*>& elem : myGameObjects)
 	{
-		renderThread->AddRenderable(elem.second);
+		myRenderThread->AddRenderable(elem.second);
 	}
 
 	// we have to wait until the render thread finishes processing the submitted commands
 	// otherwise we'll screw the command buffers
-	while (renderThread->IsBusy())
+	while (myRenderThread->IsBusy())
 	{
 		tbb::this_tbb_thread::yield();
 	}
 
-	renderThread->Work();
+	myRenderThread->Work();
 }
 
 void Game::UpdateAudio()
@@ -268,34 +278,33 @@ void Game::UpdateEnd()
 
 void Game::RemoveGameObjects()
 {
-	goDeleteEnabled = true;
-	tbb::spin_mutex::scoped_lock spinlock(removeLock);
-	while (removeQueue.size())
+	ourGODeleteEnabled = true;
+	tbb::spin_mutex::scoped_lock spinlock(myRemoveLock);
+	while (myRemoveQueue.size())
 	{
-		GameObject* go = removeQueue.front();
-		gameObjects.erase(go->GetUID());
+		GameObject* go = myRemoveQueue.front();
+		myGameObjects.erase(go->GetUID());
 		delete go;
-		removeQueue.pop();
+		myRemoveQueue.pop();
 	}
-	goDeleteEnabled = false;
+	ourGODeleteEnabled = false;
 }
 
 GameObject* Game::Instantiate(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
 {
 	GameObject* go = nullptr;
-	if (gameObjects.size() < maxObjects)
+	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
+	if (myGameObjects.size() < maxObjects)
 	{
-		tbb::spin_mutex::scoped_lock spinLock(addLock);
 		go = new GameObject(pos, rot, scale);
-		gameObjects[go->GetUID()] = go;
-		addQueue.emplace(go);
+		myAddQueue.emplace(go);
 	}
 	return go;
 }
 
 const Terrain* Game::GetTerrain(glm::vec3 pos) const
 {
-	return terrains[0];
+	return myTerrains[0];
 }
 
 float Game::GetTime() const
@@ -305,13 +314,14 @@ float Game::GetTime() const
 
 void Game::RemoveGameObject(GameObject* go)
 {
-	// TODO: need to make sure this won't get deadlocked
-	tbb::spin_mutex::scoped_lock spinLock(removeLock);
-	removeQueue.push(go);
+	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
+	myRemoveQueue.push(go);
 }
 
 void Game::LogToFile(string s)
 {
-	if (file.is_open())
-		file << s << endl;
+	if (myFile.is_open())
+	{
+		myFile << s << endl;
+	}
 }

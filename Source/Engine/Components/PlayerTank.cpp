@@ -12,38 +12,48 @@
 #include "Missile.h"
 #include "Renderer.h"
 
-void PlayerTank::Update(float deltaTime)
+PlayerTank::PlayerTank()
+	: ComponentBase()
+	, myShootTimer(0.f)
+	, myHeightOffset(0.f)
+	, myAngles(0.f)
+	, myHoldStart(-1.f)
+{
+}
+
+void PlayerTank::Update(float aDeltaTime)
 {
 	// just general settings
+	const float myShootRate = 1;
 	const float speed = 2.5f;
 	const float rotSpeed = 60.f;
 
 	Camera *cam = Game::GetInstance()->GetCamera();
 	Transform& camTransf = cam->GetTransform();
-	Transform& ownTransf = owner->GetTransform();
+	Transform& ownTransf = myOwner->GetTransform();
 
 	// update the camera
 	glm::vec3 forward = ownTransf.GetForward();
 	// move the gameobject
 	if (Input::GetKey('W'))
 	{
-		ownTransf.Translate(forward * deltaTime * speed);
+		ownTransf.Translate(forward * aDeltaTime * speed);
 	}
 	if (Input::GetKey('S'))
 	{
-		ownTransf.Translate(-forward * deltaTime * speed);
+		ownTransf.Translate(-forward * aDeltaTime * speed);
 	}
 	if (Input::GetKey('D'))
 	{
-		ownTransf.Rotate(glm::vec3(0, -rotSpeed * deltaTime, 0));
+		ownTransf.Rotate(glm::vec3(0, -rotSpeed * aDeltaTime, 0));
 	}
 	if (Input::GetKey('A'))
 	{
-		ownTransf.Rotate(glm::vec3(0, rotSpeed * deltaTime, 0));
+		ownTransf.Rotate(glm::vec3(0, rotSpeed * aDeltaTime, 0));
 	}
 	
 	// terrain walking
-	float yOffset = owner->GetCenter().y * ownTransf.GetScale().y;
+	float yOffset = myOwner->GetCenter().y * ownTransf.GetScale().y;
 	const Terrain *terrain = Game::GetInstance()->GetTerrain(ownTransf.GetPos());
 	glm::vec3 curPos = ownTransf.GetPos();
 	curPos.y = terrain->GetHeight(curPos) + yOffset;
@@ -54,36 +64,39 @@ void PlayerTank::Update(float deltaTime)
 	ownTransf.RotateToUp(newUp);
 
 	// 3rd person camera
-	glm::vec2 deltaPos = Input::GetMouseDelta() * Game::GetInstance()->GetSensitivity();
+	const float mouseSensitivity = 0.3f;
+	glm::vec2 deltaPos = Input::GetMouseDelta() * mouseSensitivity;
 	const float camDist = 3;
 
-	angles += glm::vec3(deltaPos.y, -deltaPos.x, 0) * deltaTime;
+	myAngles += glm::vec3(deltaPos.y, -deltaPos.x, 0) * aDeltaTime;
 	glm::vec3 camPos = curPos - glm::vec3(0, 0, camDist);
-	camPos = Transform::RotateAround(camPos, curPos, angles);
+	camPos = Transform::RotateAround(camPos, curPos, myAngles);
 
 	// making sure we don't go under terrain
 	float heightAtCamPos = terrain->GetHeight(camPos);
 	if (camPos.y < heightAtCamPos)
-		camPos.y = heightAtCamPos + 0.1f; 
+	{
+		camPos.y = heightAtCamPos + 0.1f;
+	}
 
 	camTransf.SetPos(camPos);
 	camTransf.LookAt(ownTransf.GetPos());
 
-	if (shootTimer > 0)
+	if (myShootTimer > 0.f)
 	{
-		shootTimer -= deltaTime;
+		myShootTimer -= aDeltaTime;
 	}
 
-	if (shootTimer <= 0)
+	if (myShootTimer <= 0.f)
 	{
-		if (holdStart == -1 && Input::GetMouseBtn(0))
+		if (myHoldStart == -1.f && Input::GetMouseBtn(0))
 		{
-			holdStart = Game::GetInstance()->GetTime();
+			myHoldStart = Game::GetInstance()->GetTime();
 		}
 
-		if (holdStart >= 0 && !Input::GetMouseBtn(0))
+		if (myHoldStart >= 0.f && !Input::GetMouseBtn(0))
 		{
-			const float holdLength = glm::min(Game::GetInstance()->GetTime() - holdStart, 2.f);
+			const float holdLength = glm::min(Game::GetInstance()->GetTime() - myHoldStart, 2.f);
 			const float force = glm::mix(5.f, 20.f, holdLength / 2.f);
 
 			// aprox pos of the cannon exit point
@@ -91,12 +104,12 @@ void PlayerTank::Update(float deltaTime)
 			GameObject *go = Game::GetInstance()->Instantiate(spawnPos, glm::vec3(), glm::vec3(0.1f));
 			go->AddComponent(new Renderer(3, 0, 6));
 			const glm::vec3 shootDir = forward + glm::vec3(0, 0.2f, 0);
-			go->AddComponent(new Missile(shootDir * force, owner, true));
+			go->AddComponent(new Missile(shootDir * force, myOwner, true));
 
 			//Audio::Play(1, curPos);
 
-			shootTimer = shootRate;
-			holdStart = -1;
+			myShootTimer = myShootRate;
+			myHoldStart = -1.f;
 		}
 	}
 }

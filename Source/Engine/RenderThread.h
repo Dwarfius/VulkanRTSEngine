@@ -20,7 +20,7 @@ public:
 	void RequestSwitch() { needsSwitch = true; }
 	GLFWwindow* GetWindow() const;
 
-	Graphics* GetGraphicsRaw() { return graphics.get(); }
+	Graphics* GetGraphics() { return graphics.get(); }
 	const Graphics* GetGraphics() const { return graphics.get(); }
 
 	void AddRenderable(const GameObject* go);

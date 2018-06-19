@@ -9,36 +9,36 @@
 
 const int Missile::Type = 2;
 
-Missile::Missile(glm::vec3 vel, GameObject *shooter, bool ownerTeam)
+Missile::Missile(glm::vec3 aVel, const GameObject* aShooter, bool anOwnerTeam)
+	: myVelocity(aVel)
+	, myShooter(aShooter)
+	, myTeam(anOwnerTeam)
 {
-	velocity = vel;
-	this->shooter = shooter;
-	team = ownerTeam;
 }
 
-void Missile::Update(float deltaTime)
+void Missile::Update(float aDeltaTime)
 {
 	const float g = -9.81f;
 
-	velocity += glm::vec3(0, g, 0) * deltaTime;
-	owner->GetTransform().Translate(velocity * deltaTime);
+	myVelocity += glm::vec3(0, g, 0) * aDeltaTime;
+	myOwner->GetTransform().Translate(myVelocity * aDeltaTime);
 }
 
 void Missile::OnCollideWithTerrain()
 {
-	owner->Die();
+	myOwner->Die();
 }
 
-void Missile::OnCollideWithGO(GameObject *go)
+void Missile::OnCollideWithGO(GameObject* aGo)
 {
 	// avoid hitting ourselves
-	if (go != shooter)
+	if (aGo != myShooter)
 	{
-		Tank* other = static_cast<Tank*>(go->GetComponent(Tank::Type));
-		if (other && other->GetTeam() != team)
+		Tank* other = static_cast<Tank*>(aGo->GetComponent(Tank::Type));
+		if (other && other->GetTeam() != myTeam)
 		{
-			owner->Die();
-			go->Die();
+			myOwner->Die();
+			aGo->Die();
 		}
 	}
 }

@@ -7,108 +7,124 @@
 #include "Components/ComponentBase.h"
 #include "Components/Renderer.h"
 
-GameObject::GameObject(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
-	: transf(pos, rot, scale)
-	, myUID()
+GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
+	: myUID(UID::Create())
+	, myTransf(aPos, aRot, aScale)
 	, myCurrentMat()
+	, myRenderer(nullptr)
+	, myIsDead(false)
+	, myIndex(numeric_limits<size_t>::max())
+	, myCollisionsEnabled(true)
+	, myCollidedWithTerrain(false)
 {
-	myUID = UID::Create();
 }
 
 GameObject::~GameObject()
 {
-	assert(Game::goDeleteEnabled);
+	assert(Game::ourGODeleteEnabled);
 
-	for (auto comp : components)
+	for (ComponentBase* comp : myComponents)
 	{
 		comp->Destroy();
 		delete comp;
 	}
-	components.clear();
 }
 
-void GameObject::Update(float deltaTime)
+void GameObject::Update(float aDeltaTime)
 {
-	for (int i=0; i<components.size(); i++)
-		components[i]->Update(deltaTime);
+	for (int i = 0; i < myComponents.size(); i++)
+	{
+		myComponents[i]->Update(aDeltaTime);
+	}
 
-	myCurrentMat = transf.GetModelMatrix(center);
+	myCurrentMat = myTransf.GetModelMatrix();
 
-	if (renderer)
+	if (myRenderer)
 	{
 		Shader::UniformValue val;
 		val.m = myCurrentMat;
-		uniforms["Model"] = val;
+		myUniforms["Model"] = val;
 	}
 }
 
 float GameObject::GetRadius() const
 {
-	if (!renderer)
+	if (!myRenderer)
+	{
 		return 0;
+	}
 
-	const glm::vec3 scale = transf.GetScale();
+	const glm::vec3 scale = myTransf.GetScale();
 	const float maxScale = max({ scale.x, scale.y, scale.z });
-	const float radius = Game::GetInstance()->GetGraphics()->GetModelRadius(renderer->GetModel());
+	const float radius = Game::GetInstance()->GetGraphics()->GetModelRadius(myRenderer->GetModel());
 	return maxScale * radius;
 }
 
-void GameObject::AddComponent(ComponentBase *component)
+void GameObject::AddComponent(ComponentBase* aComponent)
 {
-	component->Init(this);
-	components.push_back(component);
-	Renderer *newRenderer = dynamic_cast<Renderer*>(component);
-	if (newRenderer && !renderer)
+	aComponent->Init(this);
+	myComponents.push_back(aComponent);
+	Renderer* newRenderer = dynamic_cast<Renderer*>(aComponent);
+	if (newRenderer && !myRenderer)
 	{
-		renderer = newRenderer;
-		center = Game::GetInstance()->GetGraphics()->GetModelCenter(renderer->GetModel());
+		myRenderer = newRenderer;
+		// TODO: look into making this optional per model
+		myTransf.SetCenter(Game::GetInstance()->GetGraphics()->GetModelCenter(myRenderer->GetModel()));
 	}
-	else if (newRenderer && renderer)
+	else if (newRenderer && myRenderer)
+	{
 		printf("[Warning] Attempting to attach a renderer to a component with a renderer, ignoring\n");
+	}
 }
 
-ComponentBase* GameObject::GetComponent(int type) const
+ComponentBase* GameObject::GetComponent(int aType) const
 {
-	for (ComponentBase* comp : components)
+	for (ComponentBase* comp : myComponents)
 	{
-		if (comp->GetComponentType() == type)
+		if (comp->GetComponentType() == aType)
+		{
 			return comp;
+		}
 	}
 	return nullptr;
 }
 
 void GameObject::CollidedWithTerrain()
 {
-	if (collidedWithTerrain)
-		return;
-
-	collidedWithTerrain = true;
-	for (ComponentBase *base : components)
-		base->OnCollideWithTerrain();
-}
-
-void GameObject::CollidedWithGO(GameObject *go)
-{
-	if (objsCollidedWith.count(go))
+	if (myCollidedWithTerrain)
 	{
 		return;
 	}
 
-	objsCollidedWith.insert(go);
-	for (ComponentBase *base : components)
+	myCollidedWithTerrain = true;
+	for (ComponentBase* base : myComponents)
 	{
-		base->OnCollideWithGO(go);
+		base->OnCollideWithTerrain();
+	}
+}
+
+void GameObject::CollidedWithGO(GameObject* aGo)
+{
+	if (myObjsCollidedWith.count(aGo))
+	{
+		return;
+	}
+
+	myObjsCollidedWith.insert(aGo);
+	for (ComponentBase* base : myComponents)
+	{
+		base->OnCollideWithGO(aGo);
 	}
 }
 
 void GameObject::PreCollision()
 {
-	collidedWithTerrain = false;
-	objsCollidedWith.clear();
+	myCollidedWithTerrain = false;
+	myObjsCollidedWith.clear();
 }
 
 void GameObject::Die()
 {
-	dead = true;
+	myIsDead = true;
 	Game::GetInstance()->RemoveGameObject(this);
 }
