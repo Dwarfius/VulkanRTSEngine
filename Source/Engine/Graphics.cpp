@@ -35,7 +35,7 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 		for (const tinyobj::index_t& index : shape.mesh.indices) 
 		{
 			Vertex vertex;
-			vertex.pos = {
+			vertex.myPos = {
 				attrib.vertices[3 * index.vertex_index + 0],
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
@@ -43,7 +43,7 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 
 			if (index.texcoord_index != -1)
 			{
-				vertex.uv = {
+				vertex.myUv = {
 					attrib.texcoords[2 * index.texcoord_index + 0],
 					1 - attrib.texcoords[2 * index.texcoord_index + 1]
 				};
@@ -51,7 +51,7 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 
 			if (index.normal_index != -1)
 			{
-				vertex.normal = {
+				vertex.myNormal = {
 					attrib.normals[3 * index.normal_index + 0],
 					attrib.normals[3 * index.normal_index + 1],
 					attrib.normals[3 * index.normal_index + 2]
@@ -62,16 +62,16 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 			if (uniqueVerts.count(vertex) == 0)
 			{
 				// update the bounds
-				min.x = glm::min(min.x, vertex.pos.x);
-				min.y = glm::min(min.y, vertex.pos.y);
-				min.z = glm::min(min.z, vertex.pos.z);
+				min.x = glm::min(min.x, vertex.myPos.x);
+				min.y = glm::min(min.y, vertex.myPos.y);
+				min.z = glm::min(min.z, vertex.myPos.z);
 
-				max.x = glm::max(max.x, vertex.pos.x);
-				max.y = glm::max(max.y, vertex.pos.y);
-				max.z = glm::max(max.z, vertex.pos.z);
+				max.x = glm::max(max.x, vertex.myPos.x);
+				max.y = glm::max(max.y, vertex.myPos.y);
+				max.z = glm::max(max.z, vertex.myPos.z);
 
-				// update radius
-				maxLen = glm::max(maxLen, glm::length(vertex.pos));
+				// update radius by finding the furthest away vert
+				maxLen = glm::max(maxLen, glm::length(vertex.myPos));
 
 				// push back the new vertex and record it's position
 				uniqueVerts[vertex] = aVertices.size(); // marking that new vertex is at this index

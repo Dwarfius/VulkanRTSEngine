@@ -1,6 +1,5 @@
 #include "Common.h"
 #include "Game.h"
-#include "Grid.h"
 #include "Graphics.h"
 #include "Input.h"
 #include "Audio.h"
@@ -133,7 +132,7 @@ void Game::RunMainThread()
 {
 	glfwPollEvents();
 
-	if (myRenderThread->HasWork())
+	if (myRenderThread->IsBusy())
 	{
 		myRenderThread->InternalLoop();
 

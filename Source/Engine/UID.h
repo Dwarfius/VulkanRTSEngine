@@ -9,11 +9,11 @@ public:
 	UID();
 
 	// pass in char[33] array
-	void GetString(char* string) const;
+	void GetString(char* aString) const;
 
 	bool operator==(const UID& other) const
 	{
-		return mac == other.mac && time == other.time && rndNum == other.rndNum;
+		return myMac == other.myMac && myTime == other.myTime && myRndNum == other.myRndNum;
 	}
 
 private:
@@ -23,9 +23,9 @@ private:
 	friend struct std::hash<UID>;
 
 	// have 2 bytes unoccupied at the start - could reuse as a tag?
-	size_t mac;
-	uint32_t time;
-	uint32_t rndNum;
+	size_t myMac;
+	uint32_t myTime;
+	uint32_t myRndNum;
 };
 
 namespace std
@@ -35,9 +35,9 @@ namespace std
 	{
 		size_t operator()(const UID& key) const
 		{
-			return ((hash<size_t>()(key.mac) ^ 
-				(hash<uint32_t>()(key.time) << 1)) >> 1) ^ 
-				(hash<uint32_t>()(key.rndNum) << 1);
+			return ((hash<size_t>()(key.myMac) ^
+				(hash<uint32_t>()(key.myTime) << 1)) >> 1) ^
+				(hash<uint32_t>()(key.myRndNum) << 1);
 		}
 	};
 }

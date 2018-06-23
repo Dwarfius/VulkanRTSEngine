@@ -2,50 +2,50 @@
 #include "Terrain.h"
 #include "Graphics.h"
 
-void Terrain::Generate(string name, float step, glm::vec3 offset, float yScale, float uvScale)
+void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYScale, float anUvScale)
 {
-	this->step = step;
+	myStep = aStep;
 	unsigned char* pixels;
 	int channels;
-	pixels = Graphics::LoadTexture(name, &width, &height, &channels, 1);
+	pixels = Graphics::LoadTexture(aName, &myWidth, &myHeight, &channels, 1);
 
 	//first, creating the vertices
-	start = offset;
-	end = start + glm::vec3((width - 1) * step, 0, (height - 1) * step);
-	verts.reserve(height * width);
-	for (int y = 0; y < height; y++)
+	myStart = anOffset;
+	myEnd = myStart + glm::vec3((myWidth - 1) * myStep, 0, (myHeight - 1) * myStep);
+	myVerts.reserve(myHeight * myWidth);
+	for (int y = 0; y < myHeight; y++)
 	{
-		for (int x = 0; x < width; x++)
+		for (int x = 0; x < myWidth; x++)
 		{
 			Vertex v;
-			v.pos.x = x * step + offset.x;
-			v.pos.z = y * step + offset.z;
-			v.pos.y = pixels[y * width + x] / 255.f * yScale + offset.y;
-			v.uv.x = Wrap(static_cast<float>(x), uvScale);
-			v.uv.y = Wrap(static_cast<float>(y), uvScale);
-			verts.push_back(v);
+			v.myPos.x = x * myStep + anOffset.x;
+			v.myPos.z = y * myStep + anOffset.z;
+			v.myPos.y = pixels[y * myWidth + x] / 255.f * anYScale + anOffset.y;
+			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
+			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
+			myVerts.push_back(v);
 		}
 	}
 
-	center = offset + (end - start) / 2.f;
-	range = static_cast<float>(glm::sqrt(width * width + height * height));
+	myCenter = anOffset + (myEnd - myStart) / 2.f;
+	myRange = static_cast<float>(glm::sqrt(myWidth * myWidth + myHeight * myHeight));
 
 	//now creating indices
-	indices.reserve((height - 1) * (width - 1) * 6);
-	for (int y = 0; y < height - 1; y++)
+	myIndices.reserve((myHeight - 1) * (myWidth - 1) * 6);
+	for (int y = 0; y < myHeight - 1; y++)
 	{
-		for (int x = 0; x < width - 1; x++)
+		for (int x = 0; x < myWidth - 1; x++)
 		{
-			uint32_t tl = y * width + x;
+			uint32_t tl = y * myWidth + x;
 			uint32_t tr = tl + 1;
-			uint32_t bl = tl + width;
+			uint32_t bl = tl + myWidth;
 			uint32_t br = bl + 1;
-			indices.push_back(tl);
-			indices.push_back(bl);
-			indices.push_back(tr);
-			indices.push_back(br);
-			indices.push_back(tr);
-			indices.push_back(bl);
+			myIndices.push_back(tl);
+			myIndices.push_back(bl);
+			myIndices.push_back(tr);
+			myIndices.push_back(br);
+			myIndices.push_back(tr);
+			myIndices.push_back(bl);
 		}
 	}
 
@@ -56,12 +56,12 @@ float Terrain::GetHeight(glm::vec3 pos) const
 {
 	// finding the relative position
 	// + center cause rendering uses center anchors
-	float x = (pos.x + center.x) / step;
-	float y = (pos.z + center.z) / step;
+	float x = (pos.x + myCenter.x) / myStep;
+	float y = (pos.z + myCenter.z) / myStep;
 
 	// just to be safe - it's clamped to the edges
-	x = glm::clamp(x, 0.f, width - 2.f);
-	y = glm::clamp(y, 0.f, height - 2.f);
+	x = glm::clamp(x, 0.f, myWidth - 2.f);
+	y = glm::clamp(y, 0.f, myHeight - 2.f);
 
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
@@ -72,16 +72,16 @@ float Terrain::GetHeight(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	Vertex v0 = verts[yMin * width + xMin];
-	Vertex v1 = verts[yMax * width + xMin];
-	Vertex v2 = verts[yMin * width + xMax];
-	Vertex v3 = verts[yMax * width + xMax];
+	Vertex v0 = myVerts[yMin * myWidth + xMin];
+	Vertex v1 = myVerts[yMax * myWidth + xMin];
+	Vertex v2 = myVerts[yMin * myWidth + xMax];
+	Vertex v3 = myVerts[yMax * myWidth + xMax];
 
 	// getting the height
 	x -= xMin;
 	y -= yMin;
-	float botHeight = glm::mix(v0.pos.y, v2.pos.y, x);
-	float topHeight = glm::mix(v1.pos.y, v3.pos.y, x);
+	float botHeight = glm::mix(v0.myPos.y, v2.myPos.y, x);
+	float topHeight = glm::mix(v1.myPos.y, v3.myPos.y, x);
 	return glm::mix(botHeight, topHeight, y);
 }
 
@@ -89,12 +89,12 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 {
 	// finding the relative position
 	// + center cause rendering uses center anchors
-	float x = (pos.x + center.x) / step;
-	float y = (pos.z + center.z) / step;
+	float x = (pos.x + myCenter.x) / myStep;
+	float y = (pos.z + myCenter.z) / myStep;
 
 	// just to be safe - it's clamped to the edges
-	x = glm::clamp(x, 0.f, width - 2.f);
-	y = glm::clamp(y, 0.f, height - 2.f);
+	x = glm::clamp(x, 0.f, myWidth - 2.f);
+	y = glm::clamp(y, 0.f, myHeight - 2.f);
 
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
 
@@ -105,32 +105,38 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	Vertex v0 = verts[yMin * width + xMin];
-	Vertex v1 = verts[yMax * width + xMin];
-	Vertex v2 = verts[yMin * width + xMax];
-	Vertex v3 = verts[yMax * width + xMax];
+	Vertex v0 = myVerts[yMin * myWidth + xMin];
+	Vertex v1 = myVerts[yMax * myWidth + xMin];
+	Vertex v2 = myVerts[yMin * myWidth + xMax];
+	Vertex v3 = myVerts[yMax * myWidth + xMax];
 
 	// getting the normal
 	x -= xMin;
 	y -= yMin;
-	glm::vec3 botNorm = mix(v0.normal, v2.normal, x);
-	glm::vec3 topNorm = mix(v1.normal, v3.normal, x);
+	glm::vec3 botNorm = mix(v0.myNormal, v2.myNormal, x);
+	glm::vec3 topNorm = mix(v1.myNormal, v3.myNormal, x);
 	return glm::mix(botNorm, topNorm, y);
+}
+
+bool Terrain::Collides(glm::vec3 aPos, float aRange) const
+{
+	float myHeight = GetHeight(aPos);
+	return myHeight > aPos.y - aRange;
 }
 
 void Terrain::Normalize()
 {
 	//holds the sum of all surface normals per vertex
-	vector<glm::vec3> surfNormals(indices.size(), glm::vec3());
+	vector<glm::vec3> surfNormals(myIndices.size(), glm::vec3());
 	//gotta update the faces
-	for (int i = 0; i < indices.size(); i += 3)
+	for (int i = 0; i < myIndices.size(); i += 3)
 	{
-		int i1 = indices.at(i);
-		glm::vec3 v1 = verts.at(i1).pos;
-		int i2 = indices.at(i + 1);
-		glm::vec3 v2 = verts.at(i2).pos;
-		int i3 = indices.at(i + 2);
-		glm::vec3 v3 = verts.at(i3).pos;
+		int i1 = myIndices.at(i);
+		glm::vec3 v1 = myVerts.at(i1).myPos;
+		int i2 = myIndices.at(i + 1);
+		glm::vec3 v2 = myVerts.at(i2).myPos;
+		int i3 = myIndices.at(i + 2);
+		glm::vec3 v3 = myVerts.at(i3).myPos;
 
 		//calculating the surf normal
 		glm::vec3 u = v2 - v1;
@@ -146,19 +152,15 @@ void Terrain::Normalize()
 		surfNormals[i3] += normal;
 	}
 
-	for (int vertInd = 0; vertInd < verts.size(); vertInd++)
-		verts.at(vertInd).normal = normalize(surfNormals[vertInd]);
+	for (int vertInd = 0; vertInd < myVerts.size(); vertInd++)
+	{
+		myVerts.at(vertInd).myNormal = normalize(surfNormals[vertInd]);
+	}
 }
 
-float Terrain::Wrap(float val, float range) const
+float Terrain::Wrap(float aVal, float aRange) const
 {
-	float cosA = cos((val / range) * glm::pi<float>() / 2);
+	float cosA = cos((aVal / aRange) * glm::pi<float>() / 2);
 	float normalized = (cosA + 1) / 2;
 	return normalized;
-}
-
-bool Terrain::Collides(glm::vec3 pos, float range) const
-{
-	float height = GetHeight(pos);
-	return height > pos.y - range;
 }

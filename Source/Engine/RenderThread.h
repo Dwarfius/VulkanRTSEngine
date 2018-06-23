@@ -14,29 +14,28 @@ public:
 	RenderThread();
 	~RenderThread();
 
-	void Init(bool useVulkan, const vector<Terrain*>* aTerrainSet);
+	void Init(bool anUseVulkan, const vector<Terrain*>* aTerrainSet);
 	void Work();
-	bool IsBusy() const { return workPending; }
-	void RequestSwitch() { needsSwitch = true; }
+	bool IsBusy() const { return myHasWorkPending; }
+	void RequestSwitch() { myNeedsSwitch = true; }
 	GLFWwindow* GetWindow() const;
 
-	Graphics* GetGraphics() { return graphics.get(); }
-	const Graphics* GetGraphics() const { return graphics.get(); }
+	Graphics* GetGraphics() { return myGraphics.get(); }
+	const Graphics* GetGraphics() const { return myGraphics.get(); }
 
-	void AddRenderable(const GameObject* go);
+	void AddRenderable(const GameObject* aGo);
 
 	void InternalLoop();
-	bool HasWork() const { return workPending; }
 
 private:
-	const vector<Terrain*>* terrains;
-	unique_ptr<Graphics> graphics;
-	bool usingVulkan;
+	const vector<Terrain*>* myTerrains;
+	unique_ptr<Graphics> myGraphics;
+	bool myIsUsingVulkan;
 
 	// TODO: separate gameobject and renderable
 	TrippleBuffer<vector<const GameObject*>> myTrippleRenderables;
 
-	atomic<bool> needsSwitch;
-	atomic<bool> workPending;
+	atomic<bool> myNeedsSwitch;
+	atomic<bool> myHasWorkPending;
 };
 

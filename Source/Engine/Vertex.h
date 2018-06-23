@@ -2,13 +2,13 @@
 
 struct Vertex
 {
-	glm::vec3 pos;
-	glm::vec2 uv;
-	glm::vec3 normal;
+	glm::vec3 myPos;
+	glm::vec2 myUv;
+	glm::vec3 myNormal;
 
 	bool operator==(const Vertex& other) const
 	{
-		return pos == other.pos && uv == other.uv && normal == other.normal;
+		return myPos == other.myPos && myUv == other.myUv && myNormal == other.myNormal;
 	}
 };
 
@@ -18,9 +18,9 @@ namespace std
 	{
 		size_t operator()(Vertex const& vertex) const
 		{
-			return ((hash<glm::vec3>()(vertex.pos) ^
-				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.uv) << 1);
+			return ((hash<glm::vec3>()(vertex.myPos) ^
+				(hash<glm::vec3>()(vertex.myNormal) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.myUv) << 1);
 		}
 	};
 }

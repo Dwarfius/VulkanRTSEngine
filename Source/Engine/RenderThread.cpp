@@ -9,95 +9,101 @@
 #include "GameObject.h"
 
 RenderThread::RenderThread()
-	: usingVulkan(false)
-	, terrains(nullptr)
-	, workPending(false)
-	, needsSwitch(false)
+	: myIsUsingVulkan(false)
+	, myTerrains(nullptr)
+	, myHasWorkPending(false)
+	, myNeedsSwitch(false)
 {
 }
 
 RenderThread::~RenderThread()
 {
-	graphics->CleanUp();
+	myGraphics->CleanUp();
 }
 
-void RenderThread::Init(bool useVulkan, const vector<Terrain*>* aTerrainSet)
+void RenderThread::Init(bool anUseVulkan, const vector<Terrain*>* aTerrainSet)
 {
-	usingVulkan = useVulkan;
-	terrains = aTerrainSet;
+	assert(aTerrainSet);
+	assert(aTerrainSet->size() > 0);
 
-	if (usingVulkan)
+	myIsUsingVulkan = anUseVulkan;
+	myTerrains = aTerrainSet;
+
+	if (myIsUsingVulkan)
 	{
-		graphics = make_unique<GraphicsVK>();
+		myGraphics = make_unique<GraphicsVK>();
 		Game::GetInstance()->GetCamera()->InvertProj();
 	}
 	else
 	{
-		graphics = make_unique<GraphicsGL>();
+		myGraphics = make_unique<GraphicsGL>();
 	}
-	graphics->SetMaxThreads(thread::hardware_concurrency());
-	graphics->Init(*terrains);
-	Input::SetWindow(graphics->GetWindow());
+	myGraphics->SetMaxThreads(thread::hardware_concurrency());
+	myGraphics->Init(*myTerrains);
+	Input::SetWindow(myGraphics->GetWindow());
 }
 
 void RenderThread::Work()
 {
-	workPending = true;
+	myHasWorkPending = true;
 }
 
 GLFWwindow* RenderThread::GetWindow() const
 {
-	return graphics->GetWindow();
+	return myGraphics->GetWindow();
 }
 
-void RenderThread::AddRenderable(const GameObject* go)
+void RenderThread::AddRenderable(const GameObject* aGo)
 {
 	vector<const GameObject*>& buffer = myTrippleRenderables.GetCurrent();
-	buffer.push_back(go);
+	buffer.push_back(aGo);
 }
 
 void RenderThread::InternalLoop()
 {
-	if (Game::GetInstance()->IsPaused() || !workPending)
+	if (Game::GetInstance()->IsPaused() || !myHasWorkPending)
 		this_thread::yield();
 
-	// TODO: introduce proper assert macros
-	if (!usingVulkan)
+	if (!myIsUsingVulkan)
 	{
+		// TODO: introduce proper assert macros
 		assert(glfwGetCurrentContext());
 	}
 	
-	if (needsSwitch)
+	if (myNeedsSwitch)
 	{
+		// TODO: replace with Init call
 		printf("[Info] Switching renderer...\n");
-		usingVulkan = !usingVulkan;
+		myIsUsingVulkan = !myIsUsingVulkan;
 
-		graphics->CleanUp();
+		myGraphics->CleanUp();
 
 		printf("\n");
-		if (usingVulkan)
-			graphics = make_unique<GraphicsVK>();
+		if (myIsUsingVulkan)
+		{
+			myGraphics = make_unique<GraphicsVK>();
+		}
 		else
 		{
-			graphics = make_unique<GraphicsGL>();
-			glfwMakeContextCurrent(graphics->GetWindow());
+			myGraphics = make_unique<GraphicsGL>();
+			glfwMakeContextCurrent(myGraphics->GetWindow());
 		}
-		graphics->SetMaxThreads(thread::hardware_concurrency());
-		graphics->Init(*terrains);
+		myGraphics->SetMaxThreads(thread::hardware_concurrency());
+		myGraphics->Init(*myTerrains);
 
 		Game::GetInstance()->GetCamera()->InvertProj();
-		Input::SetWindow(graphics->GetWindow());
+		Input::SetWindow(myGraphics->GetWindow());
 
-		needsSwitch = false;
+		myNeedsSwitch = false;
 	}
 
-	graphics->ResetRenderCalls();
+	myGraphics->ResetRenderCalls();
 
 	// update the mvp
 	Game::GetInstance()->GetCamera()->Recalculate();
 
 	// the current render queue has been used up, we can fill it up again
-	graphics->BeginGather();
+	myGraphics->BeginGather();
 
 	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetCurrent();
 	myTrippleRenderables.Advance();
@@ -105,12 +111,14 @@ void RenderThread::InternalLoop()
 
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
-		[&](const GameObject* go) {
-		if (cam.CheckSphere(go->GetTransform().GetPos(), go->GetRadius()))
-			graphics->Render(cam, go);
+		[&](const GameObject* aGo) {
+		if (cam.CheckSphere(aGo->GetTransform().GetPos(), aGo->GetRadius()))
+		{
+			myGraphics->Render(cam, aGo);
+		}
 	});
 
-	graphics->Display();
+	myGraphics->Display();
 
-	workPending = false;
+	myHasWorkPending = false;
 }

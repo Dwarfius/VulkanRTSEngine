@@ -1,104 +1,99 @@
 #include "Common.h"
 #include "Input.h"
 
-GLFWwindow* Input::window = nullptr;
-char Input::kbState[keyCount];
-char Input::mState[mButtonCount];
-glm::vec2 Input::oldPos, Input::pos;
+GLFWwindow* Input::ourWindow = nullptr;
+char Input::ourKbState[ourKeyCount];
+char Input::ourMState[ourMButtonCount];
+glm::vec2 Input::ourOldPos, Input::ourPos;
 
-void Input::SetWindow(GLFWwindow *w)
+void Input::SetWindow(GLFWwindow *aWindow)
 {
 	// cleanup old window if it was set
-	if (window)
+	if (ourWindow)
 	{
-		glfwSetKeyCallback(window, nullptr);
-		glfwSetMouseButtonCallback(window, nullptr);
+		glfwSetKeyCallback(ourWindow, nullptr);
+		glfwSetMouseButtonCallback(ourWindow, nullptr);
 	}
 
-	window = w;
-	glfwSetKeyCallback(window, Input::KeyCallback);
-	glfwSetMouseButtonCallback(window, Input::MouseCallback);
+	ourWindow = aWindow;
+	glfwSetKeyCallback(ourWindow, Input::KeyCallback);
+	glfwSetMouseButtonCallback(ourWindow, Input::MouseCallback);
 
-	memset(kbState, 0, sizeof(kbState));
-	memset(mState, 0, sizeof(mState));
+	memset(ourKbState, 0, sizeof(ourKbState));
+	memset(ourMState, 0, sizeof(ourMState));
 
 	// Update them to the same value to avoid issues
-	pos = oldPos = GetMousePos();
+	ourPos = ourOldPos = GetMousePos();
 }
 
 void Input::Update()
 {
-	oldPos = pos;
-	pos = GetMousePos();
+	ourOldPos = ourPos;
+	ourPos = GetMousePos();
 }
 
 // This needs to be called at the end of the update loop - it gets around the slow repeat rate of OS
 // by automatically marking the button as repeated
 void Input::PostUpdate()
 {
-	for (int i = 0; i < keyCount; i++)
+	for (int i = 0; i < ourKeyCount; i++)
 	{
-		if (kbState[i] == GLFW_PRESS)
+		if (ourKbState[i] == GLFW_PRESS)
 		{
-			kbState[i] = GLFW_REPEAT;
+			ourKbState[i] = GLFW_REPEAT;
 		}
 	}
-	for (int i = 0; i < mButtonCount; i++)
+	for (int i = 0; i < ourMButtonCount; i++)
 	{
-		if (mState[i] == GLFW_PRESS)
+		if (ourMState[i] == GLFW_PRESS)
 		{
-			mState[i] = GLFW_REPEAT;
+			ourMState[i] = GLFW_REPEAT;
 		}
 	}
 }
 
 bool Input::GetKey(char asciiCode)
 {
-	return kbState[asciiCode] == GLFW_PRESS || kbState[asciiCode] == GLFW_REPEAT;
+	return ourKbState[asciiCode] == GLFW_PRESS || ourKbState[asciiCode] == GLFW_REPEAT;
 }
 
 bool Input::GetKeyPressed(char asciiCode)
 {
-	return kbState[asciiCode] == GLFW_PRESS;
+	return ourKbState[asciiCode] == GLFW_PRESS;
 }
 
 glm::vec2 Input::GetMousePos()
 {
 	double x, y;
-	glfwGetCursorPos(window, &x, &y);
+	glfwGetCursorPos(ourWindow, &x, &y);
 	return glm::vec2(x, y);
 }
 
 glm::vec2 Input::GetMouseDelta()
 {
-	return pos - oldPos;
+	return ourPos - ourOldPos;
 }
 
 bool Input::GetMouseBtn(char btn)
 {
-	return mState[btn] == GLFW_PRESS || mState[btn] == GLFW_REPEAT;
+	return ourMState[btn] == GLFW_PRESS || ourMState[btn] == GLFW_REPEAT;
 }
 
 bool Input::GetMouseBtnPressed(char btn)
 {
-	return mState[btn] == GLFW_PRESS;
+	return ourMState[btn] == GLFW_PRESS;
 }
 
-void Input::KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods)
+void Input::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods)
 {
-	// safety check
-	if (key < 0 || key >= 400)
-		printf("[Warning] Unrecognized key pressed(key: %d, scanCode: %d)\n", key, scanCode);
-	else
-		kbState[RemapKey(key)] = action;
+	assert(aKey >= 0 && aKey < 400);
+	ourKbState[RemapKey(aKey)] = anAction;
 }
 
-void Input::MouseCallback(GLFWwindow *window, int button, int action, int mods)
+void Input::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods)
 {
-	if (button < 0 || button >= 8)
-		printf("[Warning] Unrecognized mouse btn pressed(btn: %d)\n", button);
-	else
-		mState[button] = action;
+	assert(aButton >= 0 && aButton < 400);
+	ourMState[aButton] = anAction;
 }
 
 int Input::RemapKey(int key)

@@ -16,8 +16,8 @@ public:
 	glm::vec3 GetUp() { if (myDirtyDirs) UpdateRot(); return myUp; }
 
 	glm::vec3 GetPos() const { return myPos; }
-	void Translate(glm::vec3 delta) { myPos += delta; myDirtyModel = true; }
-	void SetPos(glm::vec3 newPos) { myPos = newPos; myDirtyModel = true; }
+	void Translate(glm::vec3 aDelta) { myPos += aDelta; myDirtyModel = true; }
+	void SetPos(glm::vec3 aNewPos) { myPos = aNewPos; myDirtyModel = true; }
 
 	glm::vec3 GetScale() const { return myScale; }
 	void SetScale(glm::vec3 aScale) { myScale = aScale; myDirtyModel = true; }
@@ -34,7 +34,7 @@ public:
 	const glm::mat4& GetModelMatrix();
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
-	static glm::vec3 RotateAround(glm::vec3 point, glm::vec3 refPoint, glm::vec3 angles);
+	static glm::vec3 RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles);
 
 private:
 	glm::mat4 myRotM, myModelM;
@@ -50,5 +50,5 @@ private:
 	void UpdateRot();
 	void UpdateModel();
 
-	glm::quat RotationBetweenVectors(glm::vec3 start, glm::vec3 dest);
+	glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
 };

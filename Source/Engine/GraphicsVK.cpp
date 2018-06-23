@@ -391,7 +391,7 @@ void GraphicsVK::Display()
 		size_t currentSlot = 0;
 		for (size_t pipeline = 0, pipelinesLength = myPipelines.size(); pipeline < pipelinesLength; pipeline++)
 		{
-			for (int thread = 0; thread < myMaxThreads; thread++)
+			for (uint32_t thread = 0; thread < myMaxThreads; thread++)
 			{
 				allBuffers[currentSlot++] = perThreadBuffers[thread][pipeline];
 			}
@@ -783,7 +783,7 @@ bool GraphicsVK::IsSuitable(const vk::PhysicalDevice& aDevice)
 			foundQueues[0] |= bool(prop.queueFlags & vk::QueueFlagBits::eGraphics);
 			foundQueues[1] |= bool(prop.queueFlags & vk::QueueFlagBits::eCompute);
 			foundQueues[2] |= bool(prop.queueFlags & vk::QueueFlagBits::eTransfer);
-			foundQueues[3] |= aDevice.getSurfaceSupportKHR(i, mySurface);
+			foundQueues[3] |= aDevice.getSurfaceSupportKHR(i, mySurface) == VK_TRUE;
 			i++;
 		}
 		for (int i = 0; i < 4; i++)
@@ -1154,14 +1154,14 @@ void GraphicsVK::CreateCommandResources()
 		// now the secondary command buffers
 		// has to be an extra pool cause recording to buffer involves accessing pool, 
 		// concurrent use of which is prohibited
-		for (int thread = 0; thread < myMaxThreads; thread++)
+		for (uint32_t thread = 0; thread < myMaxThreads; thread++)
 		{
 			myGraphSecCmdPools.push_back(myDevice.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, myQueues.myGraphicsFamIndex }));
 		}
 		TrippleBuffer<PerThreadCmdBuffers>::InternalBuffer& internalBuffer = mySecCmdBuffers.GetInternalBuffer();
 		for (int image = 0; image < 3; image++)
 		{
-			for (int thread = 0; thread < myMaxThreads; thread++)
+			for (uint32_t thread = 0; thread < myMaxThreads; thread++)
 			{
 				internalBuffer[image].push_back(myDevice.allocateCommandBuffers({ myGraphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)ourShadersToLoad.size() }));
 			}
@@ -1488,11 +1488,11 @@ array<vk::VertexInputAttributeDescription, 3> GraphicsVK::GetAttribDescriptions(
 {
 	array<vk::VertexInputAttributeDescription, 3> descs = {
 		// vec3 pos
-		vk::VertexInputAttributeDescription { 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos) }, 
+		vk::VertexInputAttributeDescription { 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, myPos) }, 
 		// vec2 uv
-		vk::VertexInputAttributeDescription { 1, 0, vk::Format::eR32G32Sfloat,    offsetof(Vertex, uv) }, 
+		vk::VertexInputAttributeDescription { 1, 0, vk::Format::eR32G32Sfloat,    offsetof(Vertex, myUv) }, 
 		// vec3 normal
-		vk::VertexInputAttributeDescription { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal) }, 
+		vk::VertexInputAttributeDescription { 2, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, myNormal) }, 
 	};
 	return descs;
 }

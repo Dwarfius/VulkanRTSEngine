@@ -5,31 +5,31 @@
 class Terrain
 {
 public:
-	void Generate(string name, float step, glm::vec3 offest, float yScale, float uvScale);
+	void Generate(string aName, float aStep, glm::vec3 anOffset, float anYScale, float anUvScale);
 	
-	auto GetVertBegin() const { return verts.begin(); }
-	auto GetVertEnd() const { return verts.end(); }
-	auto GetIndBegin() const { return indices.begin(); }
-	auto GetIndEnd() const { return indices.end(); }
+	vector<Vertex>::const_iterator GetVertBegin() const { return myVerts.begin(); }
+	vector<Vertex>::const_iterator GetVertEnd() const { return myVerts.end(); }
+	vector<uint32_t>::const_iterator GetIndBegin() const { return myIndices.begin(); }
+	vector<uint32_t>::const_iterator GetIndEnd() const { return myIndices.end(); }
 
-	glm::vec3 GetCenter() const { return center; }
-	float GetRange() const { return range; }
+	glm::vec3 GetCenter() const { return myCenter; }
+	float GetRange() const { return myRange; }
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
 
-	bool Collides(glm::vec3 pos, float range) const;
+	bool Collides(glm::vec3 aPos, float aRange) const;
 
 private:
-	vector<Vertex> verts;
-	vector<uint32_t> indices;
+	vector<Vertex> myVerts;
+	vector<uint32_t> myIndices;
 
-	int width, height;
-	glm::vec3 start, end;
-	glm::vec3 center;
-	float range, step;
+	int myWidth, myHeight;
+	glm::vec3 myStart, myEnd;
+	glm::vec3 myCenter;
+	float myRange, myStep;
 
 	void Normalize();
 
 	// wraps the val value around [0;range] range
-	float Wrap(float val, float range) const;
+	float Wrap(float aVal, float aRange) const;
 };

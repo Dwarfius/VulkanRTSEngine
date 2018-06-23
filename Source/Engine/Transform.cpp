@@ -56,15 +56,31 @@ void Transform::RotateToUp(glm::vec3 aNewUp)
 	UpdateRot();
 }
 
+const glm::mat4& Transform::GetModelMatrix()
+{
+	if (myDirtyModel || myDirtyDirs)
+	{ 
+		UpdateModel(); 
+	} 
+	return myModelM;
+}
+
+glm::vec3 Transform::RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles)
+{
+	aPoint -= aRefPoint;
+	aPoint = glm::quat(anAngles) * aPoint;
+	return aPoint + aRefPoint;
+}
+
 void Transform::UpdateRot()
 {
 	// making sure that it's a proper unit quat
 	myRotation = glm::normalize(myRotation);
 	myRotM = glm::mat4_cast(myRotation);
 
-	myRight   = myRotM * glm::vec4(-1, 0, 0, 0); // why does this has to be inverted?
-	myUp      = myRotM * glm::vec4(0,  1, 0, 0);
-	myForward = myRotM * glm::vec4(0,  0, 1, 0);
+	myRight = myRotM * glm::vec4(-1, 0, 0, 0); // why does this has to be inverted?
+	myUp = myRotM * glm::vec4(0, 1, 0, 0);
+	myForward = myRotM * glm::vec4(0, 0, 1, 0);
 
 	myDirtyDirs = false;
 }
@@ -84,30 +100,14 @@ void Transform::UpdateModel()
 	myDirtyModel = false;
 }
 
-const glm::mat4& Transform::GetModelMatrix()
-{
-	if (myDirtyModel || myDirtyDirs)
-	{ 
-		UpdateModel(); 
-	} 
-	return myModelM;
-}
-
-glm::vec3 Transform::RotateAround(glm::vec3 point, glm::vec3 refPoint, glm::vec3 angles)
-{
-	point -= refPoint;
-	point = glm::quat(angles) * point;
-	return point + refPoint;
-}
-
 // the quaternion needed to rotate v1 so that it matches v2
 // thank you http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/
-glm::quat Transform::RotationBetweenVectors(glm::vec3 start, glm::vec3 dest)
+glm::quat Transform::RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest)
 {
-	start = normalize(start);
-	dest = normalize(dest);
+	aStart = glm::normalize(aStart);
+	aDest = glm::normalize(aDest);
 
-	float cosTheta = dot(start, dest);
+	float cosTheta = glm::dot(aStart, aDest);
 	glm::vec3 rotationAxis;
 
 	if (cosTheta == -1) 
@@ -115,17 +115,17 @@ glm::quat Transform::RotationBetweenVectors(glm::vec3 start, glm::vec3 dest)
 		// special case when vectors in opposite directions:
 		// there is no "ideal" rotation axis
 		// So guess one; any will do as long as it's perpendicular to start
-		rotationAxis = glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), start);
+		rotationAxis = glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), aStart);
 		if (length2(rotationAxis) < 0.01) // bad luck, they were parallel, try again!
 		{
-			rotationAxis = glm::cross(glm::vec3(1.0f, 0.0f, 0.0f), start);
+			rotationAxis = glm::cross(glm::vec3(1.0f, 0.0f, 0.0f), aStart);
 		}
 
 		rotationAxis = normalize(rotationAxis);
 		return angleAxis(180.f, rotationAxis);
 	}
 
-	rotationAxis = cross(start, dest);
+	rotationAxis = glm::cross(aStart, aDest);
 
 	float s = sqrt((1 + cosTheta) * 2);
 	float invS = 1 / s;

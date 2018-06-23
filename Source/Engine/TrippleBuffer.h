@@ -9,26 +9,27 @@ public:
 	TrippleBuffer();
 
 	void Advance();
-	T& GetCurrent() { return buffers[currBuffer]; }
+	T& GetCurrent() { return myBuffers[myCurrBuffer]; }
 
-	InternalBuffer& GetInternalBuffer() { return buffers; }
+	// returns the whole internal array
+	InternalBuffer& GetInternalBuffer() { return myBuffers; }
 
 private:
-	InternalBuffer buffers;
-	int currBuffer;
+	InternalBuffer myBuffers;
+	int myCurrBuffer;
 };
 
 // Definition
 template<typename T>
 TrippleBuffer<T>::TrippleBuffer()
-	: currBuffer(0)
+	: myCurrBuffer(0)
 {
 }
 
 template<typename T>
 void TrippleBuffer<T>::Advance()
 {
-	currBuffer++;
-	if (currBuffer == 3)
-		currBuffer = 0;
+	myCurrBuffer++;
+	if (myCurrBuffer == 3)
+		myCurrBuffer = 0;
 }

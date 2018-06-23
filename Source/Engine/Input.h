@@ -2,36 +2,37 @@
 
 struct GLFWwindow;
 
+// TODO: will need to transition from ascii codes to enum vals for interface
 class Input
 {
 public:
-	static void SetWindow(GLFWwindow *w);
+	static void SetWindow(GLFWwindow* aWindow);
 	static void Update();
 	static void PostUpdate();
 
 	// is the key down
-	static bool GetKey(char asciiCode);
+	static bool GetKey(char anAsciiCode);
 	// was it just pressed this frame
-	static bool GetKeyPressed(char asciiCode);
+	static bool GetKeyPressed(char anAsciiCode);
 
 	static glm::vec2 GetMousePos();
 	static glm::vec2 GetMouseDelta();
 
 	// is the btn down
-	static bool GetMouseBtn(char btn);
+	static bool GetMouseBtn(char aBtn);
 	// was the btn just pressed this frame
-	static bool GetMouseBtnPressed(char btn);
+	static bool GetMouseBtnPressed(char aBtn);
 
 private:
-	static GLFWwindow *window;
+	static GLFWwindow* ourWindow;
 
-	static const int keyCount = 400;
-	static char kbState[keyCount];
-	static const int mButtonCount = 8;
-	static char mState[mButtonCount];
-	static glm::vec2 oldPos, pos;
+	static const int ourKeyCount = 400;
+	static char ourKbState[ourKeyCount];
+	static const int ourMButtonCount = 8;
+	static char ourMState[ourMButtonCount];
+	static glm::vec2 ourOldPos, ourPos;
 
-	static void KeyCallback(GLFWwindow *window, int key, int scanCode, int action, int mods);
-	static void MouseCallback(GLFWwindow *window, int button, int action, int mods);
-	static int RemapKey(int key);
+	static void KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods);
+	static void MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods);
+	static int RemapKey(int aKey);
 };

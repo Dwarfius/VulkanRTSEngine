@@ -31,20 +31,20 @@ void UID::Init()
 UID UID::Create()
 {
 	UID newUID;
-	newUID.mac = thisPCMac;
-	newUID.time = std::chrono::system_clock::now().time_since_epoch().count();
-	newUID.rndNum = randomGen();
+	newUID.myMac = thisPCMac;
+	newUID.myTime = std::chrono::system_clock::now().time_since_epoch().count();
+	newUID.myRndNum = randomGen();
 	return newUID;
 }
 
 UID::UID()
-	: mac(0)
-	, time(0)
-	, rndNum(0)
+	: myMac(0)
+	, myTime(0)
+	, myRndNum(0)
 {
 }
 
 void UID::GetString(char* string) const
 {
-	sprintf(string, "%0.16zX%0.8X%0.8X", mac, time, rndNum);
+	sprintf(string, "%0.16zX%0.8X%0.8X", myMac, myTime, myRndNum);
 }
