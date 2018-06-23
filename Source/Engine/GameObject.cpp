@@ -42,7 +42,7 @@ void GameObject::Update(float aDeltaTime)
 	if (myRenderer)
 	{
 		Shader::UniformValue val;
-		val.m = myCurrentMat;
+		val.myMatrix = myCurrentMat;
 		myUniforms["Model"] = val;
 	}
 }

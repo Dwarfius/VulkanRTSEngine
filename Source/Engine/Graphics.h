@@ -7,17 +7,18 @@ struct GLFWwindow;
 class Camera;
 class Terrain;
 
-const vector<string> shadersToLoad = {
+// TODO: need to move resource-load to files
+const static vector<string> ourShadersToLoad = {
 	"base",
 	"debug"
 };
-const vector<string> modelsToLoad = {
+const static vector<string> ourModelsToLoad = {
 	"cube",
-	"%t0",
+	"%t0", // TODO: need to look into better terrain loading approach
 	"Tank",
 	"sphere"
 };
-const vector<string> texturesToLoad = {
+const static vector<string> ourTexturesToLoad = {
 	"chalet.jpg",
 	"test.jpg",
 	"CubeUnwrap.jpg",
@@ -32,57 +33,59 @@ const vector<string> texturesToLoad = {
 typedef uint32_t ModelId;
 struct Model 
 {
-	uint32_t id;
-	size_t vertexCount, vertexOffset;
-	size_t indexCount, indexOffset;
-	glm::vec3 center;
-	float sphereRadius;
+	uint32_t myId;
+	size_t myVertexCount, myVertexOffset;
+	size_t myIndexCount, myIndexOffset;
+	glm::vec3 myCenter;
+	float mySphereRadius;
 
 	Model()
-		: id(0)
-		, vertexCount(0)
-		, vertexOffset(0)
-		, indexCount(0)
-		, indexOffset(0)
-		, center(0.f, 0.f, 0.f)
-		, sphereRadius(0)
+		: myId(0)
+		, myVertexCount(0)
+		, myVertexOffset(0)
+		, myIndexCount(0)
+		, myIndexOffset(0)
+		, myCenter(0.f, 0.f, 0.f)
+		, mySphereRadius(0)
 	{
 
 	}
 
-	// OpenGL resource tracking
-	vector<uint32_t> buffers; 
+	// TODO: look into refactoring the GL buffers out to GL internals system - no need to expose this to the user
+	// OpenGL resource tracking (VBO + EBO) - has to be here to support vector<Model> Graphics::models
+	uint32_t myGLBuffers[2]; 
 };
 
 // Shader
 typedef uint32_t ShaderId;
 struct Shader 
 {
-	uint32_t id;
+	uint32_t myId;
 
 	enum UniformType { 
 		Int, Float, Vec2, 
 		Vec3, Vec4, Mat4 
 	};
 	union UniformValue {
-		int32_t i;
-		float f;
-		glm::vec2 v2;
-		glm::vec3 v3;
-		glm::vec4 v4;
-		glm::mat4 m;
+		int32_t myInt;
+		float myFloat;
+		glm::vec2 myV2;
+		glm::vec3 myV3;
+		glm::vec4 myV4;
+		glm::mat4 myMatrix;
 
 		UniformValue() {}
 	};
 	struct BindPoint 
 	{ 
-		GLint loc; 
-		UniformType type;
+		GLint myLocation; 
+		UniformType myType;
 	};
-	unordered_map<string, BindPoint> uniforms;
+	unordered_map<string, BindPoint> myUniforms;
 
-	// OpenGL resource tracking
-	vector<uint32_t> shaderSources; 
+	// TODO: refactor this out to GL system
+	// OpenGL resource tracking - Frag and Vert shaders
+	uint32_t myGLSources[2]; 
 };
 
 // Texture
@@ -91,43 +94,42 @@ typedef uint32_t TextureId;
 class Graphics
 {
 public:
-	virtual void Init(const vector<Terrain*>& terrains) = 0;
+	virtual void Init(const vector<Terrain*>& aTerrainList) = 0;
 	virtual void BeginGather() = 0;
-	virtual void Render(const Camera& cam, const GameObject *go) = 0;
+	virtual void Render(const Camera& aCam, const GameObject* aGO) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
 	
-	glm::vec3 GetModelCenter(ModelId m) const { return models[m].center; }
-	float GetModelRadius(ModelId m) const { return models[m].sphereRadius; }
+	glm::vec3 GetModelCenter(ModelId aModelId) const { return myModels[aModelId].myCenter; }
+	float GetModelRadius(ModelId aModelId) const { return myModels[aModelId].mySphereRadius; }
 
-	GLFWwindow* GetWindow() const { return window; }
+	GLFWwindow* GetWindow() const { return myWindow; }
 	
-	int GetRenderCalls() const { return renderCalls; }
-	void ResetRenderCalls() { renderCalls = 0; }
+	uint32_t GetRenderCalls() const { return myRenderCalls; }
+	void ResetRenderCalls() { myRenderCalls = 0; }
 
-	static float GetWidth() { return static_cast<float>(width); }
-	static float GetHeight() { return static_cast<float>(height); }
+	static float GetWidth() { return static_cast<float>(ourWidth); }
+	static float GetHeight() { return static_cast<float>(ourHeight); }
 
-	static void LoadModel(string name, vector<Vertex>& vertices, vector<uint32_t>& indices, glm::vec3& center, float& radius);
-	static unsigned char* LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels);
-	static void FreeTexture(void *data);
+	// TODO: replace aName with aPath
+	static void LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_t>& anIndices, glm::vec3& aCenter, float& aRadius);
+	static unsigned char* LoadTexture(string aName, int* aWidth, int* aHeight, int* aChannels, int aDesiredChannels);
+	static void FreeTexture(void* aData);
 
-	virtual void SetThreadingHint(glm::uint maxThreads) = 0;
+	// Notifies the rendering system about how many threads will access it
+	virtual void SetMaxThreads(uint32_t aMaxThreadCount) {};
 
 protected:
-	GLFWwindow *window;
-	static int width, height;
+	GLFWwindow* myWindow;
+	static int ourWidth, ourHeight;
 
-	static Graphics *activeGraphics;
-	static ModelId currModel;
-	static ShaderId currShader;
-	static TextureId currTexture;
+	static Graphics* ourActiveGraphics;
 
-	vector<Model> models;
+	vector<Model> myModels;
 
-	int renderCalls;
+	uint32_t myRenderCalls;
 
-	string readFile(const string& filename);
+	string ReadFile(const string& filename) const;
 
 	// need to have this copy here so that classes that 
 	// inherit from Graphics know what's available and 

@@ -33,7 +33,9 @@ public:
 
 	void AddComponent(ComponentBase* aComponent);
 	ComponentBase* GetComponent(int aType) const;
-	Renderer* GetRenderer() const { return myRenderer; }
+
+	const Renderer* GetRenderer() const { return myRenderer; }
+	Renderer* GetRenderer() { return myRenderer; }
 
 	void SetCollisionsEnabled(bool anEnabled) { myCollisionsEnabled = anEnabled; }
 	bool GetCollisionsEnabled() const { return myCollisionsEnabled; }

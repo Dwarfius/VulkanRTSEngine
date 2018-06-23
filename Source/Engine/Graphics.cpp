@@ -2,37 +2,38 @@
 #include "Graphics.h"
 #include "Camera.h"
 
-Graphics* Graphics::activeGraphics = NULL;
-ModelId Graphics::currModel;
-ShaderId Graphics::currShader;
-TextureId Graphics::currTexture;
-int Graphics::width = 800;
-int Graphics::height = 600;
+Graphics* Graphics::ourActiveGraphics = NULL;
+int Graphics::ourWidth = 800;
+int Graphics::ourHeight = 600;
 
-void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t> &indices, glm::vec3 &center, float &radius)
+void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_t>& anIndices, glm::vec3& aCenter, float& aRadius)
 {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
 
 	const string baseDir = "assets/objects/";
-	string fullName = baseDir + name + ".obj";
+	string fullName = baseDir + aName + ".obj";
 	string err;
-	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), baseDir.c_str());
-	if (!ret)
+	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), baseDir.c_str());
+	if (!loaded)
 	{
-		printf("[Error] Failed to load %s: %s\n", name.c_str(), err.c_str());
+		printf("[Error] Failed to load %s: %s\n", aName.c_str(), err.c_str());
 		return;
 	}
 	if (!err.empty())
+	{
 		printf("[Warning] Model loading warning: %s\n", err.c_str());
+	}
 
-	vertices.reserve(vertices.size() + attrib.vertices.size());
+	aVertices.reserve(aVertices.size() + attrib.vertices.size());
 	glm::vec3 min, max;
 	float maxLen = 0;
-	unordered_map<Vertex, uint32_t> uniqueVerts;
-	for (const auto& shape : shapes) {
-		for (const auto& index : shape.mesh.indices) {
+	unordered_map<Vertex, size_t> uniqueVerts;
+	for (const tinyobj::shape_t& shape : shapes) 
+	{
+		for (const tinyobj::index_t& index : shape.mesh.indices) 
+		{
 			Vertex vertex;
 			vertex.pos = {
 				attrib.vertices[3 * index.vertex_index + 0],
@@ -60,43 +61,38 @@ void Graphics::LoadModel(string name, vector<Vertex> &vertices, vector<uint32_t>
 			// checking for vertex duplication
 			if (uniqueVerts.count(vertex) == 0)
 			{
-				if (vertex.pos.x < min.x)
-					min.x = vertex.pos.x;
-				if (vertex.pos.y < min.y)
-					min.y = vertex.pos.y;
-				if (vertex.pos.z < min.z)
-					min.z = vertex.pos.z;
+				// update the bounds
+				min.x = glm::min(min.x, vertex.pos.x);
+				min.y = glm::min(min.y, vertex.pos.y);
+				min.z = glm::min(min.z, vertex.pos.z);
 
-				if (vertex.pos.x > max.x)
-					max.x = vertex.pos.x;
-				if (vertex.pos.y > max.y)
-					max.y = vertex.pos.y;
-				if (vertex.pos.z > max.z)
-					max.z = vertex.pos.z;
+				max.x = glm::max(max.x, vertex.pos.x);
+				max.y = glm::max(max.y, vertex.pos.y);
+				max.z = glm::max(max.z, vertex.pos.z);
 
-				uniqueVerts[vertex] = static_cast<uint32_t>(vertices.size()); // marking that new vertex is at this index
-				vertices.push_back(vertex); // adding it at the marked position
+				// update radius
+				maxLen = glm::max(maxLen, glm::length(vertex.pos));
 
-				float len = length(vertex.pos);
-				if (len > maxLen)
-					maxLen = len;
+				// push back the new vertex and record it's position
+				uniqueVerts[vertex] = aVertices.size(); // marking that new vertex is at this index
+				aVertices.push_back(vertex); // adding it at the marked position
 			}
 			
 			// reusing the vertex
-			indices.push_back(uniqueVerts[vertex]);
+			anIndices.push_back(uniqueVerts[vertex]);
 		}
 	}
-	//printf("[Info] Min: %f, %f, %f; Max: %f, %f, %f\n", min.x, min.y, min.z, max.x, max.y, max.z);
-	center = (max + min) / 2.f;
-	//printf("[Info] Center was %f, %f, %f for %s\n", center.x, center.y, center.z, name.c_str());
-	radius = maxLen;
+	aCenter = (max + min) / 2.f;
+	aRadius = maxLen;
 }
 
-unsigned char* Graphics::LoadTexture(string name, int *x, int *y, int *channels, int desiredChannels)
+unsigned char* Graphics::LoadTexture(string aName, int* aWidth, int* aHeight, int* aChannels, int aDesiredChannels)
 {
-	unsigned char* pixels = stbi_load(name.c_str(), x, y, channels, desiredChannels);
-	if (pixels == nullptr)
-		printf("[Error] Failed to load texture '%s'\n", name.c_str());
+	unsigned char* pixels = stbi_load(aName.c_str(), aWidth, aHeight, aChannels, aDesiredChannels);
+	if (!pixels)
+	{
+		printf("[Error] Failed to load texture '%s'\n", aName.c_str());
+	}
 	return pixels;
 }
 
@@ -105,7 +101,7 @@ void Graphics::FreeTexture(void *data)
 	stbi_image_free(data);
 }
 
-string Graphics::readFile(const string & filename)
+string Graphics::ReadFile(const string & filename) const
 {
 	// opening at the end allows us to know size quickly
 	ifstream file(filename, ios::ate | ios::binary);

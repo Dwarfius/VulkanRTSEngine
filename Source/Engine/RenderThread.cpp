@@ -35,7 +35,7 @@ void RenderThread::Init(bool useVulkan, const vector<Terrain*>* aTerrainSet)
 	{
 		graphics = make_unique<GraphicsGL>();
 	}
-	graphics->SetThreadingHint(thread::hardware_concurrency());
+	graphics->SetMaxThreads(thread::hardware_concurrency());
 	graphics->Init(*terrains);
 	Input::SetWindow(graphics->GetWindow());
 }
@@ -82,7 +82,7 @@ void RenderThread::InternalLoop()
 			graphics = make_unique<GraphicsGL>();
 			glfwMakeContextCurrent(graphics->GetWindow());
 		}
-		graphics->SetThreadingHint(thread::hardware_concurrency());
+		graphics->SetMaxThreads(thread::hardware_concurrency());
 		graphics->Init(*terrains);
 
 		Game::GetInstance()->GetCamera()->InvertProj();

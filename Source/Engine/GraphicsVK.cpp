@@ -7,26 +7,30 @@
 
 #include "Components/Renderer.h"
 
-const vector<const char *> GraphicsVK::requiredLayers = {
+const vector<const char *> GraphicsVK::ourRequiredLayers = {
 #ifdef _DEBUG
 	"VK_LAYER_LUNARG_standard_validation",
 #endif
 	"VK_LAYER_LUNARG_monitor"
 };
-const vector<const char *> GraphicsVK::requiredExtensions = {
+const vector<const char *> GraphicsVK::ourRequiredExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 GraphicsVK::GraphicsVK()
-	: myMaxThreads(1)
+	: Graphics()
+	, myMaxThreads(1)
 	, myThreadCounter(0)
-	, slotIndex(0)
+	, mySlotIndex(0)
+	, myIsPaused(false)
+	, myGatherStarted(false)
+	, mySwapchain(VK_NULL_HANDLE)
 {
-	mappedUboMem.GetInternalBuffer()[0] = nullptr;
+	myMappedUboMem.GetInternalBuffer()[0] = nullptr;
 }
 
 // Public Methods
-void GraphicsVK::Init(const vector<Terrain*>& terrains)
+void GraphicsVK::Init(const vector<Terrain*>& aTerrainList)
 {
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
@@ -34,11 +38,11 @@ void GraphicsVK::Init(const vector<Terrain*>& terrains)
 		return;
 	}
 
-	activeGraphics = this;
+	ourActiveGraphics = this;
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetWindowSizeCallback(window, OnWindowResized);
+	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - VK", nullptr, nullptr);
+	glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowSizeCallback(myWindow, OnWindowResized);
 
 	CreateInstance();
 	CreateSurface();
@@ -50,33 +54,33 @@ void GraphicsVK::Init(const vector<Terrain*>& terrains)
 	CreateCommandResources();
 	CreateUBO();
 	CreateDescriptorPool();
-	LoadResources(terrains);
+	LoadResources(aTerrainList);
 	CreateSampler();
 	CreateDescriptorSet();
 
 	ResetRenderCalls();
 }
 
-void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
+void GraphicsVK::LoadResources(const vector<Terrain*>& aTerrainList)
 {
 	// same order as GraphicsGL
 	// shaders
 	// define and create the only pipeline layout we use
 	vector<vk::DescriptorSetLayout> layouts{
-		uboLayout, samplerLayout
+		myUboLayout, mySamplerLayout
 	};
 	vk::PipelineLayoutCreateInfo layoutCreateInfo{
 		{},
 		(uint32_t)layouts.size(), layouts.data(), // layouts
 		0, nullptr  // push constant ranges
 	};
-	pipelineLayout = device.createPipelineLayout(layoutCreateInfo);
+	myPipelineLayout = myDevice.createPipelineLayout(layoutCreateInfo);
 
 	// Actual pipelines
-	for (string shaderName : shadersToLoad)
+	for (string shaderName : ourShadersToLoad)
 	{
 		vk::Pipeline pipeline = CreatePipeline(shaderName);
-		pipelines.push_back(pipeline);
+		myPipelines.push_back(pipeline);
 	}
 	// continue with UBOs. don't use a DEVICE_LOCAL memory, just write to mapped directly
 	// https://vulkan-tutorial.com/Uniform_buffers/Descriptor_layout_and_buffer
@@ -87,30 +91,30 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 		vector<uint32_t> indices;
 
 		// have to perform vert and index offset calculations as well
-		for (string modelName : modelsToLoad)
+		for (string modelName : ourModelsToLoad)
 		{
 			Model m;
-			m.vertexOffset = vertices.size();
-			m.indexOffset = indices.size();
+			m.myVertexOffset = vertices.size();
+			m.myIndexOffset = indices.size();
 			
 			if (modelName.substr(0, 2) == "%t")
 			{
 				int index = stoi(modelName.substr(2), nullptr);
-				const Terrain& t = *terrains[index];
+				const Terrain& t = *aTerrainList[index];
 				vertices.insert(vertices.end(), t.GetVertBegin(), t.GetVertEnd());
 				indices.insert(indices.end(), t.GetIndBegin(), t.GetIndEnd());
-				m.center = t.GetCenter();
-				m.sphereRadius = t.GetRange();
+				m.myCenter = t.GetCenter();
+				m.mySphereRadius = t.GetRange();
 			}
 			else
 			{
-				LoadModel(modelName, vertices, indices, m.center, m.sphereRadius);
+				LoadModel(modelName, vertices, indices, m.myCenter, m.mySphereRadius);
 			}
 
-			m.vertexCount = vertices.size() - m.vertexOffset;
-			m.indexCount = indices.size() - m.indexOffset;
+			m.myVertexCount = vertices.size() - m.myVertexOffset;
+			m.myIndexCount = indices.size() - m.myIndexOffset;
 
-			models.push_back(m);
+			myModels.push_back(m);
 		}
 
 		// creating staging vbo
@@ -122,21 +126,23 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
 		// now buffer the memory to staging
-		void* data = device.mapMemory(stagingMem, 0, size, {});
+		{
+			void* data = myDevice.mapMemory(stagingMem, 0, size, {});
 			memcpy(data, vertices.data(), size);
-		device.unmapMemory(stagingMem);
+			myDevice.unmapMemory(stagingMem);
+		}
 
-		// creating vbo device local
+		// creating vbo myDevice local
 		usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 		memProps = vk::MemoryPropertyFlagBits::eDeviceLocal;
-		CreateBuffer(size, usage, memProps, vbo, vboMem);
+		CreateBuffer(size, usage, memProps, myVbo, myVboMem);
 
 		// create the command buffer to perform cross-buffer copy
-		CopyBuffer(stagingBuff, vbo, size);
+		CopyBuffer(stagingBuff, myVbo, size);
 
 		// cleanup
-		device.destroyBuffer(stagingBuff);
-		device.freeMemory(stagingMem);
+		myDevice.destroyBuffer(stagingBuff);
+		myDevice.freeMemory(stagingMem);
 
 		// same for ibo
 		usage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -145,21 +151,23 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
 		// now buffer the memory to staging
-		data = device.mapMemory(stagingMem, 0, size, {});
+		{
+			void* data = myDevice.mapMemory(stagingMem, 0, size, {});
 			memcpy(data, indices.data(), size);
-		device.unmapMemory(stagingMem);
+			myDevice.unmapMemory(stagingMem);
+		}
 
-		// creating ibo device local
+		// creating ibo myDevice local
 		usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 		memProps = vk::MemoryPropertyFlagBits::eDeviceLocal;
-		CreateBuffer(size, usage, memProps, ibo, iboMem);
+		CreateBuffer(size, usage, memProps, myIbo, myIboMem);
 
 		// transfer
-		CopyBuffer(stagingBuff, ibo, size);
+		CopyBuffer(stagingBuff, myIbo, size);
 
 		// cleanup
-		device.destroyBuffer(stagingBuff);
-		device.freeMemory(stagingMem);
+		myDevice.destroyBuffer(stagingBuff);
+		myDevice.freeMemory(stagingMem);
 	}
 
 	// textures
@@ -173,9 +181,9 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 		CreateBuffer(stagingSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuff, stagingMem);
 
 		// start processing the textures
-		textures.reserve(texturesToLoad.size());
-		textureMems.reserve(texturesToLoad.size());
-		for (string textureName : texturesToLoad)
+		myTextures.reserve(ourTexturesToLoad.size());
+		myTextureMems.reserve(ourTexturesToLoad.size());
+		for (string textureName : ourTexturesToLoad)
 		{
 			// load up the texture data
 			int width, height, channels;
@@ -183,9 +191,9 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 			vk::DeviceSize texSize = height * width * 4;
 
 			// copy it over to buffer
-			uint8_t *data = (uint8_t*)device.mapMemory(stagingMem, 0, stagingSize, {});
+			uint8_t *data = (uint8_t*)myDevice.mapMemory(stagingMem, 0, stagingSize, {});
 				memcpy(data, pixels, (size_t)texSize);
-			device.unmapMemory(stagingMem);
+			myDevice.unmapMemory(stagingMem);
 
 			// create the actual texture
 			vk::Image text;
@@ -201,17 +209,17 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& terrains)
 			TransitionLayout(text, vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 			// we gud, texture ready
-			textures.push_back(text);
-			textureMems.push_back(textMem);
+			myTextures.push_back(text);
+			myTextureMems.push_back(textMem);
 			FreeTexture(pixels);
 
 			// create a textureView for it
 			vk::ImageView view = CreateImageView(text, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-			textureViews.push_back(view);
+			myTextureViews.push_back(view);
 		}
 
-		device.destroyBuffer(stagingBuff);
-		device.freeMemory(stagingMem);
+		myDevice.destroyBuffer(stagingBuff);
+		myDevice.freeMemory(stagingMem);
 	}
 }
 
@@ -222,20 +230,20 @@ void GraphicsVK::BeginGather()
 	myThreadCounter = 0;
 
 	// acquire image to render to
-	myCurrentImageIndex = device.acquireNextImageKHR(swapchain, UINT32_MAX, imgAvailable, VK_NULL_HANDLE).value;
+	myCurrentImageIndex = myDevice.acquireNextImageKHR(mySwapchain, UINT32_MAX, myImgAvailable, VK_NULL_HANDLE).value;
 
 	// before we start recording the command buffer, need to make sure that it has finished being executed
-	cmdFences.Advance();
-	const vk::Fence& fence = cmdFences.GetCurrent();
-	device.waitForFences(1, &fence, false, ~0ull);
-	device.resetFences(1, &fence);
+	myCmdFences.Advance();
+	const vk::Fence& fence = myCmdFences.GetCurrent();
+	myDevice.waitForFences(1, &fence, false, ~0ull);
+	myDevice.resetFences(1, &fence);
 
 	// advance our buffer, since it has finished being used
-	slotIndex = 0;
-	cmdBuffers.Advance();
-	secCmdBuffers.Advance();
-	uboSets.Advance();
-	mappedUboMem.Advance();
+	mySlotIndex = 0;
+	myCmdBuffers.Advance();
+	mySecCmdBuffers.Advance();
+	myUboSets.Advance();
+	myMappedUboMem.Advance();
 
 	// color and depth clear vals
 	array<vk::ClearValue, 2> clearVals;
@@ -244,20 +252,20 @@ void GraphicsVK::BeginGather()
 	clearVals[1] = vk::ClearValue({ 1, 0 });
 
 	// begin recording to command buffer
-	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetCurrent();
+	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetCurrent();
 	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
 	// first we render all geometry - start the render pass
 	vk::RenderPassBeginInfo beginInfo{
-		renderPass,
-		swapchainFrameBuffers[myCurrentImageIndex],
-		{ { 0, 0 }, swapInfo.swapExtent },
+		myRenderPass,
+		mySwapchainFrameBuffers[myCurrentImageIndex],
+		{ { 0, 0 }, mySwapInfo.mySwapExtent },
 		(uint32_t)clearVals.size(), clearVals.data()
 	};
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 	// have to begin all secondary buffers here
-	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
+	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
 	for(const PerPipelineCmdBuffers& perPipelineBuffers : perThreadBuffers)
 	{
 		for(size_t pipeline=0, length = perPipelineBuffers.size(); pipeline < length; pipeline++)
@@ -265,8 +273,8 @@ void GraphicsVK::BeginGather()
 			const vk::CommandBuffer& buffer = perPipelineBuffers[pipeline];
 			// need inheritance info since secondary buffer
 			vk::CommandBufferInheritanceInfo inheritanceInfo{
-				renderPass, 0, // render using subpass#0 of renderpass
-				swapchainFrameBuffers[myCurrentImageIndex],
+				myRenderPass, 0, // render using subpass#0 of renderpass
+				mySwapchainFrameBuffers[myCurrentImageIndex],
 				0
 			};
 			vk::CommandBufferBeginInfo info{
@@ -279,35 +287,35 @@ void GraphicsVK::BeginGather()
 
 			// bind the vbo and ibo
 			vk::DeviceSize offset = 0;
-			buffer.bindVertexBuffers(0, 1, &vbo, &offset);
-			buffer.bindIndexBuffer(ibo, 0, vk::IndexType::eUint32);
+			buffer.bindVertexBuffers(0, 1, &myVbo, &offset);
+			buffer.bindIndexBuffer(myIbo, 0, vk::IndexType::eUint32);
 
 			// bind the pipeline for rendering with
-			buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[pipeline]);
+			buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, myPipelines[pipeline]);
 
 			// update the dynamic states
 			vk::Viewport viewport{
 				0, 0,
-				(float)swapInfo.swapExtent.width, (float)swapInfo.swapExtent.height,
+				(float)mySwapInfo.mySwapExtent.width, (float)mySwapInfo.mySwapExtent.height,
 				0, 1
 			};
 			buffer.setViewport(0, 1, &viewport);
 
-			vk::Rect2D scissor{ {}, swapInfo.swapExtent };
+			vk::Rect2D scissor{ {}, mySwapInfo.mySwapExtent };
 			buffer.setScissor(0, 1, &scissor);
 		}
 	}
-	gatherStarted = true;
+	myGatherStarted = true;
 }
 
-void GraphicsVK::Render(const Camera& cam, const GameObject *go)
+void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 {
-	if (paused)
+	if (myIsPaused)
 	{
 		return;
 	}
 
-	Renderer *r = go->GetRenderer();
+	const Renderer* r = aGO->GetRenderer();
 	if (!r)
 	{
 		return;
@@ -323,43 +331,43 @@ void GraphicsVK::Render(const Camera& cam, const GameObject *go)
 	}
 
 	// get the vector of secondary buffers for thread
-	const PerPipelineCmdBuffers& buffers = secCmdBuffers.GetCurrent()[threadId];
+	const PerPipelineCmdBuffers& buffers = mySecCmdBuffers.GetCurrent()[threadId];
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = r->GetShader();
-	Model m = models[r->GetModel()];
+	Model m = myModels[r->GetModel()];
 	size_t index = 0;
 	{
-		tbb::spin_mutex::scoped_lock lock(slotIndexMutex);
-		index = slotIndex++;
+		tbb::spin_mutex::scoped_lock lock(mySlotIndexMutex);
+		index = mySlotIndex++;
 		assert(index < Game::maxObjects && "Managed to exceed memory capacity for objects!");
-		renderCalls++;
+		myRenderCalls++;
 	}
 
 	// update the uniforms
 	MatUBO matrices;
-	matrices.model = go->GetMatrix();
-	matrices.mvp = cam.Get() * matrices.model;
-	memcpy((char*)mappedUboMem.GetCurrent() + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
+	matrices.myModel = aGO->GetMatrix();
+	matrices.myMvp = aCam.Get() * matrices.myModel;
+	memcpy((char*)myMappedUboMem.GetCurrent() + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
 	array<vk::DescriptorSet, 2> setsToBind{
-		uboSets.GetCurrent()[index], samplerSets[r->GetTexture()]
+		myUboSets.GetCurrent()[index], mySamplerSets[r->GetTexture()]
 	};
-	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 
+	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, myPipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
-	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.indexCount), 1, static_cast<int32_t>(m.indexOffset), 0, 0);
+	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.myIndexCount), 1, static_cast<int32_t>(m.myIndexOffset), 0, 0);
 }
 
 void GraphicsVK::Display()
 {
 	// early exit if no gather active - helps with resizing
-	if (!gatherStarted)
+	if (!myGatherStarted)
 	{
 		return;
 	}
 
 	// before we can execute them, have to end them
-	const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
+	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
 	for (const PerPipelineCmdBuffers& threadBuffersPair : perThreadBuffers)
 	{
 		for (const vk::CommandBuffer& perPipelineBuffers : threadBuffersPair)
@@ -369,11 +377,11 @@ void GraphicsVK::Display()
 	}
 
 	// draw out all the accumulated render calls
-	const vk::CommandBuffer& primaryCmdBuffer = cmdBuffers.GetCurrent();
+	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetCurrent();
 	{
-		const PerThreadCmdBuffers& perThreadBuffers = secCmdBuffers.GetCurrent();
+		const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
 		// we know how many there are total - every thread has per-pipeline command buffers
-		const size_t totalBuffers = perThreadBuffers.size() * pipelines.size();
+		const size_t totalBuffers = perThreadBuffers.size() * myPipelines.size();
 		vk::CommandBuffer* allBuffers = new vk::CommandBuffer[totalBuffers];
 		// rearrange them to avoid pipeline changes - they might still happen, but if they do,
 		// fixing it will be faster since this will accomodate it. 
@@ -381,7 +389,7 @@ void GraphicsVK::Display()
 		// TODO: Though the following code is not cache-friendly, not going to change it just yet 
 		// because it's should have a small amount of iterations for now (only 3 pipelines)
 		size_t currentSlot = 0;
-		for (size_t pipeline = 0, pipelinesLength = pipelines.size(); pipeline < pipelinesLength; pipeline++)
+		for (size_t pipeline = 0, pipelinesLength = myPipelines.size(); pipeline < pipelinesLength; pipeline++)
 		{
 			for (int thread = 0; thread < myMaxThreads; thread++)
 			{
@@ -402,145 +410,169 @@ void GraphicsVK::Display()
 	// make sure it waits for the image to become available before we start outputting color
 	vk::PipelineStageFlags waitAt = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	vk::SubmitInfo submitInfo{
-		1, &imgAvailable, &waitAt,
+		1, &myImgAvailable, &waitAt,
 		1, &primaryCmdBuffer,
-		1, &renderFinished
+		1, &myRenderFinished
 	};
-	queues.graphicsQueue.submit(1, &submitInfo, cmdFences.GetCurrent());
+	myQueues.myGraphicsQueue.submit(1, &submitInfo, myCmdFences.GetCurrent());
 
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
-		1, &renderFinished,
-		1, &swapchain, &myCurrentImageIndex,
+		1, &myRenderFinished,
+		1, &mySwapchain, &myCurrentImageIndex,
 		nullptr
 	};
-	queues.graphicsQueue.presentKHR(presentInfo);
-	gatherStarted = false;
+	myQueues.myGraphicsQueue.presentKHR(presentInfo);
+	myGatherStarted = false;
 }
 
 void GraphicsVK::CleanUp()
 {
 	// gonna make sure all the tasks are finished before we can start destroying resources
-	device.waitIdle();
+	myDevice.waitIdle();
 
-	device.destroySampler(sampler);
+	myDevice.destroySampler(mySampler);
 
-	for (auto v : textureViews)
-		device.destroyImageView(v);
-	textureViews.clear();
-	for (auto t : textures)
-		device.destroyImage(t);
-	textures.clear();
-	for (auto m : textureMems)
-		device.freeMemory(m);
-	textureMems.clear();
+	for (vk::ImageView v : myTextureViews)
+	{
+		myDevice.destroyImageView(v);
+	}
+	myTextureViews.clear();
+	for (vk::Image t : myTextures)
+	{
+		myDevice.destroyImage(t);
+	}
+	myTextures.clear();
+	for (vk::DeviceMemory m : myTextureMems)
+	{
+		myDevice.freeMemory(m);
+	}
+	myTextureMems.clear();
 
-	device.destroyDescriptorPool(descriptorPool);
+	myDevice.destroyDescriptorPool(myDescriptorPool);
 
 	DestroyUBO();
-	device.destroyDescriptorSetLayout(uboLayout);
-	device.destroyDescriptorSetLayout(samplerLayout);
+	myDevice.destroyDescriptorSetLayout(myUboLayout);
+	myDevice.destroyDescriptorSetLayout(mySamplerLayout);
 
-	device.destroyImageView(depthImgView);
-	device.destroyImage(depthImg);
-	device.freeMemory(depthImgMem);
+	myDevice.destroyImageView(myDepthImgView);
+	myDevice.destroyImage(myDepthImg);
+	myDevice.freeMemory(myDepthImgMem);
 
-	for (auto fence : cmdFences.GetInternalBuffer())
-		device.destroyFence(fence);
-	device.destroyBuffer(vbo);
-	device.freeMemory(vboMem);
-	device.destroyBuffer(ibo);
-	device.freeMemory(iboMem);
+	for (vk::Fence fence : myCmdFences.GetInternalBuffer())
+	{
+		myDevice.destroyFence(fence);
+	}
+	myDevice.destroyBuffer(myVbo);
+	myDevice.freeMemory(myVboMem);
+	myDevice.destroyBuffer(myIbo);
+	myDevice.freeMemory(myIboMem);
 
-	device.destroySemaphore(imgAvailable);
-	device.destroySemaphore(renderFinished);
-	device.destroyCommandPool(graphCmdPool);
-	//device.destroyCommandPool(transfCmdPool);
-	for (auto pool : graphSecCmdPools)
-		device.destroyCommandPool(pool);
-	graphSecCmdPools.clear();
+	myDevice.destroySemaphore(myImgAvailable);
+	myDevice.destroySemaphore(myRenderFinished);
+	myDevice.destroyCommandPool(myGraphCmdPool);
+	//myDevice.destroyCommandPool(transfCmdPool);
+	for (vk::CommandPool pool : myGraphSecCmdPools)
+	{
+		myDevice.destroyCommandPool(pool);
+	}
+	myGraphSecCmdPools.clear();
 	
-	for (auto b : swapchainFrameBuffers)
-		device.destroyFramebuffer(b);
-	swapchainFrameBuffers.clear();
+	for (vk::Framebuffer b : mySwapchainFrameBuffers)
+	{
+		myDevice.destroyFramebuffer(b);
+	}
+	mySwapchainFrameBuffers.clear();
 	
-	for(auto pipeline : pipelines)
-		device.destroyPipeline(pipeline);
-	pipelines.clear();
+	for (vk::Pipeline pipeline : myPipelines)
+	{
+		myDevice.destroyPipeline(pipeline);
+	}
+	myPipelines.clear();
 	
-	device.destroyPipelineLayout(pipelineLayout);
-	device.destroyRenderPass(renderPass);
+	myDevice.destroyPipelineLayout(myPipelineLayout);
+	myDevice.destroyRenderPass(myRenderPass);
 
-	for (auto shaderMod : shaderModules)
-		device.destroyShaderModule(shaderMod);
-	shaderModules.clear();
+	for (vk::ShaderModule shaderMod : myShaderModules)
+	{
+		myDevice.destroyShaderModule(shaderMod);
+	}
+	myShaderModules.clear();
 
-	for (auto v : imgViews)
-		device.destroyImageView(v);
-	imgViews.clear();
-	device.destroySwapchainKHR(swapchain);
-	instance.destroySurfaceKHR(surface);
+	for (vk::ImageView v : myImgViews)
+	{
+		myDevice.destroyImageView(v);
+	}
+	myImgViews.clear();
+	myDevice.destroySwapchainKHR(mySwapchain);
+	myInstance.destroySurfaceKHR(mySurface);
 
-	device.destroy();
+	myDevice.destroy();
 #ifdef _DEBUG
 	if (DestroyDebugReportCallback != nullptr)
 	{
-		DestroyDebugReportCallback(instance, debugCallback, nullptr);
+		DestroyDebugReportCallback(myInstance, myDebugCallback, nullptr);
 	}
 #endif
-	instance.destroy();
+	myInstance.destroy();
 
-	glfwDestroyWindow(window);
-	activeGraphics = NULL;
+	glfwDestroyWindow(myWindow);
+	ourActiveGraphics = nullptr;
 }
 
-void GraphicsVK::SetThreadingHint(glm::uint maxThreads)
+void GraphicsVK::SetMaxThreads(uint32_t aMaxThreadCount)
 {
-	myMaxThreads = maxThreads;
+	myMaxThreads = aMaxThreadCount;
 }
 
-void GraphicsVK::OnWindowResized(GLFWwindow * window, int width, int height)
+void GraphicsVK::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 {
-	if (width == 0 && height == 0)
+	if (aWidth == 0 && aHeight == 0)
+	{
 		return;
+	}
 
-	((GraphicsVK*)activeGraphics)->WindowResized(width, height);
+	((GraphicsVK*)ourActiveGraphics)->WindowResized(aWidth, aHeight);
 }
 
-void GraphicsVK::WindowResized(int width, int height)
+void GraphicsVK::WindowResized(int aWidth, int aHeight)
 {
-	paused = true;
+	myIsPaused = true;
 	// gonna make sure all the tasks are finished before we can start destroying resources
-	this->width = width;
-	this->height = height;
+	ourWidth = aWidth;
+	ourHeight = aHeight;
 
 	// force the end of rendering
 	Display();
-	device.waitIdle();
+	myDevice.waitIdle();
 	
 	// destroy first
 	// framebuffers of swapchain
-	for (auto b : swapchainFrameBuffers)
-		device.destroyFramebuffer(b);
-	swapchainFrameBuffers.clear();
+	for (vk::Framebuffer b : mySwapchainFrameBuffers)
+	{
+		myDevice.destroyFramebuffer(b);
+	}
+	mySwapchainFrameBuffers.clear();
 
 	// depth texture
-	device.destroyImageView(depthImgView);
-	device.destroyImage(depthImg);
-	device.freeMemory(depthImgMem);
+	myDevice.destroyImageView(myDepthImgView);
+	myDevice.destroyImage(myDepthImg);
+	myDevice.freeMemory(myDepthImgMem);
 
 	// swapchain images
-	for (auto v : imgViews)
-		device.destroyImageView(v);
-	imgViews.clear();
-	device.destroySwapchainKHR(swapchain);
+	for (vk::ImageView v : myImgViews)
+	{
+		myDevice.destroyImageView(v);
+	}
+	myImgViews.clear();
+	myDevice.destroySwapchainKHR(mySwapchain);
 
 	// then recreate
 	CreateSwapchain();
 	CreateDepthTexture();
 	CreateFrameBuffers();
 
-	paused = false;
+	myIsPaused = false;
 }
 
 // Private Methods
@@ -559,13 +591,15 @@ void GraphicsVK::CreateInstance()
 	uint32_t extensionCount;
 	const char **baseExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
 	for (uint32_t i = 0; i < extensionCount; i++)
+	{
 		extensions.push_back(baseExtensions[i]);
+	}
 
 #ifdef _DEBUG
-	if (LayersAvailable(requiredLayers))
+	if (LayersAvailable(ourRequiredLayers))
 	{
-		instInfo.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size());
-		instInfo.ppEnabledLayerNames = requiredLayers.data();
+		instInfo.enabledLayerCount = static_cast<uint32_t>(ourRequiredLayers.size());
+		instInfo.ppEnabledLayerNames = ourRequiredLayers.data();
 
 		// in order to receive the messages, we need a callback extension
 		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -575,11 +609,11 @@ void GraphicsVK::CreateInstance()
 	instInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	instInfo.ppEnabledExtensionNames = extensions.data();
 
-	instance = vk::createInstance(instInfo);
+	myInstance = vk::createInstance(instInfo);
 
 #ifdef _DEBUG
-	CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)instance.getProcAddr("vkCreateDebugReportCallbackEXT");
-	DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)instance.getProcAddr("vkDestroyDebugReportCallbackEXT");
+	CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)myInstance.getProcAddr("vkCreateDebugReportCallbackEXT");
+	DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)myInstance.getProcAddr("vkDestroyDebugReportCallbackEXT");
 
 	if (CreateDebugReportCallback != nullptr)
 	{
@@ -588,15 +622,15 @@ void GraphicsVK::CreateInstance()
 		callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
 		callbackCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)DebugCallback;
 
-		CreateDebugReportCallback(instance, &callbackCreateInfo, nullptr, &debugCallback);
+		CreateDebugReportCallback(myInstance, &callbackCreateInfo, nullptr, &myDebugCallback);
 	}
 #endif
 }
 
 void GraphicsVK::CreateDevice()
 {
-	// first we gotta find our physical device before we can create a logical one
-	vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
+	// first we gotta find our physical myDevice before we can create a logical one
+	vector<vk::PhysicalDevice> devices = myInstance.enumeratePhysicalDevices();
 	if (devices.size() == 0)
 	{
 		printf("[Error] No vulkan devices found!");
@@ -605,206 +639,225 @@ void GraphicsVK::CreateDevice()
 
 	printf("[Info] Found %zu vulkan devices\n", devices.size());
 	vk::PhysicalDevice pickedDevice = VK_NULL_HANDLE;
-	for (auto device : devices)
+	for (vk::PhysicalDevice myDevice : devices)
 	{
-		if (IsSuitable(device))
+		if (IsSuitable(myDevice))
 		{
-			pickedDevice = device;
+			pickedDevice = myDevice;
 			break;
 		}
 	}
 	if (!pickedDevice)
 	{
-		printf("[Error] No suitable vulkan device found!");
+		printf("[Error] No suitable vulkan myDevice found!");
 		return;
 	}
-	physDevice = pickedDevice;
+	myPhysDevice = pickedDevice;
 
 	// then we gotta pick queue families for our use (graphics, compute and transfer)
-	vector<vk::QueueFamilyProperties> queueFamProps = physDevice.getQueueFamilyProperties();
+	vector<vk::QueueFamilyProperties> queueFamProps = myPhysDevice.getQueueFamilyProperties();
 	int i = 0;
-	/*
-	// for now, using the simple set-up with 1 queue
-	for each(auto props in queueFamProps)
-	{
-		if (props.queueFlags & vk::QueueFlagBits::eGraphics)
-		{
-			graphicsFamIndex = i;
-			break;
-		}
-		i++;
-	}
-	*/
+	
 	// first going to attemp to find specialized queues
 	// this way we can better utilize gpu
 	set<uint32_t> used;
-	for (auto props : queueFamProps)
+	for (vk::QueueFamilyProperties props : queueFamProps)
 	{
 		if (props.queueFlags == vk::QueueFlagBits::eGraphics)
 		{
-			queues.graphicsFamIndex = i;
+			myQueues.myGraphicsFamIndex = i;
 			used.insert(i);
 		}
 		else if (props.queueFlags == vk::QueueFlagBits::eCompute)
 		{
-			queues.computeFamIndex = i;
+			myQueues.myComputeFamIndex = i;
 			used.insert(i);
 		}
 		else if (props.queueFlags == vk::QueueFlagBits::eTransfer)
 		{
-			queues.transferFamIndex = i;
+			myQueues.myTransferFamIndex = i;
 			used.insert(i);
 		}
-		if (pickedDevice.getSurfaceSupportKHR(i, surface))
-			queues.presentFamIndex = i;
+		if (pickedDevice.getSurfaceSupportKHR(i, mySurface))
+		{
+			myQueues.myPresentFamIndex = i;
+		}
 		i++;
 	}
 	// this time, if we have something not set find a suitable generic family
 	// additionally, if multiple fitting families are found, try to use different ones
 	i = 0;
-	for (auto props : queueFamProps)
+	for (vk::QueueFamilyProperties props : queueFamProps)
 	{
-		if (props.queueFlags & vk::QueueFlagBits::eGraphics && (queues.graphicsFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
+		if (props.queueFlags & vk::QueueFlagBits::eGraphics 
+			&& (myQueues.myGraphicsFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
 		{
-			queues.graphicsFamIndex = i;
+			myQueues.myGraphicsFamIndex = i;
 			used.insert(i);
 		}
-		if (props.queueFlags & vk::QueueFlagBits::eCompute && (queues.computeFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
+		if (props.queueFlags & vk::QueueFlagBits::eCompute 
+			&& (myQueues.myComputeFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
 		{
-			queues.computeFamIndex = i;
+			myQueues.myComputeFamIndex = i;
 			used.insert(i);
 		}
-		if (props.queueFlags & vk::QueueFlagBits::eTransfer && (queues.transferFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
+		if (props.queueFlags & vk::QueueFlagBits::eTransfer 
+			&& (myQueues.myTransferFamIndex == UINT32_MAX || find(used.cbegin(), used.cend(), i) == used.cend()))
 		{
-			queues.transferFamIndex = i;
+			myQueues.myTransferFamIndex = i;
 			used.insert(i);
 		}
 		i++;
 	}
-	printf("[Info] Using queue families: graphics=%d, compute=%d and transfer=%d\n", queues.graphicsFamIndex, queues.computeFamIndex, queues.transferFamIndex);
+	printf("[Info] Using queue families: graphics=%d, compute=%d and transfer=%d\n", myQueues.myGraphicsFamIndex, myQueues.myComputeFamIndex, myQueues.myTransferFamIndex);
 
 	// proper set-up of queues is a bit convoluted, cause it has to take care of the 3! cases of combinations
 	vector<vk::DeviceQueueCreateInfo> queuesToCreate;
 	// graphics queue should always be present
 	const float priority = 1; // for simplicity's sake, priority is always the same
-	for (auto fam : used)
+	for (uint32_t fam : used)
+	{
 		queuesToCreate.push_back({ {}, fam, 1, &priority });
+	}
 	
 	printf("[Info] Creating %zu queues\n", used.size());
 
-	// now, finally the logical device creation
+	// now, finally the logical myDevice creation
 	vk::PhysicalDeviceFeatures features;
 	vk::DeviceCreateInfo devCreateInfo{
 		{},
 		(uint32_t)queuesToCreate.size(), queuesToCreate.data(),
-		(uint32_t)requiredLayers.size(), requiredLayers.data(),
-		(uint32_t)requiredExtensions.size(), requiredExtensions.data(),
+		(uint32_t)ourRequiredLayers.size(), ourRequiredLayers.data(),
+		(uint32_t)ourRequiredExtensions.size(), ourRequiredExtensions.data(),
 		&features
 	};
-	device = physDevice.createDevice(devCreateInfo);
+	myDevice = myPhysDevice.createDevice(devCreateInfo);
 
-	// queues are auto-created on device creation, so just have to get their handles
-	// shared queues will deal with parallelization with device events
-	queues.graphicsQueue = device.getQueue(queues.graphicsFamIndex, 0);
-	//queues.computeQueue = device.getQueue(queues.computeFamIndex, 0);
-	//queues.transferQueue = device.getQueue(queues.transferFamIndex, 0);
-	queues.presentQueue = device.getQueue(queues.presentFamIndex, 0);
+	// queues are auto-created on myDevice creation, so just have to get their handles
+	// shared queues will deal with parallelization with myDevice events
+	myQueues.myGraphicsQueue = myDevice.getQueue(myQueues.myGraphicsFamIndex, 0);
+	//queues.myComputeQueue = myDevice.getQueue(queues.myComputeFamIndex, 0);
+	//queues.myTransferQueue = myDevice.getQueue(queues.myTransferFamIndex, 0);
+	myQueues.myPresentQueue = myDevice.getQueue(myQueues.myPresentFamIndex, 0);
 
 	// we need the alignment for our uniform buffers
-	limits = physDevice.getProperties().limits;
+	myLimits = myPhysDevice.getProperties().limits;
 
-	// now that we have the device, we can find what depth format we'll use
-	depthFormat = FindSupportedFormat(
+	// now that we have the myDevice, we can find what depth format we'll use
+	myDepthFormat = FindSupportedFormat(
 		vk::ImageTiling::eOptimal,
 		vk::FormatFeatureFlagBits::eDepthStencilAttachment
 	);
 
 	// before we can create command buffers, we need a pool to allocate from
-	graphCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex });
-	//transfCmdPool = device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.transferFamIndex });
+	myGraphCmdPool = myDevice.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, myQueues.myGraphicsFamIndex });
+	// TODO: look into using transfer command pool
+	//transfCmdPool = myDevice.createCommandPool({ { vk::CommandPoolCreateFlagBits::eTransient }, queues.myTransferFamIndex });
 }
 
-// extend this later to use proper checking of caps
-bool GraphicsVK::IsSuitable(const vk::PhysicalDevice &device)
+// TODO: extend this to use proper checking of caps and initialization of available resources
+// right now it just checks for a device with all queues
+bool GraphicsVK::IsSuitable(const vk::PhysicalDevice& aDevice)
 {
-	bool isSuiting = true;
-
-	vk::PhysicalDeviceProperties props = device.getProperties();
-	isSuiting &= props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu || props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
-	if (!isSuiting)
-		return isSuiting;
-
-	//vk::PhysicalDeviceFeatures feats = device.getFeatures();
+	// currently support only Discrete/Integrated GPUs
+	{
+		vk::PhysicalDeviceProperties props = aDevice.getProperties();
+		bool foundDeviceType = props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu
+			|| props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
+		if (!foundDeviceType)
+		{
+			return false;
+		}
+	}
 
 	// we need graphics, compute, transfer and present (can be same queue family)
-	vector<vk::QueueFamilyProperties> queueFamProps = device.getQueueFamilyProperties();
-	bool foundQueues[4] = { false, false, false, false };
-	uint32_t i = 0;
-	for (auto prop : queueFamProps)
 	{
-		if (prop.queueFlags & vk::QueueFlagBits::eGraphics)
-			foundQueues[0] = true;
-		if (prop.queueFlags & vk::QueueFlagBits::eCompute)
-			foundQueues[1] = true;
-		if (prop.queueFlags & vk::QueueFlagBits::eTransfer)
-			foundQueues[2] = true;
-		if (device.getSurfaceSupportKHR(i, surface))
-			foundQueues[3] = true;
-		i++;
+		bool foundQueueFamilies = true;
+		vector<vk::QueueFamilyProperties> queueFamProps = aDevice.getQueueFamilyProperties();
+		bool foundQueues[4] = { false, false, false, false };
+		uint32_t i = 0;
+		for (vk::QueueFamilyProperties prop : queueFamProps)
+		{
+			// source of Flags<...> has a funky implementation of operator bool():
+			// explicit operator bool() const { return !!m_mask; }
+			foundQueues[0] |= bool(prop.queueFlags & vk::QueueFlagBits::eGraphics);
+			foundQueues[1] |= bool(prop.queueFlags & vk::QueueFlagBits::eCompute);
+			foundQueues[2] |= bool(prop.queueFlags & vk::QueueFlagBits::eTransfer);
+			foundQueues[3] |= aDevice.getSurfaceSupportKHR(i, mySurface);
+			i++;
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			foundQueueFamilies &= foundQueues[i];
+		}
+
+		if (!foundQueueFamilies)
+		{
+			return false;
+		}
 	}
-	for (int i = 0; i < 4; i++)
-		isSuiting &= foundQueues[i];
-	if (!isSuiting)
-		return isSuiting;
 
 	// we also need the requested extensions
-	set<string> reqExts(requiredExtensions.cbegin(), requiredExtensions.cend()); // has to be string for the == to work
-	vector<vk::ExtensionProperties> supportedExts = device.enumerateDeviceExtensionProperties();
-	for (auto ext : supportedExts)
-		reqExts.erase(ext.extensionName);
-	isSuiting &= reqExts.empty();
-	if (!isSuiting)
-		return isSuiting;
+	{
+		set<string> reqExts(ourRequiredExtensions.cbegin(), ourRequiredExtensions.cend()); // has to be string for the == to work
+		vector<vk::ExtensionProperties> supportedExts = aDevice.enumerateDeviceExtensionProperties();
+		for (vk::ExtensionProperties ext : supportedExts)
+		{
+			reqExts.erase(ext.extensionName);
+		}
+		if (!reqExts.empty())
+		{
+			return false;
+		}
+	}
 
-	vector<vk::SurfaceFormatKHR> suppFormats = device.getSurfaceFormatsKHR(surface);
-	vector<vk::PresentModeKHR> presentModes = device.getSurfacePresentModesKHR(surface);
 	// though it's strange to have swapchain support but no proper formats/present modes
 	// have to check just to be safe - it's not stated in the api spec that it's always > 0
-	isSuiting &= !suppFormats.empty() && !presentModes.empty();
+	{
+		vector<vk::SurfaceFormatKHR> mySupportedFormats = aDevice.getSurfaceFormatsKHR(mySurface);
+		vector<vk::PresentModeKHR> presentModes = aDevice.getSurfacePresentModesKHR(mySurface);
+		if (mySupportedFormats.empty() || presentModes.empty())
+		{
+			return false;
+		}
+	}
 
-	return isSuiting;
+	return true;
 }
 
 void GraphicsVK::CreateSurface()
 {
 	// another vulkan.hpp issue - can't get underlying pointer, have to manually construct surface
 	VkSurfaceKHR vkSurface;
-	if (glfwCreateWindowSurface(instance, window, nullptr, &vkSurface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(myInstance, myWindow, nullptr, &vkSurface) != VK_SUCCESS)
 	{
 		printf("[Error] Surface creation failed");
 		return;
 	}
 	// good thing is we can still keep the vulkan.hpp definitions by manually constructing them
-	surface = vk::SurfaceKHR(vkSurface);
+	mySurface = vk::SurfaceKHR(vkSurface);
 }
 
 void GraphicsVK::CreateSwapchain()
 {
-	// we found a proper device and surface, fetch the swapchain caps
-	swapInfo.surfCaps = physDevice.getSurfaceCapabilitiesKHR(surface);
-	swapInfo.suppFormats = physDevice.getSurfaceFormatsKHR(surface);
-	swapInfo.presentModes = physDevice.getSurfacePresentModesKHR(surface);
+	// we found a proper myDevice and surface, fetch the swapchain caps
+	mySwapInfo.mySurfCaps = myPhysDevice.getSurfaceCapabilitiesKHR(mySurface);
+	mySwapInfo.mySupportedFormats = myPhysDevice.getSurfaceFormatsKHR(mySurface);
+	mySwapInfo.myPresentModes = myPhysDevice.getSurfacePresentModesKHR(mySurface);
 
 	// by this point we have the capabilities of the surface queried, we just have to pick one
-	// device might be able to support all the formats, so check if it's the case
+	// myDevice might be able to support all the formats, so check if it's the case
 	vk::SurfaceFormatKHR format;
-	if(swapInfo.suppFormats.size() == 1 && swapInfo.suppFormats[0].format == vk::Format::eUndefined)
+	if (mySwapInfo.mySupportedFormats.size() == 1 
+		&& mySwapInfo.mySupportedFormats[0].format == vk::Format::eUndefined)
+	{
 		format = { vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear };
+	}
 	else 
 	{
-		// device only selects a certain set of formats, try to find ours
+		// myDevice only selects a certain set of formats, try to find ours
 		bool wasFound = false;
-		for (auto f : swapInfo.suppFormats)
+		for (vk::SurfaceFormatKHR f : mySwapInfo.mySupportedFormats)
 		{
 			if (f.format == vk::Format::eB8G8R8A8Unorm && f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
 			{
@@ -815,14 +868,16 @@ void GraphicsVK::CreateSwapchain()
 		}
 		// we couldn't find ours, so just use the first available
 		if (!wasFound)
-			format = swapInfo.suppFormats[0];
+		{
+			format = mySwapInfo.mySupportedFormats[0];
+		}
 	}
-	swapInfo.imgFormat = format.format;
+	mySwapInfo.myImgFormat = format.format;
 
 	// now to figure out the present mode. mailbox is the best(vsync off), then fifo(on), then immediate(off)
 	// only fifo is guaranteed to be present on all devices
 	vk::PresentModeKHR mode = vk::PresentModeKHR::eFifo;
-	for (auto m : swapInfo.presentModes)
+	for (vk::PresentModeKHR m : mySwapInfo.myPresentModes)
 	{
 		if (m == vk::PresentModeKHR::eMailbox)
 		{
@@ -832,61 +887,75 @@ void GraphicsVK::CreateSwapchain()
 	}
 
 	// lastly (almost), need to find the swap extent(swapchain image resolutions)
-	// vulkan window surface may provide us with the ability to set our own extents
-	if (swapInfo.surfCaps.currentExtent.width == UINT32_MAX)
+	// vulkan myWindow surface may provide us with the ability to set our own extents
+	if (mySwapInfo.mySurfCaps.currentExtent.width == UINT32_MAX)
 	{
-		uint32_t w = glm::clamp((uint32_t)width, swapInfo.surfCaps.minImageExtent.width,  swapInfo.surfCaps.maxImageExtent.width);
-		uint32_t h = glm::clamp((uint32_t)height, swapInfo.surfCaps.minImageExtent.height, swapInfo.surfCaps.maxImageExtent.height);
-		swapInfo.swapExtent = { w, h };
+		uint32_t w = glm::clamp((uint32_t)ourWidth, mySwapInfo.mySurfCaps.minImageExtent.width,  mySwapInfo.mySurfCaps.maxImageExtent.width);
+		uint32_t h = glm::clamp((uint32_t)ourHeight, mySwapInfo.mySurfCaps.minImageExtent.height, mySwapInfo.mySurfCaps.maxImageExtent.height);
+		mySwapInfo.mySwapExtent = { w, h };
 	}
-	else // or it might not and we have to use it's provided extent
-		swapInfo.swapExtent = swapInfo.surfCaps.currentExtent;
+	else
+	{
+		// or it might not and we have to use it's provided extent
+		mySwapInfo.mySwapExtent = mySwapInfo.mySurfCaps.currentExtent;
+	}
 
 	// the actual last step is the determination of the image count in the swapchain
 	// we want tripple buffering, but have to make sure that it's actually supported
 	uint32_t imageCount = 3;
 	// checking if we're in range of the caps
-	if (imageCount < swapInfo.surfCaps.minImageCount)
-		imageCount = swapInfo.surfCaps.minImageCount; // maybe it supports minimum 4 (strange, but have to account for strange)
-	else if (swapInfo.surfCaps.maxImageCount > 0 && imageCount > swapInfo.surfCaps.maxImageCount) // 0 means only bound by device memory
-		imageCount = swapInfo.surfCaps.maxImageCount;
-	
+	if (imageCount < mySwapInfo.mySurfCaps.minImageCount)
+	{
+		// maybe it supports minimum 4 (strange, but have to account for strange)
+		imageCount = mySwapInfo.mySurfCaps.minImageCount; 
+	}
+	else if (mySwapInfo.mySurfCaps.maxImageCount > 0 
+			&& imageCount > mySwapInfo.mySurfCaps.maxImageCount) 
+	{
+		// 0 means only bound by myDevice memory
+		imageCount = mySwapInfo.mySurfCaps.maxImageCount;
+	}
+		
 	printf("[Info] Swapchain params: format=%d, colorSpace=%d, presentMode=%d, extent={%d,%d}, imgCount=%d\n",
-		swapInfo.imgFormat, format.colorSpace, mode, swapInfo.swapExtent.width, swapInfo.swapExtent.height, imageCount);
+		mySwapInfo.myImgFormat, format.colorSpace, mode, mySwapInfo.mySwapExtent.width, mySwapInfo.mySwapExtent.height, imageCount);
 
 	// time to fill up the swapchain creation information
 	vk::SwapchainCreateInfoKHR swapCreateInfo;
-	swapCreateInfo.surface = surface;
+	swapCreateInfo.surface = mySurface;
 	swapCreateInfo.minImageCount = imageCount;
-	swapCreateInfo.imageFormat = swapInfo.imgFormat;
+	swapCreateInfo.imageFormat = mySwapInfo.myImgFormat;
 	swapCreateInfo.imageColorSpace = format.colorSpace;
-	swapCreateInfo.imageExtent = swapInfo.swapExtent;
+	swapCreateInfo.imageExtent = mySwapInfo.mySwapExtent;
 	swapCreateInfo.imageArrayLayers = 1;
 	swapCreateInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment; // change this later to eTransferDst to enable image-to-image copy op
 	// because present family might be different from graphics family we might need to share the images
-	if (queues.graphicsFamIndex != queues.presentFamIndex)
+	if (myQueues.myGraphicsFamIndex != myQueues.myPresentFamIndex)
 	{
-		uint32_t indices[] = { queues.graphicsFamIndex, queues.presentFamIndex };
+		uint32_t indices[] = { myQueues.myGraphicsFamIndex, myQueues.myPresentFamIndex };
 		swapCreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
 		swapCreateInfo.queueFamilyIndexCount = 2;
 		swapCreateInfo.pQueueFamilyIndices = indices;
 	}
 	else
+	{
 		swapCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+	}
 	swapCreateInfo.presentMode = mode;
 	swapCreateInfo.clipped = VK_TRUE;
 	// TODO: Investigate - for some reason I get validation errors by passing swapchain here
 	swapCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	swapchain = device.createSwapchainKHR(swapCreateInfo);
+	mySwapchain = myDevice.createSwapchainKHR(swapCreateInfo);
 
 	// swapchain creates the images for us to render to
-	images = device.getSwapchainImagesKHR(swapchain);
-	printf("[Info] Images acquired: %zu\n", images.size());
+	myImages = myDevice.getSwapchainImagesKHR(mySwapchain);
+	printf("[Info] Images acquired: %zu\n", myImages.size());
 
 	// but in order to use them, we need imageviews
-	for(int i=0; i<images.size(); i++)
-		imgViews.push_back(CreateImageView(images[i], swapInfo.imgFormat, vk::ImageAspectFlagBits::eColor));
+	for (int i = 0; i < myImages.size(); i++)
+	{
+		myImgViews.push_back(CreateImageView(myImages[i], mySwapInfo.myImgFormat, vk::ImageAspectFlagBits::eColor));
+	}
 }
 
 void GraphicsVK::CreateRenderPass()
@@ -895,14 +964,14 @@ void GraphicsVK::CreateRenderPass()
 	// as of now we only render color to single texture and depth
 	vk::AttachmentDescription colorAttachment{
 		{},
-		swapInfo.imgFormat, vk::SampleCountFlagBits::e1,
+		mySwapInfo.myImgFormat, vk::SampleCountFlagBits::e1,
 		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // load/store
 		vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil load/store
 		vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR // initial/final layouts
 	};
 	vk::AttachmentDescription depthAttachment{
 		{},
-		depthFormat, vk::SampleCountFlagBits::e1,
+		myDepthFormat, vk::SampleCountFlagBits::e1,
 		vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
 		vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
 		vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal
@@ -940,21 +1009,21 @@ void GraphicsVK::CreateRenderPass()
 		1, &subpass, // subpasses
 		1, &dependency // dependencies
 	};
-	renderPass = device.createRenderPass(passCreateInfo);
+	myRenderPass = myDevice.createRenderPass(passCreateInfo);
 }
 
-vk::Pipeline GraphicsVK::CreatePipeline(string name)
+vk::Pipeline GraphicsVK::CreatePipeline(string aName)
 {
 	// first, getting the shaders
-	string frag = readFile("assets/VulkanShaders/" + name + "-frag.spv");
-	string vert = readFile("assets/VulkanShaders/" + name + "-vert.spv");
+	string frag = ReadFile("assets/VulkanShaders/" + aName + "-frag.spv");
+	string vert = ReadFile("assets/VulkanShaders/" + aName + "-vert.spv");
 
 	// and wrapping them in to something we can pass around vulkan apis
-	vk::ShaderModule vertShader = device.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
-	vk::ShaderModule fragShader = device.createShaderModule({ {}, frag.size(), (const uint32_t*)frag.data() });
+	vk::ShaderModule vertShader = myDevice.createShaderModule({ {}, vert.size(), (const uint32_t*)vert.data() });
+	vk::ShaderModule fragShader = myDevice.createShaderModule({ {}, frag.size(), (const uint32_t*)frag.data() });
 
-	shaderModules.push_back(vertShader);
-	shaderModules.push_back(fragShader);
+	myShaderModules.push_back(vertShader);
+	myShaderModules.push_back(fragShader);
 
 	// now, to link them up
 	vector<vk::PipelineShaderStageCreateInfo> stages = {
@@ -979,14 +1048,14 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 	// viewport ...
 	vk::Viewport viewport{
 		0, 0,
-		(float)swapInfo.swapExtent.width, (float)swapInfo.swapExtent.height,
+		(float)mySwapInfo.mySwapExtent.width, (float)mySwapInfo.mySwapExtent.height,
 		0, 1
 	};
 
 	// scissors ...
 	vk::Rect2D scissors{
 		{0, 0},
-		swapInfo.swapExtent
+		mySwapInfo.mySwapExtent
 	};
 
 	// viewport definition from the viewport and scissors...
@@ -1047,38 +1116,38 @@ vk::Pipeline GraphicsVK::CreatePipeline(string name)
 		nullptr, &viewportCreateInfo,
 		&rasterizerCreateInfo, &multisampleCreateInfo,
 		&depthInfo, &colorBlendCreateInfo,
-		&dynStatesCreateInfo, pipelineLayout,
-		renderPass, 0,
+		&dynStatesCreateInfo, myPipelineLayout,
+		myRenderPass, 0,
 		VK_NULL_HANDLE, -1
 	};
-	vk::Pipeline pipeline = device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
+	vk::Pipeline pipeline = myDevice.createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo);
 	return pipeline;
 }
 
 void GraphicsVK::CreateFrameBuffers()
 {
-	for (size_t i = 0; i < imgViews.size(); i++)
+	for (size_t i = 0; i < myImgViews.size(); i++)
 	{
 		// each render target will use the same depth image internally
-		array<vk::ImageView, 2> views = { imgViews[i], depthImgView };
-		vk::FramebufferCreateInfo fboCreateInfo{
+		array<vk::ImageView, 2> views = { myImgViews[i], myDepthImgView };
+		vk::FramebufferCreateInfo fboCreateInfo {
 			{},
-			renderPass,
+			myRenderPass,
 			(uint32_t)views.size(), views.data(),
-			swapInfo.swapExtent.width, swapInfo.swapExtent.height,
+			mySwapInfo.mySwapExtent.width, mySwapInfo.mySwapExtent.height,
 			1
 		};
-		swapchainFrameBuffers.push_back(device.createFramebuffer(fboCreateInfo));
+		mySwapchainFrameBuffers.push_back(myDevice.createFramebuffer(fboCreateInfo));
 	}
 }
 
 void GraphicsVK::CreateCommandResources()
 {
 	// allocating a cmdBuffer per swapchain FBO
-	vector<vk::CommandBuffer> buffers = device.allocateCommandBuffers({ graphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
+	vector<vk::CommandBuffer> buffers = myDevice.allocateCommandBuffers({ myGraphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
 	for (size_t bufferInd = 0, length = buffers.size(); bufferInd < length; bufferInd++)
 	{
-		cmdBuffers.GetInternalBuffer()[bufferInd] = move(buffers[bufferInd]);
+		myCmdBuffers.GetInternalBuffer()[bufferInd] = move(buffers[bufferInd]);
 	}
 
 	{
@@ -1087,28 +1156,28 @@ void GraphicsVK::CreateCommandResources()
 		// concurrent use of which is prohibited
 		for (int thread = 0; thread < myMaxThreads; thread++)
 		{
-			graphSecCmdPools.push_back(device.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, queues.graphicsFamIndex }));
+			myGraphSecCmdPools.push_back(myDevice.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, myQueues.myGraphicsFamIndex }));
 		}
-		TrippleBuffer<PerThreadCmdBuffers>::InternalBuffer& internalBuffer = secCmdBuffers.GetInternalBuffer();
+		TrippleBuffer<PerThreadCmdBuffers>::InternalBuffer& internalBuffer = mySecCmdBuffers.GetInternalBuffer();
 		for (int image = 0; image < 3; image++)
 		{
 			for (int thread = 0; thread < myMaxThreads; thread++)
 			{
-				internalBuffer[image].push_back(device.allocateCommandBuffers({ graphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)shadersToLoad.size() }));
+				internalBuffer[image].push_back(myDevice.allocateCommandBuffers({ myGraphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)ourShadersToLoad.size() }));
 			}
 		}
 	}
 
 	// we will need semaphores for properly managing the async drawing
-	imgAvailable = device.createSemaphore({});
-	renderFinished = device.createSemaphore({});
+	myImgAvailable = myDevice.createSemaphore({});
+	myRenderFinished = myDevice.createSemaphore({});
 
 	{
 		// our 3 fences to synchronize command submission
-		TrippleBuffer<vk::Fence>::InternalBuffer& internalBuffer = cmdFences.GetInternalBuffer();
+		TrippleBuffer<vk::Fence>::InternalBuffer& internalBuffer = myCmdFences.GetInternalBuffer();
 		for (size_t i = 0; i < 3; i++)
 		{
-			internalBuffer[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
+			internalBuffer[i] = myDevice.createFence({ vk::FenceCreateFlagBits::eSignaled });
 		}
 	}
 }
@@ -1116,25 +1185,32 @@ void GraphicsVK::CreateCommandResources()
 void GraphicsVK::CreateDepthTexture()
 {
 	// create the image of depth format
-	CreateImage(swapInfo.swapExtent.width, swapInfo.swapExtent.height, depthFormat,
+	CreateImage(mySwapInfo.mySwapExtent.width, mySwapInfo.mySwapExtent.height, myDepthFormat,
 		vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, 
-		vk::MemoryPropertyFlagBits::eDeviceLocal, depthImg, depthImgMem);
-	depthImgView = CreateImageView(depthImg, depthFormat, vk::ImageAspectFlagBits::eDepth);
+		vk::MemoryPropertyFlagBits::eDeviceLocal, myDepthImg, myDepthImgMem);
+	myDepthImgView = CreateImageView(myDepthImg, myDepthFormat, vk::ImageAspectFlagBits::eDepth);
 	
 	// in order to use it we have to transition it to optimal attachment layout
-	TransitionLayout(depthImg, depthFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	TransitionLayout(myDepthImg, myDepthFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 }
 
-vk::Format GraphicsVK::FindSupportedFormat(vk::ImageTiling tiling, vk::FormatFeatureFlags feats)
+vk::Format GraphicsVK::FindSupportedFormat(vk::ImageTiling aTiling, vk::FormatFeatureFlags aFeatures) const
 {
-	for (vk::Format format : depthCands)
+	for (vk::Format format : myDepthCands)
 	{
-		vk::FormatProperties props = physDevice.getFormatProperties(format);
-		if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & feats) == feats)
+		vk::FormatProperties props = myPhysDevice.getFormatProperties(format);
+		if (aTiling == vk::ImageTiling::eLinear
+			&& (props.linearTilingFeatures & aFeatures) == aFeatures)
+		{
 			return format;
-		else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & feats) == feats)
+		}
+		else if (aTiling == vk::ImageTiling::eOptimal
+			&& (props.optimalTilingFeatures & aFeatures) == aFeatures)
+		{
 			return format;
+		}
 	}
+	// TODO: get rid of exceptions! Then add a disable exceptions flag for compiler
 	throw runtime_error("Failed to find supported format");
 }
 
@@ -1144,24 +1220,24 @@ void GraphicsVK::CreateDescriptorPool()
 	const uint32_t trippleBufferedGOs = Game::maxObjects * 3;
 	array<vk::DescriptorPoolSize, 2> poolSizes{
 		vk::DescriptorPoolSize { vk::DescriptorType::eUniformBuffer, trippleBufferedGOs }, // to enable tripple buffering
-		vk::DescriptorPoolSize { vk::DescriptorType::eCombinedImageSampler, (uint32_t)texturesToLoad.size() }
+		vk::DescriptorPoolSize { vk::DescriptorType::eCombinedImageSampler, (uint32_t)ourTexturesToLoad.size() }
 	};
 	vk::DescriptorPoolCreateInfo poolInfo{
-		{}, trippleBufferedGOs + (uint32_t)texturesToLoad.size(), (uint32_t)poolSizes.size(), poolSizes.data()
+		{}, trippleBufferedGOs + (uint32_t)ourTexturesToLoad.size(), (uint32_t)poolSizes.size(), poolSizes.data()
 	};
-	descriptorPool = device.createDescriptorPool(poolInfo);
+	myDescriptorPool = myDevice.createDescriptorPool(poolInfo);
 
 	// first, the matrices ubo layout
 	vector<vk::DescriptorSetLayoutBinding> bindings{
 		vk::DescriptorSetLayoutBinding{ 0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex }
 	};
-	uboLayout = device.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
+	myUboLayout = myDevice.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
 
 	// then the samplers
 	bindings = {
 		vk::DescriptorSetLayoutBinding{ 1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment }
 	};
-	samplerLayout = device.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
+	mySamplerLayout = myDevice.createDescriptorSetLayout({ {}, (uint32_t)bindings.size(), bindings.data() });
 }
 
 void GraphicsVK::CreateDescriptorSet()
@@ -1169,15 +1245,15 @@ void GraphicsVK::CreateDescriptorSet()
 	// every object will have it's own descriptor set, supporting tripple buffering
 	const uint32_t trippleBufferedGOs = Game::maxObjects * 3;
 	array<vk::DescriptorSetLayout, trippleBufferedGOs> uboLayouts;
-	uboLayouts.fill(uboLayout);
+	uboLayouts.fill(myUboLayout);
 
 	vk::DescriptorSetAllocateInfo info{
-		descriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
+		myDescriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
 	};
-	DescriptorSets tempUboSets = device.allocateDescriptorSets(info);
+	DescriptorSets tempUboSets = myDevice.allocateDescriptorSets(info);
 	for (int buffer = 0; buffer < 3; buffer++)
 	{
-		uboSets.GetInternalBuffer()[buffer].insert(uboSets.GetInternalBuffer()[buffer].begin(), tempUboSets.begin() + buffer * Game::maxObjects, tempUboSets.begin() + (buffer + 1) * Game::maxObjects);
+		myUboSets.GetInternalBuffer()[buffer].insert(myUboSets.GetInternalBuffer()[buffer].begin(), tempUboSets.begin() + buffer * Game::maxObjects, tempUboSets.begin() + (buffer + 1) * Game::maxObjects);
 	}
 
 	// now we have to update the descriptor's values location
@@ -1191,112 +1267,116 @@ void GraphicsVK::CreateDescriptorSet()
 		{
 			// make descriptor point at buffer
 			bufferInfos.push_back({
-				ubo, GetAlignedOffset(Game::maxObjects * buffer + i, sizeof(MatUBO)), sizeof(MatUBO)
+				myUbo, GetAlignedOffset(Game::maxObjects * buffer + i, sizeof(MatUBO)), sizeof(MatUBO)
 				});
 			// update descriptor with buffer binding
 			writeTargets.push_back({
-				uboSets.GetInternalBuffer()[buffer][i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
+				myUboSets.GetInternalBuffer()[buffer][i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
 				nullptr, &bufferInfos[Game::maxObjects * buffer + i], nullptr
 				});
 		}
 	}
-	device.updateDescriptorSets(writeTargets, nullptr);
+	myDevice.updateDescriptorSets(writeTargets, nullptr);
 
 	// now the samplers
-	vector<vk::DescriptorSetLayout> samplerLayouts(texturesToLoad.size(), samplerLayout);
+	vector<vk::DescriptorSetLayout> samplerLayouts(ourTexturesToLoad.size(), mySamplerLayout);
 	info = {
-		descriptorPool, (uint32_t)samplerLayouts.size(), samplerLayouts.data()
+		myDescriptorPool, (uint32_t)samplerLayouts.size(), samplerLayouts.data()
 	};
-	samplerSets = device.allocateDescriptorSets(info);
+	mySamplerSets = myDevice.allocateDescriptorSets(info);
 
 	// samplers allocated, need to update them
 	vector<vk::DescriptorImageInfo> imageInfos;
-	imageInfos.reserve(texturesToLoad.size());
+	imageInfos.reserve(ourTexturesToLoad.size());
 	writeTargets.clear();
-	for (uint32_t i = 0; i < texturesToLoad.size(); i++)
+	for (uint32_t i = 0; i < ourTexturesToLoad.size(); i++)
 	{
 		imageInfos.push_back({
-			sampler, textureViews[i], vk::ImageLayout::eShaderReadOnlyOptimal
+			mySampler, myTextureViews[i], vk::ImageLayout::eShaderReadOnlyOptimal
 		});
 		writeTargets.push_back({
-			samplerSets[i], 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
+			mySamplerSets[i], 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
 			&imageInfos[i], nullptr, nullptr
 		});
 	}
-	device.updateDescriptorSets(writeTargets, nullptr);
+	myDevice.updateDescriptorSets(writeTargets, nullptr);
 }
 
 void GraphicsVK::CreateUBO()
 {
 	size_t uboSize = GetAlignedOffset(Game::maxObjects * 3, sizeof(MatUBO));
-	printf("[Info] Ubo size: %zd(for %d*3, min alignment: %zd)\n", uboSize, Game::maxObjects, limits.minUniformBufferOffsetAlignment);
-	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, ubo, uboMem);
+	printf("[Info] Ubo size: %zd(for %d*3, min alignment: %zd)\n", uboSize, Game::maxObjects, myLimits.minUniformBufferOffsetAlignment);
+	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, myUbo, myUboMem);
 
-	void* mappedMemStart = device.mapMemory(uboMem, 0, uboSize, {});
-	mappedUboMem.GetInternalBuffer()[0] = mappedMemStart;
-	mappedUboMem.GetInternalBuffer()[1] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
-	mappedUboMem.GetInternalBuffer()[2] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * 2, sizeof(MatUBO));;
+	void* mappedMemStart = myDevice.mapMemory(myUboMem, 0, uboSize, {});
+	myMappedUboMem.GetInternalBuffer()[0] = mappedMemStart;
+	myMappedUboMem.GetInternalBuffer()[1] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
+	myMappedUboMem.GetInternalBuffer()[2] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * 2, sizeof(MatUBO));;
 }
 
 void GraphicsVK::DestroyUBO()
 {
-	if (mappedUboMem.GetInternalBuffer()[0])
+	if (myMappedUboMem.GetInternalBuffer()[0])
 	{
-		device.unmapMemory(uboMem);
-		mappedUboMem.GetInternalBuffer()[0] = nullptr;
+		myDevice.unmapMemory(myUboMem);
+		myMappedUboMem.GetInternalBuffer()[0] = nullptr;
 
-		device.destroyBuffer(ubo);
-		device.freeMemory(uboMem);
+		myDevice.destroyBuffer(myUbo);
+		myDevice.freeMemory(myUboMem);
 	}
 }
 
-size_t GraphicsVK::GetAlignedOffset(size_t ind, size_t step) const
+size_t GraphicsVK::GetAlignedOffset(size_t anInd, size_t aStep) const
 {
-	const float alignFraction = ceil(step * 1.f / limits.minUniformBufferOffsetAlignment);
-	return static_cast<size_t>(ind * alignFraction * limits.minUniformBufferOffsetAlignment);
+	const float alignFraction = ceil(aStep * 1.f / myLimits.minUniformBufferOffsetAlignment);
+	return static_cast<size_t>(anInd * alignFraction * myLimits.minUniformBufferOffsetAlignment);
 }
 
-void GraphicsVK::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Image &img, vk::DeviceMemory &mem)
+void GraphicsVK::CreateImage(uint32_t aWidth, uint32_t aHeight, vk::Format aFormat, vk::ImageTiling aTiling, vk::ImageUsageFlags aUsage, vk::MemoryPropertyFlags aMemProps, vk::Image& anImg, vk::DeviceMemory& aMem) const
 {
-	vk::ImageCreateInfo imgInfo{
-		{}, vk::ImageType::e2D, format, vk::Extent3D {width, height, 1},
-		1, 1, vk::SampleCountFlagBits::e1, tiling, usage, 
+	vk::ImageCreateInfo imgInfo {
+		{}, vk::ImageType::e2D, aFormat, vk::Extent3D { aWidth, aHeight, 1},
+		1, 1, vk::SampleCountFlagBits::e1, aTiling, aUsage,
 		vk::SharingMode::eExclusive, 1, nullptr, 
 		vk::ImageLayout::ePreinitialized
 	};
-	img = device.createImage(imgInfo);
-	vk::MemoryRequirements reqs = device.getImageMemoryRequirements(img);
-	vk::MemoryAllocateInfo memInfo{
-		reqs.size, FindMemoryType(reqs.memoryTypeBits, memProps)
+	anImg = myDevice.createImage(imgInfo);
+	vk::MemoryRequirements reqs = myDevice.getImageMemoryRequirements(anImg);
+	vk::MemoryAllocateInfo memInfo {
+		reqs.size, FindMemoryType(reqs.memoryTypeBits, aMemProps)
 	};
-	mem = device.allocateMemory(memInfo);
-	device.bindImageMemory(img, mem, 0);
+	aMem = myDevice.allocateMemory(memInfo);
+	myDevice.bindImageMemory(anImg, aMem, 0);
 }
 
-void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+void GraphicsVK::TransitionLayout(vk::Image anImg, vk::Format aFormat, vk::ImageLayout anOldLayout, vk::ImageLayout aNewLayout) const
 {
 	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
 	
 	vk::ImageMemoryBarrier barrier;
 	// transfer from - to
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
+	barrier.oldLayout = anOldLayout;
+	barrier.newLayout = aNewLayout;
 	// we don't transfer ownership of image
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	// the image and it's subresource to perform the transition on
-	barrier.image = img;
+	barrier.image = anImg;
 
 	// accounting that depth images can be transitioned as well
-	if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+	if (aNewLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
 	{
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
 		// it can be a depth-stencil
-		if (HasStencilComponent(format))
+		if (HasStencilComponent(aFormat))
+		{
 			barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+		}
 	}
 	else
+	{
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	}
 
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
@@ -1304,28 +1384,35 @@ void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLay
 	barrier.subresourceRange.layerCount = 1;
 
 	// now, depending on layout transitions we need to change access masks
-	if (oldLayout == vk::ImageLayout::ePreinitialized && newLayout == vk::ImageLayout::eTransferSrcOptimal)
+	if (anOldLayout == vk::ImageLayout::ePreinitialized 
+		&& aNewLayout == vk::ImageLayout::eTransferSrcOptimal)
 	{
 		barrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
 	}
-	else if (oldLayout == vk::ImageLayout::ePreinitialized && newLayout == vk::ImageLayout::eTransferDstOptimal)
+	else if (anOldLayout == vk::ImageLayout::ePreinitialized 
+		&& aNewLayout == vk::ImageLayout::eTransferDstOptimal)
 	{
 		barrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 	}
-	else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+	else if (anOldLayout == vk::ImageLayout::eTransferDstOptimal 
+		&& aNewLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
 	{
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 	}
-	else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+	else if (anOldLayout == vk::ImageLayout::eUndefined 
+		&& aNewLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
 	{
 		barrier.srcAccessMask = vk::AccessFlagBits();
 		barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 	}
 	else
-		printf("[Error] Transition image layout unsupported: %d -> %d\n", oldLayout, newLayout);
+	{
+		printf("[Error] Transition image layout unsupported: %d -> %d\n", anOldLayout, aNewLayout);
+		assert(false);
+	}
 
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
@@ -1338,34 +1425,34 @@ void GraphicsVK::TransitionLayout(vk::Image img, vk::Format format, vk::ImageLay
 }
 
 // images must already be in Transfer Src/Dst Optimal layout
-void GraphicsVK::CopyImage(vk::Buffer srcBuff, vk::Image dstImage, uint32_t width, uint32_t height)
+void GraphicsVK::CopyImage(vk::Buffer aSrcBuffer, vk::Image aDstImage, uint32_t aWidth, uint32_t aHeight) const
 {
 	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
 	
-	vk::ImageSubresourceLayers layers{
+	vk::ImageSubresourceLayers layers {
 		vk::ImageAspectFlagBits::eColor, 0, 0, 1
 	};
 
-	vk::BufferImageCopy region{
+	vk::BufferImageCopy region {
 		0, 0, 0, // no offset, tightly packed rows and columns
-		layers, {}, { width, height, 1}
+		layers, {}, { aWidth, aHeight, 1}
 	};
-	cmdBuffer.copyBufferToImage(srcBuff, dstImage, vk::ImageLayout::eTransferDstOptimal, 
+	cmdBuffer.copyBufferToImage(aSrcBuffer, aDstImage, vk::ImageLayout::eTransferDstOptimal,
 		1, &region);
 
 	EndOneTimeCmdBuffer(cmdBuffer);
 }
 
-vk::ImageView GraphicsVK::CreateImageView(vk::Image img, vk::Format format, vk::ImageAspectFlags aspect)
+vk::ImageView GraphicsVK::CreateImageView(vk::Image anImg, vk::Format aFormat, vk::ImageAspectFlags anAspect) const
 {
 	vk::ImageSubresourceRange range{
-		aspect, 0, 1, 0, 1
+		anAspect, 0, 1, 0, 1
 	};
 
 	vk::ImageViewCreateInfo info{
-		{}, img, vk::ImageViewType::e2D, format, {}, range
+		{}, anImg, vk::ImageViewType::e2D, aFormat, {}, range
 	};
-	return device.createImageView(info);
+	return myDevice.createImageView(info);
 }
 
 void GraphicsVK::CreateSampler()
@@ -1384,7 +1471,7 @@ void GraphicsVK::CreateSampler()
 		vk::BorderColor::eIntOpaqueBlack, // color of the border
 		false // using normalized coordinates
 	};
-	sampler = device.createSampler(info);
+	mySampler = myDevice.createSampler(info);
 }
 
 vk::VertexInputBindingDescription GraphicsVK::GetBindingDescription() const
@@ -1410,57 +1497,60 @@ array<vk::VertexInputAttributeDescription, 3> GraphicsVK::GetAttribDescriptions(
 	return descs;
 }
 
-void GraphicsVK::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps, vk::Buffer &buff, vk::DeviceMemory &mem)
+void GraphicsVK::CreateBuffer(vk::DeviceSize aSize, vk::BufferUsageFlags aUsage, vk::MemoryPropertyFlags aMemProps, vk::Buffer& aBuff, vk::DeviceMemory& aMem) const
 {
 	// create vbo
 	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = size;
-	bufferInfo.usage = usage;
+	bufferInfo.size = aSize;
+	bufferInfo.usage = aUsage;
 	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-	uint32_t famIndices[2] = { queues.graphicsFamIndex, queues.transferFamIndex };
+	uint32_t famIndices[2] = { myQueues.myGraphicsFamIndex, myQueues.myTransferFamIndex };
 	bufferInfo.queueFamilyIndexCount = 2;
 	bufferInfo.pQueueFamilyIndices = famIndices;
-	buff = device.createBuffer(bufferInfo);
+	aBuff = myDevice.createBuffer(bufferInfo);
 
 	// buffer doesn't have any memmory assigned to it yet
-	vk::MemoryRequirements reqs = device.getBufferMemoryRequirements(buff);
-	vk::MemoryAllocateInfo allocInfo{
+	vk::MemoryRequirements reqs = myDevice.getBufferMemoryRequirements(aBuff);
+	vk::MemoryAllocateInfo allocInfo {
 		reqs.size,
-		FindMemoryType(reqs.memoryTypeBits,	memProps)
+		FindMemoryType(reqs.memoryTypeBits,	aMemProps)
 	};
-	mem = device.allocateMemory(allocInfo);
+	aMem = myDevice.allocateMemory(allocInfo);
 	// now that we have the memory for it created, we have to bind it to buffer
-	device.bindBufferMemory(buff, mem, 0);
+	myDevice.bindBufferMemory(aBuff, aMem, 0);
 }
 
-void GraphicsVK::CopyBuffer(vk::Buffer from, vk::Buffer to, vk::DeviceSize size)
+void GraphicsVK::CopyBuffer(vk::Buffer aFrom, vk::Buffer aTo, vk::DeviceSize aSize) const
 {
 	// to copy it over a command buffer is needed
 	vk::CommandBuffer cmdBuffer = CreateOneTimeCmdBuffer(vk::CommandBufferLevel::ePrimary);
-	vk::BufferCopy region{
-		0, 0, size
+	vk::BufferCopy region {
+		0, 0, aSize
 	};
-	cmdBuffer.copyBuffer(from, to, 1, &region);
+	cmdBuffer.copyBuffer(aFrom, aTo, 1, &region);
 	EndOneTimeCmdBuffer(cmdBuffer);
 }
 
-uint32_t GraphicsVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags props)
+uint32_t GraphicsVK::FindMemoryType(uint32_t aTypeFilter, vk::MemoryPropertyFlags aProps) const
 {
-	vk::PhysicalDeviceMemoryProperties devProps = physDevice.getMemoryProperties();
+	vk::PhysicalDeviceMemoryProperties devProps = myPhysDevice.getMemoryProperties();
 	for (uint32_t i = 0; i < devProps.memoryTypeCount; i++)
 	{
-		if (typeFilter & (1 << i) && (devProps.memoryTypes[i].propertyFlags & props) == props)
+		if (aTypeFilter & (1 << i)
+			&& (devProps.memoryTypes[i].propertyFlags & aProps) == aProps)
+		{
 			return i;
+		}
 	}
 	return -1;
 }
 
-vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer(vk::CommandBufferLevel level)
+vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer(vk::CommandBufferLevel aLevel) const
 {
 	vk::CommandBufferAllocateInfo info{
-		graphCmdPool, level, 1
+		myGraphCmdPool, aLevel, 1
 	};
-	vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info)[0];
+	vk::CommandBuffer cmdBuffer = myDevice.allocateCommandBuffers(info)[0];
 
 	vk::CommandBufferBeginInfo beginInfo{
 		vk::CommandBufferUsageFlagBits::eOneTimeSubmit, nullptr
@@ -1469,20 +1559,20 @@ vk::CommandBuffer GraphicsVK::CreateOneTimeCmdBuffer(vk::CommandBufferLevel leve
 	return cmdBuffer;
 }
 
-void GraphicsVK::EndOneTimeCmdBuffer(vk::CommandBuffer cmdBuff)
+void GraphicsVK::EndOneTimeCmdBuffer(vk::CommandBuffer aCmdBuff) const
 {
-	cmdBuff.end();
+	aCmdBuff.end();
 	
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuff;
-	queues.graphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
-	queues.graphicsQueue.waitIdle();
+	submitInfo.pCommandBuffers = &aCmdBuff;
+	myQueues.myGraphicsQueue.submit(1, &submitInfo, VK_NULL_HANDLE);
+	myQueues.myGraphicsQueue.waitIdle();
 	
-	device.freeCommandBuffers(graphCmdPool, 1, &cmdBuff);
+	myDevice.freeCommandBuffers(myGraphCmdPool, 1, &aCmdBuff);
 }
 
-bool GraphicsVK::LayersAvailable(const vector<const char*> &validationLayers) const
+bool GraphicsVK::LayersAvailable(const vector<const char*> &aValidationLayersList) const
 {
 	//what we have
 	uint32_t availableLayersCount;
@@ -1493,7 +1583,7 @@ bool GraphicsVK::LayersAvailable(const vector<const char*> &validationLayers) co
 
 	// validation layers lookup
 	bool foundAll = true;
-	for (const char* layerRequested : validationLayers)
+	for (const char* layerRequested : aValidationLayersList)
 	{
 		bool found = false;
 		for (vk::LayerProperties layerAvailable : availableLayers)

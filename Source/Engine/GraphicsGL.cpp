@@ -14,20 +14,20 @@
 }
 
 // Public Methods
-void GraphicsGL::Init(const vector<Terrain*>& terrains)
+void GraphicsGL::Init(const vector<Terrain*>& aTerrainList)
 {
-	activeGraphics = this;
+	ourActiveGraphics = this;
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
-	window = glfwCreateWindow(width, height, "Vulkan RTS Engine", nullptr, nullptr);
-	glfwSetWindowSizeCallback(window, GraphicsGL::OnWindowResized);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - GL", nullptr, nullptr);
+	glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowSizeCallback(myWindow, GraphicsGL::OnWindowResized);
 	
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(myWindow);
 	glfwSwapInterval(0); // turning off vsync
 	glewExperimental = true;
 	GLenum err = glewInit();
@@ -55,9 +55,9 @@ void GraphicsGL::Init(const vector<Terrain*>& terrains)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glViewport(0, 0, (int)width, (int)height);
+	glViewport(0, 0, ourWidth, ourHeight);
 
-	LoadResources(terrains);
+	LoadResources(aTerrainList);
 
 	glActiveTexture(GL_TEXTURE0);
 
@@ -70,11 +70,10 @@ void GraphicsGL::BeginGather()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsGL::Render(const Camera& cam, const GameObject* go)
+void GraphicsGL::Render(const Camera& aCam, const GameObject* aGO)
 {
-	Renderer *r = go->GetRenderer();
-	if (!r)
-		return;
+	const Renderer* r = aGO->GetRenderer();
+	assert(r);
 
 	RenderJob job{
 		r->GetShader(),
@@ -83,140 +82,150 @@ void GraphicsGL::Render(const Camera& cam, const GameObject* go)
 	};
 
 	// copy the existing ones
-	job.uniforms = go->GetUniforms();
+	job.myUniforms = aGO->GetUniforms();
 	// add add our own
-	glm::mat4 model = go->GetMatrix();
-	glm::mat4 mvp = cam.Get() * model;
+	glm::mat4 model = aGO->GetMatrix();
+	glm::mat4 mvp = aCam.Get() * model;
 
 	Shader::UniformValue uniform;
-	uniform.m = mvp;
-	job.uniforms["mvp"] = uniform;
+	uniform.myMatrix = mvp;
+	job.myUniforms["mvp"] = uniform;
 
 	// we don't actually render, we just create a render job, Display() does the rendering
 	{
-		tbb::spin_mutex::scoped_lock spinLock(jobsLock);
-		threadJobs.push_back(job);
-		renderCalls++;
+		tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
+		myThreadJobs.push_back(job);
+		myRenderCalls++;
 	}
 }
 
 void GraphicsGL::Display()
 {
 	// TODO: remove this once we have double/tripple buffering
-	tbb::spin_mutex::scoped_lock spinLock(jobsLock);
-	for (const RenderJob& r : threadJobs)
+	tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
+	for (const RenderJob& r : myThreadJobs)
 	{
-		Model vao = models[r.model];
-		Shader shader = shaders[r.shader];
-		TextureId texture = textures[r.texture];
+		Model vao = myModels[r.myModel];
+		Shader shader = myShaders[r.myShader];
+		TextureId texture = myTextures[r.myTexture];
 
-		if (shader.id != currShader)
+		if (shader.myId != myCurrentShader)
 		{
-			glUseProgram(shader.id);
-			currShader = shader.id;
+			glUseProgram(shader.myId);
+			myCurrentShader = shader.myId;
 		}
 
-		if (texture != currTexture)
+		if (texture != myCurrentTexture)
 		{
 			glBindTexture(GL_TEXTURE_2D, texture);
-			glUniform1i(shader.uniforms["tex"].loc, 0);
-			currTexture = texture;
+			glUniform1i(shader.myUniforms["tex"].myLocation, 0);
+			myCurrentTexture = texture;
 		}
 
-		if (vao.id != currModel)
+		if (vao.myId != myCurrentModel)
 		{
-			glBindVertexArray(vao.id);
-			currModel = vao.id;
+			glBindVertexArray(vao.myId);
+			myCurrentModel = vao.myId;
 		}
 
-		for (const pair<string, Shader::UniformValue>& pair : r.uniforms)
+		for (const pair<string, Shader::UniformValue>& pair : r.myUniforms)
 		{
 			// check to see if shader has this uniform bind point
-			auto iter = shader.uniforms.find(pair.first);
-			if (iter == shader.uniforms.end())
+			auto iter = shader.myUniforms.find(pair.first);
+			if (iter == shader.myUniforms.end())
+			{
 				continue;
+			}
 
 			// shader has it, so use it
 			Shader::BindPoint bp = iter->second;
 			Shader::UniformValue u = pair.second;
 
 			// pass it's value
-			switch (bp.type)
+			switch (bp.myType)
 			{
 			case Shader::UniformType::Int:
-				glUniform1i(bp.loc, u.i);
+				glUniform1i(bp.myLocation, u.myInt);
 				break;
 			case Shader::UniformType::Float:
-				glUniform1f(bp.loc, u.f);
+				glUniform1f(bp.myLocation, u.myFloat);
 				break;
 			case Shader::UniformType::Vec2:
-				glUniform2f(bp.loc, u.v2.x, u.v2.y);
+				glUniform2f(bp.myLocation, u.myV2.x, u.myV2.y);
 				break;
 			case Shader::UniformType::Vec3:
-				glUniform3f(bp.loc, u.v3.x, u.v3.y, u.v3.z);
+				glUniform3f(bp.myLocation, u.myV3.x, u.myV3.y, u.myV3.z);
 				break;
 			case Shader::UniformType::Vec4:
-				glUniform4f(bp.loc, u.v4.x, u.v4.y, u.v4.z, u.v4.w);
+				glUniform4f(bp.myLocation, u.myV4.x, u.myV4.y, u.myV4.z, u.myV4.w);
 				break;
 			case Shader::UniformType::Mat4:
-				glUniformMatrix4fv(bp.loc, 1, false, (const GLfloat*)value_ptr(u.m));
+				glUniformMatrix4fv(bp.myLocation, 1, false, (const GLfloat*)glm::value_ptr(u.myMatrix));
 				break;
 			}
 		}
 			
-		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(vao.indexCount), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(vao.myIndexCount), GL_UNSIGNED_INT, 0);
 	}
-	threadJobs.clear();
-	glfwSwapBuffers(window);
+	myThreadJobs.clear();
+	glfwSwapBuffers(myWindow);
 }
 
 void GraphicsGL::CleanUp()
 {
-	for (Shader p : shaders)
+	for (Shader p : myShaders)
 	{
-		for (uint32_t s : p.shaderSources)
+		for (uint32_t s : p.myGLSources)
+		{
 			glDeleteShader(s);
-		glDeleteProgram(p.id);
+		}
+		glDeleteProgram(p.myId);
 	}
-	shaders.clear();
+	myShaders.clear();
 
-	for (Model m : models)
+	for (Model m : myModels)
 	{
-		glDeleteBuffers(static_cast<GLsizei>(m.buffers.size()), m.buffers.data());
-		glDeleteBuffers(1, &m.id);
+		constexpr size_t elemCount = sizeof(m.myGLBuffers) / sizeof(uint32_t);
+		glDeleteBuffers(elemCount, m.myGLBuffers);
+		glDeleteBuffers(1, &m.myId);
 	}
-	models.clear();
+	myModels.clear();
 
-	glDeleteTextures(static_cast<GLsizei>(textures.size()), textures.data());
-	textures.clear();
+	glDeleteTextures(static_cast<GLsizei>(myTextures.size()), myTextures.data());
+	myTextures.clear();
 
-	glfwDestroyWindow(window);
-	activeGraphics = NULL;
+	glfwDestroyWindow(myWindow);
+	ourActiveGraphics = nullptr;
 }
 
-void GraphicsGL::OnResize(int width, int height)
+void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 {
-	this->width = width;
-	this->height = height;
-	glViewport(0, 0, width, height);
-}
-
-void GraphicsGL::OnWindowResized(GLFWwindow * window, int width, int height)
-{
-	if (width == 0 && height == 0)
+	if (aWidth == 0 && aHeight == 0)
+	{
 		return;
+	}
 
-	((GraphicsGL*)activeGraphics)->OnResize(width, height);
+	((GraphicsGL*)ourActiveGraphics)->OnResize(aWidth, aHeight);
 }
 
-void GraphicsGL::LoadResources(const vector<Terrain*>& terrains)
+void GraphicsGL::OnResize(int aWidth, int aHeight)
+{
+	ourWidth = aWidth;
+	ourHeight = aHeight;
+
+	// TODO: move this to BeginGather to get rid of the lock
+	tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
+	glViewport(0, 0, aWidth, aHeight);
+}
+
+void GraphicsGL::LoadResources(const vector<Terrain*>& aTerrainList)
 {
 	// first, a couple base shaders
-	for(size_t i=0; i<shadersToLoad.size(); i++)
+	for(size_t i=0; i<ourShadersToLoad.size(); i++)
 	{
 		Shader shader;
 
-		string vert = readFile("assets/GLShaders/" + shadersToLoad[i] + ".vert");
+		string vert = ReadFile("assets/GLShaders/" + ourShadersToLoad[i] + ".vert");
 		const char *data = vert.c_str();
 		GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertShader, 1, &data, NULL);
@@ -225,38 +234,38 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& terrains)
 		GLint isCompiled = 0;
 		glGetShaderiv(vertShader, GL_COMPILE_STATUS, &isCompiled);
 
-		string frag = readFile("assets/GLShaders/" + shadersToLoad[i] + ".frag");
+		string frag = ReadFile("assets/GLShaders/" + ourShadersToLoad[i] + ".frag");
 		GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 		data = frag.c_str();
 		glShaderSource(fragShader, 1, &data, NULL);
 		glCompileShader(fragShader);
 
-		shader.id = glCreateProgram();
-		glAttachShader(shader.id, vertShader);
-		glAttachShader(shader.id, fragShader);
-		glLinkProgram(shader.id);
+		shader.myId = glCreateProgram();
+		glAttachShader(shader.myId, vertShader);
+		glAttachShader(shader.myId, fragShader);
+		glLinkProgram(shader.myId);
 
 		GLint isLinked = 0;
-		glGetProgramiv(shader.id, GL_LINK_STATUS, &isLinked);
+		glGetProgramiv(shader.myId, GL_LINK_STATUS, &isLinked);
 
 		if (isLinked == GL_FALSE)
 		{
 			GLint length = 0;
-			glGetProgramiv(shader.id, GL_INFO_LOG_LENGTH, &length);
+			glGetProgramiv(shader.myId, GL_INFO_LOG_LENGTH, &length);
 
 			char *msg = (char*)malloc(length);
-			glGetProgramInfoLog(shader.id, length, &length, msg);
+			glGetProgramInfoLog(shader.myId, length, &length, msg);
 
 			printf("[Error] Shader linking error: %s\n", msg);
 			free(msg);
 
-			glDeleteProgram(shader.id);
+			glDeleteProgram(shader.myId);
 			return;
 		}
 
 		//going to iterate through every uniform and cache info about it
 		GLint uniformCount = 0;
-		glGetProgramiv(shader.id, GL_ACTIVE_UNIFORMS, &uniformCount);
+		glGetProgramiv(shader.myId, GL_ACTIVE_UNIFORMS, &uniformCount);
 		const int maxLength = 100;
 		char nameChars[maxLength];
 		for (int i = 0; i < uniformCount; i++)
@@ -264,69 +273,71 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& terrains)
 			GLenum type = 0;
 			GLsizei nameLength = 0;
 			GLsizei uniSize = 0;
-			glGetActiveUniform(shader.id, i, maxLength, &nameLength, &uniSize, &type, nameChars);
+			glGetActiveUniform(shader.myId, i, maxLength, &nameLength, &uniSize, &type, nameChars);
 			string name(nameChars, nameLength);
-			GLint loc = glGetUniformLocation(shader.id, name.c_str());
+			GLint loc = glGetUniformLocation(shader.myId, name.c_str());
 			
 			// converting to API independent format
 			Shader::UniformType uniformType;
-			if (type == GL_FLOAT)
-				uniformType = Shader::UniformType::Float;
-			else if (type == GL_FLOAT_VEC2)
-				uniformType = Shader::UniformType::Vec2;
-			else if (type == GL_FLOAT_VEC3)
-				uniformType = Shader::UniformType::Vec3;
-			else if (type == GL_FLOAT_VEC4)
-				uniformType = Shader::UniformType::Vec4;
-			else if (type == GL_FLOAT_MAT4)
-				uniformType = Shader::UniformType::Mat4;
-			else
-				uniformType = Shader::UniformType::Int;
+			switch (type)
+			{
+			case GL_FLOAT:		uniformType = Shader::UniformType::Float;	break;
+			case GL_FLOAT_VEC2:	uniformType = Shader::UniformType::Vec2;	break;
+			case GL_FLOAT_VEC3: uniformType = Shader::UniformType::Vec3;	break;
+			case GL_FLOAT_VEC4: uniformType = Shader::UniformType::Vec4;	break;
+			case GL_FLOAT_MAT4: uniformType = Shader::UniformType::Mat4;	break;
+			default:			uniformType = Shader::UniformType::Int;		break;
+			}
 
 			Shader::BindPoint bindPoint{ loc, uniformType };
-			shader.uniforms[name] = bindPoint;
+			shader.myUniforms[name] = bindPoint;
 		}
 
-		shader.shaderSources.push_back(fragShader);
-		shader.shaderSources.push_back(vertShader);
-		shaders.push_back(shader);
+		// TODO: replace 0 and 1 with ShaderType enum
+		shader.myGLSources[0] = fragShader;
+		shader.myGLSources[1] = vertShader;
+		myShaders.push_back(shader);
 	}
 
-	for(size_t i=0; i<modelsToLoad.size(); i++)
+	for(size_t i=0; i<ourModelsToLoad.size(); i++)
 	{
 		Model m;
 		vector<Vertex> vertices;
 		vector<uint32_t> indices;
 
-		if (modelsToLoad[i].substr(0, 2) == "%t")
+		if (ourModelsToLoad[i].substr(0, 2) == "%t")
 		{
-			int index = stoi(modelsToLoad[i].substr(2), nullptr);
-			const Terrain& t = *terrains[index];
+			int index = stoi(ourModelsToLoad[i].substr(2), nullptr);
+			const Terrain& t = *aTerrainList[index];
 			vertices.insert(vertices.end(), t.GetVertBegin(), t.GetVertEnd());
 			indices.insert(indices.end(), t.GetIndBegin(), t.GetIndEnd());
-			m.center = t.GetCenter();
-			m.sphereRadius = t.GetRange();
+			m.myCenter = t.GetCenter();
+			m.mySphereRadius = t.GetRange();
 		}
 		else
-			LoadModel(modelsToLoad[i], vertices, indices, m.center, m.sphereRadius);
+		{
+			LoadModel(ourModelsToLoad[i], vertices, indices, m.myCenter, m.mySphereRadius);
+		}
 
-		m.vertexCount = vertices.size();
-		m.indexCount = indices.size();
+		m.myVertexCount = vertices.size();
+		m.myIndexCount = indices.size();
 		
-		glGenVertexArrays(1, &m.id);
-		glBindVertexArray(m.id);
+		glGenVertexArrays(1, &m.myId);
+		glBindVertexArray(m.myId);
 
 		GLuint vbo;
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
-		m.buffers.push_back(vbo);
+		// TODO: replace 0 with BufferType enum
+		m.myGLBuffers[0] = vbo;
 
 		GLuint ebo;
 		glGenBuffers(1, &ebo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::uint) * indices.size(), indices.data(), GL_STATIC_DRAW);
-		m.buffers.push_back(ebo);
+		// TODO: replace 1 with BufferType enum
+		m.myGLBuffers[1] = ebo;
 
 		// tell the VAO that 0 is the position element
 		glEnableVertexAttribArray(0);
@@ -340,12 +351,13 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& terrains)
 		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void**)(offsetof(Vertex, normal)));
 
+		// we're done setting up the VBA, so unbind all resources
 		glBindVertexArray(0);
-		models.push_back(m);
+		myModels.push_back(m);
 	}
 
 	// lastly, the textures
-	for(size_t i=0; i<texturesToLoad.size(); i++)
+	for(size_t i=0; i<ourTexturesToLoad.size(); i++)
 	{
 		GLuint tex;
 		glGenTextures(1, &tex);
@@ -357,14 +369,15 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& terrains)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		int texWidth, texHeight, texChannels;
-		string name = "assets/textures/" + texturesToLoad[i];
+		string name = "assets/textures/" + ourTexturesToLoad[i];
 		void *pixels = LoadTexture(name, &texWidth, &texHeight, &texChannels, STBI_rgb);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+		// TODO: enable mipmap generation later
 		//glGenerateMipmap(GL_TEXTURE_2D);
 
 		FreeTexture(pixels);
 
-		textures.push_back(tex);
+		myTextures.push_back(tex);
 	}
 }

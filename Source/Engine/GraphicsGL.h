@@ -5,35 +5,37 @@
 class GraphicsGL : public Graphics
 {
 public:
-	void Init(const vector<Terrain*>& terrains) override;
+	void Init(const vector<Terrain*>& aTerrainList) override;
 	void BeginGather() override;
-	void Render(const Camera& cam, const GameObject *go) override;
+	void Render(const Camera& aCam, const GameObject* aGO) override;
 	void Display() override;
 	void CleanUp() override;
 
-	void SetThreadingHint(glm::uint maxThreads) override {}
-
-	static void OnWindowResized(GLFWwindow *window, int width, int height);
+	// TODO: get rid of the static method by using a bound functor object
+	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 
 private:
+	ModelId myCurrentModel;
+	ShaderId myCurrentShader;
+	TextureId myCurrentTexture;
 
-	void OnResize(int width, int height);
+	void OnResize(int aWidth, int aHeight);
 
-	vector<Shader> shaders;
-	vector<TextureId> textures;
-	void LoadResources(const vector<Terrain*>& terrains);
+	vector<Shader> myShaders;
+	vector<TextureId> myTextures;
+	void LoadResources(const vector<Terrain*>& aTerrainList);
 
 	// emulating a render queue
 	// should cache the shader's uniforms as well
 	struct RenderJob 
 	{
-		ShaderId shader;
-		TextureId texture;
-		ModelId model;
+		ShaderId myShader;
+		TextureId myTexture;
+		ModelId myModel;
 
-		unordered_map<string, Shader::UniformValue> uniforms;
+		unordered_map<string, Shader::UniformValue> myUniforms;
 	};
 	// TODO: replace this with a double/tripple buffer concept
-	vector<RenderJob> threadJobs;
-	tbb::spin_mutex jobsLock;
+	vector<RenderJob> myThreadJobs;
+	tbb::spin_mutex myJobsLock;
 };
