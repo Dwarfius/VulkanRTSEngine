@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TrippleBuffer.h"
+#include "PhysicsDebugDrawer.h"
 
 class Graphics;
 class GameObject;
@@ -24,8 +25,10 @@ public:
 	const Graphics* GetGraphics() const { return myGraphics.get(); }
 
 	void AddRenderable(const GameObject* aGo);
+	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor);
+	void AddLines(const vector<PhysicsDebugDrawer::LineDraw>& aLineCache);
 
-	void InternalLoop();
+	void SubmitRenderables();
 
 private:
 	const vector<Terrain*>* myTerrains;
@@ -34,6 +37,7 @@ private:
 
 	// TODO: separate gameobject and renderable
 	TrippleBuffer<vector<const GameObject*>> myTrippleRenderables;
+	TrippleBuffer<vector<PhysicsDebugDrawer::LineDraw>> myTrippleLines;
 
 	atomic<bool> myNeedsSwitch;
 	atomic<bool> myHasWorkPending;

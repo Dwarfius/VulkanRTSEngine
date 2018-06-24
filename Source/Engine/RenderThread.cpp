@@ -59,10 +59,24 @@ void RenderThread::AddRenderable(const GameObject* aGo)
 	buffer.push_back(aGo);
 }
 
-void RenderThread::InternalLoop()
+void RenderThread::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)
+{
+	vector<PhysicsDebugDrawer::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	buffer.push_back(PhysicsDebugDrawer::LineDraw{ aFrom, aColor, aTo, aColor });
+}
+
+void RenderThread::AddLines(const vector<PhysicsDebugDrawer::LineDraw>& aLineCache)
+{
+	vector<PhysicsDebugDrawer::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	buffer.insert(buffer.end(), aLineCache.begin(), aLineCache.end());
+}
+
+void RenderThread::SubmitRenderables()
 {
 	if (Game::GetInstance()->IsPaused() || !myHasWorkPending)
+	{
 		this_thread::yield();
+	}
 
 	if (!myIsUsingVulkan)
 	{
@@ -105,10 +119,13 @@ void RenderThread::InternalLoop()
 	// the current render queue has been used up, we can fill it up again
 	myGraphics->BeginGather();
 
+	// processing our renderables
 	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetCurrent();
 	myTrippleRenderables.Advance();
 	myTrippleRenderables.GetCurrent().clear();
 
+	// TODO: this is most probably overkill considering that Render call is lightweight
+	// need to look into batching those
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
 		[&](const GameObject* aGo) {
@@ -117,6 +134,14 @@ void RenderThread::InternalLoop()
 			myGraphics->Render(cam, aGo);
 		}
 	});
+
+	// schedule drawing out our debug drawings
+	const vector<PhysicsDebugDrawer::LineDraw>& myLines = myTrippleLines.GetCurrent();
+	myTrippleLines.Advance();
+	myTrippleLines.GetCurrent().clear();
+
+	myGraphics->PrepareLineCache(myLines.size());
+	myGraphics->DrawLines(cam, myLines);
 
 	myGraphics->Display();
 

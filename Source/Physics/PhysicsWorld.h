@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PhysicsDebugDrawer.h"
+
 class PhysicsEntity;
 class btBroadphaseInterface;
 class btDefaultCollisionConfiguration;
@@ -18,6 +20,8 @@ public:
 	void RemoveEntity(PhysicsEntity* anEntity);
 
 	void Simulate(float aDeltaTime);
+
+	const vector<PhysicsDebugDrawer::LineDraw>& GetDebugLineCache() const;
 
 private:
 	const int MaxSteps = 4;

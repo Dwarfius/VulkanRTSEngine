@@ -31,5 +31,7 @@ void TrippleBuffer<T>::Advance()
 {
 	myCurrBuffer++;
 	if (myCurrBuffer == 3)
+	{
 		myCurrBuffer = 0;
+	}
 }

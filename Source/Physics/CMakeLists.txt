@@ -7,9 +7,9 @@ find_package(BULLET REQUIRED)
 find_package(GLM REQUIRED)
 
 set(SRC "Common.cpp" "PhysicsEntity.cpp" "PhysicsWorld.cpp" "PhysicsShapeManager.cpp" 
-	"PhysicsShapes.cpp")
+	"PhysicsShapes.cpp" "PhysicsDebugDrawer.cpp")
 set(HEADERS "Common.h" "PhysicsEntity.h" "PhysicsWorld.h" "PhysicsShapeManager.h" 
-	"PhysicsShapes.h")
+	"PhysicsShapes.h" "PhysicsDebugDrawer.h")
 source_group("" FILES ${SRC} ${HEADERS})
 
 add_library(${PROJECT_NAME} STATIC ${SRC} ${HEADERS})
@@ -21,6 +21,5 @@ endif(MSVC)
 # do this trick later, so that consumers have to write #include <libname/...>:
 # target_include_directories(libname INTERFACE include PRIVATE include/libname)
 target_include_directories(${PROJECT_NAME} 
-							PUBLIC . ${GLM_INCLUDE_DIR}
-							PRIVATE	${BULLET_INCLUDE_DIRS})
+							PUBLIC . ${GLM_INCLUDE_DIR} ${BULLET_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${BULLET_LIBRARIES})

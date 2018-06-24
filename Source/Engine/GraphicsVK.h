@@ -18,6 +18,9 @@ public:
 	void Display() override;
 	void CleanUp() override;
 
+	void PrepareLineCache(size_t aCacheSize) override {}
+	void DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache) override {}
+
 	// TODO: need to try to get rid of this and automate it
 	void SetMaxThreads(uint32_t aMaxThreadCount) override;
 

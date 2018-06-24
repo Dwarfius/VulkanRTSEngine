@@ -28,7 +28,7 @@
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
-constexpr bool BootWithVK = true;
+constexpr bool BootWithVK = false;
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
@@ -57,7 +57,7 @@ Game::Game(ReportError aReporterFunc)
 	//Audio::SetMusicTrack(2);
 
 	Terrain* terr = new Terrain();
-	terr->Generate("assets/textures/heightmap.png", 0.3f, glm::vec3(), 2.f, 1);
+	terr->Generate("assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
 	myTerrains.push_back(terr);
 
 	myRenderThread = make_unique<RenderThread>();
@@ -67,6 +67,8 @@ Game::Game(ReportError aReporterFunc)
 	myTaskManager = make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
+
+	// TODO: need to clean this up and refactor
 	// here goes the experiment
 	terr->CreatePhysics();
 	myPhysWorld->AddEntity(terr->GetPhysicsEntity());
@@ -110,23 +112,20 @@ void Game::Init()
 	task.AddDependency(GameTask::AddGameObjects);
 	myTaskManager->AddTask(task);
 
-	// TODO: Need to restructure the graph to get rid of game update dependency
-	// probably do AddGameObjects->PhysicsUpdate->GameUpdate
 	task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
-	task.AddDependency(GameTask::GameUpdate);
-	myTaskManager->AddTask(task);
-
-	task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
-	task.AddDependency(GameTask::GameUpdate);
-	task.AddDependency(GameTask::PhysicsUpdate);
 	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
 	task.AddDependency(GameTask::GameUpdate);
 	myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::Render, bind(&Game::Render, this));
+	task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
 	task.AddDependency(GameTask::RemoveGameObjects);
+	task.AddDependency(GameTask::PhysicsUpdate);
+	myTaskManager->AddTask(task);
+
+	task = GameTask(GameTask::Render, bind(&Game::Render, this));
+	task.AddDependency(GameTask::UpdateEnd);
 	myTaskManager->AddTask(task);
 
 	// TODO: will need to fix up audio
@@ -144,7 +143,7 @@ void Game::RunMainThread()
 
 	if (myRenderThread->IsBusy())
 	{
-		myRenderThread->InternalLoop();
+		myRenderThread->SubmitRenderables();
 
 		// TODO: need a semaphore for this, to disconnect from the render thread
 		RunTaskGraph();
@@ -245,9 +244,6 @@ void Game::Update()
 
 void Game::PhysicsUpdate()
 {
-	glm::mat4 t = myBall1->GetTransformInterp();
-	glm::vec4 pos = t[3];
-	printf("Pos: %f %f %f\n", pos.x, pos.y, pos.z);
 	myPhysWorld->Simulate(myDeltaTime);
 }
 
@@ -260,8 +256,17 @@ void Game::Render()
 
 	for (const pair<UID, GameObject*>& elem : myGameObjects)
 	{
-		myRenderThread->AddRenderable(elem.second);
+		if (elem.second->GetRenderer())
+		{
+			myRenderThread->AddRenderable(elem.second);
+		}
 	}
+
+	// adding axis for world navigation
+	myRenderThread->AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	myRenderThread->AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	myRenderThread->AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
+	myRenderThread->AddLines(myPhysWorld->GetDebugLineCache());
 
 	// we have to wait until the render thread finishes processing the submitted commands
 	// otherwise we'll screw the command buffers
@@ -270,6 +275,7 @@ void Game::Render()
 		tbb::this_tbb_thread::yield();
 	}
 
+	// signal that we have submitted extra work
 	myRenderThread->Work();
 }
 
@@ -304,13 +310,13 @@ void Game::RemoveGameObjects()
 	ourGODeleteEnabled = false;
 }
 
-GameObject* Game::Instantiate(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
+GameObject* Game::Instantiate(glm::vec3 aPos /*=glm::vec3()*/, glm::vec3 aRot /*=glm::vec3()*/, glm::vec3 aScale /*=glm::vec3(1)*/)
 {
 	GameObject* go = nullptr;
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	if (myGameObjects.size() < maxObjects)
 	{
-		go = new GameObject(pos, rot, scale);
+		go = new GameObject(aPos, aRot, aScale);
 		myAddQueue.emplace(go);
 	}
 	return go;

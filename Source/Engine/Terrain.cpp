@@ -20,7 +20,7 @@ Terrain::~Terrain()
 	}
 }
 
-void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYScale, float anUvScale)
+void Terrain::Generate(string aName, float aStep, float anYScale, float anUvScale)
 {
 	myStep = aStep;
 	unsigned char* pixels;
@@ -28,7 +28,7 @@ void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYS
 	pixels = Graphics::LoadTexture(aName, &myWidth, &myHeight, &channels, 1);
 
 	//first, creating the vertices
-	myStart = anOffset;
+	myStart = glm::vec3(0);
 	myEnd = myStart + glm::vec3((myWidth - 1) * myStep, 0, (myHeight - 1) * myStep);
 	myVerts.reserve(myHeight * myWidth);
 	for (int y = 0; y < myHeight; y++)
@@ -36,9 +36,9 @@ void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYS
 		for (int x = 0; x < myWidth; x++)
 		{
 			Vertex v;
-			v.myPos.x = x * myStep + anOffset.x;
-			v.myPos.z = y * myStep + anOffset.z;
-			v.myPos.y = pixels[y * myWidth + x] / 255.f * anYScale + anOffset.y;
+			v.myPos.x = x * myStep;
+			v.myPos.z = y * myStep;
+			v.myPos.y = pixels[y * myWidth + x] / 255.f * anYScale;
 			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
 			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
 			myVerts.push_back(v);
@@ -46,7 +46,7 @@ void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYS
 	}
 	Graphics::FreeTexture(pixels);
 
-	myCenter = anOffset + (myEnd - myStart) / 2.f;
+	myCenter = (myEnd - myStart) / 2.f;
 	myRange = static_cast<float>(glm::sqrt(myWidth * myWidth + myHeight * myHeight));
 
 	//now creating indices
@@ -150,7 +150,7 @@ void Terrain::CreatePhysics()
 
 	// need to recollect the vertices in WS, and cache them
 	const uint32_t count = myWidth * myHeight;
-	myHeightsCache.resize(count);
+	myHeightsCache.reserve(count);
 	float minHeight = FLT_MAX;
 	float maxHeight = FLT_MIN;
 	for (const Vertex& vert : myVerts)
@@ -161,7 +161,9 @@ void Terrain::CreatePhysics()
 	}
 
 	myShape = new PhysicsShapeHeightfield(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
-	glm::mat4 transform = glm::translate(myCenter);
+	// Bullet uses AABB center as transform pivot, so have to offset it to center
+	glm::mat4 transform = glm::translate(glm::vec3(0.f, (maxHeight + minHeight) / 2.f, 0.f)); 
+	transform = glm::scale(transform, glm::vec3(myStep, 1.f, myStep));
 	myPhysicsEntity = new PhysicsEntity(0.f, *myShape, transform);
 }
 

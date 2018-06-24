@@ -11,7 +11,7 @@ public:
 	Terrain();
 	~Terrain();
 
-	void Generate(string aName, float aStep, glm::vec3 anOffset, float anYScale, float anUvScale);
+	void Generate(string aName, float aStep, float anYScale, float anUvScale);
 	
 	vector<Vertex>::const_iterator GetVertBegin() const { return myVerts.begin(); }
 	vector<Vertex>::const_iterator GetVertEnd() const { return myVerts.end(); }

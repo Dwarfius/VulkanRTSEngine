@@ -13,7 +13,14 @@
 		printf("GL error(%d) on line %d in %s", err, __LINE__, __FILE__);	\
 }
 
-// Public Methods
+GraphicsGL::GraphicsGL()
+	: myCurrentModel(0)
+	, myCurrentShader(0)
+	, myCurrentTexture(0)
+{
+	memset(&myLineCache, 0, sizeof(myLineCache));
+}
+
 void GraphicsGL::Init(const vector<Terrain*>& aTerrainList)
 {
 	ourActiveGraphics = this;
@@ -59,6 +66,8 @@ void GraphicsGL::Init(const vector<Terrain*>& aTerrainList)
 
 	LoadResources(aTerrainList);
 
+	CreateLineCache();
+
 	glActiveTexture(GL_TEXTURE0);
 
 	ResetRenderCalls();
@@ -101,6 +110,23 @@ void GraphicsGL::Render(const Camera& aCam, const GameObject* aGO)
 
 void GraphicsGL::Display()
 {
+	// first going to process the debug lines
+	if(myLineCache.mySize > 0)
+	{
+		// shader first
+		Shader debugShader = myShaders[DebugShaderInd];
+		glUseProgram(debugShader.myId);
+		glUniformMatrix4fv(debugShader.myUniforms.begin()->second.myLocation, 1, false, (const GLfloat*)glm::value_ptr(myLineCache.myVp));
+		myCurrentShader = debugShader.myId;
+
+		// then VAO
+		glBindVertexArray(myLineCache.myVao);
+		myCurrentModel = myLineCache.myVao;
+
+		// now just draw em out
+		glDrawArrays(GL_LINES, 0, 2 * myLineCache.mySize);
+	}
+
 	// TODO: remove this once we have double/tripple buffering
 	tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
 	for (const RenderJob& r : myThreadJobs)
@@ -191,11 +217,21 @@ void GraphicsGL::CleanUp()
 	}
 	myModels.clear();
 
+	glDeleteBuffers(1, &myLineCache.myVbo);
+	glDeleteBuffers(1, &myLineCache.myVao);
+
 	glDeleteTextures(static_cast<GLsizei>(myTextures.size()), myTextures.data());
 	myTextures.clear();
 
 	glfwDestroyWindow(myWindow);
 	ourActiveGraphics = nullptr;
+}
+
+void GraphicsGL::DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache)
+{
+	glBufferData(GL_ARRAY_BUFFER, sizeof(PhysicsDebugDrawer::LineDraw) * aLineCache.size(), aLineCache.data(), GL_DYNAMIC_DRAW);
+	myLineCache.mySize = aLineCache.size();
+	myLineCache.myVp = aCam.Get();
 }
 
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -380,4 +416,26 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& aTerrainList)
 
 		myTextures.push_back(tex);
 	}
+}
+
+void GraphicsGL::CreateLineCache()
+{
+	glGenVertexArrays(1, &myLineCache.myVao);
+	glBindVertexArray(myLineCache.myVao);
+
+	GLuint vbo;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	myLineCache.myVbo = vbo;
+
+	// tell the VAO that 0 is the position element
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PosColorVertex), (void**)offsetof(PosColorVertex, myPos));
+
+	// color at 1
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PosColorVertex), (void**)offsetof(PosColorVertex, myColor));
+
+	// we're done setting up the VBA, so unbind all resources
+	glBindVertexArray(0);
 }

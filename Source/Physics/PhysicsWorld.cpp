@@ -3,6 +3,7 @@
 
 #include "PhysicsEntity.h"
 
+
 PhysicsWorld::PhysicsWorld()
 {
 	myBroadphase = new btDbvtBroadphase();
@@ -10,10 +11,14 @@ PhysicsWorld::PhysicsWorld()
 	myDispatcher = new btCollisionDispatcher(myConfiguration);
 	mySolver = new btSequentialImpulseConstraintSolver();
 	myWorld = new btDiscreteDynamicsWorld(myDispatcher, myBroadphase, mySolver, myConfiguration);
+
+	myWorld->setDebugDrawer(new PhysicsDebugDrawer());
+	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 }
 
 PhysicsWorld::~PhysicsWorld()
 {
+	delete myWorld->getDebugDrawer();
 	delete myWorld;
 	delete mySolver;
 	delete myDispatcher;
@@ -46,7 +51,13 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 	// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
 	// the simulation, but it will update the motion states, thus achieving interpolation
 	myWorld->stepSimulation(aDeltaTime, MaxSteps, FixedStepLength);
+	myWorld->debugDrawWorld();
 	PostPhysicsFrame();
+}
+
+const vector<PhysicsDebugDrawer::LineDraw>& PhysicsWorld::GetDebugLineCache() const
+{
+	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetLineCache();
 }
  
 void PhysicsWorld::PrePhysicsFrame()

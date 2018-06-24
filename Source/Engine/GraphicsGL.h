@@ -5,11 +5,16 @@
 class GraphicsGL : public Graphics
 {
 public:
+	GraphicsGL();
+
 	void Init(const vector<Terrain*>& aTerrainList) override;
 	void BeginGather() override;
 	void Render(const Camera& aCam, const GameObject* aGO) override;
 	void Display() override;
 	void CleanUp() override;
+
+	void PrepareLineCache(size_t aCacheSize) override {}
+	void DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache) override;
 
 	// TODO: get rid of the static method by using a bound functor object
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
@@ -38,4 +43,15 @@ private:
 	// TODO: replace this with a double/tripple buffer concept
 	vector<RenderJob> myThreadJobs;
 	tbb::spin_mutex myJobsLock;
+
+	// Debug drawing related
+	struct LineCache
+	{
+		size_t mySize;
+		uint32_t myVao;
+		uint32_t myVbo;
+		glm::mat4 myVp;
+	};
+	LineCache myLineCache;
+	void CreateLineCache();
 };

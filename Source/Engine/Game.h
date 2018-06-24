@@ -34,7 +34,8 @@ public:
 
 	const unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
-	GameObject* Instantiate(glm::vec3 pos = glm::vec3(), glm::vec3 rot = glm::vec3(), glm::vec3 scale = glm::vec3(1));
+	GameObject* Instantiate(glm::vec3 aPos = glm::vec3(), glm::vec3 aRot = glm::vec3(), glm::vec3 aScale = glm::vec3(1));
+	// TODO: get rid of this limit by improving VK renderer
 	const static uint32_t maxObjects = 4000;
 
 	Camera* GetCamera() const { return myCamera; }

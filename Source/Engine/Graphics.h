@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vertex.h"
+#include "PhysicsDebugDrawer.h"
 
 class GameObject;
 struct GLFWwindow;
@@ -12,6 +13,8 @@ const static vector<string> ourShadersToLoad = {
 	"base",
 	"debug"
 };
+constexpr int DebugShaderInd = 1;
+
 const static vector<string> ourModelsToLoad = {
 	"cube",
 	"%t0", // TODO: need to look into better terrain loading approach
@@ -99,6 +102,9 @@ public:
 	virtual void Render(const Camera& aCam, const GameObject* aGO) = 0;
 	virtual void Display() = 0;
 	virtual void CleanUp() = 0;
+	
+	virtual void PrepareLineCache(size_t aCacheSize) = 0;
+	virtual void DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache) = 0;
 	
 	glm::vec3 GetModelCenter(ModelId aModelId) const { return myModels[aModelId].myCenter; }
 	float GetModelRadius(ModelId aModelId) const { return myModels[aModelId].mySphereRadius; }
