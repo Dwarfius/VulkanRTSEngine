@@ -7,15 +7,14 @@ enum CollisionLayers
 };
 
 class PhysicsWorld;
+class PhysicsShapeBase;
+class btRigidBody;
 
 class PhysicsEntity
 {
 public:
-	// PhysicsEntity handles lifetime of aShape
-	PhysicsEntity(glm::uint64 anId, float aMass, btCollisionShape* aShape, btTransform aTransf);
+	PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const glm::mat4& aTransf);
 	~PhysicsEntity();
-
-	glm::uint64 GetId() const { return myId; }
 
 	bool IsStatic() const { return myIsStatic; }
 	bool IsDynamic() const { return !myIsStatic; } // declaring both for convenience
@@ -43,9 +42,7 @@ public:
 private:
 	friend class PhysicsWorld;
 
-	glm::uint64 myId;
-
-	btCollisionShape* myShape;
+	const PhysicsShapeBase& myShape;
 	btRigidBody* myBody;
 	PhysicsWorld* myWorld;
 

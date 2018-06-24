@@ -2,10 +2,10 @@
 #include "PhysicsEntity.h"
 
 #include "PhysicsWorld.h"
+#include "PhysicsShapes.h"
 
-PhysicsEntity::PhysicsEntity(glm::uint64 anId, float aMass, btCollisionShape* aShape, btTransform aTransf)
-	: myId(anId)
-	, myShape(aShape)
+PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const glm::mat4& aTransf)
+	: myShape(aShape)
 	, myIsStatic(aMass == 0)
 	, myIsSleeping(false)
 	, myIsFrozen(false)
@@ -30,13 +30,13 @@ PhysicsEntity::PhysicsEntity(glm::uint64 anId, float aMass, btCollisionShape* aS
 		btDefaultMotionState is a minimal implementation of the pure virtual btMotionState 
 		interface.
 	*/
-	btDefaultMotionState* motionState = new btDefaultMotionState(aTransf);
+	btDefaultMotionState* motionState = new btDefaultMotionState(Utils::ConvertToBullet(aTransf));
 	btVector3 localInertia(0, 0, 0);
 	if (aMass > 0)
 	{
-		myShape->calculateLocalInertia(aMass, localInertia);
+		myShape.GetShape()->calculateLocalInertia(aMass, localInertia);
 	}
-	btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, myShape, localInertia);
+	btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, myShape.GetShape(), localInertia);
 	myBody = new btRigidBody(constructInfo);
 }
 
@@ -44,7 +44,6 @@ PhysicsEntity::~PhysicsEntity()
 {
 	delete myBody->getMotionState();
 	delete myBody;
-	delete myShape;
 }
 
 const glm::mat4& PhysicsEntity::GetTransform() const

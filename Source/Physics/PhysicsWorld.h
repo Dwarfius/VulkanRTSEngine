@@ -23,6 +23,9 @@ private:
 	const int MaxSteps = 4;
 	const float FixedStepLength = 1.f / 30.f;
 
+	void PrePhysicsFrame();
+	void PostPhysicsFrame();
+
 	// TODO: check out Bullet3
 	btBroadphaseInterface* myBroadphase;
 	btDefaultCollisionConfiguration* myConfiguration;

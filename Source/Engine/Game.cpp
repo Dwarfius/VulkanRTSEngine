@@ -9,6 +9,8 @@
 #include "Terrain.h"
 
 #include <PhysicsWorld.h>
+#include <PhysicsEntity.h>
+#include <PhysicsShapes.h>
 
 #include "Components\Renderer.h"
 #include "Components\PlayerTank.h"
@@ -65,6 +67,14 @@ Game::Game(ReportError aReporterFunc)
 	myTaskManager = make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
+	// here goes the experiment
+	terr->CreatePhysics();
+	myPhysWorld->AddEntity(terr->GetPhysicsEntity());
+	// a sphere for testing
+	mySphereShape = new PhysicsShapeSphere(1.f);
+	glm::mat4 transform = glm::translate(glm::vec3(0.f, 10.f, 0.f));
+	myBall1 = new PhysicsEntity(1.f, *mySphereShape, transform);
+	myPhysWorld->AddEntity(myBall1);
 }
 
 Game::~Game()
@@ -153,6 +163,11 @@ void Game::CleanUp()
 		myFile.close();
 	}
 
+	// physics clear
+	delete myPhysWorld;
+	delete myBall1;
+	delete mySphereShape;
+
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
 	ourGODeleteEnabled = true;
@@ -169,8 +184,6 @@ void Game::CleanUp()
 	myTerrains.clear();
 
 	delete myCamera;
-
-	delete myPhysWorld;
 }
 
 bool Game::IsRunning() const
@@ -232,7 +245,9 @@ void Game::Update()
 
 void Game::PhysicsUpdate()
 {
-	// TODO: make it run at 30/s freq
+	glm::mat4 t = myBall1->GetTransformInterp();
+	glm::vec4 pos = t[3];
+	printf("Pos: %f %f %f\n", pos.x, pos.y, pos.z);
 	myPhysWorld->Simulate(myDeltaTime);
 }
 

@@ -46,6 +46,9 @@ protected:
 	Type myType;
 
 private:
+	friend class PhysicsEntity;
+	btCollisionShape* GetShape() const { return myShape; }
+
 	friend class PhysicsShapeManager;
 	int myRefCount;
 };

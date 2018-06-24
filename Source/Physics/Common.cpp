@@ -1,1 +1,39 @@
 #include "Common.h"
+
+namespace Utils
+{
+	glm::vec3 ConvertToGLM(btVector3 aVec)
+	{
+		glm::vec3 val;
+		memcpy(glm::value_ptr(val), aVec.m_floats, sizeof(glm::vec3));
+		return val;
+	}
+
+	glm::vec4 ConvertToGLM(btVector4 aVec)
+	{
+		glm::vec4 val;
+		memcpy(glm::value_ptr(val), aVec.m_floats, sizeof(glm::vec4));
+		return val;
+	}
+
+	btVector3 ConvertToBullet(glm::vec3 aVec)
+	{
+		btVector3 val;
+		memcpy(val.m_floats, glm::value_ptr(aVec), sizeof(glm::vec3));
+		return val;
+	}
+
+	btVector4 ConvertToBullet(glm::vec4 aVec)
+	{
+		btVector4 val;
+		memcpy(val.m_floats, glm::value_ptr(aVec), sizeof(glm::vec4));
+		return val;
+	}
+
+	btTransform ConvertToBullet(const glm::mat4& aMat)
+	{
+		btTransform val;
+		val.setFromOpenGLMatrix(glm::value_ptr(aMat));
+		return val;
+	}
+}

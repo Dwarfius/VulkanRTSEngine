@@ -26,8 +26,8 @@ AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
 
 	// copy them in one go
 	AABB aabb;
-	memcpy(glm::value_ptr(aabb.myMin), btMin.m_floats, 3 * sizeof(float));
-	memcpy(glm::value_ptr(aabb.myMax), btMax.m_floats, 3 * sizeof(float));
+	aabb.myMin = Utils::ConvertToGLM(btMin);
+	aabb.myMax = Utils::ConvertToGLM(btMax);
 	return aabb;
 }
 
@@ -38,7 +38,7 @@ Sphere PhysicsShapeBase::GetBoundingSphereLS() const
 	Sphere sphere;
 	btVector3 btCenter;
 	myShape->getBoundingSphere(btCenter, sphere.myRadius);
-	memcpy(glm::value_ptr(sphere.myCenter), btCenter.m_floats, 3 * sizeof(float));
+	sphere.myCenter = Utils::ConvertToGLM(btCenter);
 
 	return sphere;
 }
@@ -47,8 +47,7 @@ Sphere PhysicsShapeBase::GetBoundingSphereLS() const
 PhysicsShapeBox::PhysicsShapeBox(glm::vec3 aHalfExtents)
 	: PhysicsShapeBase()
 {
-	btVector3 halfExtents;
-	memcpy(halfExtents.m_floats, glm::value_ptr(aHalfExtents), 3 * sizeof(float));
+	btVector3 halfExtents = Utils::ConvertToBullet(aHalfExtents);
 	myShape = new btBoxShape(halfExtents);
 	myType = Type::Box;
 }

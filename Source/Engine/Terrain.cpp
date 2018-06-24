@@ -1,6 +1,24 @@
 #include "Common.h"
 #include "Terrain.h"
+
 #include "Graphics.h"
+#include "PhysicsEntity.h"
+#include "PhysicsShapes.h"
+
+Terrain::Terrain()
+	: myPhysicsEntity(nullptr)
+	, myShape(nullptr)
+{
+}
+
+Terrain::~Terrain()
+{
+	if (myPhysicsEntity)
+	{
+		delete myPhysicsEntity;
+		delete myShape;
+	}
+}
 
 void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYScale, float anUvScale)
 {
@@ -26,6 +44,7 @@ void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYS
 			myVerts.push_back(v);
 		}
 	}
+	Graphics::FreeTexture(pixels);
 
 	myCenter = anOffset + (myEnd - myStart) / 2.f;
 	myRange = static_cast<float>(glm::sqrt(myWidth * myWidth + myHeight * myHeight));
@@ -55,7 +74,7 @@ void Terrain::Generate(string aName, float aStep, glm::vec3 anOffset, float anYS
 float Terrain::GetHeight(glm::vec3 pos) const
 {
 	// finding the relative position
-	// + center cause rendering uses center anchors
+	// + center which will bring it in world space
 	float x = (pos.x + myCenter.x) / myStep;
 	float y = (pos.z + myCenter.z) / myStep;
 
@@ -93,7 +112,7 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	float y = (pos.z + myCenter.z) / myStep;
 
 	// just to be safe - it's clamped to the edges
-	x = glm::clamp(x, 0.f, myWidth - 2.f);
+	x = glm::clamp(x, 0.f, myWidth - 2.f); // TODO: figure out why -2
 	y = glm::clamp(y, 0.f, myHeight - 2.f);
 
 	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
@@ -122,6 +141,28 @@ bool Terrain::Collides(glm::vec3 aPos, float aRange) const
 {
 	float myHeight = GetHeight(aPos);
 	return myHeight > aPos.y - aRange;
+}
+
+void Terrain::CreatePhysics()
+{
+	assert(!myPhysicsEntity);
+	assert(myHeightsCache.empty());
+
+	// need to recollect the vertices in WS, and cache them
+	const uint32_t count = myWidth * myHeight;
+	myHeightsCache.resize(count);
+	float minHeight = FLT_MAX;
+	float maxHeight = FLT_MIN;
+	for (const Vertex& vert : myVerts)
+	{
+		myHeightsCache.push_back(vert.myPos.y);
+		minHeight = glm::min(minHeight, vert.myPos.y);
+		maxHeight = glm::max(maxHeight, vert.myPos.y);
+	}
+
+	myShape = new PhysicsShapeHeightfield(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
+	glm::mat4 transform = glm::translate(myCenter);
+	myPhysicsEntity = new PhysicsEntity(0.f, *myShape, transform);
 }
 
 void Terrain::Normalize()

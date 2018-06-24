@@ -9,6 +9,8 @@ class Camera;
 class Graphics;
 class Terrain;
 class PhysicsWorld;
+class PhysicsEntity;
+class PhysicsShapeSphere;
 
 class Game
 {
@@ -79,6 +81,10 @@ private:
 	bool myIsRunning;
 	bool myShouldEnd;
 	bool myIsPaused;
+
+	// temp
+	PhysicsShapeSphere* mySphereShape;
+	PhysicsEntity* myBall1;
 
 	// logging
 	void LogToFile(string aLine);
