@@ -13,12 +13,6 @@ find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
 find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 
-find_package(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
-
-if (TBB_FOUND)
-	set(TBB_INCLUDE_DIRS ${TBB_DIR}/../include)
-endif(TBB_FOUND)
-
 file(GLOB SRC "*.cpp" "*.h") 
 file(GLOB SRC_COMP "Components/*.cpp" "Components/*.h")
 
@@ -37,4 +31,4 @@ target_include_directories(${PROJECT_NAME}
 	PUBLIC . ${GLM_INCLUDE_DIR}
 	PRIVATE extra ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR}	${Vulkan_INCLUDE_DIR} ${ALUT_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} Physics
-	${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}	${Vulkan_LIBRARY} ${ALUT_LIBRARIES} ${TBB_IMPORTED_TARGETS} ${EXTRA_LIBS})
+	${GLFW_LIBRARIES} ${OPENGL_LIBRARY} ${GLEW_LIBRARY}	${Vulkan_LIBRARY} ${ALUT_LIBRARIES} ${EXTRA_LIBS})

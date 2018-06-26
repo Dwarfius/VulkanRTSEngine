@@ -3,6 +3,7 @@
 
 #include "PhysicsWorld.h"
 #include "PhysicsShapes.h"
+#include "PhysicsCommands.h"
 
 PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const glm::mat4& aTransf)
 	: myShape(aShape)
@@ -10,6 +11,7 @@ PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const 
 	, myIsSleeping(false)
 	, myIsFrozen(false)
 	, myWorld(nullptr)
+	, myState(PhysicsEntity::NotInWorld)
 {
 	/* A Note about MotionState, from https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12044
 		btMotionState::getWorldTransform() is called for only two cases:
@@ -46,43 +48,62 @@ PhysicsEntity::~PhysicsEntity()
 	delete myBody;
 }
 
-const glm::mat4& PhysicsEntity::GetTransform() const
+glm::mat4 PhysicsEntity::GetTransform() const
 {
-	assert(myBody && myWorld);
+	assert(myBody);
 
-	// convert to glm
 	// Note: getWorldTransform() doesn't have CoM offset, will need to account for it if
 	// we start providing it later
-	glm::mat4 transf;
-	myBody->getWorldTransform().getOpenGLMatrix(glm::value_ptr(transf));
-
-	return transf;
+	return Utils::ConvertToGLM(myBody->getWorldTransform());
 }
 
-const glm::mat4& PhysicsEntity::GetTransformInterp() const
+glm::mat4 PhysicsEntity::GetTransformInterp() const
 {
-	assert(myBody && myWorld);
+	assert(myBody);
+	assert(myBody->getMotionState());
 
 	// according to http://www.bulletphysics.org/mediawiki-1.5.8/index.php/Stepping_The_World
 	// Bullet interpolates stuff if world max step count is > 1, which we do have
 	const btDefaultMotionState* motionState;
 	motionState = static_cast<const btDefaultMotionState*>(myBody->getMotionState());
 
-	// convert to glm
 	// Note: m_graphicsWorldTrans might have CoM offset, but we don't provide one atm
-	glm::mat4 transf;
-	motionState->m_graphicsWorldTrans.getOpenGLMatrix(glm::value_ptr(transf));
-
-	return transf;
+	return Utils::ConvertToGLM(motionState->m_graphicsWorldTrans);
 }
 
+// TODO: add a command version of this
 void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 {
-	assert(myBody && myWorld);
-
-	btDefaultMotionState* motionState;
-	motionState = static_cast<btDefaultMotionState*>(myBody->getMotionState());
+	assert(myBody);
 
 	// convert to bullet and cache it
-	motionState->m_graphicsWorldTrans.setFromOpenGLMatrix(glm::value_ptr(aTransf));
+	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
+}
+
+void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
+{
+	assert(myWorld);
+	assert(!Utils::IsNan(aForce));
+
+	const PhysicsCommandAddForce* cmd = new PhysicsCommandAddForce(this, aForce);
+	myWorld->EnqueueCommand(cmd);
+}
+
+void PhysicsEntity::AddForce(glm::vec3 aForce)
+{
+	assert(myBody);
+	assert(!Utils::IsNan(aForce));
+
+	const btVector3 force = Utils::ConvertToBullet(aForce);
+	myBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
+}
+
+// TODO: add a command version of this
+void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
+{
+	assert(myBody);
+	assert(!Utils::IsNan(aVelocity));
+
+	const btVector3 velocity = Utils::ConvertToBullet(aVelocity);
+	myBody->setLinearVelocity(velocity);
 }

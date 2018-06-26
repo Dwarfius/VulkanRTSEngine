@@ -16,6 +16,13 @@ namespace Utils
 		return val;
 	}
 
+	glm::mat4 ConvertToGLM(const btTransform& aTransf)
+	{
+		glm::mat4 val;
+		aTransf.getOpenGLMatrix(glm::value_ptr(val));
+		return val;
+	}
+
 	btVector3 ConvertToBullet(glm::vec3 aVec)
 	{
 		btVector3 val;
@@ -35,5 +42,15 @@ namespace Utils
 		btTransform val;
 		val.setFromOpenGLMatrix(glm::value_ptr(aMat));
 		return val;
+	}
+
+	bool IsNan(glm::vec3 aVec)
+	{
+		return glm::isnan(aVec) == glm::vec3::bool_type(true);
+	}
+
+	bool IsNan(glm::vec4 aVec)
+	{
+		return glm::isnan(aVec) == glm::vec4::bool_type(true);
 	}
 }

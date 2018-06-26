@@ -57,7 +57,7 @@ Game::Game(ReportError aReporterFunc)
 	//Audio::SetMusicTrack(2);
 
 	Terrain* terr = new Terrain();
-	terr->Generate("assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
+	terr->Generate("assets/textures/heightmapSmall.png", 0.3f, 1.f, 1.f);
 	myTerrains.push_back(terr);
 
 	myRenderThread = make_unique<RenderThread>();
@@ -69,14 +69,13 @@ Game::Game(ReportError aReporterFunc)
 	myPhysWorld = new PhysicsWorld();
 
 	// TODO: need to clean this up and refactor
-	// here goes the experiment
 	terr->CreatePhysics();
 	myPhysWorld->AddEntity(terr->GetPhysicsEntity());
+
 	// a sphere for testing
 	mySphereShape = new PhysicsShapeSphere(1.f);
 	glm::mat4 transform = glm::translate(glm::vec3(0.f, 10.f, 0.f));
-	myBall1 = new PhysicsEntity(1.f, *mySphereShape, transform);
-	myPhysWorld->AddEntity(myBall1);
+	myBall = new PhysicsEntity(1.f, *mySphereShape, transform);
 }
 
 Game::~Game()
@@ -107,12 +106,12 @@ void Game::Init()
 	task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
 	myTaskManager->AddTask(task);
 
+	task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
+	myTaskManager->AddTask(task);
+
 	task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
 	task.AddDependency(GameTask::UpdateInput);
 	task.AddDependency(GameTask::AddGameObjects);
-	myTaskManager->AddTask(task);
-
-	task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
 	myTaskManager->AddTask(task);
 
 	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
@@ -164,7 +163,7 @@ void Game::CleanUp()
 
 	// physics clear
 	delete myPhysWorld;
-	delete myBall1;
+	delete myBall;
 	delete mySphereShape;
 
 	// we can mark that the engine is done - wrap the threads
@@ -236,9 +235,24 @@ void Game::Update()
 	}
 
 	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
-	for (auto pair : myGameObjects)
+	for (const pair<UID, GameObject*>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
+	}
+
+	// experiment #2 - dynamic world addition-removal from different thread
+	if (myBall->GetState() == PhysicsEntity::NotInWorld)
+	{
+		// spawn the ball at the top
+		glm::mat4 transform = glm::translate(glm::vec3(0.f, 10.f, 0.f));
+		myBall->SetTransform(transform);
+		myBall->SetVelocity(glm::vec3());
+		myPhysWorld->AddEntity(myBall);
+	}
+	else if(myBall->GetState() == PhysicsEntity::InWorld && myBall->GetTransform()[3][1] < -10.f)
+	{
+		// despawn the ball
+		myPhysWorld->RemoveEntity(myBall);
 	}
 }
 

@@ -85,7 +85,7 @@ private:
 
 	// temp
 	PhysicsShapeSphere* mySphereShape;
-	PhysicsEntity* myBall1;
+	PhysicsEntity* myBall;
 
 	// logging
 	void LogToFile(string aLine);
