@@ -1,5 +1,13 @@
 #include "Common.h"
 
+// TODO: move this to Common module
+#define FORCE_SEMICOLON (void)0
+#ifdef NDEBUG
+#	define DEBUG_ONLY(x)
+#else
+#	define DEBUG_ONLY(x) x FORCE_SEMICOLON
+#endif // NDEBUG
+
 namespace Utils
 {
 	glm::vec3 ConvertToGLM(btVector3 aVec)
@@ -37,9 +45,18 @@ namespace Utils
 		return val;
 	}
 
-	// be warned, if aMat has scaling, it'll screw everything with Bullet - tried and tested
 	btTransform ConvertToBullet(const glm::mat4& aMat)
 	{
+		DEBUG_ONLY( // be warned, if aMat has scaling, it'll screw everything with Bullet - tried and tested
+			for (int y = 0; y < 3; y++)
+			{
+				for (int x = 0; x < 3; x++)
+				{
+					assert(aMat[y][x] >= -1.f && aMat[y][x] <= 1.f);
+				}
+			}
+		);
+
 		btTransform val;
 		val.setFromOpenGLMatrix(glm::value_ptr(aMat));
 		return val;
