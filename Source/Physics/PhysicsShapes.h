@@ -41,6 +41,8 @@ public:
 	Sphere GetBoundingSphereLS() const;
 	Type GetType() const { return myType; }
 
+	void SetScale(glm::vec3 aScale);
+
 protected:
 	btCollisionShape* myShape;
 	Type myType;

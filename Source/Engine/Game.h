@@ -10,7 +10,7 @@ class Graphics;
 class Terrain;
 class PhysicsWorld;
 class PhysicsEntity;
-class PhysicsShapeSphere;
+class PhysicsShapeBase;
 
 class Game
 {
@@ -84,7 +84,7 @@ private:
 	bool myIsPaused;
 
 	// temp
-	PhysicsShapeSphere* mySphereShape;
+	PhysicsShapeBase* mySphereShape;
 	PhysicsEntity* myBall;
 
 	// logging

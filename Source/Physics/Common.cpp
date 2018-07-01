@@ -37,6 +37,7 @@ namespace Utils
 		return val;
 	}
 
+	// be warned, if aMat has scaling, it'll screw everything with Bullet - tried and tested
 	btTransform ConvertToBullet(const glm::mat4& aMat)
 	{
 		btTransform val;

@@ -57,7 +57,7 @@ Game::Game(ReportError aReporterFunc)
 	//Audio::SetMusicTrack(2);
 
 	Terrain* terr = new Terrain();
-	terr->Generate("assets/textures/heightmapSmall.png", 0.3f, 1.f, 1.f);
+	terr->Generate("assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
 	myTerrains.push_back(terr);
 
 	myRenderThread = make_unique<RenderThread>();
@@ -74,8 +74,7 @@ Game::Game(ReportError aReporterFunc)
 
 	// a sphere for testing
 	mySphereShape = new PhysicsShapeSphere(1.f);
-	glm::mat4 transform = glm::translate(glm::vec3(0.f, 10.f, 0.f));
-	myBall = new PhysicsEntity(1.f, *mySphereShape, transform);
+	myBall = new PhysicsEntity(1.f, *mySphereShape, glm::mat4(1.f));
 }
 
 Game::~Game()
@@ -244,12 +243,12 @@ void Game::Update()
 	if (myBall->GetState() == PhysicsEntity::NotInWorld)
 	{
 		// spawn the ball at the top
-		glm::mat4 transform = glm::translate(glm::vec3(0.f, 10.f, 0.f));
+		glm::mat4 transform = glm::translate(glm::vec3(0.f, 5.f, 0.f));
 		myBall->SetTransform(transform);
 		myBall->SetVelocity(glm::vec3());
 		myPhysWorld->AddEntity(myBall);
 	}
-	else if(myBall->GetState() == PhysicsEntity::InWorld && myBall->GetTransform()[3][1] < -10.f)
+	else if(myBall->GetState() == PhysicsEntity::InWorld && myBall->GetTransform()[3][1] < -5.f)
 	{
 		// despawn the ball
 		myPhysWorld->RemoveEntity(myBall);
@@ -259,6 +258,7 @@ void Game::Update()
 void Game::PhysicsUpdate()
 {
 	myPhysWorld->Simulate(myDeltaTime);
+	//myPhysWorld->Simulate(myShouldStep ? (1.f / 30.f) : 0.f);
 }
 
 void Game::Render()

@@ -9,6 +9,7 @@ enum CollisionLayers
 class PhysicsWorld;
 class PhysicsShapeBase;
 class btRigidBody;
+class btCollisionObject;
 
 class PhysicsEntity
 {
@@ -54,11 +55,16 @@ public:
 	// Not thread-safe: updates velocity immediatelly
 	void SetVelocity(glm::vec3 aVelocity);
 
+	void SetCollisionFlags(int aFlagSet);
+	int GetCollisionFlags() const;
+
+	const PhysicsShapeBase& GetShape() const { return myShape; }
+
 private:
 	friend class PhysicsWorld;
 
 	const PhysicsShapeBase& myShape;
-	btRigidBody* myBody;
+	btCollisionObject* myBody;
 	PhysicsWorld* myWorld;
 	State myState;
 

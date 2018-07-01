@@ -15,6 +15,8 @@ using namespace std;
 
 namespace Utils
 {
+	// TODO: Bullet is a right-hand coord system, while VEngine is left-handed
+	// TODO: Check if OpenGL is right handed
 	glm::vec3 ConvertToGLM(btVector3 aVec);
 	glm::vec4 ConvertToGLM(btVector4 aVec);
 	glm::mat4 ConvertToGLM(const btTransform& aTransf);

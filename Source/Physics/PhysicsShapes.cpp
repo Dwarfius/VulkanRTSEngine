@@ -43,6 +43,11 @@ Sphere PhysicsShapeBase::GetBoundingSphereLS() const
 	return sphere;
 }
 
+void PhysicsShapeBase::SetScale(glm::vec3 aScale)
+{
+	myShape->setLocalScaling(Utils::ConvertToBullet(aScale));
+}
+
 // ====================================================
 PhysicsShapeBox::PhysicsShapeBox(glm::vec3 aHalfExtents)
 	: PhysicsShapeBase()

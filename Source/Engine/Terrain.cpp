@@ -5,6 +5,8 @@
 #include "PhysicsEntity.h"
 #include "PhysicsShapes.h"
 
+#include <BulletCollision\CollisionDispatch\btCollisionObject.h>
+
 Terrain::Terrain()
 	: myPhysicsEntity(nullptr)
 	, myShape(nullptr)
@@ -161,10 +163,11 @@ void Terrain::CreatePhysics()
 	}
 
 	myShape = new PhysicsShapeHeightfield(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
+	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
 	// Bullet uses AABB center as transform pivot, so have to offset it to center
 	glm::mat4 transform = glm::translate(glm::vec3(0.f, (maxHeight + minHeight) / 2.f, 0.f)); 
-	transform = glm::scale(transform, glm::vec3(myStep, 1.f, myStep));
 	myPhysicsEntity = new PhysicsEntity(0.f, *myShape, transform);
+	myPhysicsEntity->SetCollisionFlags(myPhysicsEntity->GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 }
 
 void Terrain::Normalize()

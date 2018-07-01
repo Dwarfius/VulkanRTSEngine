@@ -2,7 +2,7 @@
 #include "PhysicsWorld.h"
 
 #include "PhysicsEntity.h"
-
+#include <BulletCollision\CollisionShapes\btTriangleShape.h>
 
 PhysicsWorld::PhysicsWorld()
 {
@@ -13,7 +13,7 @@ PhysicsWorld::PhysicsWorld()
 	myWorld = new btDiscreteDynamicsWorld(myDispatcher, myBroadphase, mySolver, myConfiguration);
 
 	myWorld->setDebugDrawer(new PhysicsDebugDrawer());
-	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints);
 
 	myCommands.reserve(200);
 }
@@ -112,7 +112,15 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	assert(!aCmd.myEntity->myWorld);
 	assert(aCmd.myEntity->GetState() == PhysicsEntity::PendingAddition);
 
-	myWorld->addRigidBody(aCmd.myEntity->myBody);
+	// TODO: refactor this
+	if (aCmd.myEntity->myIsStatic)
+	{
+		myWorld->addCollisionObject(aCmd.myEntity->myBody);
+	}
+	else
+	{
+		myWorld->addRigidBody(static_cast<btRigidBody*>(aCmd.myEntity->myBody));
+	}
 	aCmd.myEntity->myWorld = this;
 	aCmd.myEntity->myState = PhysicsEntity::InWorld;
 }
@@ -123,7 +131,14 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 	assert(aCmd.myEntity->myWorld == this);
 	assert(aCmd.myEntity->GetState() == PhysicsEntity::PendingRemoval);
 
-	myWorld->removeRigidBody(aCmd.myEntity->myBody);
+	if (aCmd.myEntity->myIsStatic)
+	{
+		myWorld->removeCollisionObject(aCmd.myEntity->myBody);
+	}
+	else
+	{
+		myWorld->removeRigidBody(static_cast<btRigidBody*>(aCmd.myEntity->myBody));
+	}
 	aCmd.myEntity->myWorld = nullptr;
 	aCmd.myEntity->myState = PhysicsEntity::NotInWorld;
 }
@@ -131,9 +146,10 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 void PhysicsWorld::AddForceHandler(const PhysicsCommandAddForce& aCmd)
 {
 	assert(aCmd.myEntity);
+	assert(!aCmd.myEntity->myIsStatic);
 	// even though we check during scheduling, it's nice to do it here to maybe catch a corruption
 	assert(!Utils::IsNan(aCmd.myForce)); 
 
 	const btVector3 force = Utils::ConvertToBullet(aCmd.myForce);
-	aCmd.myEntity->myBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	static_cast<btRigidBody*>(aCmd.myEntity->myBody)->applyForce(force, btVector3(0.f, 0.f, 0.f));
 }

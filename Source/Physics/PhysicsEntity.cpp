@@ -32,19 +32,31 @@ PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const 
 		btDefaultMotionState is a minimal implementation of the pure virtual btMotionState 
 		interface.
 	*/
-	btDefaultMotionState* motionState = new btDefaultMotionState(Utils::ConvertToBullet(aTransf));
-	btVector3 localInertia(0, 0, 0);
-	if (aMass > 0)
+	const btTransform transf = Utils::ConvertToBullet(aTransf);
+	if (!myIsStatic)
 	{
+		btDefaultMotionState* motionState = new btDefaultMotionState();
+		btVector3 localInertia(0, 0, 0);
 		myShape.GetShape()->calculateLocalInertia(aMass, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, myShape.GetShape(), localInertia);
+		myBody = new btRigidBody(constructInfo);
 	}
-	btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, myShape.GetShape(), localInertia);
-	myBody = new btRigidBody(constructInfo);
+	else
+	{
+		myBody = new btCollisionObject();
+		myBody->setWorldTransform(transf);
+		myBody->setCollisionShape(myShape.GetShape());
+	}
+
+	myBody->setUserPointer(this);
 }
 
 PhysicsEntity::~PhysicsEntity()
 {
-	delete myBody->getMotionState();
+	if (!myIsStatic)
+	{
+		delete static_cast<btRigidBody*>(myBody)->getMotionState();
+	}
 	delete myBody;
 }
 
@@ -60,12 +72,16 @@ glm::mat4 PhysicsEntity::GetTransform() const
 glm::mat4 PhysicsEntity::GetTransformInterp() const
 {
 	assert(myBody);
-	assert(myBody->getMotionState());
+	assert(!myIsStatic);
+
+	const btRigidBody* rigidBody = static_cast<const btRigidBody*>(myBody);
+
+	assert(rigidBody->getMotionState());
 
 	// according to http://www.bulletphysics.org/mediawiki-1.5.8/index.php/Stepping_The_World
 	// Bullet interpolates stuff if world max step count is > 1, which we do have
 	const btDefaultMotionState* motionState;
-	motionState = static_cast<const btDefaultMotionState*>(myBody->getMotionState());
+	motionState = static_cast<const btDefaultMotionState*>(rigidBody->getMotionState());
 
 	// Note: m_graphicsWorldTrans might have CoM offset, but we don't provide one atm
 	return Utils::ConvertToGLM(motionState->m_graphicsWorldTrans);
@@ -92,18 +108,32 @@ void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
 	assert(myBody);
+	assert(!myIsStatic);
 	assert(!Utils::IsNan(aForce));
 
 	const btVector3 force = Utils::ConvertToBullet(aForce);
-	myBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
+	rigidBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
 }
 
 // TODO: add a command version of this
 void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
 {
 	assert(myBody);
+	assert(!myIsStatic);
 	assert(!Utils::IsNan(aVelocity));
 
 	const btVector3 velocity = Utils::ConvertToBullet(aVelocity);
-	myBody->setLinearVelocity(velocity);
+	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
+	rigidBody->setLinearVelocity(velocity);
+}
+
+void PhysicsEntity::SetCollisionFlags(int aFlagSet)
+{ 
+	myBody->setCollisionFlags(aFlagSet); 
+}
+
+int PhysicsEntity::GetCollisionFlags() const 
+{ 
+	return myBody->getCollisionFlags();
 }

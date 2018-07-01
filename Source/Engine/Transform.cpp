@@ -78,9 +78,9 @@ void Transform::UpdateRot()
 	myRotation = glm::normalize(myRotation);
 	myRotM = glm::mat4_cast(myRotation);
 
-	myRight = myRotM * glm::vec4(-1, 0, 0, 0); // why does this has to be inverted?
-	myUp = myRotM * glm::vec4(0, 1, 0, 0);
-	myForward = myRotM * glm::vec4(0, 0, 1, 0);
+	myRight		= myRotM * glm::vec4(-1, 0, 0, 0);
+	myUp		= myRotM * glm::vec4( 0, 1, 0, 0);
+	myForward	= myRotM * glm::vec4( 0, 0, 1, 0);
 
 	myDirtyDirs = false;
 }

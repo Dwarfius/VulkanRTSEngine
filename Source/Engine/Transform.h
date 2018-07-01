@@ -1,5 +1,7 @@
 #pragma once
 
+// class that exposes utility functions around translation, rotation and scaling
+// built around the right-hand coordinate system
 class Transform
 {
 public:
