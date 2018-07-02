@@ -11,7 +11,6 @@ class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
 
-// TODO: implement a command queue for phys world and entity commands
 class PhysicsWorld
 {
 public:
@@ -19,17 +18,21 @@ public:
 	~PhysicsWorld();
 
 	// Adds entity to the world - not thread safe
-	void AddEntity(PhysicsEntity* anEntity);
+	void AddEntity(weak_ptr<PhysicsEntity> anEntity);
 	// Removes entity from the world - not thread safe
-	void RemoveEntity(PhysicsEntity* anEntity);
+	void RemoveEntity(shared_ptr<PhysicsEntity> anEntity);
 
 	void Simulate(float aDeltaTime);
 
+	// TODO: refactor this away
 	const vector<PhysicsDebugDrawer::LineDraw>& GetDebugLineCache() const;
 
 private:
 	const int MaxSteps = 4;
 	const float FixedStepLength = 1.f / 30.f;
+
+	// TODO: replace with u_map<UID, handle>
+	vector<shared_ptr<PhysicsEntity>> myEntities;
 
 	void PrePhysicsFrame();
 	void PostPhysicsFrame();

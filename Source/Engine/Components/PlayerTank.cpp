@@ -13,8 +13,7 @@
 #include "Renderer.h"
 
 PlayerTank::PlayerTank()
-	: ComponentBase()
-	, myShootTimer(0.f)
+	: myShootTimer(0.f)
 	, myHeightOffset(0.f)
 	, myAngles(0.f)
 	, myHoldStart(-1.f)

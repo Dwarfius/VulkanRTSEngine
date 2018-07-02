@@ -5,7 +5,7 @@
 #include "PhysicsShapes.h"
 #include "PhysicsCommands.h"
 
-PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const glm::mat4& aTransf)
+PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
 	: myShape(aShape)
 	, myIsStatic(aMass == 0)
 	, myIsSleeping(false)
@@ -33,19 +33,20 @@ PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const 
 		interface.
 	*/
 	const btTransform transf = Utils::ConvertToBullet(aTransf);
+	btCollisionShape* shape = myShape->GetShape();
 	if (!myIsStatic)
 	{
 		btDefaultMotionState* motionState = new btDefaultMotionState();
 		btVector3 localInertia(0, 0, 0);
-		myShape.GetShape()->calculateLocalInertia(aMass, localInertia);
-		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, myShape.GetShape(), localInertia);
+		shape->calculateLocalInertia(aMass, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, shape, localInertia);
 		myBody = new btRigidBody(constructInfo);
 	}
 	else
 	{
 		myBody = new btCollisionObject();
 		myBody->setWorldTransform(transf);
-		myBody->setCollisionShape(myShape.GetShape());
+		myBody->setCollisionShape(shape);
 	}
 
 	myBody->setUserPointer(this);
@@ -53,6 +54,7 @@ PhysicsEntity::PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const 
 
 PhysicsEntity::~PhysicsEntity()
 {
+	assert(myState == PhysicsEntity::NotInWorld);
 	if (!myIsStatic)
 	{
 		delete static_cast<btRigidBody*>(myBody)->getMotionState();
@@ -96,14 +98,15 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
 }
 
-void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
+// TODO: move this out of the PhysicsEntity
+/*void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
 {
 	assert(myWorld);
 	assert(!Utils::IsNan(aForce));
 
 	const PhysicsCommandAddForce* cmd = new PhysicsCommandAddForce(this, aForce);
 	myWorld->EnqueueCommand(cmd);
-}
+}*/
 
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {

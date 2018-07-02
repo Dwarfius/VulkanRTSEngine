@@ -5,8 +5,9 @@
 #include <atomic>
 #include <fstream>
 
+#define NOMINMAX
 #include <tbb/tbb.h>
-#undef max
+#undef NOMINMAX
 
 #include <glm\glm.hpp>
 

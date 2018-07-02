@@ -14,7 +14,14 @@ find_package(GLM REQUIRED)
 find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 
 file(GLOB SRC "*.cpp" "*.h") 
-file(GLOB SRC_COMP "Components/*.cpp" "Components/*.h")
+set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
+	"Components/EditorMode.cpp" "Components/EditorMode.h"
+	"Components/Missile.cpp" "Components/Missile.h"
+	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
+	"Components/PlayerTank.cpp" "Components/PlayerTank.h"
+	"Components/Renderer.h"
+	"Components/Tank.cpp" "Components/Tank.h"
+	"Components/TankArenaGameMode.cpp" "Components/TankArenaGameMode.h")
 
 add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_COMP})
 if (MSVC)

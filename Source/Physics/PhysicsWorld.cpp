@@ -16,10 +16,16 @@ PhysicsWorld::PhysicsWorld()
 	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints);
 
 	myCommands.reserve(200);
+	myEntities.reserve(1000);
 }
 
 PhysicsWorld::~PhysicsWorld()
 {
+	for (const shared_ptr<PhysicsEntity>& entity : myEntities)
+	{
+		entity->myState = PhysicsEntity::NotInWorld;
+	}
+
 	delete myWorld->getDebugDrawer();
 	delete myWorld;
 	delete mySolver;
@@ -28,17 +34,19 @@ PhysicsWorld::~PhysicsWorld()
 	delete myBroadphase;
 }
 
-void PhysicsWorld::AddEntity(PhysicsEntity* anEntity)
+void PhysicsWorld::AddEntity(weak_ptr<PhysicsEntity> anEntity)
 {
-	assert(anEntity->GetState() == PhysicsEntity::NotInWorld);
-	assert(!anEntity->myWorld);
-	anEntity->myState = PhysicsEntity::PendingAddition;
+	assert(!anEntity.expired());
+	shared_ptr<PhysicsEntity> entity = anEntity.lock();
+	assert(entity->GetState() == PhysicsEntity::NotInWorld);
+	assert(!entity->myWorld);
+	entity->myState = PhysicsEntity::PendingAddition;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandAddBody* cmd = new PhysicsCommandAddBody(anEntity);
 	EnqueueCommand(cmd);
 }
 
-void PhysicsWorld::RemoveEntity(PhysicsEntity* anEntity)
+void PhysicsWorld::RemoveEntity(shared_ptr<PhysicsEntity> anEntity)
 {
 	assert(anEntity->GetState() == PhysicsEntity::InWorld);
 	assert(anEntity->myWorld == this);
@@ -108,48 +116,76 @@ void PhysicsWorld::EnqueueCommand(const PhysicsCommand* aCmd)
 
 void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 {
-	assert(aCmd.myEntity);
-	assert(!aCmd.myEntity->myWorld);
-	assert(aCmd.myEntity->GetState() == PhysicsEntity::PendingAddition);
+	if (aCmd.myEntity.expired())
+	{
+		return;
+	}
+
+	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+
+	assert(!entity->myWorld);
+	assert(entity->GetState() == PhysicsEntity::PendingAddition);
 
 	// TODO: refactor this
-	if (aCmd.myEntity->myIsStatic)
+	if (entity->myIsStatic)
 	{
-		myWorld->addCollisionObject(aCmd.myEntity->myBody);
+		myWorld->addCollisionObject(entity->myBody);
 	}
 	else
 	{
-		myWorld->addRigidBody(static_cast<btRigidBody*>(aCmd.myEntity->myBody));
+		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
 	}
-	aCmd.myEntity->myWorld = this;
-	aCmd.myEntity->myState = PhysicsEntity::InWorld;
+	entity->myWorld = this;
+	entity->myState = PhysicsEntity::InWorld;
+	myEntities.push_back(entity);
 }
 
 void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 {
-	assert(aCmd.myEntity);
-	assert(aCmd.myEntity->myWorld == this);
-	assert(aCmd.myEntity->GetState() == PhysicsEntity::PendingRemoval);
+	assert(!aCmd.myEntity.expired());
 
-	if (aCmd.myEntity->myIsStatic)
+	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+
+	assert(entity->myWorld == this);
+	assert(entity->GetState() == PhysicsEntity::PendingRemoval);
+
+	// TODO: refactor this
+	if (entity->myIsStatic)
 	{
-		myWorld->removeCollisionObject(aCmd.myEntity->myBody);
+		myWorld->removeCollisionObject(entity->myBody);
 	}
 	else
 	{
-		myWorld->removeRigidBody(static_cast<btRigidBody*>(aCmd.myEntity->myBody));
+		myWorld->removeRigidBody(static_cast<btRigidBody*>(entity->myBody));
 	}
-	aCmd.myEntity->myWorld = nullptr;
-	aCmd.myEntity->myState = PhysicsEntity::NotInWorld;
+	entity->myWorld = nullptr;
+	entity->myState = PhysicsEntity::NotInWorld;
+
+	// TODO: get rid of this by using u_map
+	size_t size = myEntities.size();
+	for (size_t i = 0; i < size; i++)
+	{
+		if (myEntities[i] == entity)
+		{
+			myEntities.erase(myEntities.begin() + i);
+			break;
+		}
+	}
 }
 
 void PhysicsWorld::AddForceHandler(const PhysicsCommandAddForce& aCmd)
 {
-	assert(aCmd.myEntity);
-	assert(!aCmd.myEntity->myIsStatic);
+	if (aCmd.myEntity.expired())
+	{
+		return;
+	}
+
+	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+
+	assert(!entity->myIsStatic);
 	// even though we check during scheduling, it's nice to do it here to maybe catch a corruption
 	assert(!Utils::IsNan(aCmd.myForce)); 
 
 	const btVector3 force = Utils::ConvertToBullet(aCmd.myForce);
-	static_cast<btRigidBody*>(aCmd.myEntity->myBody)->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	static_cast<btRigidBody*>(entity->myBody)->applyForce(force, btVector3(0.f, 0.f, 0.f));
 }

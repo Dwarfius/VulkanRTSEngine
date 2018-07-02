@@ -8,9 +8,6 @@ class PhysicsShapeHeightfield;
 class Terrain
 {
 public:
-	Terrain();
-	~Terrain();
-
 	void Generate(string aName, float aStep, float anYScale, float anUvScale);
 	
 	vector<Vertex>::const_iterator GetVertBegin() const { return myVerts.begin(); }
@@ -27,8 +24,7 @@ public:
 	bool Collides(glm::vec3 aPos, float aRange) const;
 
 	// TODO: need to remove it from terrain class
-	void CreatePhysics();
-	PhysicsEntity* GetPhysicsEntity() const { return myPhysicsEntity; }
+	shared_ptr<PhysicsEntity> CreatePhysics();
 
 private:
 	vector<Vertex> myVerts;
@@ -44,8 +40,6 @@ private:
 	// wraps the val value around [0;range] range
 	float Wrap(float aVal, float aRange) const;
 
-	// physics related
+	// Preserve the heights so that physics can still reference to it
 	vector<float> myHeightsCache;
-	PhysicsShapeHeightfield* myShape;
-	PhysicsEntity* myPhysicsEntity;
 };

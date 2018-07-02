@@ -7,23 +7,11 @@
 
 #include <BulletCollision\CollisionDispatch\btCollisionObject.h>
 
-Terrain::Terrain()
-	: myPhysicsEntity(nullptr)
-	, myShape(nullptr)
-{
-}
-
-Terrain::~Terrain()
-{
-	if (myPhysicsEntity)
-	{
-		delete myPhysicsEntity;
-		delete myShape;
-	}
-}
-
 void Terrain::Generate(string aName, float aStep, float anYScale, float anUvScale)
 {
+	myHeightsCache.clear();
+	myVerts.clear();
+
 	myStep = aStep;
 	unsigned char* pixels;
 	int channels;
@@ -145,9 +133,8 @@ bool Terrain::Collides(glm::vec3 aPos, float aRange) const
 	return myHeight > aPos.y - aRange;
 }
 
-void Terrain::CreatePhysics()
+shared_ptr<PhysicsEntity> Terrain::CreatePhysics()
 {
-	assert(!myPhysicsEntity);
 	assert(myHeightsCache.empty());
 
 	// need to recollect the vertices in WS, and cache them
@@ -162,12 +149,13 @@ void Terrain::CreatePhysics()
 		maxHeight = glm::max(maxHeight, vert.myPos.y);
 	}
 
-	myShape = new PhysicsShapeHeightfield(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
+	shared_ptr<PhysicsShapeHeightfield> myShape = make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
 	// Bullet uses AABB center as transform pivot, so have to offset it to center
 	glm::mat4 transform = glm::translate(glm::vec3(0.f, (maxHeight + minHeight) / 2.f, 0.f)); 
-	myPhysicsEntity = new PhysicsEntity(0.f, *myShape, transform);
+	shared_ptr<PhysicsEntity> myPhysicsEntity = make_shared<PhysicsEntity>(0.f, myShape, transform);
 	myPhysicsEntity->SetCollisionFlags(myPhysicsEntity->GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+	return myPhysicsEntity;
 }
 
 void Terrain::Normalize()

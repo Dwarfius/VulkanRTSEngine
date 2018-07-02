@@ -15,9 +15,9 @@
 #include <random>
 #include <chrono>
 
+#define NOMINMAX
 #include <tbb/tbb.h>
-#undef max
-#undef min
+#undef NOMINMAX
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>

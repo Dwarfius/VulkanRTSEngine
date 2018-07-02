@@ -11,8 +11,7 @@
 TankArenaGameMode* TankArenaGameMode::ourInstance = nullptr;
 
 TankArenaGameMode::TankArenaGameMode()
-	: ComponentBase()
-	, myAngles(0.f)
+	: myAngles(0.f)
 	, mySpawnRate(75.f)
 	, myAccumSpawn(0.f)
 	, myAccumTime(0.f)

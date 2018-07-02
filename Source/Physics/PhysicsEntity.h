@@ -21,8 +21,10 @@ public:
 		InWorld,
 		PendingRemoval,
 	};
-	PhysicsEntity(float aMass, const PhysicsShapeBase& aShape, const glm::mat4& aTransf);
+	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
 	~PhysicsEntity();
+
+	PhysicsEntity& PhysicsEntity::operator=(const PhysicsEntity&) = delete;
 
 	bool IsStatic() const { return myIsStatic; }
 	bool IsDynamic() const { return !myIsStatic; } // declaring both for convenience
@@ -48,22 +50,23 @@ public:
 	void SetTransform(const glm::mat4& aTransf);
 
 	// Thread-safe: adds a force to the entity before the next simulation step
-	void ScheduleAddForce(glm::vec3 aForce);
+	//void ScheduleAddForce(glm::vec3 aForce);
 	// Not thread-safe: add a force immediatelly
 	void AddForce(glm::vec3 aForce);
 
 	// Not thread-safe: updates velocity immediatelly
 	void SetVelocity(glm::vec3 aVelocity);
 
+	// TODO: expose flags as an enum set
 	void SetCollisionFlags(int aFlagSet);
 	int GetCollisionFlags() const;
 
-	const PhysicsShapeBase& GetShape() const { return myShape; }
+	const PhysicsShapeBase& GetShape() const { return *myShape; }
 
 private:
 	friend class PhysicsWorld;
 
-	const PhysicsShapeBase& myShape;
+	shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody;
 	PhysicsWorld* myWorld;
 	State myState;

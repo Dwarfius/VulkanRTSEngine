@@ -12,8 +12,7 @@
 const int Tank::Type = 1;
 
 Tank::Tank(bool aTeam)
-	: ComponentBase()
-	, myNavTarget(0.f)
+	: myNavTarget(0.f)
 	, myShootTimer(0.f)
 	, myShootRate(1.f)
 	, myTeam(aTeam)

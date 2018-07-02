@@ -12,6 +12,8 @@ PhysicsShapeBase::PhysicsShapeBase()
 PhysicsShapeBase::~PhysicsShapeBase()
 { 
 	assert(myRefCount == 0); 
+	assert(myShape); // don't create blank shapes if you don't need them
+	delete myShape;
 }
 
 AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const

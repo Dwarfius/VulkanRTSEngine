@@ -40,6 +40,7 @@ public:
 
 	Camera* GetCamera() const { return myCamera; }
 	const Terrain* GetTerrain(glm::vec3 pos) const;
+	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
 
 	// utility method for accessing the time across game
 	float GetTime() const;
@@ -84,8 +85,8 @@ private:
 	bool myIsPaused;
 
 	// temp
-	PhysicsShapeBase* mySphereShape;
-	PhysicsEntity* myBall;
+	shared_ptr<PhysicsShapeBase> mySphereShape;
+	shared_ptr<PhysicsEntity> myBall;
 
 	// logging
 	void LogToFile(string aLine);

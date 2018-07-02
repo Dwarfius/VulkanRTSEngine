@@ -45,11 +45,11 @@ void EditorMode::Update(float aDeltaTime)
 	const glm::vec2 mouseDelta = Input::GetMouseDelta();
 	
 	glm::vec3 pitchDelta(mouseDelta.y, 0.f, 0.f);
-	pitchDelta *= myMouseSensitivity * aDeltaTime;
+	pitchDelta *= myMouseSensitivity;
 	const glm::quat pitchRot(glm::radians(pitchDelta));
 
 	glm::vec3 yawDelta(0.f, -mouseDelta.x, 0.f);
-	yawDelta *= myMouseSensitivity * aDeltaTime;
+	yawDelta *= myMouseSensitivity;
 	const glm::quat yawRot(glm::radians(yawDelta));
 
 	camTransf.SetRotation(yawRot * camTransf.GetRotation() * pitchRot);

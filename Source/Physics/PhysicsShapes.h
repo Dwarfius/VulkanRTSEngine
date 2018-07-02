@@ -2,6 +2,7 @@
 
 class btCollisionShape;
 
+// TODO: move them to common module
 // ====================
 // Utility structs
 struct AABB
@@ -33,9 +34,6 @@ public:
 public:
 	PhysicsShapeBase();
 	~PhysicsShapeBase();
-
-	// disabling copies to avoid refCount misshaps
-	PhysicsShapeBase(const PhysicsShapeBase& aOther) = delete;
 
 	AABB GetAABB(const glm::mat4& aTransform) const;
 	Sphere GetBoundingSphereLS() const;

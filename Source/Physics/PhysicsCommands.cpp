@@ -8,19 +8,19 @@ PhysicsCommand::PhysicsCommand(Type aType)
 {
 }
 
-PhysicsCommandAddBody::PhysicsCommandAddBody(PhysicsEntity* anEntity)
+PhysicsCommandAddBody::PhysicsCommandAddBody(weak_ptr<PhysicsEntity> anEntity)
 	: PhysicsCommand(PhysicsCommand::AddBody)
 	, myEntity(anEntity)
 {
 }
 
-PhysicsCommandRemoveBody::PhysicsCommandRemoveBody(PhysicsEntity* anEntity)
+PhysicsCommandRemoveBody::PhysicsCommandRemoveBody(weak_ptr<PhysicsEntity> anEntity)
 	: PhysicsCommand(PhysicsCommand::RemoveBody)
 	, myEntity(anEntity)
 {
 }
 
-PhysicsCommandAddForce::PhysicsCommandAddForce(PhysicsEntity* anEntity, glm::vec3 aForce)
+PhysicsCommandAddForce::PhysicsCommandAddForce(weak_ptr<PhysicsEntity> anEntity, glm::vec3 aForce)
 	: PhysicsCommand(PhysicsCommand::AddForce)
 	, myEntity(anEntity)
 	, myForce(aForce)

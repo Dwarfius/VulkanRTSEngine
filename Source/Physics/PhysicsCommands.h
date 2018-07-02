@@ -21,22 +21,22 @@ struct PhysicsCommand
 
 struct PhysicsCommandAddBody : PhysicsCommand
 {
-	PhysicsCommandAddBody(PhysicsEntity* anEntity);
+	explicit PhysicsCommandAddBody(weak_ptr<PhysicsEntity> anEntity);
 
-	PhysicsEntity* myEntity;
+	weak_ptr<PhysicsEntity> myEntity;
 };
 
 struct PhysicsCommandRemoveBody : PhysicsCommand
 {
-	PhysicsCommandRemoveBody(PhysicsEntity* anEntity);
+	explicit PhysicsCommandRemoveBody(weak_ptr<PhysicsEntity> anEntity);
 
-	PhysicsEntity* myEntity;
+	weak_ptr<PhysicsEntity> myEntity;
 };
 
 struct PhysicsCommandAddForce : PhysicsCommand
 {
-	PhysicsCommandAddForce(PhysicsEntity* anEntity, glm::vec3 aForce);
+	explicit PhysicsCommandAddForce(weak_ptr<PhysicsEntity> anEntity, glm::vec3 aForce);
 
-	PhysicsEntity* myEntity;
+	weak_ptr<PhysicsEntity> myEntity;
 	glm::vec3 myForce;
 };

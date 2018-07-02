@@ -16,6 +16,7 @@
 #include "Components\PlayerTank.h"
 #include "Components\Tank.h"
 #include "Components\EditorMode.h"
+#include "Components\PhysicsComponent.h"
 
 // prints out the thread states to track transitions
 //#define DEBUG_THREADS
@@ -67,14 +68,6 @@ Game::Game(ReportError aReporterFunc)
 	myTaskManager = make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
-
-	// TODO: need to clean this up and refactor
-	terr->CreatePhysics();
-	myPhysWorld->AddEntity(terr->GetPhysicsEntity());
-
-	// a sphere for testing
-	mySphereShape = new PhysicsShapeSphere(1.f);
-	myBall = new PhysicsEntity(1.f, *mySphereShape, glm::mat4(1.f));
 }
 
 Game::~Game()
@@ -94,6 +87,15 @@ void Game::Init()
 	go = Instantiate();
 	go->AddComponent(new Renderer(1, 0, 3));
 	go->SetCollisionsEnabled(false);
+
+	PhysicsComponent* physComp = new PhysicsComponent();
+	physComp->SetPhysicsEntity(myTerrains[0]->CreatePhysics());
+	go->AddComponent(physComp);
+	physComp->RequestAddToWorld(*myPhysWorld);
+
+	// a sphere for testing
+	mySphereShape = make_shared<PhysicsShapeSphere>(1.f);
+	myBall = make_shared<PhysicsEntity>(1.f, mySphereShape, glm::mat4(1.f));
 
 	// player
 	go = Instantiate();
@@ -139,8 +141,12 @@ void Game::RunMainThread()
 {
 	glfwPollEvents();
 
-	if (myRenderThread->IsBusy())
+	if (myRenderThread->HasWork())
 	{
+		const float newTime = static_cast<float>(glfwGetTime());
+		myDeltaTime = newTime - myFrameStart;
+		myFrameStart = newTime;
+
 		myRenderThread->SubmitRenderables();
 
 		// TODO: need a semaphore for this, to disconnect from the render thread
@@ -161,9 +167,8 @@ void Game::CleanUp()
 	}
 
 	// physics clear
+	myBall.reset();
 	delete myPhysWorld;
-	delete myBall;
-	delete mySphereShape;
 
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
@@ -211,11 +216,11 @@ void Game::UpdateInput()
 
 void Game::Update()
 {
-	{
+	/*{
 		const float newTime = static_cast<float>(glfwGetTime());
 		myDeltaTime = newTime - myFrameStart;
 		myFrameStart = newTime;
-	}
+	}*/
 
 	if (Input::GetKey(27) || myShouldEnd)
 	{
@@ -258,7 +263,6 @@ void Game::Update()
 void Game::PhysicsUpdate()
 {
 	myPhysWorld->Simulate(myDeltaTime);
-	//myPhysWorld->Simulate(myShouldStep ? (1.f / 30.f) : 0.f);
 }
 
 void Game::Render()
@@ -284,7 +288,7 @@ void Game::Render()
 
 	// we have to wait until the render thread finishes processing the submitted commands
 	// otherwise we'll screw the command buffers
-	while (myRenderThread->IsBusy())
+	while (myRenderThread->HasWork())
 	{
 		tbb::this_tbb_thread::yield();
 	}

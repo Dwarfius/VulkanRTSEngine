@@ -7,9 +7,9 @@ find_package(BULLET REQUIRED)
 find_package(GLM REQUIRED)
 find_package(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
 
-set(SRC "Common.cpp" "PhysicsEntity.cpp" "PhysicsWorld.cpp" "PhysicsShapeManager.cpp" 
+set(SRC "Common.cpp" "PhysicsEntity.cpp" "PhysicsWorld.cpp" 
 	"PhysicsShapes.cpp" "PhysicsDebugDrawer.cpp" "PhysicsCommands.cpp")
-set(HEADERS "Common.h" "PhysicsEntity.h" "PhysicsWorld.h" "PhysicsShapeManager.h" 
+set(HEADERS "Common.h" "PhysicsEntity.h" "PhysicsWorld.h" 
 	"PhysicsShapes.h" "PhysicsDebugDrawer.h" "PhysicsCommands.h")
 source_group("" FILES ${SRC} ${HEADERS})
 

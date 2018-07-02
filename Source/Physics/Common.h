@@ -1,9 +1,10 @@
 #include <cstring>
 #include <vector>
+#include <unordered_map>
 
+#define NOMINMAX
 #include <tbb/tbb.h>
-#undef max
-#undef min
+#undef NOMINMAX
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision\CollisionShapes\btHeightfieldTerrainShape.h>

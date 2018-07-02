@@ -17,7 +17,7 @@ public:
 
 	void Init(bool anUseVulkan, const vector<Terrain*>* aTerrainSet);
 	void Work();
-	bool IsBusy() const { return myHasWorkPending; }
+	bool HasWork() const { return myHasWorkPending; }
 	void RequestSwitch() { myNeedsSwitch = true; }
 	GLFWwindow* GetWindow() const;
 
