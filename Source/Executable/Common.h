@@ -1,14 +1,12 @@
-#include <random>
 #include <chrono>
-#include <unordered_map>
-#include <array>
+#include <functional>
+#include <vector>
 #include <atomic>
+#include <array>
+#include <unordered_map>
 #include <fstream>
+#include <random>
 
-#define NOMINMAX
 #include <tbb/tbb.h>
-#undef NOMINMAX
-
-#include <glm\glm.hpp>
 
 using namespace std;

@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "RenderThread.h"
-#include "Graphics.h"
+
 #include "GraphicsGL.h"
 #include "GraphicsVK.h"
 #include "Input.h"
@@ -61,13 +61,13 @@ void RenderThread::AddRenderable(const GameObject* aGo)
 
 void RenderThread::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)
 {
-	vector<PhysicsDebugDrawer::LineDraw>& buffer = myTrippleLines.GetCurrent();
-	buffer.push_back(PhysicsDebugDrawer::LineDraw{ aFrom, aColor, aTo, aColor });
+	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	buffer.push_back(Graphics::LineDraw{ aFrom, aColor, aTo, aColor });
 }
 
-void RenderThread::AddLines(const vector<PhysicsDebugDrawer::LineDraw>& aLineCache)
+void RenderThread::AddLines(const vector<Graphics::LineDraw>& aLineCache)
 {
-	vector<PhysicsDebugDrawer::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetCurrent();
 	buffer.insert(buffer.end(), aLineCache.begin(), aLineCache.end());
 }
 
@@ -136,7 +136,7 @@ void RenderThread::SubmitRenderables()
 	});
 
 	// schedule drawing out our debug drawings
-	const vector<PhysicsDebugDrawer::LineDraw>& myLines = myTrippleLines.GetCurrent();
+	const vector<Graphics::LineDraw>& myLines = myTrippleLines.GetCurrent();
 	myTrippleLines.Advance();
 	myTrippleLines.GetCurrent().clear();
 

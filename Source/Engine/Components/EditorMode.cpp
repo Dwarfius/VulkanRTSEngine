@@ -2,8 +2,9 @@
 #include "EditorMode.h"
 
 #include "../Game.h"
-#include "../Camera.h"
 #include "../Input.h"
+
+#include "Camera.h"
 
 void EditorMode::Update(float aDeltaTime)
 {

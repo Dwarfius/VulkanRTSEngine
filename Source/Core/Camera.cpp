@@ -1,6 +1,5 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "Camera.h"
-#include "Game.h"
 #include "Graphics.h"
 
 Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)

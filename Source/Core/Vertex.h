@@ -1,5 +1,9 @@
 #pragma once
 
+#include <glm/gtx/hash.hpp>
+
+typedef uint32_t IndexType;
+
 struct Vertex
 {
 	glm::vec3 myPos;

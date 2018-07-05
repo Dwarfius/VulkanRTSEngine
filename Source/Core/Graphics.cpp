@@ -1,12 +1,14 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "Graphics.h"
 #include "Camera.h"
+
+#include <limits>
 
 Graphics* Graphics::ourActiveGraphics = NULL;
 int Graphics::ourWidth = 800;
 int Graphics::ourHeight = 600;
 
-void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_t>& anIndices, glm::vec3& aCenter, float& aRadius)
+void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<IndexType>& anIndices, glm::vec3& aCenter, float& aRadius)
 {
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
@@ -29,7 +31,7 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 	aVertices.reserve(aVertices.size() + attrib.vertices.size());
 	glm::vec3 min, max;
 	float maxLen = 0;
-	unordered_map<Vertex, size_t> uniqueVerts;
+	unordered_map<Vertex, IndexType> uniqueVerts;
 	for (const tinyobj::shape_t& shape : shapes) 
 	{
 		for (const tinyobj::index_t& index : shape.mesh.indices) 
@@ -74,7 +76,10 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_
 				maxLen = glm::max(maxLen, glm::length(vertex.myPos));
 
 				// push back the new vertex and record it's position
-				uniqueVerts[vertex] = aVertices.size(); // marking that new vertex is at this index
+				size_t currIndex = aVertices.size();
+				assert(currIndex < numeric_limits<IndexType>::max()); // just to make sure it won't get forgotten
+				IndexType currCastedIndex = static_cast<IndexType>(currIndex);
+				uniqueVerts[vertex] = currCastedIndex; // marking that new vertex is at this index
 				aVertices.push_back(vertex); // adding it at the marked position
 			}
 			

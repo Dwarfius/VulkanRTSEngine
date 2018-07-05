@@ -233,6 +233,11 @@ void Game::Update()
 		myIsPaused = !myIsPaused;
 	}
 
+	if (Input::GetKeyPressed('G'))
+	{
+		myRenderThread->RequestSwitch();
+	}
+
 	if (myIsPaused)
 	{
 		return;
@@ -267,11 +272,6 @@ void Game::PhysicsUpdate()
 
 void Game::Render()
 {
-	if (Input::GetKeyPressed('G'))
-	{
-		myRenderThread->RequestSwitch();
-	}
-
 	for (const pair<UID, GameObject*>& elem : myGameObjects)
 	{
 		if (elem.second->GetRenderer())

@@ -1,23 +1,16 @@
 #pragma once
 
 #include <LinearMath/btIDebugDraw.h>
+#include "Graphics.h"
 
 // TODO: move this to private sources section
 // TODO: instead of caching all lines, it should work with a generic debug util
 class PhysicsDebugDrawer : public btIDebugDraw
 {
 public:
-	struct LineDraw
-	{
-		glm::vec3 myFrom;
-		glm::vec3 myColorFrom;
-		glm::vec3 myTo;
-		glm::vec3 myColorTo;
-	};
-
 	PhysicsDebugDrawer();
 
-	const vector<LineDraw>& GetLineCache() const { return myLineCache; }
+	const vector<Graphics::LineDraw>& GetLineCache() const { return myLineCache; }
 
 	// btIDebugDraw interface
 	void drawLine(const btVector3& aFrom, const btVector3& aTo, const btVector3& aColor) override;
@@ -36,6 +29,6 @@ private:
 
 	int myDebugMode;
 
-	vector<LineDraw> myLineCache;
+	vector<Graphics::LineDraw> myLineCache;
 	vector<int> myLineLives;
 };

@@ -1,7 +1,11 @@
 #include "Common.h"
 #include "PhysicsWorld.h"
 
+#include "PhysicsDebugDrawer.h"
 #include "PhysicsEntity.h"
+
+#include "Utils.h"
+
 #include <BulletCollision\CollisionShapes\btTriangleShape.h>
 
 PhysicsWorld::PhysicsWorld()
@@ -71,7 +75,7 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 	PostPhysicsFrame();
 }
 
-const vector<PhysicsDebugDrawer::LineDraw>& PhysicsWorld::GetDebugLineCache() const
+const vector<Graphics::LineDraw>& PhysicsWorld::GetDebugLineCache() const
 {
 	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetLineCache();
 }

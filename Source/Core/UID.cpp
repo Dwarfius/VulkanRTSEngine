@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "UID.h"
 
 #ifdef _WIN32
@@ -46,5 +46,5 @@ UID::UID()
 
 void UID::GetString(char* string) const
 {
-	sprintf(string, "%0.16zX%0.8X%0.8X", myMac, myTime, myRndNum);
+	sprintf_s(string, 33, "%0.16zX%0.8X%0.8X\0", myMac, myTime, myRndNum);
 }

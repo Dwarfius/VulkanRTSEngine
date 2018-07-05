@@ -14,26 +14,18 @@
 #include <atomic>
 #include <random>
 #include <chrono>
-#include <memory>
-
-#include <AL/alut.h>
-
-#define GLEW_STATIC
-#include <GL/glew.h>
-
-// Forcing this define for 32bit typesafe conversions, as in
-// being able to construct c++ classes based of vulkan C handles
-// theoretically this is unsafe - check vulkan.hpp for more info
-#define VULKAN_HPP_TYPESAFE_CONVERSION
-#include <vulkan/vulkan.hpp>
-
-#include <tbb/tbb.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
-#include <glm/gtx/norm.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/hash.hpp>
+
+#include <tbb/tbb.h>
 
 #include <GLFW/glfw3.h>
+
+#include <tiny_obj_loader.h>
+#include <stb_image.h>
 
 using namespace std;

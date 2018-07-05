@@ -1,12 +1,10 @@
 #pragma once
 
 #include "TrippleBuffer.h"
-#include "PhysicsDebugDrawer.h"
+#include "Graphics.h"
 
-class Graphics;
 class GameObject;
 class Terrain;
-struct GLFWwindow;
 
 // a proxy class that handles the render thread
 class RenderThread
@@ -26,7 +24,7 @@ public:
 
 	void AddRenderable(const GameObject* aGo);
 	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor);
-	void AddLines(const vector<PhysicsDebugDrawer::LineDraw>& aLineCache);
+	void AddLines(const vector<Graphics::LineDraw>& aLineCache);
 
 	void SubmitRenderables();
 
@@ -37,7 +35,7 @@ private:
 
 	// TODO: separate gameobject and renderable
 	TrippleBuffer<vector<const GameObject*>> myTrippleRenderables;
-	TrippleBuffer<vector<PhysicsDebugDrawer::LineDraw>> myTrippleLines;
+	TrippleBuffer<vector<Graphics::LineDraw>> myTrippleLines;
 
 	atomic<bool> myNeedsSwitch;
 	atomic<bool> myHasWorkPending;

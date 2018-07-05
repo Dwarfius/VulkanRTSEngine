@@ -3,10 +3,11 @@
 
 #include "../Game.h"
 #include "../GameObject.h"
-#include "../Camera.h"
 
 #include "Tank.h"
 #include "Renderer.h"
+
+#include "Camera.h"
 
 TankArenaGameMode* TankArenaGameMode::ourInstance = nullptr;
 

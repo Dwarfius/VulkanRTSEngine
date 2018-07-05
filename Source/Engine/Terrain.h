@@ -7,13 +7,19 @@ class PhysicsShapeHeightfield;
 
 class Terrain
 {
+	typedef vector<Vertex> VertVector;
+	typedef vector<IndexType> IndxVector;
+
+	typedef VertVector::const_iterator VertIterator;
+	typedef IndxVector::const_iterator IndxIterator;
+
 public:
 	void Generate(string aName, float aStep, float anYScale, float anUvScale);
 	
-	vector<Vertex>::const_iterator GetVertBegin() const { return myVerts.begin(); }
-	vector<Vertex>::const_iterator GetVertEnd() const { return myVerts.end(); }
-	vector<uint32_t>::const_iterator GetIndBegin() const { return myIndices.begin(); }
-	vector<uint32_t>::const_iterator GetIndEnd() const { return myIndices.end(); }
+	VertIterator GetVertBegin() const { return myVerts.begin(); }
+	VertIterator GetVertEnd() const { return myVerts.end(); }
+	IndxIterator GetIndBegin() const { return myIndices.begin(); }
+	IndxIterator GetIndEnd() const { return myIndices.end(); }
 
 	glm::vec3 GetCenter() const { return myCenter; }
 	float GetRange() const { return myRange; }
@@ -27,8 +33,8 @@ public:
 	shared_ptr<PhysicsEntity> CreatePhysics();
 
 private:
-	vector<Vertex> myVerts;
-	vector<uint32_t> myIndices;
+	VertVector myVerts;
+	IndxVector myIndices;
 
 	int myWidth, myHeight;
 	glm::vec3 myStart, myEnd;

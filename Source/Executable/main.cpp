@@ -8,6 +8,7 @@ void glfwErrorReporter(int code, const char* desc)
 
 int main()
 {
+	// TODO: get rid of this and all rand() calls
 	srand(static_cast<uint32_t>(time(0)));
 
 	Game* game = new Game(&glfwErrorReporter);

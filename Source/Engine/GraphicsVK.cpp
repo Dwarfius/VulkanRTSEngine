@@ -88,7 +88,7 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& aTerrainList)
 	// models
 	{
 		vector<Vertex> vertices;
-		vector<uint32_t> indices;
+		vector<IndexType> indices;
 
 		// have to perform vert and index offset calculations as well
 		for (string modelName : ourModelsToLoad)
@@ -147,7 +147,7 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& aTerrainList)
 		// same for ibo
 		usage = vk::BufferUsageFlagBits::eTransferSrc;
 		memProps = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-		size = sizeof(uint32_t) * indices.size();
+		size = sizeof(IndexType) * indices.size();
 		CreateBuffer(size, usage, memProps, stagingBuff, stagingMem);
 
 		// now buffer the memory to staging

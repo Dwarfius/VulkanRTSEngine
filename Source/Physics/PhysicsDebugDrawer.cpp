@@ -57,6 +57,6 @@ void PhysicsDebugDrawer::DrawLine(const btVector3& aFrom, const btVector3& aTo, 
 	glm::vec3 from = Utils::ConvertToGLM(aFrom);
 	glm::vec3 to = Utils::ConvertToGLM(aTo);
 	glm::vec3 color = Utils::ConvertToGLM(aColor);
-	myLineCache.push_back(LineDraw{ from, color, to, color });
+	myLineCache.push_back(Graphics::LineDraw{ from, color, to, color });
 	myLineLives.push_back(aLife);
 }

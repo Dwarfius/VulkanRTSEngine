@@ -5,12 +5,13 @@
 #include "../Input.h"
 #include "../Audio.h"
 #include "../GameObject.h"
-#include "../Camera.h"
 #include "../Terrain.h"
 
 #include "Tank.h"
 #include "Missile.h"
 #include "Renderer.h"
+
+#include "Camera.h"
 
 PlayerTank::PlayerTank()
 	: myShootTimer(0.f)

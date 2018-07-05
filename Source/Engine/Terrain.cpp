@@ -45,10 +45,10 @@ void Terrain::Generate(string aName, float aStep, float anYScale, float anUvScal
 	{
 		for (int x = 0; x < myWidth - 1; x++)
 		{
-			uint32_t tl = y * myWidth + x;
-			uint32_t tr = tl + 1;
-			uint32_t bl = tl + myWidth;
-			uint32_t br = bl + 1;
+			IndexType tl = y * myWidth + x;
+			IndexType tr = tl + 1;
+			IndexType bl = tl + myWidth;
+			IndexType br = bl + 1;
 			myIndices.push_back(tl);
 			myIndices.push_back(bl);
 			myIndices.push_back(tr);
@@ -165,11 +165,11 @@ void Terrain::Normalize()
 	//gotta update the faces
 	for (int i = 0; i < myIndices.size(); i += 3)
 	{
-		int i1 = myIndices.at(i);
+		size_t i1 = myIndices.at(i);
 		glm::vec3 v1 = myVerts.at(i1).myPos;
-		int i2 = myIndices.at(i + 1);
+		size_t i2 = myIndices.at(i + 1);
 		glm::vec3 v2 = myVerts.at(i2).myPos;
-		int i3 = myIndices.at(i + 2);
+		size_t i3 = myIndices.at(i + 2);
 		glm::vec3 v3 = myVerts.at(i3).myPos;
 
 		//calculating the surf normal

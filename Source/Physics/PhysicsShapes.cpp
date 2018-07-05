@@ -80,7 +80,8 @@ PhysicsShapeConvexHull::PhysicsShapeConvexHull(const vector<float>& aVertBuffer)
 	: PhysicsShapeBase()
 {
 	assert(aVertBuffer.size() % 3 == 0); // vertices of xyz configuration
-	myShape = new btConvexHullShape(aVertBuffer.data(), aVertBuffer.size() / 3);
+	int pointCount = static_cast<int>(aVertBuffer.size() / 3);
+	myShape = new btConvexHullShape(aVertBuffer.data(), pointCount);
 	myType = Type::ConvexHull;
 }
 

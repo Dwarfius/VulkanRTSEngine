@@ -14,7 +14,7 @@ public:
 	void CleanUp() override;
 
 	void PrepareLineCache(size_t aCacheSize) override {}
-	void DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache) override;
+	void DrawLines(const Camera& aCam, const vector<Graphics::LineDraw>& aLineCache) override;
 
 	// TODO: get rid of the static method by using a bound functor object
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);

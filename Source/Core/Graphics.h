@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Vertex.h"
-#include "PhysicsDebugDrawer.h"
 
 class GameObject;
 struct GLFWwindow;
@@ -81,7 +80,7 @@ struct Shader
 	};
 	struct BindPoint 
 	{ 
-		GLint myLocation; 
+		int32_t myLocation;
 		UniformType myType;
 	};
 	unordered_map<string, BindPoint> myUniforms;
@@ -97,6 +96,15 @@ typedef uint32_t TextureId;
 class Graphics
 {
 public:
+	struct LineDraw
+	{
+		glm::vec3 myFrom;
+		glm::vec3 myColorFrom;
+		glm::vec3 myTo;
+		glm::vec3 myColorTo;
+	};
+
+public:
 	virtual void Init(const vector<Terrain*>& aTerrainList) = 0;
 	virtual void BeginGather() = 0;
 	virtual void Render(const Camera& aCam, const GameObject* aGO) = 0;
@@ -104,7 +112,7 @@ public:
 	virtual void CleanUp() = 0;
 	
 	virtual void PrepareLineCache(size_t aCacheSize) = 0;
-	virtual void DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache) = 0;
+	virtual void DrawLines(const Camera& aCam, const vector<LineDraw>& aLineCache) = 0;
 	
 	glm::vec3 GetModelCenter(ModelId aModelId) const { return myModels[aModelId].myCenter; }
 	float GetModelRadius(ModelId aModelId) const { return myModels[aModelId].mySphereRadius; }
@@ -118,7 +126,7 @@ public:
 	static float GetHeight() { return static_cast<float>(ourHeight); }
 
 	// TODO: replace aName with aPath
-	static void LoadModel(string aName, vector<Vertex>& aVertices, vector<uint32_t>& anIndices, glm::vec3& aCenter, float& aRadius);
+	static void LoadModel(string aName, vector<Vertex>& aVertices, vector<IndexType>& anIndices, glm::vec3& aCenter, float& aRadius);
 	static unsigned char* LoadTexture(string aName, int* aWidth, int* aHeight, int* aChannels, int aDesiredChannels);
 	static void FreeTexture(void* aData);
 
@@ -137,6 +145,7 @@ protected:
 
 	string ReadFile(const string& filename) const;
 
+	// TODO: Refactor this
 	// need to have this copy here so that classes that 
 	// inherit from Graphics know what's available and 
 	// are not tied to stb. yes, it's not kosher, sorry.

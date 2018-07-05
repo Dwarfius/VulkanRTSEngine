@@ -1,8 +1,10 @@
 #pragma once
 
 // TODO: Refactor away debug drawer include
-#include "PhysicsDebugDrawer.h"
+
 #include "PhysicsCommands.h"
+
+#include "Graphics.h"
 
 class PhysicsEntity;
 class btBroadphaseInterface;
@@ -25,7 +27,7 @@ public:
 	void Simulate(float aDeltaTime);
 
 	// TODO: refactor this away
-	const vector<PhysicsDebugDrawer::LineDraw>& GetDebugLineCache() const;
+	const vector<Graphics::LineDraw>& GetDebugLineCache() const;
 
 private:
 	const int MaxSteps = 4;

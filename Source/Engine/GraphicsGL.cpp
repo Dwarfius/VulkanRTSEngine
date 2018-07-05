@@ -116,7 +116,8 @@ void GraphicsGL::Display()
 		// shader first
 		Shader debugShader = myShaders[DebugShaderInd];
 		glUseProgram(debugShader.myId);
-		glUniformMatrix4fv(debugShader.myUniforms.begin()->second.myLocation, 1, false, (const GLfloat*)glm::value_ptr(myLineCache.myVp));
+		const GLfloat* lineCache = static_cast<const GLfloat*>(glm::value_ptr(myLineCache.myVp));
+		glUniformMatrix4fv(debugShader.myUniforms.begin()->second.myLocation, 1, false, lineCache);
 		myCurrentShader = debugShader.myId;
 
 		// then VAO
@@ -124,7 +125,8 @@ void GraphicsGL::Display()
 		myCurrentModel = myLineCache.myVao;
 
 		// now just draw em out
-		glDrawArrays(GL_LINES, 0, 2 * myLineCache.mySize);
+		GLsizei count = static_cast<GLsizei>(2 * myLineCache.mySize);
+		glDrawArrays(GL_LINES, 0, count);
 	}
 
 	// TODO: remove this once we have double/tripple buffering
@@ -227,9 +229,9 @@ void GraphicsGL::CleanUp()
 	ourActiveGraphics = nullptr;
 }
 
-void GraphicsGL::DrawLines(const Camera& aCam, const vector<PhysicsDebugDrawer::LineDraw>& aLineCache)
+void GraphicsGL::DrawLines(const Camera& aCam, const vector<Graphics::LineDraw>& aLineCache)
 {
-	glBufferData(GL_ARRAY_BUFFER, sizeof(PhysicsDebugDrawer::LineDraw) * aLineCache.size(), aLineCache.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Graphics::LineDraw) * aLineCache.size(), aLineCache.data(), GL_DYNAMIC_DRAW);
 	myLineCache.mySize = aLineCache.size();
 	myLineCache.myVp = aCam.Get();
 }
@@ -339,7 +341,7 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& aTerrainList)
 	{
 		Model m;
 		vector<Vertex> vertices;
-		vector<uint32_t> indices;
+		vector<IndexType> indices;
 
 		if (ourModelsToLoad[i].substr(0, 2) == "%t")
 		{
@@ -371,7 +373,7 @@ void GraphicsGL::LoadResources(const vector<Terrain*>& aTerrainList)
 		GLuint ebo;
 		glGenBuffers(1, &ebo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::uint) * indices.size(), indices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(IndexType) * indices.size(), indices.data(), GL_STATIC_DRAW);
 		// TODO: replace 1 with BufferType enum
 		m.myGLBuffers[1] = ebo;
 
