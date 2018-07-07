@@ -17,7 +17,11 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"Vertex.h"
 ) 
 
-add_library(${PROJECT_NAME} STATIC ${SRC})
+set(SRC_THREADING "Threading/AssertMutex.cpp" "Threading/AssertMutex.h"
+	"Threading/AssertRWMutex.cpp" "Threading/AssertRWMutex.h"
+)
+
+add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING})
 if (MSVC)
    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
    set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
@@ -26,11 +30,13 @@ endif(MSVC)
 
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
+source_group("Threading" FILES ${SRC_THREADING})
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 
 		NOMINMAX # to prevent tbb to carry over min/max macros from win headers
 		GLM_FORCE_DEPTH_ZERO_TO_ONE
+		ASSERT_MUTEX # enables utility mutex that asserts on concurrent use
 )
 
 target_include_directories(${PROJECT_NAME}
