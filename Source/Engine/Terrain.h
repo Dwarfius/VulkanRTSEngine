@@ -26,9 +26,6 @@ public:
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
 
-	// TODO: should probably remove this now that bullet is in progress
-	bool Collides(glm::vec3 aPos, float aRange) const;
-
 	// TODO: need to remove it from terrain class
 	shared_ptr<PhysicsEntity> CreatePhysics();
 

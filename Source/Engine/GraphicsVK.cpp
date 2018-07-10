@@ -327,7 +327,7 @@ void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 	{
 		tbb::spin_mutex::scoped_lock lock(myThreadCounterSpinlock);
 		threadId = myThreadCounter++;
-		assert(threadId < myMaxThreads && "Unaccounted thread appeared, can't find thread-local info for it");
+		ASSERT_STR(threadId < myMaxThreads, "Unaccounted thread appeared, can't find thread-local info for it");
 	}
 
 	// get the vector of secondary buffers for thread
@@ -339,7 +339,7 @@ void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 	{
 		tbb::spin_mutex::scoped_lock lock(mySlotIndexMutex);
 		index = mySlotIndex++;
-		assert(index < Game::maxObjects && "Managed to exceed memory capacity for objects!");
+		ASSERT_STR(index < Game::maxObjects, "Managed to exceed memory capacity for objects!");
 		myRenderCalls++;
 	}
 
@@ -1410,8 +1410,7 @@ void GraphicsVK::TransitionLayout(vk::Image anImg, vk::Format aFormat, vk::Image
 	}
 	else
 	{
-		printf("[Error] Transition image layout unsupported: %d -> %d\n", anOldLayout, aNewLayout);
-		assert(false);
+		ASSERT_STR(false, "Transition image layout unsupported : %d -> %d\n", anOldLayout, aNewLayout);
 	}
 
 	cmdBuffer.pipelineBarrier(

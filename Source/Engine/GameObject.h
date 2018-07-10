@@ -54,7 +54,7 @@ private:
 	glm::mat4 myCurrentMat;
 	glm::vec3 myCenter;
 
-	// TODO: move this to the Renderer
+	// TODO: move this to the VisualObject
 	ShaderStorage myUniforms;
 	size_t myIndex;
 	// ==========

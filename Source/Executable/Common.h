@@ -9,4 +9,6 @@
 
 #include <tbb/tbb.h>
 
+#include "Debug/Assert.h"
+
 using namespace std;

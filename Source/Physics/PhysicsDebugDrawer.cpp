@@ -42,7 +42,7 @@ void PhysicsDebugDrawer::clearLines()
 		}
 		// it would be perfect to just move the end head of the vector to the new position,
 		// so that everything after the new end will just be junk data, but doesn't seem vec allows it
-		// so have to call the erase which mustr trigger destructors
+		// so have to call the erase which will trigger destructors
 		// TODO: roll my own cache type with ability to move the start-end heads
 		if (swapInd + 1 < size)
 		{

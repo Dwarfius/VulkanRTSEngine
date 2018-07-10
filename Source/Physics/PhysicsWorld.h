@@ -39,7 +39,6 @@ private:
 	void PrePhysicsFrame();
 	void PostPhysicsFrame();
 
-	// TODO: check out Bullet3
 	btBroadphaseInterface* myBroadphase;
 	btDefaultCollisionConfiguration* myConfiguration;
 	btCollisionDispatcher* myDispatcher;

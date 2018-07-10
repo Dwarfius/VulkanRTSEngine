@@ -82,7 +82,7 @@ void GraphicsGL::BeginGather()
 void GraphicsGL::Render(const Camera& aCam, const GameObject* aGO)
 {
 	const Renderer* r = aGO->GetRenderer();
-	assert(r);
+	ASSERT_STR(r, "Missing renderer!");
 
 	RenderJob job{
 		r->GetShader(),

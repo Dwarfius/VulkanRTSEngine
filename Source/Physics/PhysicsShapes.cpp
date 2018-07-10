@@ -5,20 +5,20 @@
 PhysicsShapeBase::PhysicsShapeBase()
 	: myShape(nullptr)
 	, myType(Type::Invalid)
-	, myRefCount(0) 
+	, myRefCount(0) // TODO: currently does nothing, need to implement or remove
 {
 }
 
 PhysicsShapeBase::~PhysicsShapeBase()
 { 
-	assert(myRefCount == 0); 
-	assert(myShape); // don't create blank shapes if you don't need them
+	ASSERT(myRefCount == 0); 
+	ASSERT_STR(myShape, "Don't create blank shapes if you don't need them"); 
 	delete myShape;
 }
 
 AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
 {
-	assert(myShape);
+	ASSERT(myShape);
 
 	btTransform btTransf;
 	btTransf.setFromOpenGLMatrix(glm::value_ptr(aTransform));
@@ -35,7 +35,7 @@ AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
 
 Sphere PhysicsShapeBase::GetBoundingSphereLS() const
 {
-	assert(myShape);
+	ASSERT(myShape);
 
 	Sphere sphere;
 	btVector3 btCenter;
@@ -79,7 +79,7 @@ PhysicsShapeCapsule::PhysicsShapeCapsule(float aRadius, float aHeight)
 PhysicsShapeConvexHull::PhysicsShapeConvexHull(const vector<float>& aVertBuffer)
 	: PhysicsShapeBase()
 {
-	assert(aVertBuffer.size() % 3 == 0); // vertices of xyz configuration
+	ASSERT_STR(aVertBuffer.size() % 3 == 0, "Convex hull shape requires XYZ-form vertices");
 	int pointCount = static_cast<int>(aVertBuffer.size() / 3);
 	myShape = new btConvexHullShape(aVertBuffer.data(), pointCount);
 	myType = Type::ConvexHull;

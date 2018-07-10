@@ -9,7 +9,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <tbb\tbb.h>
+#include <tbb/tbb.h>
+
+#include "Debug/Assert.h"
 
 using namespace std;
 

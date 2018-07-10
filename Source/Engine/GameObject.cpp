@@ -21,7 +21,7 @@ GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
 
 GameObject::~GameObject()
 {
-	assert(Game::ourGODeleteEnabled);
+	ASSERT_STR(Game::ourGODeleteEnabled, "GameObject got deleted outside cleanup stage!");
 
 	for (ComponentBase* comp : myComponents)
 	{

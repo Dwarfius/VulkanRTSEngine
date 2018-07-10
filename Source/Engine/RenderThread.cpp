@@ -23,8 +23,8 @@ RenderThread::~RenderThread()
 
 void RenderThread::Init(bool anUseVulkan, const vector<Terrain*>* aTerrainSet)
 {
-	assert(aTerrainSet);
-	assert(aTerrainSet->size() > 0);
+	ASSERT(aTerrainSet);
+	ASSERT(aTerrainSet->size() > 0);
 
 	myIsUsingVulkan = anUseVulkan;
 	myTerrains = aTerrainSet;
@@ -80,8 +80,7 @@ void RenderThread::SubmitRenderables()
 
 	if (!myIsUsingVulkan)
 	{
-		// TODO: introduce proper assert macros
-		assert(glfwGetCurrentContext());
+		ASSERT_STR(glfwGetCurrentContext(), "Missing current GL context!");
 	}
 	
 	if (myNeedsSwitch)

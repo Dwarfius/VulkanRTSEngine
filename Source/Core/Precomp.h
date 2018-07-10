@@ -28,4 +28,6 @@
 #include <tiny_obj_loader.h>
 #include <stb_image.h>
 
+#include "Debug/Assert.h"
+
 using namespace std;

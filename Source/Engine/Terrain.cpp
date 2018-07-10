@@ -127,15 +127,9 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	return glm::mix(botNorm, topNorm, y);
 }
 
-bool Terrain::Collides(glm::vec3 aPos, float aRange) const
-{
-	float myHeight = GetHeight(aPos);
-	return myHeight > aPos.y - aRange;
-}
-
 shared_ptr<PhysicsEntity> Terrain::CreatePhysics()
 {
-	assert(myHeightsCache.empty());
+	ASSERT_STR(myHeightsCache.empty(), "Terrain physics entity re-initialization");
 
 	// need to recollect the vertices in WS, and cache them
 	const uint32_t count = myWidth * myHeight;

@@ -1,12 +1,6 @@
 #include "Common.h"
 
-// TODO: move this to Common module
-#define FORCE_SEMICOLON (void)0
-#ifdef NDEBUG
-#	define DEBUG_ONLY(x)
-#else
-#	define DEBUG_ONLY(x) x FORCE_SEMICOLON
-#endif // NDEBUG
+#include "Debug/Assert.h"
 
 namespace Utils
 {
@@ -47,12 +41,12 @@ namespace Utils
 
 	btTransform ConvertToBullet(const glm::mat4& aMat)
 	{
-		DEBUG_ONLY( // be warned, if aMat has scaling, it'll screw everything with Bullet - tried and tested
+		DEBUG_ONLY(
 			for (int y = 0; y < 3; y++)
 			{
 				for (int x = 0; x < 3; x++)
 				{
-					assert(aMat[y][x] >= -1.f && aMat[y][x] <= 1.f);
+					ASSERT_STR(aMat[y][x] >= -1.f && aMat[y][x] <= 1.f, "Bullet doesn't support scaling of it's matrices!");
 				}
 			}
 		);

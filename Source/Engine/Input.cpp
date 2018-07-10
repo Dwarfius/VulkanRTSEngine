@@ -86,13 +86,13 @@ bool Input::GetMouseBtnPressed(char btn)
 
 void Input::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods)
 {
-	assert(aKey >= 0 && aKey < 400);
+	ASSERT_STR(aKey >= 0 && aKey < ourKeyCount, "Unsupported key: %d", aKey);
 	ourKbState[RemapKey(aKey)] = anAction;
 }
 
 void Input::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods)
 {
-	assert(aButton >= 0 && aButton < 400);
+	ASSERT_STR(aButton >= 0 && aButton < ourMButtonCount, "Unsupported button: %d", aButton);
 	ourMState[aButton] = anAction;
 }
 

@@ -3,6 +3,8 @@
 
 #ifdef ASSERT_MUTEX
 
+#include <sstream>
+
 AssertMutex::AssertMutex()
 	: myWriter(thread::id())
 {
@@ -11,11 +13,16 @@ AssertMutex::AssertMutex()
 void AssertMutex::Lock()
 {
 	thread::id expectedId = thread::id();
+	thread::id currentThreadId = this_thread::get_id();
 	// might need to change away from the default memory order to improve perf
-	if (!myWriter.compare_exchange_strong(expectedId, this_thread::get_id()))
+	if (!myWriter.compare_exchange_strong(expectedId, currentThreadId))
 	{
-		// TODO: replace with new assert
-		assert(false);
+		string msg = "Contention! Thread ";
+		basic_stringstream<string::value_type> stream(msg);
+		stream << currentThreadId;
+		stream << " tried to lock mutex owned by ";
+		stream << expectedId;
+		ASSERT_STR(false, msg.data());
 	}
 }
 
@@ -25,7 +32,12 @@ void AssertMutex::Unlock()
 	thread::id invalidId = thread::id();
 	if (!myWriter.compare_exchange_strong(expectedId, invalidId))
 	{
-		assert(false);
+		string msg = "Magic! Thread ";
+		basic_stringstream<string::value_type> stream(msg);
+		stream << this_thread::get_id();
+		stream << " tried to unlock mutex owned by ";
+		stream << expectedId;
+		ASSERT_STR(false, msg.data());
 	}
 }
 

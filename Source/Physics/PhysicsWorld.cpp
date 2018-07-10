@@ -40,10 +40,10 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::AddEntity(weak_ptr<PhysicsEntity> anEntity)
 {
-	assert(!anEntity.expired());
+	ASSERT_STR(!anEntity.expired(), "Entity was removed before it could've been added to the world!");
 	shared_ptr<PhysicsEntity> entity = anEntity.lock();
-	assert(entity->GetState() == PhysicsEntity::NotInWorld);
-	assert(!entity->myWorld);
+	ASSERT(entity->GetState() == PhysicsEntity::NotInWorld);
+	ASSERT(!entity->myWorld);
 	entity->myState = PhysicsEntity::PendingAddition;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandAddBody* cmd = new PhysicsCommandAddBody(anEntity);
@@ -52,8 +52,8 @@ void PhysicsWorld::AddEntity(weak_ptr<PhysicsEntity> anEntity)
 
 void PhysicsWorld::RemoveEntity(shared_ptr<PhysicsEntity> anEntity)
 {
-	assert(anEntity->GetState() == PhysicsEntity::InWorld);
-	assert(anEntity->myWorld == this);
+	ASSERT(anEntity->GetState() == PhysicsEntity::InWorld);
+	ASSERT(anEntity->myWorld == this);
 	anEntity->myState = PhysicsEntity::PendingRemoval;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandRemoveBody* cmd = new PhysicsCommandRemoveBody(anEntity);
@@ -103,7 +103,7 @@ void PhysicsWorld::ResolveCommands()
 			CALL_COMMAND_HANDLER(AddBody, cmdRef);
 			CALL_COMMAND_HANDLER(RemoveBody, cmdRef);
 			CALL_COMMAND_HANDLER(AddForce, cmdRef);
-			case PhysicsCommand::Count: assert(false);
+			default: ASSERT(false);
 		}
 		// TODO: get rid of allocs/deallocs by using an internal recycler
 		delete cmd;
@@ -127,8 +127,8 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 
 	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
 
-	assert(!entity->myWorld);
-	assert(entity->GetState() == PhysicsEntity::PendingAddition);
+	ASSERT(!entity->myWorld);
+	ASSERT(entity->GetState() == PhysicsEntity::PendingAddition);
 
 	// TODO: refactor this
 	if (entity->myIsStatic)
@@ -146,12 +146,12 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 
 void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 {
-	assert(!aCmd.myEntity.expired());
+	ASSERT_STR(!aCmd.myEntity.expired(), "Entity was removed before it could've been removed from the world!");
 
 	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
 
-	assert(entity->myWorld == this);
-	assert(entity->GetState() == PhysicsEntity::PendingRemoval);
+	ASSERT(entity->myWorld == this);
+	ASSERT(entity->GetState() == PhysicsEntity::PendingRemoval);
 
 	// TODO: refactor this
 	if (entity->myIsStatic)
@@ -186,9 +186,9 @@ void PhysicsWorld::AddForceHandler(const PhysicsCommandAddForce& aCmd)
 
 	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
 
-	assert(!entity->myIsStatic);
+	ASSERT_STR(!entity->myIsStatic, "Can't add force to static objects!");
 	// even though we check during scheduling, it's nice to do it here to maybe catch a corruption
-	assert(!Utils::IsNan(aCmd.myForce)); 
+	ASSERT(!Utils::IsNan(aCmd.myForce)); 
 
 	const btVector3 force = Utils::ConvertToBullet(aCmd.myForce);
 	static_cast<btRigidBody*>(entity->myBody)->applyForce(force, btVector3(0.f, 0.f, 0.f));

@@ -56,7 +56,7 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 
 PhysicsEntity::~PhysicsEntity()
 {
-	assert(myState == PhysicsEntity::NotInWorld);
+	ASSERT(myState == PhysicsEntity::NotInWorld);
 	if (!myIsStatic)
 	{
 		delete static_cast<btRigidBody*>(myBody)->getMotionState();
@@ -66,7 +66,7 @@ PhysicsEntity::~PhysicsEntity()
 
 glm::mat4 PhysicsEntity::GetTransform() const
 {
-	assert(myBody);
+	ASSERT(myBody);
 
 	// Note: getWorldTransform() doesn't have CoM offset, will need to account for it if
 	// we start providing it later
@@ -75,12 +75,12 @@ glm::mat4 PhysicsEntity::GetTransform() const
 
 glm::mat4 PhysicsEntity::GetTransformInterp() const
 {
-	assert(myBody);
-	assert(!myIsStatic);
+	ASSERT(myBody);
+	ASSERT_STR(!myIsStatic, "Static entities can't be interpolated");
 
 	const btRigidBody* rigidBody = static_cast<const btRigidBody*>(myBody);
 
-	assert(rigidBody->getMotionState());
+	ASSERT_STR(rigidBody->getMotionState(), "Motion state was not set-up");
 
 	// according to http://www.bulletphysics.org/mediawiki-1.5.8/index.php/Stepping_The_World
 	// Bullet interpolates stuff if world max step count is > 1, which we do have
@@ -94,7 +94,7 @@ glm::mat4 PhysicsEntity::GetTransformInterp() const
 // TODO: add a command version of this
 void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 {
-	assert(myBody);
+	ASSERT(myBody);
 
 	// convert to bullet and cache it
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
@@ -112,9 +112,9 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
-	assert(myBody);
-	assert(!myIsStatic);
-	assert(!Utils::IsNan(aForce));
+	ASSERT(myBody);
+	ASSERT_STR(!myIsStatic, "Can't apply forces to static object!");
+	ASSERT(!Utils::IsNan(aForce));
 
 	const btVector3 force = Utils::ConvertToBullet(aForce);
 	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
@@ -124,9 +124,9 @@ void PhysicsEntity::AddForce(glm::vec3 aForce)
 // TODO: add a command version of this
 void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
 {
-	assert(myBody);
-	assert(!myIsStatic);
-	assert(!Utils::IsNan(aVelocity));
+	ASSERT(myBody);
+	ASSERT_STR(!myIsStatic, "Static object can't have velocity!");
+	ASSERT(!Utils::IsNan(aVelocity));
 
 	const btVector3 velocity = Utils::ConvertToBullet(aVelocity);
 	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);

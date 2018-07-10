@@ -35,6 +35,6 @@ bool PhysicsComponent::IsInWorld() const
 
 void PhysicsComponent::RequestAddToWorld(PhysicsWorld& aWorld) const
 {
-	assert(myEntity);
+	ASSERT(myEntity);
 	aWorld.AddEntity(myEntity);
 }

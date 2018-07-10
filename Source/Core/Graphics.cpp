@@ -77,7 +77,7 @@ void Graphics::LoadModel(string aName, vector<Vertex>& aVertices, vector<IndexTy
 
 				// push back the new vertex and record it's position
 				size_t currIndex = aVertices.size();
-				assert(currIndex < numeric_limits<IndexType>::max()); // just to make sure it won't get forgotten
+				ASSERT_STR(currIndex < numeric_limits<IndexType>::max(), "Vertex index overflow!");
 				IndexType currCastedIndex = static_cast<IndexType>(currIndex);
 				uniqueVerts[vertex] = currCastedIndex; // marking that new vertex is at this index
 				aVertices.push_back(vertex); // adding it at the marked position
