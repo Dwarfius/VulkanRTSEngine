@@ -55,19 +55,19 @@ GLFWwindow* RenderThread::GetWindow() const
 
 void RenderThread::AddRenderable(const GameObject* aGo)
 {
-	vector<const GameObject*>& buffer = myTrippleRenderables.GetCurrent();
+	vector<const GameObject*>& buffer = myTrippleRenderables.GetWrite();
 	buffer.push_back(aGo);
 }
 
 void RenderThread::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)
 {
-	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetWrite();
 	buffer.push_back(Graphics::LineDraw{ aFrom, aColor, aTo, aColor });
 }
 
 void RenderThread::AddLines(const vector<Graphics::LineDraw>& aLineCache)
 {
-	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetCurrent();
+	vector<Graphics::LineDraw>& buffer = myTrippleLines.GetWrite();
 	buffer.insert(buffer.end(), aLineCache.begin(), aLineCache.end());
 }
 
@@ -119,9 +119,9 @@ void RenderThread::SubmitRenderables()
 	myGraphics->BeginGather();
 
 	// processing our renderables
-	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetCurrent();
-	myTrippleRenderables.Advance();
-	myTrippleRenderables.GetCurrent().clear();
+	myTrippleRenderables.Swap();
+	const vector<const GameObject*>& myRenderables = myTrippleRenderables.GetRead();
+	myTrippleRenderables.GetWrite().clear();
 
 	// TODO: this is most probably overkill considering that Render call is lightweight
 	// need to look into batching those
@@ -135,9 +135,9 @@ void RenderThread::SubmitRenderables()
 	});
 
 	// schedule drawing out our debug drawings
-	const vector<Graphics::LineDraw>& myLines = myTrippleLines.GetCurrent();
-	myTrippleLines.Advance();
-	myTrippleLines.GetCurrent().clear();
+	myTrippleLines.Swap();
+	const vector<Graphics::LineDraw>& myLines = myTrippleLines.GetRead();
+	myTrippleLines.GetWrite().clear();
 
 	myGraphics->PrepareLineCache(myLines.size());
 	myGraphics->DrawLines(cam, myLines);

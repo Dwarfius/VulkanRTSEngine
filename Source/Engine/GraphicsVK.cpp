@@ -25,8 +25,8 @@ GraphicsVK::GraphicsVK()
 	, myIsPaused(false)
 	, myGatherStarted(false)
 	, mySwapchain(VK_NULL_HANDLE)
+	, myMappedUboMem(nullptr)
 {
-	myMappedUboMem.GetInternalBuffer()[0] = nullptr;
 }
 
 // Public Methods
@@ -233,8 +233,9 @@ void GraphicsVK::BeginGather()
 	myCurrentImageIndex = myDevice.acquireNextImageKHR(mySwapchain, UINT32_MAX, myImgAvailable, VK_NULL_HANDLE).value;
 
 	// before we start recording the command buffer, need to make sure that it has finished being executed
+	// TODO: revisit to refactor RWBuffer usage
 	myCmdFences.Advance();
-	const vk::Fence& fence = myCmdFences.GetCurrent();
+	const vk::Fence& fence = myCmdFences.GetRead();
 	myDevice.waitForFences(1, &fence, false, ~0ull);
 	myDevice.resetFences(1, &fence);
 
@@ -252,7 +253,7 @@ void GraphicsVK::BeginGather()
 	clearVals[1] = vk::ClearValue({ 1, 0 });
 
 	// begin recording to command buffer
-	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetCurrent();
+	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetRead();
 	primaryCmdBuffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
 	// first we render all geometry - start the render pass
@@ -265,7 +266,7 @@ void GraphicsVK::BeginGather()
 	primaryCmdBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 	// have to begin all secondary buffers here
-	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
+	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetRead();
 	for(const PerPipelineCmdBuffers& perPipelineBuffers : perThreadBuffers)
 	{
 		for(size_t pipeline=0, length = perPipelineBuffers.size(); pipeline < length; pipeline++)
@@ -331,7 +332,7 @@ void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 	}
 
 	// get the vector of secondary buffers for thread
-	const PerPipelineCmdBuffers& buffers = mySecCmdBuffers.GetCurrent()[threadId];
+	const PerPipelineCmdBuffers& buffers = mySecCmdBuffers.GetRead()[threadId];
 	// we need to find the corresponding secondary buffer
 	ShaderId pipelineInd = r->GetShader();
 	Model m = myModels[r->GetModel()];
@@ -347,11 +348,11 @@ void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 	MatUBO matrices;
 	matrices.myModel = aGO->GetMatrix();
 	matrices.myMvp = aCam.Get() * matrices.myModel;
-	memcpy((char*)myMappedUboMem.GetCurrent() + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
+	memcpy((char*)myMappedUboMem.GetRead() + GetAlignedOffset(index, sizeof(MatUBO)), &matrices, sizeof(MatUBO));
 	
 	// draw out all the indices
 	array<vk::DescriptorSet, 2> setsToBind{
-		myUboSets.GetCurrent()[index], mySamplerSets[r->GetTexture()]
+		myUboSets.GetRead()[index], mySamplerSets[r->GetTexture()]
 	};
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, myPipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
@@ -367,7 +368,7 @@ void GraphicsVK::Display()
 	}
 
 	// before we can execute them, have to end them
-	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
+	const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetRead();
 	for (const PerPipelineCmdBuffers& threadBuffersPair : perThreadBuffers)
 	{
 		for (const vk::CommandBuffer& perPipelineBuffers : threadBuffersPair)
@@ -377,9 +378,9 @@ void GraphicsVK::Display()
 	}
 
 	// draw out all the accumulated render calls
-	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetCurrent();
+	const vk::CommandBuffer& primaryCmdBuffer = myCmdBuffers.GetRead();
 	{
-		const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetCurrent();
+		const PerThreadCmdBuffers& perThreadBuffers = mySecCmdBuffers.GetRead();
 		// we know how many there are total - every thread has per-pipeline command buffers
 		const size_t totalBuffers = perThreadBuffers.size() * myPipelines.size();
 		vk::CommandBuffer* allBuffers = new vk::CommandBuffer[totalBuffers];
@@ -414,7 +415,7 @@ void GraphicsVK::Display()
 		1, &primaryCmdBuffer,
 		1, &myRenderFinished
 	};
-	myQueues.myGraphicsQueue.submit(1, &submitInfo, myCmdFences.GetCurrent());
+	myQueues.myGraphicsQueue.submit(1, &submitInfo, myCmdFences.GetRead());
 
 	// present the results of the drawing
 	vk::PresentInfoKHR presentInfo{
@@ -459,7 +460,7 @@ void GraphicsVK::CleanUp()
 	myDevice.destroyImage(myDepthImg);
 	myDevice.freeMemory(myDepthImgMem);
 
-	for (vk::Fence fence : myCmdFences.GetInternalBuffer())
+	for (vk::Fence fence : myCmdFences)
 	{
 		myDevice.destroyFence(fence);
 	}
@@ -1143,11 +1144,14 @@ void GraphicsVK::CreateFrameBuffers()
 
 void GraphicsVK::CreateCommandResources()
 {
-	// allocating a cmdBuffer per swapchain FBO
-	vector<vk::CommandBuffer> buffers = myDevice.allocateCommandBuffers({ myGraphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
-	for (size_t bufferInd = 0, length = buffers.size(); bufferInd < length; bufferInd++)
 	{
-		myCmdBuffers.GetInternalBuffer()[bufferInd] = move(buffers[bufferInd]);
+		// allocating a cmdBuffer per swapchain FBO
+		vector<vk::CommandBuffer> buffers = myDevice.allocateCommandBuffers({ myGraphCmdPool, vk::CommandBufferLevel::ePrimary, 3 });
+		size_t i = 0;
+		for (vk::CommandBuffer& cmdBuffer : myCmdBuffers)
+		{
+			cmdBuffer = buffers[i++];
+		}
 	}
 
 	{
@@ -1158,12 +1162,11 @@ void GraphicsVK::CreateCommandResources()
 		{
 			myGraphSecCmdPools.push_back(myDevice.createCommandPool({ { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, myQueues.myGraphicsFamIndex }));
 		}
-		TrippleBuffer<PerThreadCmdBuffers>::InternalBuffer& internalBuffer = mySecCmdBuffers.GetInternalBuffer();
-		for (int image = 0; image < 3; image++)
+		for(PerThreadCmdBuffers& cmdBuffers : mySecCmdBuffers)
 		{
 			for (uint32_t thread = 0; thread < myMaxThreads; thread++)
 			{
-				internalBuffer[image].push_back(myDevice.allocateCommandBuffers({ myGraphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)ourShadersToLoad.size() }));
+				cmdBuffers.push_back(myDevice.allocateCommandBuffers({ myGraphSecCmdPools[thread], vk::CommandBufferLevel::eSecondary, (uint32_t)ourShadersToLoad.size() }));
 			}
 		}
 	}
@@ -1174,10 +1177,9 @@ void GraphicsVK::CreateCommandResources()
 
 	{
 		// our 3 fences to synchronize command submission
-		TrippleBuffer<vk::Fence>::InternalBuffer& internalBuffer = myCmdFences.GetInternalBuffer();
-		for (size_t i = 0; i < 3; i++)
+		for(vk::Fence& fence : myCmdFences)
 		{
-			internalBuffer[i] = myDevice.createFence({ vk::FenceCreateFlagBits::eSignaled });
+			fence = myDevice.createFence({ vk::FenceCreateFlagBits::eSignaled });
 		}
 	}
 }
@@ -1247,59 +1249,71 @@ void GraphicsVK::CreateDescriptorSet()
 	array<vk::DescriptorSetLayout, trippleBufferedGOs> uboLayouts;
 	uboLayouts.fill(myUboLayout);
 
-	vk::DescriptorSetAllocateInfo info{
-		myDescriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
-	};
-	DescriptorSets tempUboSets = myDevice.allocateDescriptorSets(info);
-	for (int buffer = 0; buffer < 3; buffer++)
 	{
-		myUboSets.GetInternalBuffer()[buffer].insert(myUboSets.GetInternalBuffer()[buffer].begin(), tempUboSets.begin() + buffer * Game::maxObjects, tempUboSets.begin() + (buffer + 1) * Game::maxObjects);
-	}
-
-	// now we have to update the descriptor's values location
-	vector<vk::DescriptorBufferInfo> bufferInfos;
-	bufferInfos.reserve(trippleBufferedGOs);
-	vector<vk::WriteDescriptorSet> writeTargets;
-	writeTargets.reserve(trippleBufferedGOs);
-	for (int buffer = 0; buffer < 3; buffer++)
-	{
-		for (size_t i = 0; i < Game::maxObjects; i++)
+		vk::DescriptorSetAllocateInfo info{
+			myDescriptorPool, (uint32_t)uboLayouts.size(), uboLayouts.data()
+		};
+		DescriptorSets tempUboSets = myDevice.allocateDescriptorSets(info);
+		size_t buffer = 0;
+		for (vector<vk::DescriptorSet>& uboSet : myUboSets)
 		{
-			// make descriptor point at buffer
-			bufferInfos.push_back({
-				myUbo, GetAlignedOffset(Game::maxObjects * buffer + i, sizeof(MatUBO)), sizeof(MatUBO)
-				});
-			// update descriptor with buffer binding
-			writeTargets.push_back({
-				myUboSets.GetInternalBuffer()[buffer][i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
-				nullptr, &bufferInfos[Game::maxObjects * buffer + i], nullptr
-				});
+			uboSet.insert(uboSet.begin(), tempUboSets.begin() + buffer * Game::maxObjects, tempUboSets.begin() + (buffer + 1) * Game::maxObjects);
+			buffer++;
 		}
 	}
-	myDevice.updateDescriptorSets(writeTargets, nullptr);
 
-	// now the samplers
-	vector<vk::DescriptorSetLayout> samplerLayouts(ourTexturesToLoad.size(), mySamplerLayout);
-	info = {
-		myDescriptorPool, (uint32_t)samplerLayouts.size(), samplerLayouts.data()
-	};
-	mySamplerSets = myDevice.allocateDescriptorSets(info);
-
-	// samplers allocated, need to update them
-	vector<vk::DescriptorImageInfo> imageInfos;
-	imageInfos.reserve(ourTexturesToLoad.size());
-	writeTargets.clear();
-	for (uint32_t i = 0; i < ourTexturesToLoad.size(); i++)
+	vector<vk::WriteDescriptorSet> writeTargets;
 	{
-		imageInfos.push_back({
-			mySampler, myTextureViews[i], vk::ImageLayout::eShaderReadOnlyOptimal
-		});
-		writeTargets.push_back({
-			mySamplerSets[i], 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
-			&imageInfos[i], nullptr, nullptr
-		});
+		// now we have to update the descriptor's values location
+		vector<vk::DescriptorBufferInfo> bufferInfos;
+		bufferInfos.reserve(trippleBufferedGOs);
+		writeTargets.reserve(trippleBufferedGOs);
+		size_t buffer = 0;
+		for (vector<vk::DescriptorSet>& uboSet : myUboSets)
+		{
+			for (size_t i = 0; i < Game::maxObjects; i++)
+			{
+				// make descriptor point at buffer
+				bufferInfos.push_back({
+					myUbo, GetAlignedOffset(Game::maxObjects * buffer + i, sizeof(MatUBO)), sizeof(MatUBO)
+					});
+				// update descriptor with buffer binding
+				writeTargets.push_back({
+					uboSet[i], 0, 0, 1, vk::DescriptorType::eUniformBuffer,
+					nullptr, &bufferInfos[Game::maxObjects * buffer + i], nullptr
+					});
+			}
+			buffer++;
+		}
+		myDevice.updateDescriptorSets(writeTargets, nullptr);
 	}
-	myDevice.updateDescriptorSets(writeTargets, nullptr);
+
+	{
+		// now the samplers
+		vector<vk::DescriptorSetLayout> samplerLayouts(ourTexturesToLoad.size(), mySamplerLayout);
+		vk::DescriptorSetAllocateInfo info = {
+			myDescriptorPool, (uint32_t)samplerLayouts.size(), samplerLayouts.data()
+		};
+		mySamplerSets = myDevice.allocateDescriptorSets(info);
+	}
+
+	writeTargets.clear();
+	{
+		// samplers allocated, need to update them
+		vector<vk::DescriptorImageInfo> imageInfos;
+		imageInfos.reserve(ourTexturesToLoad.size());
+		for (uint32_t i = 0; i < ourTexturesToLoad.size(); i++)
+		{
+			imageInfos.push_back({
+				mySampler, myTextureViews[i], vk::ImageLayout::eShaderReadOnlyOptimal
+				});
+			writeTargets.push_back({
+				mySamplerSets[i], 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
+				&imageInfos[i], nullptr, nullptr
+				});
+		}
+		myDevice.updateDescriptorSets(writeTargets, nullptr);
+	}
 }
 
 void GraphicsVK::CreateUBO()
@@ -1309,17 +1323,19 @@ void GraphicsVK::CreateUBO()
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, myUbo, myUboMem);
 
 	void* mappedMemStart = myDevice.mapMemory(myUboMem, 0, uboSize, {});
-	myMappedUboMem.GetInternalBuffer()[0] = mappedMemStart;
-	myMappedUboMem.GetInternalBuffer()[1] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects, sizeof(MatUBO));
-	myMappedUboMem.GetInternalBuffer()[2] = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * 2, sizeof(MatUBO));;
+	size_t buffer = 0;
+	for (void*& memAddr : myMappedUboMem)
+	{
+		memAddr = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * buffer, sizeof(MatUBO));
+	}
 }
 
 void GraphicsVK::DestroyUBO()
 {
-	if (myMappedUboMem.GetInternalBuffer()[0])
+	if (*myMappedUboMem.begin())
 	{
 		myDevice.unmapMemory(myUboMem);
-		myMappedUboMem.GetInternalBuffer()[0] = nullptr;
+		*myMappedUboMem.begin() = nullptr;
 
 		myDevice.destroyBuffer(myUbo);
 		myDevice.freeMemory(myUboMem);

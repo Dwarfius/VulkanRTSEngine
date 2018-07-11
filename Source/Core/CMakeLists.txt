@@ -12,7 +12,7 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"Graphics.cpp" "Graphics.h"
 	"Transform.cpp" "Transform.h"
 	"UID.cpp" "UID.h"
-	"TrippleBuffer.cpp" "TrippleBuffer.h"
+	"RWBuffer.h"
 	"Utils.cpp" "Utils.h"
 	"Vertex.h"
 ) 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TrippleBuffer.h"
+#include "RWBuffer.h"
 #include "Graphics.h"
 
 class GameObject;
@@ -34,8 +34,8 @@ private:
 	bool myIsUsingVulkan;
 
 	// TODO: separate gameobject and renderable
-	TrippleBuffer<vector<const GameObject*>> myTrippleRenderables;
-	TrippleBuffer<vector<Graphics::LineDraw>> myTrippleLines;
+	RWBuffer<vector<const GameObject*>, 2> myTrippleRenderables;
+	RWBuffer<vector<Graphics::LineDraw>, 2> myTrippleLines;
 
 	atomic<bool> myNeedsSwitch;
 	atomic<bool> myHasWorkPending;

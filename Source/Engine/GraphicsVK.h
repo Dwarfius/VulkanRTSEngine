@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics.h"
-#include "TrippleBuffer.h"
+#include "RWBuffer.h"
 
 class Camera;
 class GameObject;
@@ -98,17 +98,17 @@ private:
 
 	// Command Pool, Buffers and Semaphores
 	vk::Semaphore myImgAvailable, myRenderFinished;
-	TrippleBuffer<vk::Fence> myCmdFences;
+	RWBuffer<vk::Fence, 3> myCmdFences;
 	vk::CommandPool myGraphCmdPool; 
 	// vk::CommandPool transfCmdPool; for now we only use the generic queue
 	vector<vk::CommandPool> myGraphSecCmdPools;
-	TrippleBuffer<vk::CommandBuffer> myCmdBuffers; // for now we use tripple buffer
+	RWBuffer<vk::CommandBuffer, 3> myCmdBuffers; // for now we use tripple buffer
 	// it's a little strange, but essentially per each pipeline there's a secondary command buffer
 	// each thread has it's own version of pipeline-linked cmd buffer
 	// while also supporting triple buffering
 	typedef vector<vk::CommandBuffer> PerPipelineCmdBuffers;
 	typedef vector<PerPipelineCmdBuffers> PerThreadCmdBuffers;
-	TrippleBuffer<PerThreadCmdBuffers> mySecCmdBuffers; // for recording drawcalls per image per thread per pipeline
+	RWBuffer<PerThreadCmdBuffers, 3> mySecCmdBuffers; // for recording drawcalls per image per thread per pipeline
 	void CreateCommandResources();
 
 	// Depth texture
@@ -135,13 +135,13 @@ private:
 	vk::DescriptorSetLayout myUboLayout, mySamplerLayout;
 	vk::DescriptorPool myDescriptorPool;
 	typedef vector<vk::DescriptorSet> DescriptorSets;
-	TrippleBuffer<DescriptorSets> myUboSets;
+	RWBuffer<DescriptorSets, 3> myUboSets;
 	DescriptorSets mySamplerSets;
 	void CreateDescriptorPool();
 	void CreateDescriptorSet();
 
 	// since descriptors are written to mapped mem, it also has to be tripple buffered
-	TrippleBuffer<void*> myMappedUboMem;
+	RWBuffer<void*, 3> myMappedUboMem;
 	vk::Buffer myUbo;
 	vk::DeviceMemory myUboMem;
 	void CreateUBO();

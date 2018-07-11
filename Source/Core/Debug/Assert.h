@@ -11,15 +11,12 @@
 #	define assert(x) static_assert(false, "Don't use lowercase assert, use ASSERT(cond)");
 #endif
 
-#define FORCE_SEMICOLON (void)0
-
-#ifdef _DEBUG
-#	define DEBUG_ONLY(x) x FORCE_SEMICOLON
-#else
-#	define DEBUG_ONLY(x)
-#endif // NDEBUG
-
 #if defined(ENABLE_ASSERTS)
+
+// internal utility macro to force a semicolon after a macro in usercode
+#define FORCE_SEMICOLON (void)0
+// utility macro to execute code in assert-enabled environment
+#define DEBUG_ONLY(x) x FORCE_SEMICOLON
 
 // forward declaration of utility funcs
 namespace DebugImpl
@@ -38,5 +35,6 @@ namespace DebugImpl
 
 #define ASSERT(cond)
 #define ASSERT_STR(cond, ...)
+#define DEBUG_ONLY(x)
 
 #endif
