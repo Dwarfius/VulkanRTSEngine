@@ -94,11 +94,13 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& aTerrainList)
 		for (string modelName : ourModelsToLoad)
 		{
 			Model m;
-			m.myVertexOffset = vertices.size();
 			m.myIndexOffset = indices.size();
 			
 			if (modelName.substr(0, 2) == "%t")
 			{
+				// TODO: vertexOffset needs unification accross models and terrains
+				m.myVertexOffset = vertices.size();
+
 				int index = stoi(modelName.substr(2), nullptr);
 				const Terrain& t = *aTerrainList[index];
 				vertices.insert(vertices.end(), t.GetVertBegin(), t.GetVertEnd());
@@ -108,6 +110,8 @@ void GraphicsVK::LoadResources(const vector<Terrain*>& aTerrainList)
 			}
 			else
 			{
+				m.myVertexOffset = 0;
+
 				LoadModel(modelName, vertices, indices, m.myCenter, m.mySphereRadius);
 			}
 
@@ -356,7 +360,7 @@ void GraphicsVK::Render(const Camera& aCam, const GameObject* aGO)
 	};
 	buffers[pipelineInd].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, myPipelineLayout, 
 		0, (uint32_t)setsToBind.size(), setsToBind.data(), 0, nullptr);
-	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.myIndexCount), 1, static_cast<int32_t>(m.myIndexOffset), 0, 0);
+	buffers[pipelineInd].drawIndexed(static_cast<uint32_t>(m.myIndexCount), 1, static_cast<uint32_t>(m.myIndexOffset), static_cast<int32_t>(m.myVertexOffset), 0);
 }
 
 void GraphicsVK::Display()

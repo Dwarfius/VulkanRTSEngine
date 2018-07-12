@@ -18,9 +18,6 @@
 #include "Components\EditorMode.h"
 #include "Components\PhysicsComponent.h"
 
-// prints out the thread states to track transitions
-//#define DEBUG_THREADS
-
 // should the engine put main thread to sleep instead of yielding it
 // for 1 nanosecond during waiting for workers to finish
 // yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
@@ -82,6 +79,12 @@ void Game::Init()
 	myRenderThread->Init(BootWithVK, &myTerrains);
 
 	GameObject *go; 
+
+	// a box for rendering test
+	go = Instantiate();
+	go->AddComponent(new Renderer(0, 0, 2));
+	go->GetTransform().SetPos(glm::vec3(0, 3, 0));
+	go->SetCollisionsEnabled(false);
 
 	// terrain
 	go = Instantiate();
