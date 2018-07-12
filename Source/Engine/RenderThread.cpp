@@ -99,7 +99,6 @@ void RenderThread::SubmitRenderables()
 		else
 		{
 			myGraphics = make_unique<GraphicsGL>();
-			glfwMakeContextCurrent(myGraphics->GetWindow());
 		}
 		myGraphics->SetMaxThreads(thread::hardware_concurrency());
 		myGraphics->Init(*myTerrains);

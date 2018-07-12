@@ -1327,6 +1327,7 @@ void GraphicsVK::CreateUBO()
 	for (void*& memAddr : myMappedUboMem)
 	{
 		memAddr = static_cast<char*>(mappedMemStart) + GetAlignedOffset(Game::maxObjects * buffer, sizeof(MatUBO));
+		buffer++;
 	}
 }
 
