@@ -18,11 +18,6 @@
 #include "Components\EditorMode.h"
 #include "Components\PhysicsComponent.h"
 
-// should the engine put main thread to sleep instead of yielding it
-// for 1 nanosecond during waiting for workers to finish
-// yield leads to a smoother draw-rate, also more optimal for Vulkan judging by test
-//#define USE_SLEEP
-
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
