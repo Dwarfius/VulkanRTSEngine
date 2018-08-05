@@ -17,8 +17,9 @@ public:
 	}
 
 private:
-	static mt19937 randomGen;
-	static size_t thisPCMac;
+	static mt19937 ourRandomGen;
+	static size_t ourThisPCMac;
+	static bool ourIsInitialized;
 
 	friend struct std::hash<UID>;
 
