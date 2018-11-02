@@ -3,6 +3,7 @@
 #include "GameTaskManager.h"
 #include "RenderThread.h"
 #include "UID.h"
+#include "Graphics/AssetTracker.h"
 
 class GameObject;
 class Camera;
@@ -79,6 +80,7 @@ private:
 	queue<GameObject*> myRemoveQueue;
 	vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
+	AssetTracker myAssetTracker;
 
 	bool myIsRunning;
 	bool myShouldEnd;

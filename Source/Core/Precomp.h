@@ -14,6 +14,8 @@
 #include <atomic>
 #include <random>
 #include <chrono>
+#include <memory>
+#include <any>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -26,7 +28,6 @@
 #include <GLFW/glfw3.h>
 
 #include <tiny_obj_loader.h>
-#include <stb_image.h>
 
 #include "Debug/Assert.h"
 

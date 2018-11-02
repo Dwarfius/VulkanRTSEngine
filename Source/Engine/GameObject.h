@@ -1,17 +1,15 @@
 #pragma once
 
-#include "Graphics.h"
+#include "Graphics/Graphics.h"
 #include "Transform.h"
 #include "UID.h"
 
-class Renderer;
+class VisualObject;
 class ComponentBase;
 
-// TODO: need to split GameObject into Entity (logic and data) and VisualObject(rendering)
+// TODO: need to split GameObject into Entity (logic and data) and Renderable(rendering)
 class GameObject
 {
-	typedef unordered_map<string, Shader::UniformValue> ShaderStorage;
-
 public:
 	GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale);
 	~GameObject();
@@ -21,21 +19,16 @@ public:
 	Transform& GetTransform() { return myTransf; }
 	const Transform& GetTransform() const { return myTransf; }
 	// TODO: remove duplication - reroute through myTransf
-	const glm::mat4& GetMatrix() const { return myCurrentMat; }
-
-	// This is model's center
-	glm::vec3 GetCenter() const { return myCenter; }
-	float GetRadius() const;
+	const glm::mat4& GetMatrix() const { return myTransf.GetModelMatrix(); }
 
 	const UID& GetUID() const { return myUID; }
-
-	const ShaderStorage& GetUniforms() const { return myUniforms; }
 
 	void AddComponent(ComponentBase* aComponent);
 	ComponentBase* GetComponent(int aType) const;
 
-	const Renderer* GetRenderer() const { return myRenderer; }
-	Renderer* GetRenderer() { return myRenderer; }
+	void SetVisualObject(VisualObject* aVisualObject) { myVisualObject = aVisualObject; }
+	const VisualObject* GetVisualObject() const { return myVisualObject; }
+	VisualObject* GetVisualObject() { return myVisualObject; }
 
 	void SetCollisionsEnabled(bool anEnabled) { myCollisionsEnabled = anEnabled; }
 	bool GetCollisionsEnabled() const { return myCollisionsEnabled; }
@@ -54,16 +47,11 @@ private:
 	glm::mat4 myCurrentMat;
 	glm::vec3 myCenter;
 
-	// TODO: move this to the VisualObject
-	ShaderStorage myUniforms;
-	size_t myIndex;
-	// ==========
-
 	bool myCollisionsEnabled;
 	bool myCollidedWithTerrain;
 	bool myIsDead;
 	tbb::concurrent_unordered_set<GameObject*> myObjsCollidedWith;
 
 	vector<ComponentBase*> myComponents;
-	Renderer* myRenderer;
+	VisualObject* myVisualObject;
 };

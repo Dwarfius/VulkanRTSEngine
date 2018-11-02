@@ -1,7 +1,7 @@
 #pragma once
 
 #include <LinearMath/btIDebugDraw.h>
-#include "Graphics.h"
+#include "Vertex.h"
 
 // TODO: move this to private sources section
 // TODO: instead of caching all lines, it should work with a generic debug util
@@ -10,7 +10,7 @@ class PhysicsDebugDrawer : public btIDebugDraw
 public:
 	PhysicsDebugDrawer();
 
-	const vector<Graphics::LineDraw>& GetLineCache() const { return myLineCache; }
+	const vector<PosColorVertex>& GetLineCache() const { return myLineCache; }
 
 	// btIDebugDraw interface
 	void drawLine(const btVector3& aFrom, const btVector3& aTo, const btVector3& aColor) override;
@@ -29,6 +29,6 @@ private:
 
 	int myDebugMode;
 
-	vector<Graphics::LineDraw> myLineCache;
+	vector<PosColorVertex> myLineCache;
 	vector<int> myLineLives;
 };

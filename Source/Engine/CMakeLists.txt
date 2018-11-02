@@ -1,7 +1,7 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.8)
 project (Engine LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 # use this for https://github.com/ocornut/imgui and others, potentially
 # https://stackoverflow.com/questions/38006584/how-to-clone-and-integrate-external-from-git-cmake-project-into-local-one
@@ -11,37 +11,45 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 
-file(GLOB SRC "Common.cpp" "Common.h"
+set(SRC "Precomp.cpp" "Precomp.h"
 	"Audio.cpp" "Audio.h"
 	"Game.cpp" "Game.h"
 	"GameObject.cpp" "GameObject.h"
 	"GameTaskManager.cpp" "GameTaskManager.h"
-	"GraphicsGL.cpp" "GraphicsGL.h"
-	"GraphicsVK.cpp" "GraphicsVK.h"
 	"Input.cpp" "Input.h" # TODO: should I move it to Core?
 	"RenderThread.cpp" "RenderThread.h"
 	"Terrain.cpp" "Terrain.h"
+	"VisualObject.cpp" "VisualObject.h"
 )
 
 set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/EditorMode.cpp" "Components/EditorMode.h"
-	"Components/Missile.cpp" "Components/Missile.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
-	"Components/PlayerTank.cpp" "Components/PlayerTank.h"
-	"Components/Renderer.h"
-	"Components/Tank.cpp" "Components/Tank.h"
-	"Components/TankArenaGameMode.cpp" "Components/TankArenaGameMode.h"
 )
 
-add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_COMP})
+set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
+	"Graphics/GL/ModelGL.cpp" "Graphics/GL/ModelGL.h"
+	"Graphics/GL/PipelineGL.cpp" "Graphics/GL/PipelineGL.h"
+	"Graphics/GL/ShaderGL.cpp" "Graphics/GL/ShaderGL.h"
+	"Graphics/GL/TextureGL.cpp" "Graphics/GL/TextureGL.h"
+)
+
+set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
+)
+
+add_library(${PROJECT_NAME} STATIC 
+	${SRC} ${SRC_COMP} ${SRC_GRAPHICS_GL} ${SRC_GRAPHICS_VK})
+
 if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuCommon.h")
-   set_source_files_properties("Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
+   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
+   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
 endif(MSVC)
 
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
-source_group("Components" FILES ${SRC_COMP})
+source_group(Components FILES ${SRC_COMP})
+source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
+source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 

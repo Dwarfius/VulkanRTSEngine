@@ -1,6 +1,6 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "Game.h"
-#include "Graphics.h"
+#include "Graphics/Graphics.h"
 #include "Input.h"
 #include "Audio.h"
 #include "Camera.h"
@@ -12,11 +12,9 @@
 #include <PhysicsEntity.h>
 #include <PhysicsShapes.h>
 
-#include "Components\Renderer.h"
-#include "Components\PlayerTank.h"
-#include "Components\Tank.h"
-#include "Components\EditorMode.h"
-#include "Components\PhysicsComponent.h"
+#include "VisualObject.h"
+#include "Components/EditorMode.h"
+#include "Components/PhysicsComponent.h"
 
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
@@ -50,7 +48,7 @@ Game::Game(ReportError aReporterFunc)
 	//Audio::SetMusicTrack(2);
 
 	Terrain* terr = new Terrain();
-	terr->Generate("assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
+	terr->Load(myAssetTracker, "assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
 	myTerrains.push_back(terr);
 
 	myRenderThread = make_unique<RenderThread>();
@@ -71,19 +69,31 @@ void Game::Init()
 {
 	myGameObjects.reserve(maxObjects);
 
-	myRenderThread->Init(BootWithVK, &myTerrains);
+	myRenderThread->Init(BootWithVK, myAssetTracker);
 
 	GameObject *go; 
 
+	Handle<Model> cubeModel = myAssetTracker.GetOrCreate<Model>("cube.obj");
+	// TODO: move this info to .ppl file
+	Handle<Pipeline> defPipeline = myAssetTracker.Create<Pipeline>();
+	Handle<Shader> defVert = myAssetTracker.GetOrCreate<Shader>("assets/GLShaders/base.vert");
+	Handle<Shader> defFrag = myAssetTracker.GetOrCreate<Shader>("assets/GLShaders/base.frag");
+	defPipeline->AddShader(defVert);
+	defPipeline->AddShader(defFrag);
+	defPipeline->SetState(Resource::State::PendingUpload);
+	// ==========================
+	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
+	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("wireframe.png");
+
 	// a box for rendering test
 	go = Instantiate();
-	go->AddComponent(new Renderer(0, 0, 2));
+	go->SetVisualObject(new VisualObject(cubeModel, defPipeline, cubeText));
 	go->GetTransform().SetPos(glm::vec3(0, 3, 0));
 	go->SetCollisionsEnabled(false);
 
 	// terrain
 	go = Instantiate();
-	go->AddComponent(new Renderer(1, 0, 3));
+	go->SetVisualObject(new VisualObject(myTerrains[0]->GetModelHandle(), defPipeline, terrainText));
 	go->SetCollisionsEnabled(false);
 
 	PhysicsComponent* physComp = new PhysicsComponent();
@@ -99,40 +109,43 @@ void Game::Init()
 	go = Instantiate();
 	go->AddComponent(new EditorMode());
 
-	GameTask task(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
-	myTaskManager->AddTask(task);
+	// setting up a task tree
+	{
+		GameTask task(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
-	task.AddDependency(GameTask::UpdateInput);
-	task.AddDependency(GameTask::AddGameObjects);
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
+		task.AddDependency(GameTask::UpdateInput);
+		task.AddDependency(GameTask::AddGameObjects);
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
-	task.AddDependency(GameTask::GameUpdate);
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
+		task.AddDependency(GameTask::GameUpdate);
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
-	task.AddDependency(GameTask::RemoveGameObjects);
-	task.AddDependency(GameTask::PhysicsUpdate);
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
+		task.AddDependency(GameTask::RemoveGameObjects);
+		task.AddDependency(GameTask::PhysicsUpdate);
+		myTaskManager->AddTask(task);
 
-	task = GameTask(GameTask::Render, bind(&Game::Render, this));
-	task.AddDependency(GameTask::UpdateEnd);
-	myTaskManager->AddTask(task);
+		task = GameTask(GameTask::Render, bind(&Game::Render, this));
+		task.AddDependency(GameTask::UpdateEnd);
+		myTaskManager->AddTask(task);
 
-	// TODO: will need to fix up audio
-	task = GameTask(GameTask::UpdateAudio, bind(&Game::UpdateAudio, this));
-	task.AddDependency(GameTask::UpdateEnd);
-	myTaskManager->AddTask(task);
+		// TODO: will need to fix up audio
+		task = GameTask(GameTask::UpdateAudio, bind(&Game::UpdateAudio, this));
+		task.AddDependency(GameTask::UpdateEnd);
+		myTaskManager->AddTask(task);
 
-	myTaskManager->ResolveDependencies();
-	myTaskManager->Run();
+		myTaskManager->ResolveDependencies();
+		myTaskManager->Run();
+	}
 }
 
 void Game::RunMainThread()
@@ -270,11 +283,14 @@ void Game::PhysicsUpdate()
 
 void Game::Render()
 {
+	// TODO: get rid of single map, and use a separate vector for Renderables
+	// TODO: fill out the renderables vector not per frame, but after new ones are created
 	for (const pair<UID, GameObject*>& elem : myGameObjects)
 	{
-		if (elem.second->GetRenderer())
+		const VisualObject* visObj = elem.second->GetVisualObject();
+		if (visObj && visObj->IsValid())
 		{
-			myRenderThread->AddRenderable(elem.second);
+			myRenderThread->AddRenderable(visObj);
 		}
 	}
 
@@ -284,6 +300,7 @@ void Game::Render()
 	myRenderThread->AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
 	myRenderThread->AddLines(myPhysWorld->GetDebugLineCache());
 
+	// TODO: test moving it to the start of Render()
 	// we have to wait until the render thread finishes processing the submitted commands
 	// otherwise we'll screw the command buffers
 	while (myRenderThread->HasWork())

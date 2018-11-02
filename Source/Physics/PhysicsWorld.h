@@ -4,7 +4,7 @@
 
 #include "PhysicsCommands.h"
 
-#include "Graphics.h"
+#include "Graphics/Graphics.h"
 
 class PhysicsEntity;
 class btBroadphaseInterface;
@@ -27,7 +27,7 @@ public:
 	void Simulate(float aDeltaTime);
 
 	// TODO: refactor this away
-	const vector<Graphics::LineDraw>& GetDebugLineCache() const;
+	const vector<PosColorVertex>& GetDebugLineCache() const;
 
 private:
 	const int MaxSteps = 4;

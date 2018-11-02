@@ -56,13 +56,24 @@ void Transform::RotateToUp(glm::vec3 aNewUp)
 	UpdateRot();
 }
 
-const glm::mat4& Transform::GetModelMatrix()
+void Transform::UpdateModel()
 {
-	if (myDirtyModel || myDirtyDirs)
-	{ 
-		UpdateModel(); 
-	} 
-	return myModelM;
+	if (!myDirtyModel && !myDirtyDirs)
+	{
+		return;
+	}
+
+	if (myDirtyDirs)
+	{
+		UpdateRot();
+	}
+
+	myModelM = glm::translate(glm::mat4(1), myPos);
+	myModelM = myModelM * myRotM;
+	myModelM = glm::scale(myModelM, myScale);
+	myModelM = glm::translate(myModelM, -myCenter);
+
+	myDirtyModel = false;
 }
 
 glm::vec3 Transform::RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles)
@@ -83,21 +94,6 @@ void Transform::UpdateRot()
 	myForward	= myRotM * glm::vec4( 0, 0, 1, 0);
 
 	myDirtyDirs = false;
-}
-
-void Transform::UpdateModel()
-{
-	if (myDirtyDirs)
-	{
-		UpdateRot();
-	}
-
-	myModelM = glm::translate(glm::mat4(1), myPos);
-	myModelM = myModelM * myRotM;
-	myModelM = glm::scale(myModelM, myScale);
-	myModelM = glm::translate(myModelM, -myCenter);
-
-	myDirtyModel = false;
 }
 
 // the quaternion needed to rotate v1 so that it matches v2

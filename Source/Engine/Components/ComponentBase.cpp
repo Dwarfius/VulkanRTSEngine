@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "ComponentBase.h"
 #include "../GameObject.h"
 

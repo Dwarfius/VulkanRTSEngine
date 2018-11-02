@@ -33,12 +33,17 @@ public:
 	void SetRotation(glm::vec3 anEuler) { SetRotation(glm::quat(glm::radians(anEuler))); }
 	void SetRotation(glm::quat aRot) { myRotation = aRot; myDirtyDirs = true; }
 
-	const glm::mat4& GetModelMatrix();
+	// TODO: need to get rid of lazy transforms
+	// not every object in the game is going to be moving, but every one will call update
+	// so that generates unncessary overhead
+	void UpdateModel();
+	const glm::mat4& GetModelMatrix() const { return myModelM; }
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles);
 
 private:
+	// TODO: need to get rid of most of this
 	glm::mat4 myRotM, myModelM;
 
 	glm::vec3 myPos;
@@ -50,7 +55,6 @@ private:
 	bool myDirtyDirs, myDirtyModel;
 
 	void UpdateRot();
-	void UpdateModel();
 
 	glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
 };

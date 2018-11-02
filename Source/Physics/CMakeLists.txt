@@ -1,11 +1,11 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.8)
 project (Physics LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 find_package(BULLET REQUIRED)
 
-set(SRC "Common.cpp" "Common.h"
+set(SRC "Precomp.cpp" "Precomp.h"
 	"PhysicsEntity.cpp" "PhysicsEntity.h"
 	"PhysicsWorld.cpp" "PhysicsWorld.h"
 	"PhysicsShapes.cpp" "PhysicsShapes.h"
@@ -17,8 +17,8 @@ source_group("" FILES ${SRC})
 
 add_library(${PROJECT_NAME} STATIC ${SRC})
 if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuCommon.h")
-   set_source_files_properties("Common.cpp" PROPERTIES COMPILE_FLAGS "/YcCommon.h")
+   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
+   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
 endif(MSVC)
 
 # do this trick later, so that consumers have to write #include <libname/...>:

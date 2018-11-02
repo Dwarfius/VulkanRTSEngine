@@ -1,19 +1,18 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "GameObject.h"
 #include "Game.h"
-#include "Graphics.h"
+#include "Graphics/Graphics.h"
 #include "Transform.h"
+#include "VisualObject.h"
 
 #include "Components/ComponentBase.h"
-#include "Components/Renderer.h"
 
 GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
 	: myUID(UID::Create())
 	, myTransf(aPos, aRot, aScale)
 	, myCurrentMat()
-	, myRenderer(nullptr)
+	, myVisualObject(nullptr)
 	, myIsDead(false)
-	, myIndex(numeric_limits<size_t>::max())
 	, myCollisionsEnabled(true)
 	, myCollidedWithTerrain(false)
 {
@@ -28,6 +27,11 @@ GameObject::~GameObject()
 		comp->Destroy();
 		delete comp;
 	}
+
+	if (myVisualObject)
+	{
+		delete myVisualObject;
+	}
 }
 
 void GameObject::Update(float aDeltaTime)
@@ -37,44 +41,19 @@ void GameObject::Update(float aDeltaTime)
 		myComponents[i]->Update(aDeltaTime);
 	}
 
-	myCurrentMat = myTransf.GetModelMatrix();
+	myTransf.UpdateModel();
 
-	if (myRenderer)
+	// TODO: get rid of this in Update
+	if (myVisualObject)
 	{
-		Shader::UniformValue val;
-		val.myMatrix = myCurrentMat;
-		myUniforms["Model"] = val;
+		myVisualObject->SetTransform(myTransf);
 	}
-}
-
-float GameObject::GetRadius() const
-{
-	if (!myRenderer)
-	{
-		return 0;
-	}
-
-	const glm::vec3 scale = myTransf.GetScale();
-	const float maxScale = max({ scale.x, scale.y, scale.z });
-	const float radius = Game::GetInstance()->GetGraphics()->GetModelRadius(myRenderer->GetModel());
-	return maxScale * radius;
 }
 
 void GameObject::AddComponent(ComponentBase* aComponent)
 {
 	aComponent->Init(this);
 	myComponents.push_back(aComponent);
-	Renderer* newRenderer = dynamic_cast<Renderer*>(aComponent);
-	if (newRenderer && !myRenderer)
-	{
-		myRenderer = newRenderer;
-		// TODO: look into making this optional per model
-		myTransf.SetCenter(Game::GetInstance()->GetGraphics()->GetModelCenter(myRenderer->GetModel()));
-	}
-	else if (newRenderer && myRenderer)
-	{
-		printf("[Warning] Attempting to attach a renderer to a component with a renderer, ignoring\n");
-	}
 }
 
 ComponentBase* GameObject::GetComponent(int aType) const

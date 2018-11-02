@@ -1,6 +1,6 @@
 #include "Precomp.h"
 #include "Camera.h"
-#include "Graphics.h"
+#include "Graphics/Graphics.h"
 
 Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)
 	: myOrthoMode(anOrthoMode)

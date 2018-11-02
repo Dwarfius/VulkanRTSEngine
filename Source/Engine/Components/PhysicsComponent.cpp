@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "PhysicsComponent.h"
 
 #include "../Game.h"

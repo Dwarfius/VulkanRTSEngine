@@ -2,10 +2,10 @@
 
 #include <glm/gtx/hash.hpp>
 
-typedef uint32_t IndexType;
-
 struct Vertex
 {
+	constexpr static int Type = 0;
+
 	glm::vec3 myPos;
 	glm::vec2 myUv;
 	glm::vec3 myNormal;
@@ -18,6 +18,8 @@ struct Vertex
 
 struct PosColorVertex
 {
+	constexpr static int Type = 1;
+
 	glm::vec3 myPos;
 	glm::vec3 myColor;
 

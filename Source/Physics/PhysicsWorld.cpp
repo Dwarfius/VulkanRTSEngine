@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "PhysicsWorld.h"
 
 #include "PhysicsDebugDrawer.h"
@@ -75,7 +75,7 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 	PostPhysicsFrame();
 }
 
-const vector<Graphics::LineDraw>& PhysicsWorld::GetDebugLineCache() const
+const vector<PosColorVertex>& PhysicsWorld::GetDebugLineCache() const
 {
 	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetLineCache();
 }

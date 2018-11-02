@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "Precomp.h"
 #include "PhysicsDebugDrawer.h"
 
 PhysicsDebugDrawer::PhysicsDebugDrawer()
@@ -23,7 +23,7 @@ void PhysicsDebugDrawer::drawContactPoint(const btVector3& aPointOnB, const btVe
 void PhysicsDebugDrawer::clearLines()
 {
 	// TODO: refactor this away from here
-	size_t size = myLineCache.size();
+	size_t size = myLineLives.size();
 	if (size > 0)
 	{
 		size_t swapInd = size - 1;
@@ -31,7 +31,8 @@ void PhysicsDebugDrawer::clearLines()
 		{
 			if (--myLineLives[i] < 0.f)
 			{
-				swap(myLineCache[i], myLineCache[swapInd]);
+				swap(myLineCache[i * 2], myLineCache[swapInd * 2]);
+				swap(myLineCache[i * 2 + 1], myLineCache[swapInd * 2 + 1]);
 				swap(myLineLives[i], myLineLives[swapInd]);
 				swapInd--;
 			}
@@ -46,7 +47,7 @@ void PhysicsDebugDrawer::clearLines()
 		// TODO: roll my own cache type with ability to move the start-end heads
 		if (swapInd + 1 < size)
 		{
-			myLineCache.erase(myLineCache.begin() + swapInd + 1, myLineCache.end());
+			myLineCache.erase(myLineCache.begin() + (swapInd + 1) * 2, myLineCache.end());
 			myLineLives.erase(myLineLives.begin() + swapInd + 1, myLineLives.end());
 		}
 	}
@@ -57,6 +58,7 @@ void PhysicsDebugDrawer::DrawLine(const btVector3& aFrom, const btVector3& aTo, 
 	glm::vec3 from = Utils::ConvertToGLM(aFrom);
 	glm::vec3 to = Utils::ConvertToGLM(aTo);
 	glm::vec3 color = Utils::ConvertToGLM(aColor);
-	myLineCache.push_back(Graphics::LineDraw{ from, color, to, color });
+	myLineCache.push_back({ from, color });
+	myLineCache.push_back({ to, color });
 	myLineLives.push_back(aLife);
 }
