@@ -17,7 +17,7 @@ void PhysicsDebugDrawer::drawContactPoint(const btVector3& aPointOnB, const btVe
 {
 	//drawSphere(aPointOnB, 0.1f, aColor);
 	// HACK: aLifeTime is frames to live
-	DrawLine(aPointOnB, aPointOnB + aNormalOnB * aDistance, aColor, aLifeTime);
+	DrawLine(aPointOnB, aPointOnB + aNormalOnB * aDistance, aColor, 0);
 }
 
 void PhysicsDebugDrawer::clearLines()
@@ -29,7 +29,7 @@ void PhysicsDebugDrawer::clearLines()
 		size_t swapInd = size - 1;
 		for (size_t i = 0; i <= swapInd && swapInd >= 1;)
 		{
-			if (--myLineLives[i] < 0.f)
+			if (myLineLives[i]-- < 0)
 			{
 				swap(myLineCache[i * 2], myLineCache[swapInd * 2]);
 				swap(myLineCache[i * 2 + 1], myLineCache[swapInd * 2 + 1]);
