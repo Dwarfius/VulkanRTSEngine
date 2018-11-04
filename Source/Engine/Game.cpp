@@ -38,7 +38,7 @@ Game::Game(ReportError aReporterFunc)
 	glfwSetTime(0);
 	
 	// TODO: Need to refactor out logging
-	myFile.open(BootWithVK ? "logVK.csv" : "logGL.csv");
+	//myFile.open(BootWithVK ? "logVK.csv" : "logGL.csv");
 	if (!myFile.is_open())
 	{
 		printf("[Warning] Log file didn't open\n");
@@ -71,7 +71,8 @@ void Game::Init()
 
 	myRenderThread->Init(BootWithVK, myAssetTracker);
 
-	GameObject *go; 
+	GameObject* go; 
+	VisualObject* vo;
 
 	Handle<Model> cubeModel = myAssetTracker.GetOrCreate<Model>("cube.obj");
 	// TODO: move this info to .ppl file
@@ -87,13 +88,25 @@ void Game::Init()
 
 	// a box for rendering test
 	go = Instantiate();
-	go->SetVisualObject(new VisualObject(cubeModel, defPipeline, cubeText));
+	{
+		vo = new VisualObject(*go);
+		vo->SetModel(cubeModel);
+		vo->SetPipeline(defPipeline);
+		vo->SetTexture(cubeText);
+		go->SetVisualObject(vo);
+	}
 	go->GetTransform().SetPos(glm::vec3(0, 3, 0));
 	go->SetCollisionsEnabled(false);
 
 	// terrain
 	go = Instantiate();
-	go->SetVisualObject(new VisualObject(myTerrains[0]->GetModelHandle(), defPipeline, terrainText));
+	{
+		vo = new VisualObject(*go);
+		vo->SetModel(myTerrains[0]->GetModelHandle());
+		vo->SetPipeline(defPipeline);
+		vo->SetTexture(terrainText);
+		go->SetVisualObject(vo);
+	}
 	go->SetCollisionsEnabled(false);
 
 	PhysicsComponent* physComp = new PhysicsComponent();

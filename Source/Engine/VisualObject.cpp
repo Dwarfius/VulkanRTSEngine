@@ -1,20 +1,22 @@
 #include "Precomp.h"
 #include "VisualObject.h"
 
+#include "Graphics/UniformAdapter.h"
 #include "Graphics/UniformBlock.h"
 
-VisualObject::VisualObject(Handle<Model> aModel, Handle<Pipeline> aPipeline, Handle<Texture> aTextureId)
-	: myModel(aModel)
-	, myPipeline(aPipeline)
-	, myTexture(aTextureId)
+VisualObject::VisualObject(const GameObject& aGO)
+	: myGameObject(aGO)
 {
-	myUniforms = make_shared<UniformBlock>(myPipeline->GetDescriptor());
 }
 
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = aPipeline;
-	myUniforms = make_shared<UniformBlock>(myPipeline->GetDescriptor());
+	const Descriptor& descriptor = myPipeline->GetDescriptor();
+	myUniforms = make_shared<UniformBlock>(descriptor);
+	// HACK: need to implement a proper adapter handler
+	ASSERT_STR(descriptor.GetUniformAdapter() == "default", "Get rid of the hack!");
+	myAdapter = make_shared<UniformAdapter>(myGameObject, *this);
 }
 
 bool VisualObject::IsValid() const

@@ -8,7 +8,7 @@
 class Pipeline : public Resource
 {
 public:
-	enum Type
+	enum class Type
 	{
 		Graphics,
 		Compute

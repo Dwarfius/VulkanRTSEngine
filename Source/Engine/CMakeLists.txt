@@ -27,6 +27,8 @@ set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
 )
 
+set(SRC_GRAPHICS "Graphics/UniformAdapter.cpp" "Graphics/UniformAdapter.h")
+
 set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/ModelGL.cpp" "Graphics/GL/ModelGL.h"
 	"Graphics/GL/PipelineGL.cpp" "Graphics/GL/PipelineGL.h"
@@ -38,7 +40,12 @@ set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
 )
 
 add_library(${PROJECT_NAME} STATIC 
-	${SRC} ${SRC_COMP} ${SRC_GRAPHICS_GL} ${SRC_GRAPHICS_VK})
+	${SRC} 
+		${SRC_COMP} 
+		${SRC_GRAPHICS} 
+			${SRC_GRAPHICS_GL} 
+			${SRC_GRAPHICS_VK}
+)
 
 if (MSVC)
    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
@@ -48,6 +55,7 @@ endif(MSVC)
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
 source_group(Components FILES ${SRC_COMP})
+source_group(Graphics FILES ${SRC_GRAPHICS})
 source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
 source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 

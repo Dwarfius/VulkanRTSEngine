@@ -37,7 +37,6 @@ private:
 	// should cache the shader's uniforms as well
 	struct RenderJob 
 	{
-		glm::mat4 myViewProjection;
 		Handle<Pipeline> myPipeline;
 		Handle<Texture> myTexture;
 		Handle<Model> myModel;

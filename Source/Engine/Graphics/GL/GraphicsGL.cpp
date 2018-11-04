@@ -5,6 +5,7 @@
 #include "VisualObject.h"
 
 #include "Graphics/AssetTracker.h"
+#include "Graphics/UniformAdapter.h"
 #include "ShaderGL.h"
 #include "PipelineGL.h"
 #include "ModelGL.h"
@@ -147,8 +148,14 @@ void GraphicsGL::Render(const Camera& aCam, const VisualObject* aVO)
 {
 	ASSERT_STR(aVO, "Missing renderer!");
 
+	// update uniforms!
+	{
+		UniformBlock& uniformBlock = *(aVO->GetUniforms());
+		const UniformAdapter& adapter = aVO->GetUniformAdapter();
+		adapter.FillUniformBlock(aCam, uniformBlock);
+	}
+
 	RenderJob job{
-		aCam.Get(),
 		aVO->GetPipeline(),
 		aVO->GetTexture(),
 		aVO->GetModel(),

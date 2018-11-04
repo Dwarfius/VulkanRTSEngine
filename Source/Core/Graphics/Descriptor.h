@@ -15,7 +15,7 @@
 class Descriptor
 {
 public:
-	Descriptor();
+	Descriptor(const string& anAdapterName);
 
 	// Marks the slot to be used storing a uniform of specific type
 	void SetUniformType(uint32_t aSlot, UniformType aType);
@@ -32,8 +32,13 @@ public:
 	// Returns the type of value stored at the specific slot
 	UniformType GetType(uint32_t aSlot) const { return myTypes[aSlot]; }
 
+	// Sets the name of the uniform adapter that will be used to fetch
+	// uniform data from game object to GPU
+	const string& GetUniformAdapter() const { return myUniformAdapter; }
+
 private:
 	vector<uint32_t> myOffsets;
 	vector<UniformType> myTypes;
 	size_t myTotalSize;
+	string myUniformAdapter;
 };

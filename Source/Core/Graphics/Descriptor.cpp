@@ -1,8 +1,9 @@
 #include "Precomp.h"
 #include "Descriptor.h"
 
-Descriptor::Descriptor()
+Descriptor::Descriptor(const string& anAdapterName)
 	: myTotalSize(0)
+	, myUniformAdapter(anAdapterName)
 {
 }
 
@@ -21,10 +22,10 @@ void Descriptor::RecomputeSize()
 	myOffsets.resize(size);
 
 	myTotalSize = 0;
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 1; i <= size; i++)
 	{
 		size_t uniformSize = 0;
-		switch (myTypes[i])
+		switch (myTypes[i - 1])
 		{
 		case UniformType::Float:
 		case UniformType::Int:
@@ -41,10 +42,11 @@ void Descriptor::RecomputeSize()
 			break;
 		case UniformType::Mat4:
 			uniformSize = sizeof(glm::mat4);
+			break;
 		default:
 			ASSERT_STR(false, "Unrecognized Uniform Type found!");
 		}
-		myOffsets[i] = myTotalSize + uniformSize;
+		myOffsets[i - 1] = myTotalSize;
 		myTotalSize += uniformSize;
 	}
 }

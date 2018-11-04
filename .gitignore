@@ -3,3 +3,6 @@ build/
 x64/
 # SpirV shader bytecode - just to avoid platform-dependent issues, force users to compile it on their own
 *.spv
+
+# RenderDoc files used for saving testing configurations
+*.cap

@@ -35,7 +35,7 @@ public:
 
 	// TODO: need to get rid of lazy transforms
 	// not every object in the game is going to be moving, but every one will call update
-	// so that generates unncessary overhead
+	// so that generates unnecessary overhead
 	void UpdateModel();
 	const glm::mat4& GetModelMatrix() const { return myModelM; }
 
