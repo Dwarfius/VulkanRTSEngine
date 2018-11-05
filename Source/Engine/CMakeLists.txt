@@ -27,7 +27,8 @@ set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
 )
 
-set(SRC_GRAPHICS "Graphics/UniformAdapter.cpp" "Graphics/UniformAdapter.h")
+set(SRC_GRAPHICS "Graphics/UniformAdapter.cpp" "Graphics/UniformAdapter.h"
+	"Graphics/UniformAdapterRegister.cpp" "Graphics/UniformAdapterRegister.h")
 
 set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/ModelGL.cpp" "Graphics/GL/ModelGL.h"
