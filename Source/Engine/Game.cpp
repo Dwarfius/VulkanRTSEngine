@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "Game.h"
 #include "Graphics/Graphics.h"
+#include "Graphics/UniformAdapterRegister.h"
 #include "Input.h"
 #include "Audio.h"
 #include "Camera.h"
@@ -46,6 +47,9 @@ Game::Game(ReportError aReporterFunc)
 
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
+
+	// Trigger initialization
+	UniformAdapterRegister::GetInstance();
 
 	Terrain* terr = new Terrain();
 	terr->Load(myAssetTracker, "assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);

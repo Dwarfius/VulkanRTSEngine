@@ -3,6 +3,7 @@
 
 #include "Graphics/UniformAdapter.h"
 #include "Graphics/UniformBlock.h"
+#include "Graphics/UniformAdapterRegister.h"
 
 VisualObject::VisualObject(const GameObject& aGO)
 	: myGameObject(aGO)
@@ -14,9 +15,8 @@ void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 	myPipeline = aPipeline;
 	const Descriptor& descriptor = myPipeline->GetDescriptor();
 	myUniforms = make_shared<UniformBlock>(descriptor);
-	// HACK: need to implement a proper adapter handler
-	ASSERT_STR(descriptor.GetUniformAdapter() == "default", "Get rid of the hack!");
-	myAdapter = make_shared<UniformAdapter>(myGameObject, *this);
+	const string& adapterName = descriptor.GetUniformAdapter();
+	myAdapter = UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this);
 }
 
 bool VisualObject::IsValid() const

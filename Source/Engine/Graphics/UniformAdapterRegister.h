@@ -12,14 +12,14 @@ class UniformAdapterRegister
 public:
 	static UniformAdapterRegister* GetInstance();
 
-	void RegisterTypes();
 	shared_ptr<UniformAdapter> GetAdapter
 		(const string& aName, const GameObject& aGO, const VisualObject& aVO) const;
 	
 private:
 	static UniformAdapterRegister* myInstance;
-
 	unordered_map<string, CreationMethod> myCreationMethods;
+
+	void RegisterTypes();
 
 	// Utility method that simplifies registering of adapters
 	template<class Type>

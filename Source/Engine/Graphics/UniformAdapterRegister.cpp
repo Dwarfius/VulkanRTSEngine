@@ -3,6 +3,8 @@
 
 #include "UniformAdapter.h"
 
+UniformAdapterRegister* UniformAdapterRegister::myInstance = nullptr;
+
 UniformAdapterRegister* UniformAdapterRegister::GetInstance()
 {
 	if (!myInstance)
