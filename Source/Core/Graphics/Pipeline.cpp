@@ -54,6 +54,7 @@ void Pipeline::Upload(GPUResource* aGPURes)
 	UploadDescriptor uploadDesc;
 	uploadDesc.myShaders = shaders.data();
 	uploadDesc.myShaderCount = myShaders.size();
+	uploadDesc.myDescriptor = &myDescriptor;
 	bool success = myGPUResource->Upload(uploadDesc);
 
 	if (success)

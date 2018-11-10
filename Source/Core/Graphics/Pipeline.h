@@ -22,6 +22,7 @@ public:
 	{
 		const GPUResource** myShaders;
 		size_t myShaderCount;
+		const Descriptor* myDescriptor; // won't be stored
 	};
 
 public:

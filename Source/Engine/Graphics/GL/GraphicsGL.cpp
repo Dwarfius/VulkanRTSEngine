@@ -10,6 +10,7 @@
 #include "PipelineGL.h"
 #include "ModelGL.h"
 #include "TextureGL.h"
+#include "UniformBufferGL.h"
 
 #define CHECK_GL()															\
 {																			\
@@ -120,6 +121,7 @@ void GraphicsGL::Init()
 		Pipeline::UploadDescriptor uploadDesc;
 		uploadDesc.myShaderCount = DebugShaderCount;
 		uploadDesc.myShaders = debugShaders;
+		uploadDesc.myDescriptor = nullptr;
 		myDebugPipeline->Upload(uploadDesc);
 	}
 
@@ -232,56 +234,17 @@ void GraphicsGL::Display()
 		// grabbing the descriptor because it has the locations
 		// of uniform values to be uploaded to
 		const Descriptor& aDesc = pipelineRes->GetDescriptor();
-		size_t uniformCount = aDesc.GetUniformCount();
-		// grabbign the uniform data that will be used
-		const char* uniformData = r.myUniforms->GetData();
-		for (size_t i = 0; i < uniformCount; i++)
+
+		UniformBufferGL* ubo = pipeline->GetUBO();
 		{
-			const char* dataPtr = uniformData + aDesc.GetOffset(i);
-			switch (aDesc.GetType(i))
-			{
-			case UniformType::Int:
-			{
-				// TODO: transition to using Uniform Blocks in shaders!
-				// TODO: locations might not match order!
-				int32_t data = *reinterpret_cast<const int32_t*>(dataPtr);
-				glUniform1i(i, data);
-				break;
-			}
-			case UniformType::Float:
-			{
-				float data = *reinterpret_cast<const float*>(dataPtr);
-				glUniform1f(i, data);
-				break;
-			}
-			case UniformType::Vec2:
-			{
-				const float* data = reinterpret_cast<const float*>(dataPtr);
-				glUniform2f(i, *data, *(data + 1));
-				break;
-			}
-			case UniformType::Vec3:
-			{
-				const float* data = reinterpret_cast<const float*>(dataPtr);
-				glUniform3f(i, *data, *(data + 1), *(data + 2));
-				break;
-			}
-			case UniformType::Vec4:
-			{
-				const float* data = reinterpret_cast<const float*>(dataPtr);
-				glUniform4f(i, *data, *(data + 1), *(data + 2), *(data + 3));
-				break;
-			}
-			case UniformType::Mat4:
-			{
-				const float* data = reinterpret_cast<const float*>(dataPtr);
-				glUniformMatrix4fv(i, 1, false, data);
-				break;
-			}
-			default:
-				ASSERT(false);
-			}
+			UniformBufferGL::UploadDescriptor uploadDesc;
+			uploadDesc.mySize = aDesc.GetBlockSize();
+			uploadDesc.myData = r.myUniforms->GetData();
+			// Upload and let go - it'll stay bound
+			ubo->Upload(uploadDesc);
 		}
+		// HACK: currently only 1 UBO supported!
+		ubo->Bind(0);
 
 		uint32_t drawMode = model->GetDrawMode();
 		size_t primitiveCount = model->GetPrimitiveCount();

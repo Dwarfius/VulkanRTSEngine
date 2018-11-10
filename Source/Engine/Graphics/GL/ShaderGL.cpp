@@ -19,7 +19,8 @@ void ShaderGL::Create(any aDescriptor)
 {
 	ASSERT_STR(!myGLShader, "Shader already created!");
 
-	Shader::CreateDescriptor desc = any_cast<Shader::CreateDescriptor>(aDescriptor);
+	const Shader::CreateDescriptor& desc = 
+		any_cast<const Shader::CreateDescriptor&>(aDescriptor);
 
 	uint32_t glType;
 	switch (desc.myType)
@@ -36,7 +37,8 @@ void ShaderGL::Create(any aDescriptor)
 
 bool ShaderGL::Upload(any aDescriptor)
 {
-	Shader::UploadDescriptor desc = any_cast<Shader::UploadDescriptor>(aDescriptor);
+	const Shader::UploadDescriptor& desc = 
+		any_cast<const Shader::UploadDescriptor&>(aDescriptor);
 
 	ASSERT_STR(myGLShader, "Shader missing!");
 

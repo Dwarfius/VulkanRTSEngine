@@ -35,6 +35,7 @@ set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/PipelineGL.cpp" "Graphics/GL/PipelineGL.h"
 	"Graphics/GL/ShaderGL.cpp" "Graphics/GL/ShaderGL.h"
 	"Graphics/GL/TextureGL.cpp" "Graphics/GL/TextureGL.h"
+	"Graphics/GL/UniformBufferGL.cpp" "Graphics/GL/UniformBufferGL.h"
 )
 
 set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"

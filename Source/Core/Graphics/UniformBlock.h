@@ -18,6 +18,8 @@ public:
 	void SetUniform(uint32_t aSlot, const T& aValue);
 
 	const char* GetData() const { return myData; }
+
+	// 4-byte alligned according to std140 layour specification
 	size_t GetSize() const;
 
 private:
@@ -30,18 +32,7 @@ template<typename T>
 void UniformBlock::SetUniform(uint32_t aSlot, const T& aValue)
 {
 	ASSERT_STR(aSlot < myDescriptor.GetUniformCount(), "Either invalid slot was provided, or block wasn't resolved!");
-	DEBUG_ONLY(
-		size_t slotSize;
-		if (aSlot == myDescriptor.GetUniformCount() - 1)
-		{
-			slotSize = myDescriptor.GetBlockSize() - myDescriptor.GetOffset(aSlot);
-		}
-		else
-		{
-			slotSize = myDescriptor.GetOffset(aSlot + 1) - myDescriptor.GetOffset(aSlot);
-		}
-		ASSERT_STR(slotSize == sizeof(T), "Size mismatch of passed data and slot requested!");
-	);
+	ASSERT_STR(sizeof(T) == myDescriptor.GetSlotSize(aSlot), "Size mismatch of passed data and slot requested!");
 	T* slotPointer = (T*)(myData + myDescriptor.GetOffset(aSlot));
 	*slotPointer = aValue;
 }

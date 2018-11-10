@@ -2,10 +2,12 @@
 #include "PipelineGL.h"
 
 #include "ShaderGL.h"
+#include "UniformBufferGL.h"
 
 PipelineGL::PipelineGL()
 	: GPUResource()
 	, myGLProgram(0)
+	, myBuffer(nullptr)
 {
 }
 
@@ -30,7 +32,8 @@ void PipelineGL::Create(any aDescriptor)
 
 bool PipelineGL::Upload(any aDescriptor)
 {
-	Pipeline::UploadDescriptor desc = any_cast<Pipeline::UploadDescriptor>(aDescriptor);
+	const Pipeline::UploadDescriptor& desc = 
+		any_cast<const Pipeline::UploadDescriptor&>(aDescriptor);
 
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
@@ -58,6 +61,20 @@ bool PipelineGL::Upload(any aDescriptor)
 
 		myErrorMsg = "Linking error: " + errStr;
 	}
+	else
+	{
+		if (desc.myDescriptor)
+		{
+			// we've succesfully linked, time to resolve the UBO
+			// TODO: get rid of this name hack, have a proper name string!
+			const Descriptor& descriptor = (*desc.myDescriptor);
+			const string& uboName = descriptor.GetUniformAdapter();
+			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
+			glUniformBlockBinding(myGLProgram, uboIndex, 0); // point it at 0!
+			myBuffer = new UniformBufferGL();
+			myBuffer->Create(descriptor.GetBlockSize());
+		}
+	}
 	return linked;
 }
 
@@ -65,4 +82,9 @@ void PipelineGL::Unload()
 {
 	ASSERT_STR(myGLProgram, "Empty pipeline detected!");
 	glDeleteProgram(myGLProgram);
+
+	if (myBuffer)
+	{
+		delete myBuffer;
+	}
 }

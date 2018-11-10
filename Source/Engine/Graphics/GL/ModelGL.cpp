@@ -30,7 +30,8 @@ void ModelGL::Bind()
 
 void ModelGL::Create(any aDescriptor)
 {
-	Model::CreateDescriptor descriptor = any_cast<Model::CreateDescriptor>(aDescriptor);
+	const Model::CreateDescriptor& descriptor = 
+		any_cast<const Model::CreateDescriptor&>(aDescriptor);
 
 	ASSERT_STR(!myVBO, "Already have a buffer allocated!");
 
@@ -97,7 +98,8 @@ void ModelGL::Create(any aDescriptor)
 
 bool ModelGL::Upload(any aDescriptor)
 {
-	Model::UploadDescriptor descriptor = any_cast<Model::UploadDescriptor>(aDescriptor);
+	const Model::UploadDescriptor& descriptor = 
+		any_cast<const Model::UploadDescriptor&>(aDescriptor);
 	
 	ASSERT_STR(myVAO, "Don't have a buffer alocated!");
 

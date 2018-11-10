@@ -22,31 +22,73 @@ void Descriptor::RecomputeSize()
 	myOffsets.resize(size);
 
 	myTotalSize = 0;
-	for (size_t i = 1; i <= size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		size_t uniformSize = 0;
-		switch (myTypes[i - 1])
+		size_t basicAlignment;
+		size_t elemSize;
+		switch (myTypes[i])
 		{
 		case UniformType::Float:
 		case UniformType::Int:
-			uniformSize = sizeof(int);
+			basicAlignment = sizeof(int);
+			elemSize = sizeof(int);
 			break;
 		case UniformType::Vec2:
-			uniformSize = sizeof(glm::vec2);
+			basicAlignment = sizeof(glm::vec2);
+			elemSize = sizeof(glm::vec2);
 			break;
 		case UniformType::Vec3:
-			uniformSize = sizeof(glm::vec3);
+			basicAlignment = sizeof(glm::vec4); // std140
+			elemSize = sizeof(glm::vec4); // std140
 			break;
 		case UniformType::Vec4:
-			uniformSize = sizeof(glm::vec4);
+			basicAlignment = sizeof(glm::vec4);
+			elemSize = sizeof(glm::vec4);
 			break;
 		case UniformType::Mat4:
-			uniformSize = sizeof(glm::mat4);
+			basicAlignment = sizeof(glm::vec4);
+			elemSize = sizeof(glm::mat4);
 			break;
 		default:
 			ASSERT_STR(false, "Unrecognized Uniform Type found!");
 		}
-		myOffsets[i - 1] = myTotalSize;
-		myTotalSize += uniformSize;
+		// myTotalSize has the aligned offset from the previous iter
+		// plus the size of the new element.
+		// calculate the adjusted size (with padding), so that we can
+		// retain alignment required for new element
+		size_t remainder = myTotalSize % basicAlignment;
+		if (remainder)
+		{
+			myTotalSize -= remainder;
+			myTotalSize += basicAlignment;
+		}
+		
+		myOffsets[i] = myTotalSize;
+		myTotalSize += elemSize;
+	}
+}
+
+size_t Descriptor::GetSlotSize(uint32_t aSlot) const
+{
+	switch (myTypes[aSlot])
+	{
+	case UniformType::Float:
+	case UniformType::Int:
+		return sizeof(int);
+		break;
+	case UniformType::Vec2:
+		return sizeof(glm::vec2);
+		break;
+	case UniformType::Vec3:
+		return sizeof(glm::vec3);
+		break;
+	case UniformType::Vec4:
+		return sizeof(glm::vec4);
+		break;
+	case UniformType::Mat4:
+		return sizeof(glm::mat4);
+		break;
+	default:
+		ASSERT_STR(false, "Unrecognized Uniform Type found!");
 	}
 }

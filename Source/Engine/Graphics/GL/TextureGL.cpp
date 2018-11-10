@@ -23,7 +23,8 @@ void TextureGL::Bind()
 
 void TextureGL::Create(any aDescriptor)
 {
-	Texture::CreateDescriptor desc = any_cast<Texture::CreateDescriptor>(aDescriptor);
+	const Texture::CreateDescriptor& desc = 
+		any_cast<const Texture::CreateDescriptor&>(aDescriptor);
 
 	ASSERT_STR(!myGLTexture, "Uploading an uploaded texture!");
 
@@ -93,7 +94,8 @@ void TextureGL::Create(any aDescriptor)
 
 bool TextureGL::Upload(any aDescriptor)
 {
-	Texture::UploadDescriptor desc = any_cast<Texture::UploadDescriptor>(aDescriptor);
+	const Texture::UploadDescriptor& desc = 
+		any_cast<const Texture::UploadDescriptor&>(aDescriptor);
 
 	ASSERT_STR(myGLTexture, "Uploading an uploaded texture!");
 
