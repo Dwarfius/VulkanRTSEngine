@@ -398,7 +398,7 @@ void APIENTRY glDebugOutput(GLenum aSource,
 	
 	if (shouldAssert)
 	{
-		ASSERT_STR(false, "Severe GL Error(%d): %s\nSource: %s\n Type: %s",
+		ASSERT_STR(false, "Severe GL Error(%d): %s\nSource: %s\nType: %s",
 			aId, aMessage, source, type);
 	}
 	else

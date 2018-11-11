@@ -41,8 +41,8 @@ public:
 	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
 
 private:
-	void Load() override;
-	void Upload(GPUResource* aGPURes) override;
+	void OnLoad() override;
+	void OnUpload(GPUResource* aGPURes) override;
 
 	Type myType;
 	Descriptor myDescriptor;

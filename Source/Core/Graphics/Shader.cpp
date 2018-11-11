@@ -12,7 +12,7 @@ Shader::Shader(Resource::Id anId, const string& aPath)
 {
 }
 
-void Shader::Load()
+void Shader::OnLoad()
 {
 	// first determine the type of shader based on file extension
 	// currently only vertex and fragment shaders are supported
@@ -40,7 +40,7 @@ void Shader::Load()
 	myState = State::PendingUpload;
 }
 
-void Shader::Upload(GPUResource* aGPUResource)
+void Shader::OnUpload(GPUResource* aGPUResource)
 {
 	myGPUResource = aGPUResource;
 	

@@ -48,7 +48,7 @@ static_assert(false, "Linux target not supported!");
 
 	void AssertNotify(const char* anExpr, const char* aFile, int aLine, const char* aFmt, ...)
 	{
-		constexpr size_t cSmallMsgSize = 128;
+		constexpr size_t cSmallMsgSize = 256;
 		constexpr size_t cFullMsgSize = 1024;
 		char smallMsgBuffer[cSmallMsgSize + 1] = { 0 };
 		if (aFmt)

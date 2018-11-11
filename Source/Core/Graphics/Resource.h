@@ -62,7 +62,7 @@ protected:
 class Resource : public RefCounted
 {
 private:
-	using OnDestroyCB = function<void(const Resource*)>;
+	using Callback = function<void(const Resource*)>;
 
 public:
 	using Id = uint32_t;
@@ -113,6 +113,13 @@ public:
 
 	const GPUResource& GetGPUResource() const { return *myGPUResource; }
 
+	// Sets the callback to call when the object finishes loading from disk
+	void SetOnLoadCB(Callback aOnLoadCB) { myOnLoadCB = aOnLoadCB; }
+	// Sets the callback to call when the object finishes uploading to GPU
+	void SetOnUploadCB(Callback aOnUploadCB) { myOnUploadCB = aOnUploadCB; }
+	// Sets the callback to call when the object gets destroyed
+	void SetOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCB = aOnDestroyCB; }
+
 protected:
 	// A list of all items that this resource depended on. Will be released on destructor call
 	vector<Handle<Resource>> myDependencies;
@@ -137,13 +144,8 @@ private:
 	// ============================
 	// AssetTracker support
 	friend class AssetTracker;
-	// This is strictly for interacting with files!
-	virtual void Load() = 0;
-	// This is for interacting with the GPU
-	virtual void Upload(GPUResource* aResource) = 0;
-	// Sets the callback to call when the object gets destroyed
-	void SetOnDestroyCB(OnDestroyCB aOnDestroyCB);
-	// Will call Unload on GPUResource, then clean up GPUResource
+	void Load();
+	void Upload(GPUResource* aResource);
 	void Unload();
 	// ============================
 
@@ -154,6 +156,13 @@ private:
 	GPUResource* GetGPUResource_Int() const { return myGPUResource; }
 	// ============================
 
+	// This is strictly for interacting with files!
+	virtual void OnLoad() = 0;
+	// This is for interacting with the GPU
+	virtual void OnUpload(GPUResource* aResource) = 0;
+
 	Id myId;
-	OnDestroyCB myOnDestroyCB;
+	Callback myOnLoadCB;
+	Callback myOnUploadCB;
+	Callback myOnDestroyCB;
 };

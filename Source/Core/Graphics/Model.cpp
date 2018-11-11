@@ -24,13 +24,13 @@ void Model::SetData(vector<Vertex>&& aVerts, vector<IndexType>&& aIndices,
 	myIndices = move(aIndices);
 	myAABBMin = anAABBMin;
 	myAABBMax = anAABBMax;
-	myCenter = myAABBMax - myAABBMin;
+	myCenter = (myAABBMin + myAABBMax) / 2.f;
 	mySphereRadius = aSphereRadius;
 
 	myState = State::PendingUpload;
 }
 
-void Model::Load()
+void Model::OnLoad()
 {
 	ASSERT_STR(myState == State::Invalid, "Double load detected!");
 
@@ -115,7 +115,7 @@ void Model::Load()
 	myState = State::PendingUpload;
 }
 
-void Model::Upload(GPUResource* aGPURes)
+void Model::OnUpload(GPUResource* aGPURes)
 {
 	myGPUResource = aGPURes;
 

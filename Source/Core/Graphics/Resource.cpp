@@ -28,6 +28,8 @@ Resource::Resource(Id anId, const string& aPath)
 	, myState(State::Invalid)
 	, myPath(aPath)
 	, myGPUResource(nullptr)
+	, myOnLoadCB(nullptr)
+	, myOnUploadCB(nullptr)
 	, myOnDestroyCB(nullptr)
 {
 }
@@ -51,9 +53,22 @@ void Resource::SetErrMsg(string&& anErrString)
 #endif
 }
 
-void Resource::SetOnDestroyCB(OnDestroyCB aOnDestroyCB)
+void Resource::Load()
 {
-	myOnDestroyCB = aOnDestroyCB;
+	OnLoad();
+	if (myOnLoadCB)
+	{
+		myOnLoadCB(this);
+	}
+}
+
+void Resource::Upload(GPUResource* aResource)
+{
+	OnUpload(aResource);
+	if (myOnUploadCB)
+	{
+		myOnUploadCB(this);
+	}
 }
 
 void Resource::Unload()

@@ -60,9 +60,9 @@ public:
 
 private:
 	// Processes an .obj file in folder "assets/objects/".
-	void Load() override;
+	void OnLoad() override;
 	// Uploads to GPU
-	void Upload(GPUResource* aGPURes) override;
+	void OnUpload(GPUResource* aGPURes) override;
 
 	// TODO: this is potentially wasteful - not all models can have UVs or normals
 	vector<Vertex> myVertices;

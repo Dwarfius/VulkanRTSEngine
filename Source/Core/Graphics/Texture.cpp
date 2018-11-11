@@ -46,7 +46,7 @@ void Texture::FreeTextMem()
 	myPixels = nullptr;
 }
 
-void Texture::Load()
+void Texture::OnLoad()
 {
 	const string basePath = "assets/textures/";
 	myPixels = LoadFromDisk(basePath + myPath, myFormat, myWidth, myHeight);
@@ -59,7 +59,7 @@ void Texture::Load()
 	myState = State::PendingUpload;
 }
 
-void Texture::Upload(GPUResource* aGPUResource)
+void Texture::OnUpload(GPUResource* aGPUResource)
 {
 	myGPUResource = aGPUResource;
 

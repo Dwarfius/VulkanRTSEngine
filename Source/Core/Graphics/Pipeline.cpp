@@ -28,7 +28,7 @@ void Pipeline::AddShader(Handle<Shader> aShader)
 	myDependencies.push_back(aShader.Get<Resource>());
 }
 
-void Pipeline::Load()
+void Pipeline::OnLoad()
 {
 	// TODO: read the configuration .ppl file that will pick up on what's needed for proper
 	// work of the pipeline - what type of pipeline, what shaders it uses for each stage, etc.
@@ -36,7 +36,7 @@ void Pipeline::Load()
 	myState = State::PendingUpload;
 }
 
-void Pipeline::Upload(GPUResource* aGPURes)
+void Pipeline::OnUpload(GPUResource* aGPURes)
 {
 	ASSERT_STR(myShaders.size() > 0, "Attempted to upload a pipeline with no shaders attached!");
 

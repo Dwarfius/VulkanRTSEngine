@@ -1,9 +1,9 @@
 #version 420
 
-uniform sampler2D tex;
-
 in vec3 normalOut;
 in vec2 uvsOut;
+
+uniform sampler2D tex;
 
 layout(location = 0) out vec4 outColor;
 

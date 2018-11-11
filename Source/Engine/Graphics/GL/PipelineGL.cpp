@@ -27,6 +27,12 @@ void PipelineGL::Bind()
 		// HACK: currently only 1 buffer supported
 		myBuffer->Bind(0);
 	}
+
+	// rebind texture slots
+	for(size_t i=0; i<mySamplerUniforms.size(); i++)
+	{
+		glUniform1i(mySamplerUniforms[i], i);
+	}
 }
 
 void PipelineGL::Create(any aDescriptor)
@@ -57,14 +63,14 @@ bool PipelineGL::Upload(any aDescriptor)
 	bool linked = isLinked != GL_FALSE;
 	if (!linked)
 	{
-		GLint length = 0;
+#ifdef _DEBUG
+		int length = 0;
 		glGetProgramiv(myGLProgram, GL_INFO_LOG_LENGTH, &length);
 
 		string errStr;
 		errStr.resize(length);
 		glGetProgramInfoLog(myGLProgram, length, &length, &errStr[0]);
 
-#ifdef _DEBUG
 		myErrorMsg = "Linking error: " + errStr;
 #endif
 	}
@@ -80,6 +86,38 @@ bool PipelineGL::Upload(any aDescriptor)
 			glUniformBlockBinding(myGLProgram, uboIndex, 0); // point it at 0!
 			myBuffer = new UniformBufferGL();
 			myBuffer->Create(descriptor.GetBlockSize());
+		}
+
+		// Because samplers can't be part of the uniform blocks, 
+		// they have to stay separate, which means we have to find them
+		// and track them
+		int uniformCount = 0;
+		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORMS, &uniformCount);
+		ASSERT(uniformCount >= 0);
+		// We will need the name in order to find the location of the uniform
+		int maxNameLength = 0;
+		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
+		string uniformName;
+		uniformName.resize(maxNameLength + 1);
+		for (uint32_t i = 0; i < uniformCount; i++)
+		{
+			int uniformSize = 0;
+			uint32_t uniformType = 0;
+			int uniformNameLength = 0;
+			glGetActiveUniform(myGLProgram, i, maxNameLength, 
+				&uniformNameLength, &uniformSize, &uniformType, &(uniformName[0]));
+			uniformName[uniformNameLength] = 0; // chop off the rest
+
+			switch (uniformType)
+			{
+			case GL_SAMPLER_2D:
+			{
+				int location = glGetUniformLocation(myGLProgram, uniformName.c_str());
+				mySamplerUniforms.push_back(location);
+				mySamplerTypes.push_back(uniformType);
+			}
+			break;
+			}
 		}
 	}
 	return linked;

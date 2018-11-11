@@ -54,7 +54,14 @@ bool ShaderGL::Upload(any aDescriptor)
 	if (isCompiled != GL_TRUE)
 	{
 #ifdef _DEBUG
-		myErrorMsg = "Failed to compile!";
+		int length = 0;
+		glGetShaderiv(myGLShader, GL_INFO_LOG_LENGTH, &length);
+
+		string errStr;
+		errStr.resize(length);
+		glGetShaderInfoLog(myGLShader, length, &length, &errStr[0]);
+
+		myErrorMsg = "Shader failed to compile" + errStr;
 #endif
 		return false;
 	}

@@ -56,16 +56,18 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	{
 		for (int x = 0; x < myWidth - 1; x++)
 		{
-			Model::IndexType tl = y * myWidth + x;
-			Model::IndexType tr = tl + 1;
-			Model::IndexType bl = tl + myWidth;
+			// defining 2 triangles - using bottom left as the anchor corner
+			size_t triangle = (y * (myWidth - 1) + x) * 6;
+			Model::IndexType bl = y * myWidth + x;
 			Model::IndexType br = bl + 1;
-			indices[tl + 0] = tl;
-			indices[tl + 1] = bl;
-			indices[tl + 2] = tr;
-			indices[tl + 3] = br;
-			indices[tl + 4] = tr;
-			indices[tl + 5] = bl;
+			Model::IndexType tl = bl + myWidth;
+			Model::IndexType tr = tl + 1;
+			indices[triangle + 0] = bl;
+			indices[triangle + 1] = tl;
+			indices[triangle + 2] = tr;
+			indices[triangle + 3] = bl;
+			indices[triangle + 4] = tr;
+			indices[triangle + 5] = br;
 		}
 	}
 
@@ -174,9 +176,7 @@ shared_ptr<PhysicsEntity> Terrain::CreatePhysics()
 
 	shared_ptr<PhysicsShapeHeightfield> myShape = make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
-	// Bullet uses AABB center as transform pivot, so have to offset it to center
-	glm::mat4 transform = glm::translate(glm::vec3(0.f, (maxHeight + minHeight) / 2.f, 0.f)); 
-	shared_ptr<PhysicsEntity> myPhysicsEntity = make_shared<PhysicsEntity>(0.f, myShape, transform);
+	shared_ptr<PhysicsEntity> myPhysicsEntity = make_shared<PhysicsEntity>(0.f, myShape, glm::mat4(1.f));
 	myPhysicsEntity->SetCollisionFlags(myPhysicsEntity->GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 	return myPhysicsEntity;
 }

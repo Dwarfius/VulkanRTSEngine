@@ -18,7 +18,6 @@ public:
 
 	Transform& GetTransform() { return myTransf; }
 	const Transform& GetTransform() const { return myTransf; }
-	// TODO: remove duplication - reroute through myTransf
 	const glm::mat4& GetMatrix() const { return myTransf.GetModelMatrix(); }
 
 	const UID& GetUID() const { return myUID; }

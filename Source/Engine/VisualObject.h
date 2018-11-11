@@ -14,9 +14,9 @@ class UniformAdapter;
 class VisualObject
 {
 public:
-	VisualObject(const GameObject& aGO);
+	VisualObject(GameObject& aGO);
 
-	void SetModel(Handle<Model> aModel) { myModel = aModel; }
+	void SetModel(Handle<Model> aModel);
 	Handle<Model> GetModel() const { return myModel; }
 
 	void SetPipeline(Handle<Pipeline> aPipeline);
@@ -46,6 +46,8 @@ private:
 	Handle<Texture> myTexture;
 
 	shared_ptr<UniformBlock> myUniforms;
-	const GameObject& myGameObject;
 	shared_ptr<UniformAdapter> myAdapter;
+	GameObject& myGameObject;
+
+	void UpdateCenter(const Resource* aModelRes);
 };

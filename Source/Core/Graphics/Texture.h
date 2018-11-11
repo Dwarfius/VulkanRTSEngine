@@ -66,6 +66,6 @@ protected:
 	void FreeTextMem();
 
 private:
-	void Load() override;
-	void Upload(GPUResource* aGPUResource) override;
+	void OnLoad() override;
+	void OnUpload(GPUResource* aGPUResource) override;
 };

@@ -21,6 +21,8 @@ public:
 
 private:
 	uint32_t myGLProgram;
+	vector<uint32_t> mySamplerUniforms;
+	vector<uint32_t> mySamplerTypes;
 
 	// TODO: extend to support multiple buffers
 	UniformBufferGL* myBuffer;

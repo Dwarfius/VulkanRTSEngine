@@ -111,7 +111,7 @@ bool TextureGL::Upload(any aDescriptor)
 	case Texture::Format::UNorm_RGBA: // fallthrough
 	case Texture::Format::UNorm_BGRA: format = GL_RGBA; break;
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, desc.myWidth, desc.myHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, desc.myPixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, desc.myWidth, desc.myHeight, 0, format, GL_UNSIGNED_BYTE, desc.myPixels);
 
 	if (desc.myEnableMipmaps)
 	{
