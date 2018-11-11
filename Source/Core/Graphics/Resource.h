@@ -53,6 +53,8 @@ public:
 protected:
 	// used for tracking what went wrong
 	string myErrorMsg;
+#else
+	string GetErrorMsg() const { return ""; }
 #endif
 };
 

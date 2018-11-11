@@ -31,7 +31,7 @@ namespace DebugImpl
 // or		ASSERT_STR(false, "Test %d", 2);
 #define ASSERT_STR(cond, ...) if(!(cond)) { DebugImpl::AssertNotify(#cond, __FILE__, __LINE__, __VA_ARGS__); } FORCE_SEMICOLON
 
-#elif // if !defined(ENABLE_ASSERTS)
+#else // if !defined(ENABLE_ASSERTS)
 
 #define ASSERT(cond)
 #define ASSERT_STR(cond, ...)

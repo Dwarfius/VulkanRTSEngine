@@ -66,7 +66,7 @@ private:
 	void RemoveGameObjects();
 
 	static Game* ourInstance;
-	unique_ptr<RenderThread> myRenderThread;
+	RenderThread* myRenderThread;
 	unique_ptr<GameTaskManager> myTaskManager;
 
 	// timer measurements

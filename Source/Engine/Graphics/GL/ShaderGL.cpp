@@ -53,7 +53,9 @@ bool ShaderGL::Upload(any aDescriptor)
 
 	if (isCompiled != GL_TRUE)
 	{
+#ifdef _DEBUG
 		myErrorMsg = "Failed to compile!";
+#endif
 		return false;
 	}
 
@@ -64,4 +66,5 @@ void ShaderGL::Unload()
 {
 	ASSERT_STR(myGLShader, "Empty shader detected!");
 	glDeleteShader(myGLShader);
+	myGLShader = 0;
 }

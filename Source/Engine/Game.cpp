@@ -55,7 +55,7 @@ Game::Game(ReportError aReporterFunc)
 	terr->Load(myAssetTracker, "assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
 	myTerrains.push_back(terr);
 
-	myRenderThread = make_unique<RenderThread>();
+	myRenderThread = new RenderThread();
 
 	myCamera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
 
@@ -66,6 +66,8 @@ Game::Game(ReportError aReporterFunc)
 
 Game::~Game()
 {
+	// render thread has to go first, since it relies on glfw to be there
+	delete myRenderThread;
 	glfwTerminate();
 }
 
@@ -189,6 +191,13 @@ void Game::RunTaskGraph()
 
 void Game::CleanUp()
 {
+	// First, wait until render-thread is done
+	while (myRenderThread->HasWork())
+	{
+		myRenderThread->SubmitRenderables();
+	}
+
+	// now that it's done, we can clean up everything
 	if (myFile.is_open())
 	{
 		myFile.close();

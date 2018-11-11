@@ -11,13 +11,16 @@
 #include "ModelGL.h"
 #include "TextureGL.h"
 #include "UniformBufferGL.h"
+#include <sstream>
 
-#define CHECK_GL()															\
-{																			\
-	const GLenum err = glGetError();										\
-	if (err != GL_NO_ERROR)													\
-		printf("GL error(%d) on line %d in %s", err, __LINE__, __FILE__);	\
-}
+#ifdef _DEBUG
+#define DEBUG_GL_CALLS
+#endif
+
+#ifdef DEBUG_GL_CALLS
+void APIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
+	GLsizei, const GLchar*, const void*);
+#endif
 
 GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 	: Graphics(anAssetTracker)
@@ -39,6 +42,9 @@ void GraphicsGL::Init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
+#ifdef DEBUG_GL_CALLS
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
 
 	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - GL", nullptr, nullptr);
 	glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -53,8 +59,28 @@ void GraphicsGL::Init()
 		printf("[Error] GLEW failed to init, error: %s\n", glewGetErrorString(err));
 		return;
 	}
+	glGetError(); // skip the glew error
 	printf("[Info] OpenGL context found, version: %s\n", glGetString(GL_VERSION));
 	printf("[Info] GLEW initialized, version: %s\n", glewGetString(GLEW_VERSION));
+
+#ifdef DEBUG_GL_CALLS
+	// check if the GL context has been provided
+	int flags; 
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		// yeah, we got it, so hook in our handler
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(glDebugOutput, nullptr);
+		// Enable every output
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 
+			0, nullptr, GL_TRUE);
+		// except for notification level
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 
+			0, nullptr, GL_FALSE);
+	}
+#endif
 	
 	// clear settings
 	glClearColor(0, 0, 0, 0);
@@ -243,8 +269,6 @@ void GraphicsGL::Display()
 			// Upload and let go - it'll stay bound
 			ubo->Upload(uploadDesc);
 		}
-		// HACK: currently only 1 UBO supported!
-		ubo->Bind(0);
 
 		uint32_t drawMode = model->GetDrawMode();
 		size_t primitiveCount = model->GetPrimitiveCount();
@@ -327,3 +351,60 @@ void GraphicsGL::CreateLineCache()
 	createDesc.myIsIndexed = false;
 	myLineCache.myBuffer->Create(createDesc);
 }
+
+#ifdef DEBUG_GL_CALLS
+void APIENTRY glDebugOutput(GLenum aSource,
+	GLenum aType,
+	GLuint aId,
+	GLenum aSeverity,
+	GLsizei aLength,
+	const GLchar* aMessage,
+	const void* aUserParam)
+{
+	char* source;
+	switch (aSource)
+	{
+	case GL_DEBUG_SOURCE_API:             source = "API"; break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   source = "Window System"; break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER: source = "Shader Compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:     source = "Third Party"; break;
+	case GL_DEBUG_SOURCE_APPLICATION:     source = "Application"; break;
+	case GL_DEBUG_SOURCE_OTHER:           source = "Other"; break;
+	}
+
+	char* type;
+	switch (aType)
+	{
+	case GL_DEBUG_TYPE_ERROR:               type = "Error"; break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: type = "Deprecated Behaviour"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  type = "Undefined Behaviour"; break;
+	case GL_DEBUG_TYPE_PORTABILITY:         type = "Portability"; break;
+	case GL_DEBUG_TYPE_PERFORMANCE:         type = "Performance"; break;
+	case GL_DEBUG_TYPE_MARKER:              type = "Marker"; break;
+	case GL_DEBUG_TYPE_PUSH_GROUP:          type = "Push Group"; break;
+	case GL_DEBUG_TYPE_POP_GROUP:           type = "Pop Group"; break;
+	case GL_DEBUG_TYPE_OTHER:               type = "Other"; break;
+	}
+
+	bool shouldAssert = false;
+	char* severity;
+	switch (aSeverity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:         severity = "high"; shouldAssert = true; break;
+	case GL_DEBUG_SEVERITY_MEDIUM:       severity = "medium"; break;
+	case GL_DEBUG_SEVERITY_LOW:          severity = "low"; break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION: severity = "notification"; break;
+	}
+	
+	if (shouldAssert)
+	{
+		ASSERT_STR(false, "Severe GL Error(%d): %s\nSource: %s\n Type: %s",
+			aId, aMessage, source, type);
+	}
+	else
+	{
+		printf("=================\nGL Debug(%d): %s\nSource: %s\nType: %s\nSeverity: %s\n",
+			aId, aMessage, source, type, severity);
+	}
+}
+#endif

@@ -22,6 +22,11 @@ PipelineGL::~PipelineGL()
 void PipelineGL::Bind()
 {
 	glUseProgram(myGLProgram);
+	if (myBuffer)
+	{
+		// HACK: currently only 1 buffer supported
+		myBuffer->Bind(0);
+	}
 }
 
 void PipelineGL::Create(any aDescriptor)
@@ -59,7 +64,9 @@ bool PipelineGL::Upload(any aDescriptor)
 		errStr.resize(length);
 		glGetProgramInfoLog(myGLProgram, length, &length, &errStr[0]);
 
+#ifdef _DEBUG
 		myErrorMsg = "Linking error: " + errStr;
+#endif
 	}
 	else
 	{
@@ -82,6 +89,7 @@ void PipelineGL::Unload()
 {
 	ASSERT_STR(myGLProgram, "Empty pipeline detected!");
 	glDeleteProgram(myGLProgram);
+	myGLProgram = 0;
 
 	if (myBuffer)
 	{

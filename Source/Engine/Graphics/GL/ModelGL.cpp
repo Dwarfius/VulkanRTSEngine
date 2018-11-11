@@ -132,6 +132,7 @@ bool ModelGL::Upload(any aDescriptor)
 	{
 		ASSERT_STR(myEBO, "Tried to upload indices into missing buffer!");
 		const Model::IndexType* indices = descriptor.myIndices;
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, myEBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Model::IndexType) * indexCount, indices, GL_STATIC_DRAW);
 	}
 	else
