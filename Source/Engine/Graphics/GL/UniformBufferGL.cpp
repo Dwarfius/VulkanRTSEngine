@@ -14,7 +14,7 @@ UniformBufferGL::~UniformBufferGL()
 	}
 }
 
-UniformBufferGL::UniformBufferGL(UniformBufferGL&& anOther) noexcept
+UniformBufferGL::UniformBufferGL(UniformBufferGL&& anOther)
 {
 	myBuffer = exchange(anOther.myBuffer, 0);
 }

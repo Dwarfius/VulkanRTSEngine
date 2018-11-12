@@ -14,7 +14,7 @@ public:
 public:
 	UniformBufferGL();
 	~UniformBufferGL();
-	UniformBufferGL(UniformBufferGL&& anOther) noexcept;
+	UniformBufferGL(UniformBufferGL&& anOther);
 
 	// Binds the UniformBuffer to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
