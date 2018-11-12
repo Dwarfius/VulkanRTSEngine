@@ -28,10 +28,26 @@ void VisualObject::SetModel(Handle<Model> aModel)
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = aPipeline;
-	const Descriptor& descriptor = myPipeline->GetDescriptor();
-	myUniforms = make_shared<UniformBlock>(descriptor);
-	const string& adapterName = descriptor.GetUniformAdapter();
-	myAdapter = UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this);
+	// Since we got a new pipeline, time to replace
+	// descriptors, UBOs and adapters
+	myUniforms.clear();
+	myAdapters.clear();
+
+	if (myPipeline.IsValid())
+	{
+		const Pipeline* pipeline = myPipeline.Get();
+		size_t descriptorCount = pipeline->GetDescriptorCount();
+		for (size_t i = 0; i < descriptorCount; i++)
+		{
+			const Descriptor& descriptor = pipeline->GetDescriptor(i);
+
+			myUniforms.push_back(make_shared<UniformBlock>(descriptor));
+			const string& adapterName = descriptor.GetUniformAdapter();
+			myAdapters.push_back(
+				UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
+			);
+		}
+	}
 }
 
 bool VisualObject::IsValid() const

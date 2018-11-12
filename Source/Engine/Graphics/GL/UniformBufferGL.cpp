@@ -14,6 +14,11 @@ UniformBufferGL::~UniformBufferGL()
 	}
 }
 
+UniformBufferGL::UniformBufferGL(UniformBufferGL&& anOther) noexcept
+{
+	myBuffer = exchange(anOther.myBuffer, 0);
+}
+
 void UniformBufferGL::Bind(uint32_t aBindPoint)
 {
 	glBindBufferBase(GL_UNIFORM_BUFFER, aBindPoint, myBuffer);

@@ -25,8 +25,6 @@ public:
 	void SetTexture(Handle<Texture> aTexture) { myTexture = aTexture; }
 	Handle<Texture> GetTexture() const { return myTexture; }
 
-	shared_ptr<UniformBlock> GetUniforms() const { return myUniforms; }
-
 	// Returns true if object can be used for rendering 
 	// (all resources have finished loading)
 	bool IsValid() const;
@@ -37,7 +35,9 @@ public:
 	void SetTransform(const Transform& aTransf) { myTransf = aTransf; }
 	const Transform& GetTransform() const { return myTransf; }
 
-	const UniformAdapter& GetUniformAdapter() const { return *myAdapter; }
+	UniformBlock& GetUniformBlock(size_t anIndex) const { return *myUniforms[anIndex]; }
+	const vector<shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
+	const UniformAdapter& GetUniformAdapter(size_t anIndex) const { return *myAdapters[anIndex]; }
 
 private:
 	Transform myTransf;
@@ -45,8 +45,8 @@ private:
 	Handle<Pipeline> myPipeline;
 	Handle<Texture> myTexture;
 
-	shared_ptr<UniformBlock> myUniforms;
-	shared_ptr<UniformAdapter> myAdapter;
+	vector<shared_ptr<UniformBlock>> myUniforms;
+	vector<shared_ptr<UniformAdapter>> myAdapters;
 	GameObject& myGameObject;
 
 	void UpdateCenter(const Resource* aModelRes);

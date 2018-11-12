@@ -11,12 +11,7 @@ Pipeline::Pipeline(Resource::Id anId)
 Pipeline::Pipeline(Resource::Id anId, const string& aPath)
 	: Resource(anId, aPath)
 	, myType(Type::Graphics)
-	, myDescriptor("UniformAdapter") // HACK!
 {
-	// HACK as well!
-	myDescriptor.SetUniformType(0, UniformType::Mat4);
-	myDescriptor.SetUniformType(1, UniformType::Mat4);
-	myDescriptor.RecomputeSize();
 }
 
 void Pipeline::AddShader(Handle<Shader> aShader)
@@ -54,7 +49,8 @@ void Pipeline::OnUpload(GPUResource* aGPURes)
 	UploadDescriptor uploadDesc;
 	uploadDesc.myShaders = shaders.data();
 	uploadDesc.myShaderCount = myShaders.size();
-	uploadDesc.myDescriptor = &myDescriptor;
+	uploadDesc.myDescriptors = myDescriptors.data();
+	uploadDesc.myDescriptorCount = myDescriptors.size();
 	bool success = myGPUResource->Upload(uploadDesc);
 
 	if (success)

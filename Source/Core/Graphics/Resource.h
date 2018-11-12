@@ -41,6 +41,7 @@ public:
 	GPUResource() {}
 	GPUResource(const GPUResource& anOther) = delete;
 	GPUResource& operator=(const GPUResource& anOther) = delete;
+	GPUResource(GPUResource&& anOther) noexcept = default;
 
 public:
 	virtual void Create(any aDescriptor) = 0;

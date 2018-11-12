@@ -14,7 +14,11 @@ public:
 public:
 	UniformBufferGL();
 	~UniformBufferGL();
+	UniformBufferGL(UniformBufferGL&& anOther) noexcept;
 
+	// Binds the UniformBuffer to a binding point. 
+	// GLSL uniform block must be bound to the same bind point!
+	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
 	// Changes OpenGL state, not thread safe.

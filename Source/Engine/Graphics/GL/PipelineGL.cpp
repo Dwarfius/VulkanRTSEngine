@@ -2,12 +2,10 @@
 #include "PipelineGL.h"
 
 #include "ShaderGL.h"
-#include "UniformBufferGL.h"
 
 PipelineGL::PipelineGL()
 	: GPUResource()
 	, myGLProgram(0)
-	, myBuffer(nullptr)
 {
 }
 
@@ -22,13 +20,8 @@ PipelineGL::~PipelineGL()
 void PipelineGL::Bind()
 {
 	glUseProgram(myGLProgram);
-	if (myBuffer)
-	{
-		// HACK: currently only 1 buffer supported
-		myBuffer->Bind(0);
-	}
 
-	// rebind texture slots
+	// rebinding samplers to texture slots
 	for(size_t i=0; i<mySamplerUniforms.size(); i++)
 	{
 		glUniform1i(mySamplerUniforms[i], i);
@@ -76,16 +69,21 @@ bool PipelineGL::Upload(any aDescriptor)
 	}
 	else
 	{
-		if (desc.myDescriptor)
+		// we've succesfully linked, time to resolve the UBOs
+		size_t descCount = desc.myDescriptorCount;
+		myBuffers.reserve(descCount);
+		for (size_t i = 0; i < descCount; i++)
 		{
-			// we've succesfully linked, time to resolve the UBO
+			const Descriptor& descriptor = desc.myDescriptors[i];
+
 			// TODO: get rid of this name hack, have a proper name string!
-			const Descriptor& descriptor = (*desc.myDescriptor);
 			const string& uboName = descriptor.GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
 			glUniformBlockBinding(myGLProgram, uboIndex, 0); // point it at 0!
-			myBuffer = new UniformBufferGL();
-			myBuffer->Create(descriptor.GetBlockSize());
+			
+			UniformBufferGL ubo;
+			ubo.Create(descriptor.GetBlockSize());
+			myBuffers.push_back(move(ubo));
 		}
 
 		// Because samplers can't be part of the uniform blocks, 
@@ -110,6 +108,7 @@ bool PipelineGL::Upload(any aDescriptor)
 
 			switch (uniformType)
 			{
+			// We're only interested in the samplers, so only fetch them
 			case GL_SAMPLER_2D:
 			{
 				int location = glGetUniformLocation(myGLProgram, uniformName.c_str());
@@ -128,9 +127,4 @@ void PipelineGL::Unload()
 	ASSERT_STR(myGLProgram, "Empty pipeline detected!");
 	glDeleteProgram(myGLProgram);
 	myGLProgram = 0;
-
-	if (myBuffer)
-	{
-		delete myBuffer;
-	}
 }

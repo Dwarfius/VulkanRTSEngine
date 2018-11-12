@@ -147,7 +147,8 @@ void GraphicsGL::Init()
 		Pipeline::UploadDescriptor uploadDesc;
 		uploadDesc.myShaderCount = DebugShaderCount;
 		uploadDesc.myShaders = debugShaders;
-		uploadDesc.myDescriptor = nullptr;
+		uploadDesc.myDescriptors = nullptr;
+		uploadDesc.myDescriptorCount = 0;
 		myDebugPipeline->Upload(uploadDesc);
 	}
 
@@ -176,10 +177,12 @@ void GraphicsGL::Render(const Camera& aCam, const VisualObject* aVO)
 {
 	ASSERT_STR(aVO, "Missing renderer!");
 
-	// update uniforms!
+	// updating the uniforms - grabbing game state!
+	size_t uboCount = aVO->GetPipeline()->GetDescriptorCount();
+	for(size_t i=0; i < uboCount; i++)
 	{
-		UniformBlock& uniformBlock = *(aVO->GetUniforms());
-		const UniformAdapter& adapter = aVO->GetUniformAdapter();
+		UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
+		const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
 		adapter.FillUniformBlock(aCam, uniformBlock);
 	}
 
@@ -243,6 +246,17 @@ void GraphicsGL::Display()
 		{
 			pipeline->Bind();
 			myCurrentPipeline = pipeline;
+
+			// binding uniform blocks to according slots
+			size_t blockCount = pipeline->GetUBOCount();
+			for (size_t i = 0; i < blockCount; i++)
+			{
+				// TODO: implement logic that doesn't rebind same slots:
+				// If pipeline A has X, Y, Z uniform blocks
+				// and pipeline B has X, V, W,
+				// if we bind from A to B (or vice versa), no need to rebind
+				pipeline->GetUBO(i).Bind(i);
+			}
 		}
 
 		if (texture != myCurrentTexture)
@@ -257,17 +271,19 @@ void GraphicsGL::Display()
 			myCurrentModel = model;
 		}
 
-		// grabbing the descriptor because it has the locations
-		// of uniform values to be uploaded to
-		const Descriptor& aDesc = pipelineRes->GetDescriptor();
-
-		UniformBufferGL* ubo = pipeline->GetUBO();
+		// Now we can update the uniform blocks
+		size_t descriptorCount = pipelineRes->GetDescriptorCount();
+		for (size_t i = 0; i < descriptorCount; i++)
 		{
+			// grabbing the descriptor because it has the locations
+			// of uniform values to be uploaded to
+			const Descriptor& aDesc = pipelineRes->GetDescriptor(i);
+			// there's a UBO for every descriptor of the pipeline
+			UniformBufferGL& ubo = pipeline->GetUBO(i);
 			UniformBufferGL::UploadDescriptor uploadDesc;
 			uploadDesc.mySize = aDesc.GetBlockSize();
-			uploadDesc.myData = r.myUniforms->GetData();
-			// Upload and let go - it'll stay bound
-			ubo->Upload(uploadDesc);
+			uploadDesc.myData = r.myUniforms[i]->GetData();
+			ubo.Upload(uploadDesc);
 		}
 
 		uint32_t drawMode = model->GetDrawMode();

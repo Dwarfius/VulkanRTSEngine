@@ -87,6 +87,13 @@ void Game::Init()
 	Handle<Shader> defFrag = myAssetTracker.GetOrCreate<Shader>("assets/GLShaders/base.frag");
 	defPipeline->AddShader(defVert);
 	defPipeline->AddShader(defFrag);
+
+	Descriptor descriptor("UniformAdapter");
+	descriptor.SetUniformType(0, UniformType::Mat4);
+	descriptor.SetUniformType(1, UniformType::Mat4);
+	descriptor.RecomputeSize();
+	defPipeline->AddDescriptor(move(descriptor));
+
 	defPipeline->SetState(Resource::State::PendingUpload);
 	// ==========================
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");

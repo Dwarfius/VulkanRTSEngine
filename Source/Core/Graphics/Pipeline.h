@@ -22,7 +22,8 @@ public:
 	{
 		const GPUResource** myShaders;
 		size_t myShaderCount;
-		const Descriptor* myDescriptor; // won't be stored
+		const Descriptor* myDescriptors;
+		size_t myDescriptorCount;
 	};
 
 public:
@@ -31,11 +32,14 @@ public:
 
 	Resource::Type GetResType() const override { return Resource::Type::Pipeline; }
 
-	const Descriptor& GetDescriptor() const { return myDescriptor; }
+	size_t GetDescriptorCount() const { return myDescriptors.size(); }
+	const Descriptor& GetDescriptor(size_t anIndex) const { return myDescriptors[anIndex]; }
 
 	// takes ownership of the shader
 	// call SetState(Resource::State::PendingUpload) when done adding shaders!
 	void AddShader(Handle<Shader> aShader);
+
+	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(move(aDescriptor)); }
 
 	size_t GetShaderCount() const { return myShaders.size(); }
 	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
@@ -45,6 +49,6 @@ private:
 	void OnUpload(GPUResource* aGPURes) override;
 
 	Type myType;
-	Descriptor myDescriptor;
+	vector<Descriptor> myDescriptors;
 	vector<Handle<Shader>> myShaders;
 };

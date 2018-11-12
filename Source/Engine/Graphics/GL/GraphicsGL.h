@@ -41,7 +41,7 @@ private:
 		Handle<Texture> myTexture;
 		Handle<Model> myModel;
 
-		shared_ptr<UniformBlock> myUniforms;
+		vector<shared_ptr<UniformBlock>> myUniforms;
 	};
 	// TODO: replace this with a double/tripple buffer concept
 	vector<RenderJob> myThreadJobs;
