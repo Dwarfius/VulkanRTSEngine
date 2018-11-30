@@ -4,11 +4,12 @@ Info
 This is a mutltithreaded engine project indended as a research in to Vulkan API. The engine features a OpenGL and Vulkan rendering backends with ability to switch them out at will. The engine executes a RTS-battle scenarion until stopped.
 
 Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
-* CMake will fetch [JSON for Modern C++ by Niels Lohmann](https://github.com/nlohmann/json)
+* CMake will fetch and configure for you:
+	* [JSON for Modern C++ by Niels Lohmann](https://github.com/nlohmann/json)
+	* [GLM](https://glm.g-truc.net)
 * For now you'll need to manually grab:
 	* [VulkanSDK by LunarG](https://www.lunarg.com/)
 	* [GLEW](http://glew.sourceforge.net/)
-	* [GLM](https://glm.g-truc.net)
 	* [GLFW](https://www.glfw.org/)
 	* [OpenAL](https://www.openal.org/)
 	* [freealut](https://github.com/vancegroup/freealut)

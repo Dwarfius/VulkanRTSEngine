@@ -6,13 +6,12 @@ set (CMAKE_CXX_STANDARD 17)
 include(FetchContent)
 
 find_package(GLFW REQUIRED)
-find_package(GLM REQUIRED)
 find_package(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
 
 FetchContent_Declare(
-  nlohmann_json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG        v3.4.0
+	nlohmann_json
+	GIT_REPOSITORY https://github.com/nlohmann/json
+	GIT_TAG        v3.4.0
 )
 
 FetchContent_GetProperties(nlohmann_json)
@@ -30,6 +29,18 @@ if(NOT nlohmann_json_POPULATED)
 	# Removes extra generated projects
 	set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 	add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
+endif()
+
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm
+	GIT_TAG			0.9.9.3
+)
+
+FetchContent_GetProperties(glm)
+if(NOT json_POPULATED)
+	FetchContent_Populate(glm)
+	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif()
 
 set(SRC "Precomp.cpp" "Precomp.h"
@@ -78,6 +89,7 @@ target_compile_definitions(${PROJECT_NAME}
 	PUBLIC 
 		NOMINMAX # to prevent tbb to carry over min/max macros from win headers
 		GLM_FORCE_DEPTH_ZERO_TO_ONE
+		GLM_ENABLE_EXPERIMENTAL # we use transform and hash implementations
 		ASSERT_MUTEX # enables utility mutex that asserts on concurrent use
 		# ENABLE_ASSERTS # uncomment this to force asserts
 )
@@ -85,7 +97,6 @@ target_compile_definitions(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
 	PUBLIC 
 		. 
-		${GLM_INCLUDE_DIR} 
 		${GLFW_INCLUDE_DIR}
 	PRIVATE 
 		Extra
@@ -96,5 +107,6 @@ target_link_libraries(${PROJECT_NAME}
 	${GLFW_LIBRARIES} 
 	${TBB_IMPORTED_TARGETS} 
 	${EXTRA_LIBS}
+	glm
 	nlohmann_json::nlohmann_json
 )
