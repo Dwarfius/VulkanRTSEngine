@@ -14,38 +14,37 @@ VisualObject::VisualObject(GameObject& aGO)
 void VisualObject::SetModel(Handle<Model> aModel)
 {
 	myModel = aModel;
-	if (myModel->GetState() == Resource::State::Invalid)
+
+	if (myModel.IsValid())
 	{
-		// it hasn't finished loading from disk yet, so have to wait
-		myModel->SetOnLoadCB(bind(&VisualObject::UpdateCenter, this, std::placeholders::_1));
-	}
-	else
-	{
-		myGameObject.GetTransform().SetCenter(aModel->GetCenter());
+		Model* model = myModel.Get();
+		if (model->GetState() == Resource::State::Invalid)
+		{
+			// it hasn't finished loading from disk yet, so have to wait
+			model->AddOnLoadCB(bind(&VisualObject::UpdateCenter, this, std::placeholders::_1));
+		}
+		else
+		{
+			UpdateCenter(model);
+		}
 	}
 }
 
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = aPipeline;
-	// Since we got a new pipeline, time to replace
-	// descriptors, UBOs and adapters
-	myUniforms.clear();
-	myAdapters.clear();
 
 	if (myPipeline.IsValid())
 	{
-		const Pipeline* pipeline = myPipeline.Get();
-		size_t descriptorCount = pipeline->GetDescriptorCount();
-		for (size_t i = 0; i < descriptorCount; i++)
+		Pipeline* pipeline = myPipeline.Get();
+		if (pipeline->GetState() == Resource::State::Invalid)
 		{
-			const Descriptor& descriptor = pipeline->GetDescriptor(i);
-
-			myUniforms.push_back(make_shared<UniformBlock>(descriptor));
-			const string& adapterName = descriptor.GetUniformAdapter();
-			myAdapters.push_back(
-				UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
-			);
+			// pipeline hasn't finished loading, so there are no descriptors atm
+			pipeline->AddOnLoadCB(bind(&VisualObject::UpdateDescriptors, this, std::placeholders::_1));
+		}
+		else
+		{
+			UpdateDescriptors(pipeline);
 		}
 	}
 }
@@ -74,4 +73,25 @@ void VisualObject::UpdateCenter(const Resource* aModelRes)
 {
 	const Model* model = static_cast<const Model*>(aModelRes);
 	myGameObject.GetTransform().SetCenter(model->GetCenter());
+}
+
+void VisualObject::UpdateDescriptors(const Resource* aPipelineRes)
+{
+	// Since we got a new pipeline, time to replace
+	// descriptors, UBOs and adapters
+	myUniforms.clear();
+	myAdapters.clear();
+
+	const Pipeline* pipeline = static_cast<const Pipeline*>(aPipelineRes);
+	size_t descriptorCount = pipeline->GetDescriptorCount();
+	for (size_t i = 0; i < descriptorCount; i++)
+	{
+		const Descriptor& descriptor = pipeline->GetDescriptor(i);
+
+		myUniforms.push_back(make_shared<UniformBlock>(descriptor));
+		const string& adapterName = descriptor.GetUniformAdapter();
+		myAdapters.push_back(
+			UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
+		);
+	}
 }

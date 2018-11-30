@@ -46,7 +46,7 @@ void Texture::FreeTextMem()
 	myPixels = nullptr;
 }
 
-void Texture::OnLoad()
+void Texture::OnLoad(AssetTracker& anAssetTracker)
 {
 	const string basePath = "assets/textures/";
 	myPixels = LoadFromDisk(basePath + myPath, myFormat, myWidth, myHeight);

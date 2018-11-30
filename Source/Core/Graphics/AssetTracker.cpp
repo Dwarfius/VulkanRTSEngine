@@ -9,6 +9,9 @@ AssetTracker::AssetTracker()
 
 void AssetTracker::ProcessQueues()
 {
+	// TODO: split IO and CPU<=>GPU transfer on to GPU master-thread and game tasks thread.
+	// This way we can have better control of when resources are allowed to be created, and
+	// will remove IO part from the GPU master thread
 	ProcessReleases();
 	ProcessLoads();
 	ProcessUploads();
@@ -50,7 +53,7 @@ void AssetTracker::ProcessLoads()
 		}
 		Resource* resource = loadItem.Get();
 		// TODO: good candidate for multithreading
-		resource->Load();
+		resource->Load(*this);
 		if (resource->GetState() == Resource::State::PendingUpload)
 		{
 			myUploadQueue.push(loadItem);

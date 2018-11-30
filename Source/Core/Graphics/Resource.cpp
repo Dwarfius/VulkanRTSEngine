@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "Resource.h"
 
+// TODO: move it to IO
 bool Resource::ReadFile(const string& aPath, string& aContents)
 {
 	// opening at the end allows us to know size quickly
@@ -28,20 +29,18 @@ Resource::Resource(Id anId, const string& aPath)
 	, myState(State::Invalid)
 	, myPath(aPath)
 	, myGPUResource(nullptr)
-	, myOnLoadCB(nullptr)
-	, myOnUploadCB(nullptr)
-	, myOnDestroyCB(nullptr)
 {
 }
 
 Resource::~Resource()
 {
-	myOnDestroyCB(this);
-}
-
-const vector<Handle<Resource>>& Resource::GetDependencies() const
-{
-	return myDependencies;
+	if (myOnDestroyCBs.size())
+	{
+		for (const Callback& destroyCB : myOnDestroyCBs)
+		{
+			destroyCB(this);
+		}
+	}
 }
 
 void Resource::SetErrMsg(string&& anErrString)
@@ -53,21 +52,31 @@ void Resource::SetErrMsg(string&& anErrString)
 #endif
 }
 
-void Resource::Load()
+void Resource::Load(AssetTracker& anAssetTracker)
 {
-	OnLoad();
-	if (myOnLoadCB)
+	OnLoad(anAssetTracker);
+	if (myOnLoadCBs.size())
 	{
-		myOnLoadCB(this);
+		for (const Callback& loadCB : myOnLoadCBs)
+		{
+			loadCB(this);
+		}
+		myOnLoadCBs.clear();
+		myOnLoadCBs.shrink_to_fit();
 	}
 }
 
 void Resource::Upload(GPUResource* aResource)
 {
 	OnUpload(aResource);
-	if (myOnUploadCB)
+	if (myOnUploadCBs.size())
 	{
-		myOnUploadCB(this);
+		for (const Callback& uploadCB : myOnUploadCBs)
+		{
+			uploadCB(this);
+		}
+		myOnUploadCBs.clear();
+		myOnUploadCBs.shrink_to_fit();
 	}
 }
 

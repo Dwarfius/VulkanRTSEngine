@@ -81,21 +81,8 @@ void Game::Init()
 	VisualObject* vo;
 
 	Handle<Model> cubeModel = myAssetTracker.GetOrCreate<Model>("cube.obj");
-	// TODO: move this info to .ppl file
-	Handle<Pipeline> defPipeline = myAssetTracker.Create<Pipeline>();
-	Handle<Shader> defVert = myAssetTracker.GetOrCreate<Shader>("assets/GLShaders/base.vert");
-	Handle<Shader> defFrag = myAssetTracker.GetOrCreate<Shader>("assets/GLShaders/base.frag");
-	defPipeline->AddShader(defVert);
-	defPipeline->AddShader(defFrag);
-
-	Descriptor descriptor("UniformAdapter");
-	descriptor.SetUniformType(0, UniformType::Mat4);
-	descriptor.SetUniformType(1, UniformType::Mat4);
-	descriptor.RecomputeSize();
-	defPipeline->AddDescriptor(move(descriptor));
-
-	defPipeline->SetState(Resource::State::PendingUpload);
 	// ==========================
+	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("wireframe.png");
 

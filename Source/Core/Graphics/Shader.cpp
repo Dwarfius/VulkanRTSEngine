@@ -12,7 +12,7 @@ Shader::Shader(Resource::Id anId, const string& aPath)
 {
 }
 
-void Shader::OnLoad()
+void Shader::OnLoad(AssetTracker& anAssetTracker)
 {
 	// first determine the type of shader based on file extension
 	// currently only vertex and fragment shaders are supported
@@ -36,6 +36,9 @@ void Shader::OnLoad()
 		SetErrMsg("Failed to read file!");
 		return;
 	}
+
+	// TODO: add a similar to .ppl file that contains paths to correct
+	// shader files (GLSL/SPIR-V)
 
 	myState = State::PendingUpload;
 }

@@ -1,11 +1,36 @@
 # by Daniel Prihodko
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.11)
 project (Core LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
+
+include(FetchContent)
 
 find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
 find_package(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
+
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG        v3.4.0
+)
+
+FetchContent_GetProperties(nlohmann_json)
+if(NOT nlohmann_json_POPULATED)
+	FetchContent_Populate(nlohmann_json)
+	# Since we grab a particular version, we know that it
+	# is stable, so we can get rid of tests and other bits
+	set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
+	set(JSON_Coverage OFF CACHE BOOL "" FORCE)
+	set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
+	set(JSON_NoExceptions ON CACHE BOOL "" FORCE)
+	set(JSON_Sanitizer OFF CACHE BOOL "" FORCE)
+	set(JSON_Valgrind OFF CACHE BOOL "" FORCE)
+
+	# Removes extra generated projects
+	set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+	add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
+endif()
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Camera.cpp" "Camera.h"
@@ -64,11 +89,12 @@ target_include_directories(${PROJECT_NAME}
 		${GLFW_INCLUDE_DIR}
 	PRIVATE 
 		Extra
-#		${GLFW_INCLUDE_DIR} TODO: look into hiding it Core
+		# ${GLFW_INCLUDE_DIR} TODO: look into hiding it Core
 )
 
 target_link_libraries(${PROJECT_NAME} 
 	${GLFW_LIBRARIES} 
 	${TBB_IMPORTED_TARGETS} 
 	${EXTRA_LIBS}
+	nlohmann_json::nlohmann_json
 )

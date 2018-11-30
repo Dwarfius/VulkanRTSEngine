@@ -1,0 +1,14 @@
+{  
+	"type":0,
+	"vert":"assets/GLShaders/base.vert",
+	"frag":"assets/GLShaders/base.frag",
+	"descriptors":[  
+		{  
+			"adapter":"UniformAdapter",
+			"members":[  
+				"Mat4",
+				"Mat4"
+			]
+		}
+	]
+}

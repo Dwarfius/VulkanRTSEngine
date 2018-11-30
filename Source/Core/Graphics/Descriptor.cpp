@@ -1,6 +1,47 @@
 #include "Precomp.h"
 #include "Descriptor.h"
 
+#include <nlohmann/json.hpp>
+
+bool Descriptor::FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc)
+{
+	using json = nlohmann::json;
+
+	const json& adapterHandle = jsonHandle["adapter"];
+	if (!adapterHandle.is_string())
+		return false;
+	string adapterName = adapterHandle.get<string>();
+
+	const json& uniformArrayHandle = jsonHandle["members"];
+	if (!uniformArrayHandle.is_array())
+		return false;
+	size_t uniformCount = uniformArrayHandle.size();
+
+	aDesc = Descriptor(adapterName);
+	for (size_t i = 0; i < uniformCount; i++)
+	{
+		// TODO: once uniform types stabilize, need to remove string parsing
+		string uniformTypeName = uniformArrayHandle.at(i);
+		if (uniformTypeName == "Mat4")
+		{
+			aDesc.SetUniformType(i, UniformType::Mat4);
+		}
+		else
+		{
+			ASSERT_STR(false, "Not supported!");
+			return false;
+		}
+	}
+	aDesc.RecomputeSize();
+
+	return true;
+}
+
+Descriptor::Descriptor()
+	: Descriptor("")
+{
+}
+
 Descriptor::Descriptor(const string& anAdapterName)
 	: myTotalSize(0)
 	, myUniformAdapter(anAdapterName)

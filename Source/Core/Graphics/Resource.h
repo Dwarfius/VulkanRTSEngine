@@ -106,25 +106,21 @@ public:
 	Id GetId() const { return myId; }
 	const string& GetPath() const { return myPath; }
 
-	// collects dependency Ids into the queue
-	const vector<Handle<Resource>>& GetDependencies() const;
-
 	State GetState() const { return myState; }
 	void SetState(State aNewState) { myState = aNewState; }
 
+	const vector<Handle<Resource>>& GetDependencies() const { return myDependencies; }
 	const GPUResource& GetGPUResource() const { return *myGPUResource; }
 
+	// TODO: add DebugAsserts for scheduling callbacks during AssetTracker::Process time
 	// Sets the callback to call when the object finishes loading from disk
-	void SetOnLoadCB(Callback aOnLoadCB) { myOnLoadCB = aOnLoadCB; }
+	void AddOnLoadCB(Callback aOnLoadCB) { myOnLoadCBs.push_back(aOnLoadCB); }
 	// Sets the callback to call when the object finishes uploading to GPU
-	void SetOnUploadCB(Callback aOnUploadCB) { myOnUploadCB = aOnUploadCB; }
+	void AddOnUploadCB(Callback aOnUploadCB) { myOnUploadCBs.push_back(aOnUploadCB); }
 	// Sets the callback to call when the object gets destroyed
-	void SetOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCB = aOnDestroyCB; }
+	void AddOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
 protected:
-	// A list of all items that this resource depended on. Will be released on destructor call
-	vector<Handle<Resource>> myDependencies;
-
 	// Current state of the resource
 	State myState;
 	string myPath;
@@ -138,6 +134,7 @@ protected:
 	string myErrString;
 #endif
 
+	vector<Handle<Resource>> myDependencies;
 	// AssetTracker will set this for the upload
 	GPUResource* myGPUResource;
 
@@ -145,7 +142,7 @@ private:
 	// ============================
 	// AssetTracker support
 	friend class AssetTracker;
-	void Load();
+	void Load(AssetTracker& anAssetTracker);
 	void Upload(GPUResource* aResource);
 	void Unload();
 	// ============================
@@ -158,12 +155,12 @@ private:
 	// ============================
 
 	// This is strictly for interacting with files!
-	virtual void OnLoad() = 0;
+	virtual void OnLoad(AssetTracker& assetTracker) = 0;
 	// This is for interacting with the GPU
 	virtual void OnUpload(GPUResource* aResource) = 0;
 
 	Id myId;
-	Callback myOnLoadCB;
-	Callback myOnUploadCB;
-	Callback myOnDestroyCB;
+	vector<Callback> myOnLoadCBs;
+	vector<Callback> myOnUploadCBs;
+	vector<Callback> myOnDestroyCBs;
 };

@@ -45,7 +45,7 @@ public:
 	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
 
 private:
-	void OnLoad() override;
+	void OnLoad(AssetTracker& anAssetTracker) override;
 	void OnUpload(GPUResource* aGPURes) override;
 
 	Type myType;

@@ -50,4 +50,5 @@ private:
 	GameObject& myGameObject;
 
 	void UpdateCenter(const Resource* aModelRes);
+	void UpdateDescriptors(const Resource* aPipelineRes);
 };

@@ -85,7 +85,7 @@ Handle<AssetType> AssetTracker::Create()
 
 	// set up the onDestroy callback, so that we can clean up 
 	// the registry and assets containters when it gets removed
-	asset->SetOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
+	asset->AddOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
 
 	Handle<AssetType> handle(asset);
 
@@ -132,7 +132,7 @@ Handle<AssetType> AssetTracker::GetOrCreate(string aPath)
 
 		// set up the onDestroy callback, so that we can clean up 
 		// the registry and assets containters when it gets removed
-		asset->SetOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
+		asset->AddOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
 
 		// adding it to the queue of loading, since we know that it'll be loaded from file
 		myLoadQueue.push(asset);

@@ -30,7 +30,7 @@ void Model::SetData(vector<Vertex>&& aVerts, vector<IndexType>&& aIndices,
 	myState = State::PendingUpload;
 }
 
-void Model::OnLoad()
+void Model::OnLoad(AssetTracker& anAssetTracker)
 {
 	ASSERT_STR(myState == State::Invalid, "Double load detected!");
 

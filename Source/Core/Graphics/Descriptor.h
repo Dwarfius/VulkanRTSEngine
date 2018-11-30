@@ -2,6 +2,8 @@
 
 #include "GraphicsTypes.h"
 
+#include <nlohmann/json_fwd.hpp>
+
 // TODO: might be a good idea to use unpack-CRTP to write a fully static-compiled descriptors
 // might help save on the memory access logic, and let compiler optimize the access better
 
@@ -16,6 +18,10 @@
 class Descriptor
 {
 public:
+	static bool FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc);
+
+public:
+	Descriptor();
 	Descriptor(const string& anAdapterName);
 
 	// Marks the slot to be used storing a uniform of specific type

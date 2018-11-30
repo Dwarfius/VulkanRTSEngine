@@ -60,7 +60,7 @@ public:
 
 private:
 	// Processes an .obj file in folder "assets/objects/".
-	void OnLoad() override;
+	void OnLoad(AssetTracker& anAssetTracker) override;
 	// Uploads to GPU
 	void OnUpload(GPUResource* aGPURes) override;
 

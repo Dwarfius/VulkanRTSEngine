@@ -39,6 +39,6 @@ protected:
 	string myFileContents;
 
 private:
-	void OnLoad() override;
+	void OnLoad(AssetTracker& anAssetTracker) override;
 	void OnUpload(GPUResource* aGPUResource) override;
 };
