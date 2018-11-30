@@ -23,7 +23,7 @@ Audio files were found here:
  * http://soundbible.com/1326-Tank-Firing.html
  * http://soundbible.com/1467-Grenade-Explosion.html
 
-Game Video
+Test Video
 ==========
 
 A minigame implemented using the engine, where the player has to drive around the tank, shoot down enemy tanks while avoiding getting touched by others. If caught, the game ends, and the amount of destroyed tanks is the final score.
