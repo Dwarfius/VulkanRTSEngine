@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.11)
 project (Core LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
+# TODO: provide a switch per project to download binaries only or sources
 include(FetchContent)
 
 find_package(GLFW REQUIRED)
@@ -38,7 +39,7 @@ FetchContent_Declare(
 )
 
 FetchContent_GetProperties(glm)
-if(NOT json_POPULATED)
+if(NOT glm_POPULATED)
 	FetchContent_Populate(glm)
 	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif()

@@ -3,13 +3,32 @@ cmake_minimum_required (VERSION 3.8)
 project (Engine LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
+include(FetchContent)
+
 # use this for https://github.com/ocornut/imgui and others, potentially
-# https://stackoverflow.com/questions/38006584/how-to-clone-and-integrate-external-from-git-cmake-project-into-local-one
 
 find_package(Vulkan REQUIRED) 
 find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
 find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
+
+# we're going to grab a fork of glew which has proper CMakeLists and headers generated
+FetchContent_Declare(
+	glew
+	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake
+	GIT_TAG        6dbc9407729d653e4d254b772c66af138b00617c # tag for 2.1.0 mirror
+)
+
+FetchContent_GetProperties(glew)
+if(NOT glew_POPULATED)
+	FetchContent_Populate(glew)
+
+	# enable our configuration
+	set(glew-cmake_BUILD_STATIC ON CACHE BOOL "" FORCE)
+	set(glew-cmake_BUILD_SINGLE_CONTEXT ON CACHE BOOL "" FORCE)
+	set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+	set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE BOOL "" FORCE)
+	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
+endif()
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Audio.cpp" "Audio.h"
@@ -71,7 +90,6 @@ target_include_directories(${PROJECT_NAME}
 		. 
 	PRIVATE 
 		${OPENGL_INCLUDE_DIR} 
-		${GLEW_INCLUDE_DIR} 
 		${Vulkan_INCLUDE_DIR} 
 		${ALUT_INCLUDE_DIRS}
 )
@@ -80,7 +98,7 @@ target_link_libraries(${PROJECT_NAME}
 	Core 
 	Physics 
 	${OPENGL_LIBRARY} 
-	${GLEW_LIBRARY} 
+	libglew_static # TODO: generalize this
 	${Vulkan_LIBRARY} 
 	${ALUT_LIBRARIES}
 )

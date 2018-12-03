@@ -7,9 +7,9 @@ Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fe
 * CMake will fetch and configure for you:
 	* [JSON for Modern C++ by Niels Lohmann](https://github.com/nlohmann/json)
 	* [GLM](https://glm.g-truc.net)
+	* [GLEW](http://glew.sourceforge.net/) will be grabbed from a [cmake fork](https://github.com/Perlmint/glew-cmake)
 * For now you'll need to manually grab:
 	* [VulkanSDK by LunarG](https://www.lunarg.com/)
-	* [GLEW](http://glew.sourceforge.net/)
 	* [GLFW](https://www.glfw.org/)
 	* [OpenAL](https://www.openal.org/)
 	* [freealut](https://github.com/vancegroup/freealut)
