@@ -16,8 +16,6 @@ Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fe
 	* [freealut](https://github.com/vancegroup/freealut)
 	* [Bullet3](https://github.com/bulletphysics/bullet3)
 
-Intel TBB can be fast found using TBB_ROOT_DIR entry.
-
 Tank model was found on Unity Asset Store (https://www.assetstore.unity3d.com/en/#!/content/46209)
 Audio files were found here:
  * https://www.freesound.org/people/joshuaempyre/sounds/251461/
