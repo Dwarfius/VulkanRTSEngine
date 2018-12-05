@@ -6,18 +6,44 @@ set (CMAKE_CXX_STANDARD 17)
 # TODO: provide a switch per project to download binaries only or sources
 include(FetchContent)
 
-find_package(GLFW REQUIRED)
-find_package(TBB REQUIRED) # https://github.com/01org/tbb/tree/tbb_2018/cmake
+FetchContent_Declare(
+	tbb
+	GIT_REPOSITORY	https://github.com/01org/tbb
+	GIT_TAG			2019_U3	
+)
+
+FetchContent_GetProperties(tbb)
+if(NOT tbb_POPULATED)
+	FetchContent_Populate(tbb)
+
+	# Intel doesn't provide a proper CMakeLists, only TBBBuild.cmake script
+	# which requires us to have gmake on win32... to avoid requiring it
+	# we provide our own CMakeLists.txt
+	file(COPY ../../cmake/TBB-CMakeLists.txt
+		DESTINATION ${tbb_SOURCE_DIR}
+	)
+	file(RENAME ${tbb_SOURCE_DIR}/TBB-CMakeLists.txt
+		${tbb_SOURCE_DIR}/CMakeLists.txt)
+
+	set(TBB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+	set(TBB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+	set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL "" FORCE)
+	set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL "" FORCE)
+	set(TBB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+	add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
+endif()
 
 FetchContent_Declare(
 	nlohmann_json
-	GIT_REPOSITORY https://github.com/nlohmann/json
-	GIT_TAG        v3.4.0
+	GIT_REPOSITORY	https://github.com/nlohmann/json
+	GIT_TAG			v3.4.0
 )
 
 FetchContent_GetProperties(nlohmann_json)
 if(NOT nlohmann_json_POPULATED)
 	FetchContent_Populate(nlohmann_json)
+
 	# Since we grab a particular version, we know that it
 	# is stable, so we can get rid of tests and other bits
 	set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
@@ -42,6 +68,25 @@ FetchContent_GetProperties(glm)
 if(NOT glm_POPULATED)
 	FetchContent_Populate(glm)
 	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
+endif()
+
+FetchContent_Declare(
+	glfw
+	GIT_REPOSITORY https://github.com/glfw/glfw
+	GIT_TAG 3.2.1
+)
+
+FetchContent_GetProperties(glfw)
+if(NOT glfw_POPULATED)
+	FetchContent_Populate(glfw)
+
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+	set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+	set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+	set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+	add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
 set(SRC "Precomp.cpp" "Precomp.h"
@@ -98,16 +143,16 @@ target_compile_definitions(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
 	PUBLIC 
 		. 
-		${GLFW_INCLUDE_DIR}
 	PRIVATE 
 		Extra
-		# ${GLFW_INCLUDE_DIR} TODO: look into hiding it Core
 )
 
+# TODO: use https://cmake.org/cmake/help/latest/prop_tgt/FOLDER.html to
+# better organize the projects in IDE
 target_link_libraries(${PROJECT_NAME} 
-	${GLFW_LIBRARIES} 
-	${TBB_IMPORTED_TARGETS} 
 	${EXTRA_LIBS}
 	glm
 	nlohmann_json::nlohmann_json
+	tbb_static # TODO: will need to generalize it
+	glfw
 )

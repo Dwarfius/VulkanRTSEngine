@@ -31,13 +31,4 @@ if (MSVC)
 	else()
 		message(FATAL_ERROR "ALUT_ROOT_DIR not set, can't copy ALUT dlls")
 	endif()
-	# This is annoying, have to manually copy the the tbb dlls
-	set(TBB_DLL_PATH "${TBB_DIR}/../bin/intel64/vc14")
-	if(EXISTS "${TBB_DLL_PATH}/")
-		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-					COMMAND ${CMAKE_COMMAND} -E copy
-					$<$<CONFIG:Debug>:"${TBB_DLL_PATH}/tbb_debug.dll">$<$<NOT:$<CONFIG:Debug>>:"${TBB_DLL_PATH}/tbb.dll"> "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-	else()
-		message(FATAL_ERROR "TBB_DIR not set, can't copy TBB dlls") 
-	endif()
 endif()
