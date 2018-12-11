@@ -156,8 +156,6 @@ target_include_directories(${PROJECT_NAME}
 		Extra
 )
 
-# TODO: use https://cmake.org/cmake/help/latest/prop_tgt/FOLDER.html to
-# better organize the projects in IDE
 target_link_libraries(${PROJECT_NAME} 
 	${EXTRA_LIBS}
 	glm
