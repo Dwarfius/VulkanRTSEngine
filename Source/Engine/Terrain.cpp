@@ -98,8 +98,6 @@ float Terrain::GetHeight(glm::vec3 pos) const
 	x = glm::clamp(x, 0.f, myWidth - 2.f);
 	y = glm::clamp(y, 0.f, myHeight - 2.f);
 
-	// printf("[Info] %f %f for (%f, %f), where start (%f, %f)\n", x, y, pos.x, pos.z, center.x, center.z);
-
 	// getting the actual vert indices
 	int xMin = static_cast<int>(floor(x));
 	int xMax = xMin + 1;

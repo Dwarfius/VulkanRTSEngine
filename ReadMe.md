@@ -10,11 +10,11 @@ Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fe
 	* [GLEW](http://glew.sourceforge.net/) will be grabbed from a [cmake fork](https://github.com/Perlmint/glew-cmake)
 	* [Intel's TBB](https://github.com/01org/tbb)
 	* [GLFW](https://www.glfw.org/)
+	* [Bullet3](https://github.com/bulletphysics/bullet3)
 * For now you'll need to manually grab:
 	* [VulkanSDK by LunarG](https://www.lunarg.com/)
 	* [OpenAL](https://www.openal.org/)
 	* [freealut](https://github.com/vancegroup/freealut)
-	* [Bullet3](https://github.com/bulletphysics/bullet3)
 
 Tank model was found on Unity Asset Store (https://www.assetstore.unity3d.com/en/#!/content/46209)
 Audio files were found here:

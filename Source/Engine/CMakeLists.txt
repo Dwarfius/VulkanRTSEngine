@@ -27,8 +27,12 @@ if(NOT glew_POPULATED)
 	set(glew-cmake_BUILD_SINGLE_CONTEXT ON CACHE BOOL "" FORCE)
 	set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 	set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE BOOL "" FORCE)
+
+	set(CMAKE_FOLDER GLEW)
 	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
 endif()
+
+set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Audio.cpp" "Audio.h"

@@ -3,7 +3,36 @@ cmake_minimum_required (VERSION 3.8)
 project (Physics LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
-find_package(BULLET REQUIRED)
+include(FetchContent)
+
+FetchContent_Declare(
+	bullet3
+	GIT_REPOSITORY	https://github.com/bulletphysics/bullet3
+	GIT_TAG			4a66d6c80b38a87ecbdf2fd5c4d281f0b5913d22
+)
+
+FetchContent_GetProperties(bullet3)
+if(NOT bullet3_POPULATED)
+	FetchContent_Populate(bullet3)
+
+	set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+	set(BUILD_BULLET3 ON CACHE BOOL "" FORCE)
+	set(BUILD_CLSOCKET OFF CACHE BOOL "" FORCE)
+	set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
+	set(BUILD_ENET OFF CACHE BOOL "" FORCE)
+	set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+	set(BUILD_OPENGL3_DEMOS OFF CACHE BOOl "" FORCE)
+	set(BUILD_PYBULLET OFF CACHE BOOL "" FORCE)
+	set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+
+	set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
+	set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
+
+	set(CMAKE_FOLDER Bullet3)
+	add_subdirectory(${bullet3_SOURCE_DIR} ${bullet3_BINARY_DIR})
+endif()
+
+set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"PhysicsEntity.cpp" "PhysicsEntity.h"
@@ -21,15 +50,20 @@ if (MSVC)
    set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
 endif(MSVC)
 
-# do this trick later, so that consumers have to write #include <libname/...>:
+# TODO: do this trick later, so that consumers have to write #include <libname/...>:
 # target_include_directories(libname INTERFACE include PRIVATE include/libname)
 target_include_directories(${PROJECT_NAME} 
 	PUBLIC 
 		.
-		${BULLET_INCLUDE_DIRS}
+		# Bullet3 include dependencies, since they're not included in the target
+		# TODO: should check when bullet3 reverts the target_include_directories PR in git repo
+		${bullet3_SOURCE_DIR}/src
 )
 
 target_link_libraries(${PROJECT_NAME} 
 	Core 
-	${BULLET_LIBRARIES}
+	BulletDynamics
+	BulletCollision
+	LinearMath
+	# BulletSoftBody
 )

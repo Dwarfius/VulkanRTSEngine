@@ -31,6 +31,7 @@ if(NOT tbb_POPULATED)
 	set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL "" FORCE)
 	set(TBB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
+	set(CMAKE_FOLDER ThreadBuildingBlocks)
 	add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
 endif()
 
@@ -67,7 +68,13 @@ FetchContent_Declare(
 FetchContent_GetProperties(glm)
 if(NOT glm_POPULATED)
 	FetchContent_Populate(glm)
+	set(CMAKE_FOLDER GLM)
 	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
+
+	# in CMake 3.13 has an issue where it skips custom_targets for CMAKE_FOLDER var
+	# https://gitlab.kitware.com/cmake/cmake/issues/18372
+	# So have to do it manually
+	set_property(TARGET uninstall PROPERTY FOLDER GLM)
 endif()
 
 FetchContent_Declare(
@@ -88,6 +95,8 @@ if(NOT glfw_POPULATED)
 
 	add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
+
+set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Camera.cpp" "Camera.h"
