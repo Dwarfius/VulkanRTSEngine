@@ -17,7 +17,9 @@
 #include <memory>
 #include <any>
 
+#ifdef USE_AUDIO
 #include <AL/alut.h>
+#endif
 
 #define GLEW_STATIC
 #include <GL/glew.h>

@@ -9,7 +9,6 @@ include(FetchContent)
 
 find_package(Vulkan REQUIRED) 
 find_package(OpenGL REQUIRED)
-find_package(ALUT REQUIRED) # FindALUT.cmake from https://github.com/rpavlik/cmake-modules/blob/master/FindALUT.cmake
 
 # we're going to grab a fork of glew which has proper CMakeLists and headers generated
 FetchContent_Declare(
@@ -30,6 +29,28 @@ if(NOT glew_POPULATED)
 
 	set(CMAKE_FOLDER GLEW)
 	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
+endif()
+
+if(VENGINE_BUILD_WITH_AUDIO)
+	# freealut is old, last commit was June 2014
+	FetchContent_Declare(
+		alut
+		GIT_REPOSITORY https://github.com/vancegroup/freealut
+		GIT_TAG		   fc814e316c2bfa6e05b723b8cc9cb276da141aae
+	)
+	FetchContent_GetProperties(alut)
+	if(NOT alut_POPULATED)
+		FetchContent_Populate(alut)
+
+		set(OPENAL_INCLUDE_DIR ${openal_SOURCE_DIR}/include CACHE PATH "" FORCE)
+
+		set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+		set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+		set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+		set(CMAKE_FOLDER Alut)
+		add_subdirectory(${alut_SOURCE_DIR} ${alut_BINARY_DIR})
+	endif()
 endif()
 
 set(CMAKE_FOLDER "")
@@ -87,6 +108,7 @@ source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 
 		GLFW_INCLUDE_VULKAN
+		$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:USE_AUDIO>
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -95,14 +117,14 @@ target_include_directories(${PROJECT_NAME}
 	PRIVATE 
 		${OPENGL_INCLUDE_DIR} 
 		${Vulkan_INCLUDE_DIR} 
-		${ALUT_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} 
 	Core 
 	Physics 
-	${OPENGL_LIBRARY} 
+	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:OpenAL>
 	libglew_static # TODO: generalize this
+	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:alut_static>
+	${OPENGL_LIBRARY} 
 	${Vulkan_LIBRARY} 
-	${ALUT_LIBRARIES}
 )

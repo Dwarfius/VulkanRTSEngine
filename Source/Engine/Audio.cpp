@@ -2,6 +2,7 @@
 #include "Audio.h"
 #include "Transform.h"
 
+#ifdef USE_AUDIO
 float Audio::ourVolume = 0.2f;
 vector<ALuint> Audio::ourBuffers;
 vector<Audio::AudioSource> Audio::ourSources;
@@ -156,3 +157,4 @@ void Audio::CheckError(uint32_t aLine)
 		printf("[Error] ALUT error at %d: %s\n", aLine, alutGetErrorString(error));
 	}
 }
+#endif
