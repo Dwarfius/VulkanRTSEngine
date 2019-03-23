@@ -1,11 +1,12 @@
 #include "Precomp.h"
+
+#ifdef USE_VULKAN
+
 #include "GraphicsVK.h"
 #include "Camera.h"
 #include "Game.h"
 #include "Terrain.h"
 #include "VisualObject.h"
-
-#ifndef DISABLE_VULKAN
 
 const vector<const char *> GraphicsVK::ourRequiredLayers = {
 #ifdef _DEBUG
@@ -1633,4 +1634,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsVK::DebugCallback(VkDebugReportFlagsEXT f
 	return VK_FALSE;
 }
 
-#endif
+#endif // USE_VULKAN

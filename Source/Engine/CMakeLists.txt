@@ -7,7 +7,10 @@ include(FetchContent)
 
 # use this for https://github.com/ocornut/imgui and others, potentially
 
-find_package(Vulkan REQUIRED) 
+if(VENGINE_BUILD_WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+endif() 
+
 find_package(OpenGL REQUIRED)
 
 # we're going to grab a fork of glew which has proper CMakeLists and headers generated
@@ -82,8 +85,10 @@ set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/UniformBufferGL.cpp" "Graphics/GL/UniformBufferGL.h"
 )
 
-set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
-)
+if(VENGINE_BUILD_WITH_VULKAN)
+	set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
+	)
+endif()
 
 add_library(${PROJECT_NAME} STATIC 
 	${SRC} 
@@ -103,12 +108,15 @@ source_group("" FILES ${SRC})
 source_group(Components FILES ${SRC_COMP})
 source_group(Graphics FILES ${SRC_GRAPHICS})
 source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
-source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
+if(VENGINE_BUILD_WITH_VULKAN)
+	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
+endif()
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 
 		GLFW_INCLUDE_VULKAN
 		$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:USE_AUDIO>
+		$<$<BOOL:${VENGINE_BUILD_WITH_VULKAN}>:USE_VULKAN>
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -126,5 +134,5 @@ target_link_libraries(${PROJECT_NAME}
 	libglew_static # TODO: generalize this
 	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:alut_static>
 	${OPENGL_LIBRARY} 
-	${Vulkan_LIBRARY} 
+	$<$<BOOL:${VENGINE_BUILD_WITH_VULKAN}>:${Vulkan_LIBRARY}>
 )

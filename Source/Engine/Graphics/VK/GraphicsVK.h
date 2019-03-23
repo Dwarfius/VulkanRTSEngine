@@ -1,10 +1,9 @@
 #pragma once
 
+#ifdef USE_VULKAN
+
 #include "Graphics/Graphics.h"
 #include "RWBuffer.h"
-
-#define DISABLE_VULKAN
-#ifndef DISABLE_VULKAN
 
 class Camera;
 class GameObject;
@@ -197,4 +196,4 @@ private:
 		void* aUserData);
 };
 
-#endif
+#endif // USE_VULKAN

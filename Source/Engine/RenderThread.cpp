@@ -24,14 +24,14 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 {
 	myIsUsingVulkan = anUseVulkan;
 
-#ifndef DISABLE_VULKAN
+#ifdef USE_VULKAN
 	if (myIsUsingVulkan)
 	{
 		myGraphics = make_unique<GraphicsVK>();
 		Game::GetInstance()->GetCamera()->InvertProj();
 	}
 	else
-#endif
+#endif // USE_VULKAN
 	{
 		myGraphics = make_unique<GraphicsGL>(anAssetTracker);
 		anAssetTracker.SetGPUAllocator(myGraphics.get());
@@ -82,7 +82,7 @@ void RenderThread::SubmitRenderables()
 		ASSERT_STR(glfwGetCurrentContext(), "Missing current GL context!");
 	}
 	
-#ifndef DISABLE_VULKAN
+#ifdef USE_VULKAN
 	if (myNeedsSwitch)
 	{
 		// TODO: replace with Init call
@@ -108,7 +108,7 @@ void RenderThread::SubmitRenderables()
 
 		myNeedsSwitch = false;
 	}
-#endif
+#endif // USE_VULKAN
 
 	myGraphics->ResetRenderCalls();
 
