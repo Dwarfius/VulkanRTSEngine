@@ -120,7 +120,11 @@ void Game::Init()
 
 	// player
 	go = Instantiate();
-	go->AddComponent(new EditorMode());
+	{
+		EditorMode* comp = new EditorMode();
+		comp->SetPhysWorld(myPhysWorld);
+		go->AddComponent(comp);
+	}
 
 	// setting up a task tree
 	{

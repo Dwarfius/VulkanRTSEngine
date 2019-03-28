@@ -26,6 +26,17 @@ public:
 
 	void Simulate(float aDeltaTime);
 
+	// Makes a raycast and returns the closest hit, if there is one
+	bool RaycastClosest(glm::vec3 aFrom, glm::vec3 aDir, float aDist, PhysicsEntity*& aHitEntity) const;
+	// Makes a raycast and returns the closest hit, if there is one
+	bool RaycastClosest(glm::vec3 aFrom, glm::vec3 aTo, PhysicsEntity*& aHitEntity) const;
+
+	// TODO: use stack-allocated aligned vector to match up with btAlignedArray
+	// Makes a raycast and returns all the hits
+	bool Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, vector<PhysicsEntity*>& anAllHits) const;
+	// Makes a raycast and returns all the hits
+	bool Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*>& anAllHits) const;
+
 	// TODO: refactor this away
 	const vector<PosColorVertex>& GetDebugLineCache() const;
 
@@ -55,6 +66,12 @@ private:
 private:
 	friend class PhysicsEntity;
 	void EnqueueCommand(const PhysicsCommand* aCmd);
+
+#ifdef ASSERT_MUTEX
+	// Assert locks to ensure safety of stepping the world
+	// and related operations
+	mutable AssertRWMutex mySimulationMutex;
+#endif
 
 	// all command handlers
 private:

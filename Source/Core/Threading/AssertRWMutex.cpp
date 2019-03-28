@@ -20,13 +20,13 @@ void AssertRWMutex::LockWrite()
 	unsigned char currVal = myLock.fetch_or(writeVal);
 	if (currVal) // if any of the bits are set, then a reader write/read-lock is active
 	{
-		string msg = "Contention! Thread ";
-		basic_stringstream<string::value_type> stream(msg);
+		basic_stringstream<string::value_type> stream;
+		stream << "Contention! Thread ";
 		stream << this_thread::get_id();
 		stream << " tried to lock mutex for write (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 	myWriteThreadId = this_thread::get_id();
 }
@@ -38,13 +38,13 @@ void AssertRWMutex::UnlockWrite()
 	unsigned char currVal = myLock.fetch_xor(writeVal);
 	if (currVal != writeVal)
 	{
-		string msg = "Magic! Thread ";
-		basic_stringstream<string::value_type> stream(msg);
+		basic_stringstream<string::value_type> stream;
+		stream << "Magic! Thread ";
 		stream << this_thread::get_id();
 		stream << " tried to unlock mutex for write (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 	myWriteThreadId = thread::id();
 }
@@ -56,13 +56,13 @@ void AssertRWMutex::LockRead()
 	unsigned char currVal = myLock.fetch_add(1);
 	if (currVal & writeVal)
 	{
-		string msg = "Contention! Thread ";
-		basic_stringstream<string::value_type> stream(msg);
+		basic_stringstream<string::value_type> stream;
+		stream << "Contention! Thread ";
 		stream << this_thread::get_id();
 		stream << " tried to lock mutex for read (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 	myLastReadThreadId = this_thread::get_id();
 }
@@ -73,13 +73,13 @@ void AssertRWMutex::UnlockRead()
 	unsigned char currVal = myLock.fetch_sub(1);
 	if (currVal == 0)
 	{
-		string msg = "Magic! Thread ";
-		basic_stringstream<string::value_type> stream(msg);
+		basic_stringstream<string::value_type> stream;
+		stream << "Magic! Thread ";
 		stream << this_thread::get_id();
 		stream << " tried to unlock mutex for read (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 	// check whether we have just removed the last read lock
 	if (currVal == 1)

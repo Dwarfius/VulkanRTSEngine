@@ -96,6 +96,10 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 {
 	ASSERT(myBody);
 
+	// TODO: we have AssertRWMutex of myWorld available, except
+	// that we can set these properties before the it was
+	// added to world... need to check how it can be ammended
+
 	// convert to bullet and cache it
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
 }
@@ -113,7 +117,7 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Can't apply forces to static object!");
+	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
 	ASSERT(!Utils::IsNan(aForce));
 
 	const btVector3 force = Utils::ConvertToBullet(aForce);
@@ -125,7 +129,7 @@ void PhysicsEntity::AddForce(glm::vec3 aForce)
 void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Static object can't have velocity!");
+	ASSERT_STR(!myIsStatic, "Static objects can't have velocity!");
 	ASSERT(!Utils::IsNan(aVelocity));
 
 	const btVector3 velocity = Utils::ConvertToBullet(aVelocity);
@@ -134,7 +138,7 @@ void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
 }
 
 void PhysicsEntity::SetCollisionFlags(int aFlagSet)
-{ 
+{
 	myBody->setCollisionFlags(aFlagSet); 
 }
 

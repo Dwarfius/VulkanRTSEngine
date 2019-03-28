@@ -32,7 +32,7 @@ public:
 	~AssertWriteLock();
 
 private:
-	AssertRWMutex & myMutex;
+	AssertRWMutex& myMutex;
 };
 
 // A locker utility that implements RAII on AssertRWMutex for read

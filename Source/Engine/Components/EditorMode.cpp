@@ -6,6 +6,15 @@
 
 #include "Camera.h"
 
+#include <PhysicsEntity.h>
+#include <PhysicsWorld.h>
+
+EditorMode::EditorMode()
+	: ComponentBase()
+	, myPhysWorld(nullptr)
+{
+}
+
 void EditorMode::Update(float aDeltaTime)
 {
 	// FPS camera implementation
@@ -54,4 +63,18 @@ void EditorMode::Update(float aDeltaTime)
 	const glm::quat yawRot(glm::radians(yawDelta));
 
 	camTransf.SetRotation(yawRot * camTransf.GetRotation() * pitchRot);
+
+	if (Input::GetMouseBtnPressed(0))
+	{
+		ASSERT(myPhysWorld);
+		glm::vec3 from = camTransf.GetPos();
+		glm::vec3 dir = camTransf.GetForward();
+		PhysicsEntity* physEntity;
+		// Will trigger an assert!
+		if (myPhysWorld->RaycastClosest(from, dir, 100.f, physEntity))
+		{
+			
+			physEntity->AddForce(dir * 10.f);
+		}
+	}
 }

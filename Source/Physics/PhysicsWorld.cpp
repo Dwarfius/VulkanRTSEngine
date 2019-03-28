@@ -6,7 +6,8 @@
 
 #include "Utils.h"
 
-#include <BulletCollision\CollisionShapes\btTriangleShape.h>
+#include <BulletCollision/CollisionShapes/btTriangleShape.h>
+#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
 PhysicsWorld::PhysicsWorld()
 {
@@ -68,11 +69,81 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 	// simulation in order to accuratly call PrePhysicsFrame and PrePhysicsStep, otherwise they might
 	// get called when simulation doesn't step
 	PrePhysicsFrame();
-	// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
-	// the simulation, but it will update the motion states, thus achieving interpolation
-	myWorld->stepSimulation(aDeltaTime, MaxSteps, FixedStepLength);
-	myWorld->debugDrawWorld();
+
+	{
+#ifdef ASSERT_MUTEX
+		AssertWriteLock writeLock(mySimulationMutex);
+#endif
+		// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
+		// the simulation, but it will update the motion states, thus achieving interpolation
+		myWorld->stepSimulation(aDeltaTime, MaxSteps, FixedStepLength);
+		myWorld->debugDrawWorld();
+	}
+
 	PostPhysicsFrame();
+}
+
+bool PhysicsWorld::RaycastClosest(glm::vec3 aFrom, glm::vec3 aDir, float aDist, PhysicsEntity*& aHitEntity) const
+{
+	glm::vec3 to = aFrom + aDir * aDist;
+	return RaycastClosest(aFrom, to, aHitEntity);
+}
+
+bool PhysicsWorld::RaycastClosest(glm::vec3 aFrom, glm::vec3 aTo, PhysicsEntity*& aHitEntity) const
+{
+	const btVector3 from = Utils::ConvertToBullet(aFrom);
+	const btVector3 to = Utils::ConvertToBullet(aTo);
+
+	btCollisionWorld::ClosestRayResultCallback closestCollector(from, to);
+	// by defalt we don't want hits with backface triangles
+	closestCollector.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	{
+#ifdef ASSERT_MUTEX
+		AssertReadLock readLock(mySimulationMutex);
+#endif
+		myWorld->rayTest(from, to, closestCollector);
+	}
+
+	if (closestCollector.hasHit())
+	{
+		aHitEntity = static_cast<PhysicsEntity*>(closestCollector.m_collisionObject->getUserPointer());
+		return true;
+	}
+	return false;
+}
+
+bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, vector<PhysicsEntity*>& anAllHits) const
+{
+	glm::vec3 to = aFrom + aDir * aDist;
+	return Raycast(aFrom, to, anAllHits);
+}
+
+bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*>& anAllHits) const
+{
+	const btVector3 from = Utils::ConvertToBullet(aFrom);
+	const btVector3 to = Utils::ConvertToBullet(aTo);
+
+	btCollisionWorld::AllHitsRayResultCallback allCollector(from, to);
+	// by defalt we don't want hits with backface triangles
+	allCollector.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	{
+#ifdef ASSERT_MUTEX
+		AssertReadLock readLock(mySimulationMutex);
+#endif
+		myWorld->rayTest(from, to, allCollector);
+	}
+	if (allCollector.hasHit())
+	{
+		const btAlignedObjectArray<const btCollisionObject*>& hits = allCollector.m_collisionObjects;
+		const int hitCount = hits.size();
+		anAllHits.resize(hitCount);
+		for (int i = 0; i < hitCount; i++)
+		{
+			anAllHits[i] = static_cast<PhysicsEntity*>(hits[i]->getUserPointer());
+		}
+		return true;
+	}
+	return false;
 }
 
 const vector<PosColorVertex>& PhysicsWorld::GetDebugLineCache() const

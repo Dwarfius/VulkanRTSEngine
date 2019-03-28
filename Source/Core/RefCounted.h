@@ -1,6 +1,9 @@
 #pragma once
 
+#ifdef ASSERT_MUTEX
 #define HANDLE_HEAVY_DEBUG
+#endif
+
 #ifdef HANDLE_HEAVY_DEBUG
 #include "Threading/AssertRWMutex.h"
 #endif
