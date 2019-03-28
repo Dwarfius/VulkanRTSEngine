@@ -11,11 +11,11 @@ Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fe
 	* [Intel's TBB](https://github.com/01org/tbb)
 	* [GLFW](https://www.glfw.org/)
 	* [Bullet3](https://github.com/bulletphysics/bullet3)
-* For now you'll need to manually grab:
-	* [VulkanSDK by LunarG](https://www.lunarg.com/)
 * Optional:
 	* [freealut](https://github.com/vancegroup/freealut) - Requires [OpenAL](https://www.openal.org/)
 		* Controlled by VENGINE_BUILD_WITH_AUDIO
+	* [VulkanSDK by LunarG](https://www.lunarg.com/) - allows to use Vulkan as alternative rendering backend
+		* Controlled by VENGINE_BUILD_WITH_VULKAN
 
 Tank model was found on Unity Asset Store (https://www.assetstore.unity3d.com/en/#!/content/46209)
 Audio files were found here:
