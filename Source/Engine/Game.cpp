@@ -9,9 +9,9 @@
 #include "GameObject.h"
 #include "Terrain.h"
 
-#include <PhysicsWorld.h>
-#include <PhysicsEntity.h>
-#include <PhysicsShapes.h>
+#include <Physics/PhysicsWorld.h>
+#include <Physics/PhysicsEntity.h>
+#include <Physics/PhysicsShapes.h>
 
 #include "VisualObject.h"
 #include "Components/EditorMode.h"

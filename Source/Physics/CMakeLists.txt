@@ -8,7 +8,7 @@ include(FetchContent)
 FetchContent_Declare(
 	bullet3
 	GIT_REPOSITORY	https://github.com/bulletphysics/bullet3
-	GIT_TAG			4a66d6c80b38a87ecbdf2fd5c4d281f0b5913d22
+	GIT_TAG			0e232578552065e7a8576582174cdc63ca05f377
 )
 
 FetchContent_GetProperties(bullet3)
@@ -46,18 +46,19 @@ source_group("" FILES ${SRC})
 
 add_library(${PROJECT_NAME} STATIC ${SRC})
 if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
-   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
+	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
+	set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
 endif(MSVC)
 
-# TODO: do this trick later, so that consumers have to write #include <libname/...>:
-# target_include_directories(libname INTERFACE include PRIVATE include/libname)
 target_include_directories(${PROJECT_NAME} 
-	PUBLIC 
+	PRIVATE 
 		.
+	PUBLIC
 		# Bullet3 include dependencies, since they're not included in the target
 		# TODO: should check when bullet3 reverts the target_include_directories PR in git repo
 		${bullet3_SOURCE_DIR}/src
+	INTERFACE
+		.. # to force user to write <Physics/...>
 )
 
 target_link_libraries(${PROJECT_NAME} 

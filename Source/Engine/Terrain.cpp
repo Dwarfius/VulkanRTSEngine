@@ -1,9 +1,10 @@
 #include "Precomp.h"
 #include "Terrain.h"
 
-#include "PhysicsEntity.h"
-#include "PhysicsShapes.h"
+#include <Physics/PhysicsEntity.h>
+#include <Physics/PhysicsShapes.h>
 
+// TODO: write own header for collision object flags
 #include <BulletCollision\CollisionDispatch\btCollisionObject.h>
 
 #include "Graphics/Texture.h"

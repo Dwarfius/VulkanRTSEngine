@@ -6,8 +6,8 @@
 
 #include "Camera.h"
 
-#include <PhysicsEntity.h>
-#include <PhysicsWorld.h>
+#include <Physics/PhysicsEntity.h>
+#include <Physics/PhysicsWorld.h>
 
 EditorMode::EditorMode()
 	: ComponentBase()

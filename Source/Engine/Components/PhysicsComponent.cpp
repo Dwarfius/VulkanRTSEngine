@@ -3,8 +3,8 @@
 
 #include "../Game.h"
 
-#include "PhysicsEntity.h"
-#include "PhysicsWorld.h"
+#include <Physics/PhysicsEntity.h>
+#include <Physics/PhysicsWorld.h>
 
 PhysicsComponent::PhysicsComponent()
 	: myEntity(nullptr)
