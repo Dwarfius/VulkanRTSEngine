@@ -1,6 +1,6 @@
 #include "Precomp.h"
 
-#include "Debug/Assert.h"
+#include <Core/Debug/Assert.h>
 
 namespace Utils
 {

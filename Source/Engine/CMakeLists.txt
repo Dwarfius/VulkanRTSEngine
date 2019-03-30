@@ -120,11 +120,12 @@ target_compile_definitions(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-	PUBLIC 
-		. 
 	PRIVATE 
+		.
 		${OPENGL_INCLUDE_DIR} 
 		${Vulkan_INCLUDE_DIR} 
+	INTERFACE
+		..
 )
 
 target_link_libraries(${PROJECT_NAME} 

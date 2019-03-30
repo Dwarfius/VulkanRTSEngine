@@ -5,7 +5,7 @@
 #include "Graphics/VK/GraphicsVK.h"
 #include "Input.h"
 #include "Game.h"
-#include "Camera.h"
+#include <Core/Camera.h>
 #include "VisualObject.h"
 
 RenderThread::RenderThread()

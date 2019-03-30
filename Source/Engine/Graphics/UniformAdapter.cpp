@@ -1,8 +1,8 @@
 #include "Precomp.h"
 #include "UniformAdapter.h"
 
-#include "Camera.h"
-#include "Graphics/UniformBlock.h"
+#include <Core/Camera.h>
+#include <Core/Graphics/UniformBlock.h>
 #include "VisualObject.h"
 
 UniformAdapter::UniformAdapter(const GameObject& aGO, const VisualObject& aVO)

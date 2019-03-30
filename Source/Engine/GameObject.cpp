@@ -1,10 +1,10 @@
 #include "Precomp.h"
 #include "GameObject.h"
 #include "Game.h"
-#include "Graphics/Graphics.h"
-#include "Transform.h"
 #include "VisualObject.h"
 
+#include <Core/Graphics/Graphics.h>
+#include <Core/Transform.h>
 #include "Components/ComponentBase.h"
 
 GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)

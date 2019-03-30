@@ -5,7 +5,7 @@
 #include "PhysicsShapes.h"
 #include "PhysicsCommands.h"
 
-#include "Utils.h"
+#include <Core/Utils.h>
 
 PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
 	: myShape(aShape)

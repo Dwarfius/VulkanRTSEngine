@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IGPUAllocator.h"
-#include "RefCounted.h"
+#include "../RefCounted.h"
 
 // Class for handling different resource types using the same interface. 
 // Threadsafe

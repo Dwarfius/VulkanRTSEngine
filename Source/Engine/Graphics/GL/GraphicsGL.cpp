@@ -1,17 +1,18 @@
 #include "Precomp.h"
 #include "GraphicsGL.h"
-#include "Camera.h"
+
 #include "Terrain.h"
 #include "VisualObject.h"
-
-#include "Graphics/AssetTracker.h"
 #include "Graphics/UniformAdapter.h"
 #include "ShaderGL.h"
 #include "PipelineGL.h"
 #include "ModelGL.h"
 #include "TextureGL.h"
 #include "UniformBufferGL.h"
+
 #include <sstream>
+#include <Core/Camera.h>
+#include <Core/Graphics/AssetTracker.h>
 
 #ifdef _DEBUG
 #define DEBUG_GL_CALLS
@@ -249,13 +250,14 @@ void GraphicsGL::Display()
 
 			// binding uniform blocks to according slots
 			size_t blockCount = pipeline->GetUBOCount();
+			ASSERT_STR(blockCount < numeric_limits<uint32_t>::max(), "Index of UBO block doesn't fit for binding!");
 			for (size_t i = 0; i < blockCount; i++)
 			{
 				// TODO: implement logic that doesn't rebind same slots:
 				// If pipeline A has X, Y, Z uniform blocks
 				// and pipeline B has X, V, W,
 				// if we bind from A to B (or vice versa), no need to rebind
-				pipeline->GetUBO(i).Bind(i);
+				pipeline->GetUBO(i).Bind(static_cast<uint32_t>(i));
 			}
 		}
 

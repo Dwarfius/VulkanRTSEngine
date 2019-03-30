@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Graphics/Graphics.h"
-#include "Transform.h"
-#include "UID.h"
+#include <Core/Graphics/Graphics.h>
+#include <Core/Transform.h>
+#include <Core/UID.h>
 
 class VisualObject;
 class ComponentBase;

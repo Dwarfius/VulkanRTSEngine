@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Graphics/Graphics.h>
+#include <Core/Graphics/Graphics.h>
 #include "ModelGL.h"
 #include "PipelineGL.h"
 #include "TextureGL.h"

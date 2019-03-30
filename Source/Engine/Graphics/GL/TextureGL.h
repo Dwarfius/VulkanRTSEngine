@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Texture.h"
+#include <Core/Graphics/Texture.h>
 
 class TextureGL : public GPUResource
 {

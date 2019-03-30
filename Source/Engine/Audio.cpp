@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "Audio.h"
-#include "Transform.h"
+
+#include <Core/Transform.h>
 
 #ifdef USE_AUDIO
 float Audio::ourVolume = 0.2f;

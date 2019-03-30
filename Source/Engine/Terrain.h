@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Model.h"
+#include <Core/Graphics/Model.h>
 
 class PhysicsEntity;
 class PhysicsShapeHeightfield;

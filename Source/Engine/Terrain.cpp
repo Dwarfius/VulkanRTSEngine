@@ -7,8 +7,8 @@
 // TODO: write own header for collision object flags
 #include <BulletCollision\CollisionDispatch\btCollisionObject.h>
 
-#include "Graphics/Texture.h"
-#include "Graphics/AssetTracker.h"
+#include <Core/Graphics/Texture.h>
+#include <Core/Graphics/AssetTracker.h>
 
 Terrain::Terrain()
 	: myModel()

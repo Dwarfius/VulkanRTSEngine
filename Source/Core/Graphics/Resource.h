@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RefCounted.h"
+#include "../RefCounted.h"
 
 // Base class for resources on the GPU.
 class GPUResource

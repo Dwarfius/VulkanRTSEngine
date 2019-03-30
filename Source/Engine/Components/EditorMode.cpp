@@ -4,7 +4,7 @@
 #include "../Game.h"
 #include "../Input.h"
 
-#include "Camera.h"
+#include <Core/Camera.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>

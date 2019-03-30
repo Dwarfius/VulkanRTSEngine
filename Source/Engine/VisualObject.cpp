@@ -1,10 +1,11 @@
 #include "Precomp.h"
 #include "VisualObject.h"
-#include "GameObject.h"
 
+#include "GameObject.h"
 #include "Graphics/UniformAdapter.h"
-#include "Graphics/UniformBlock.h"
 #include "Graphics/UniformAdapterRegister.h"
+
+#include <Core/Graphics/UniformBlock.h>
 
 VisualObject::VisualObject(GameObject& aGO)
 	: myGameObject(aGO)

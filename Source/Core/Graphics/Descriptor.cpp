@@ -9,22 +9,29 @@ bool Descriptor::FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc)
 
 	const json& adapterHandle = jsonHandle["adapter"];
 	if (!adapterHandle.is_string())
+	{
 		return false;
+	}
+
 	string adapterName = adapterHandle.get<string>();
 
 	const json& uniformArrayHandle = jsonHandle["members"];
 	if (!uniformArrayHandle.is_array())
+	{
 		return false;
+	}
 	size_t uniformCount = uniformArrayHandle.size();
+	ASSERT_STR(uniformCount < numeric_limits<uint32_t>::max(), "Uniform index doesn't fit - will overlap!");
 
 	aDesc = Descriptor(adapterName);
+	
 	for (size_t i = 0; i < uniformCount; i++)
 	{
 		// TODO: once uniform types stabilize, need to remove string parsing
 		string uniformTypeName = uniformArrayHandle.at(i);
 		if (uniformTypeName == "Mat4")
 		{
-			aDesc.SetUniformType(i, UniformType::Mat4);
+			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Mat4);
 		}
 		else
 		{
@@ -104,7 +111,8 @@ void Descriptor::RecomputeSize()
 			myTotalSize += basicAlignment;
 		}
 		
-		myOffsets[i] = myTotalSize;
+		ASSERT_STR(myTotalSize < numeric_limits<uint32_t>::max(), "Descriptor size exceeding allowed!");
+		myOffsets[i] = static_cast<uint32_t>(myTotalSize);
 		myTotalSize += elemSize;
 	}
 }
@@ -131,5 +139,6 @@ size_t Descriptor::GetSlotSize(uint32_t aSlot) const
 		break;
 	default:
 		ASSERT_STR(false, "Unrecognized Uniform Type found!");
+		return 0;
 	}
 }

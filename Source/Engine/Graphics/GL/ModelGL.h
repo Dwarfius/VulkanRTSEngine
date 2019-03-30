@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Graphics/Model.h>
+#include <Core/Graphics/Model.h>
 
 // TODO: create templated version of functions for different Vertex types
 class ModelGL : public GPUResource

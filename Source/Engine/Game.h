@@ -2,8 +2,8 @@
 
 #include "GameTaskManager.h"
 #include "RenderThread.h"
-#include "UID.h"
-#include "Graphics/AssetTracker.h"
+#include <Core/UID.h>
+#include <Core/Graphics/AssetTracker.h>
 
 class GameObject;
 class Camera;

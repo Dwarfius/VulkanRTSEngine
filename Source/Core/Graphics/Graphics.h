@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <type_traits>
 
-#include "Vertex.h"
+#include "../Vertex.h"
 #include "Descriptor.h"
 #include "UniformBlock.h"
 #include "IGPUAllocator.h"

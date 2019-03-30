@@ -21,10 +21,11 @@ void PipelineGL::Bind()
 {
 	glUseProgram(myGLProgram);
 
+	ASSERT_STR(mySamplerUniforms.size() < numeric_limits<GLint>::max(), "Sampler index doesn't fit!");
 	// rebinding samplers to texture slots
 	for(size_t i=0; i<mySamplerUniforms.size(); i++)
 	{
-		glUniform1i(mySamplerUniforms[i], i);
+		glUniform1i(mySamplerUniforms[i], static_cast<GLint>(i));
 	}
 }
 
@@ -97,7 +98,7 @@ bool PipelineGL::Upload(any aDescriptor)
 		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
 		string uniformName;
 		uniformName.resize(maxNameLength + 1);
-		for (uint32_t i = 0; i < uniformCount; i++)
+		for (int i = 0; i < uniformCount; i++)
 		{
 			int uniformSize = 0;
 			uint32_t uniformType = 0;

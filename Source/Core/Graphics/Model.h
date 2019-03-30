@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Resource.h"
-#include "Vertex.h"
+#include "../Vertex.h"
 
 // A class representing a generic mesh, plus a couple utility methods to get info about the model.
 // Directly contstruct this class if you just need it on the CPU, otherwise use

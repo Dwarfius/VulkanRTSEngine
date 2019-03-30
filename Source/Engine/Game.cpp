@@ -1,13 +1,15 @@
 #include "Precomp.h"
 #include "Game.h"
-#include "Graphics/Graphics.h"
+
 #include "Graphics/UniformAdapterRegister.h"
 #include "Input.h"
 #include "Audio.h"
-#include "Camera.h"
 #include "Terrain.h"
 #include "GameObject.h"
 #include "Terrain.h"
+
+#include <Core/Graphics/Graphics.h>
+#include <Core/Camera.h>
 
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsEntity.h>

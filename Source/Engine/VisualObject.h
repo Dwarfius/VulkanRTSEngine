@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Transform.h"
-#include "RefCounted.h"
+#include <Core/Transform.h>
+#include <Core/RefCounted.h>
 
-#include "Graphics/Pipeline.h"
-#include "Graphics/Texture.h"
-#include "Graphics/Model.h"
+#include <Core/Graphics/Pipeline.h>
+#include <Core/Graphics/Texture.h>
+#include <Core/Graphics/Model.h>
 
 class UniformBlock;
 class GameObject;

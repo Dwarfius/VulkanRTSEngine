@@ -4,7 +4,7 @@
 
 #include "PhysicsCommands.h"
 
-#include "Graphics/Graphics.h"
+#include <Core/Graphics/Graphics.h>
 
 class PhysicsEntity;
 class btBroadphaseInterface;

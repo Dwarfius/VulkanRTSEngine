@@ -1,7 +1,7 @@
 #pragma once
 
 #include <LinearMath/btIDebugDraw.h>
-#include "Vertex.h"
+#include <Core/Vertex.h>
 
 // TODO: move this to private sources section
 // TODO: instead of caching all lines, it should work with a generic debug util

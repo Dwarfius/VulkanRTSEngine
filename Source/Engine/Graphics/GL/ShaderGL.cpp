@@ -42,8 +42,8 @@ bool ShaderGL::Upload(any aDescriptor)
 
 	ASSERT_STR(myGLShader, "Shader missing!");
 
-	const char* dataPtrs[] =	{ desc.myFileContents.data() };
-	int dataSizes[] =			{ desc.myFileContents.size() };
+	const char* dataPtrs[] = {						desc.myFileContents.data()   };
+	int dataSizes[] = {			static_cast<GLint>(	desc.myFileContents.size() ) };
 	glShaderSource(myGLShader, 1, dataPtrs, dataSizes);
 
 	glCompileShader(myGLShader);
