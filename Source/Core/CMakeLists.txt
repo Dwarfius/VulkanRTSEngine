@@ -100,6 +100,7 @@ set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Camera.cpp" "Camera.h"
+	"CRC32.h"
 	"Transform.cpp" "Transform.h"
 	"UID.cpp" "UID.h"
 	"RefCounted.cpp" "RefCounted.h"
@@ -124,7 +125,7 @@ set(SRC_GRAPHICS "Graphics/AssetTracker.cpp" "Graphics/AssetTracker.h"
 	"Graphics/UniformBlock.cpp" "Graphics/UniformBlock.h"
 )
 
-set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h"
+set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl" 
 )
 
 add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_GRAPHICS})

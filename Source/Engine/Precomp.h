@@ -24,11 +24,13 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 
+#ifdef USE_VULKAN
 // Forcing this define for 32bit typesafe conversions, as in
 // being able to construct c++ classes based of vulkan C handles
 // theoretically this is unsafe - check vulkan.hpp for more info
 #define VULKAN_HPP_TYPESAFE_CONVERSION
 #include <vulkan/vulkan.hpp>
+#endif
 
 #include <tbb/tbb.h>
 
