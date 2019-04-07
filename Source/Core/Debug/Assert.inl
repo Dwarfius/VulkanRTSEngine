@@ -10,8 +10,6 @@ namespace DebugImpl
 // the hash check and AssertDialog
 #define USE_DOUBLE_LOCK_IMPL
 
-	// TODO: add compile time hashing using crc32c 
-	// (https://stackoverflow.com/questions/10953958/can-crc32-be-used-as-a-hash-function)
 	template<uint32_t HashVal>
 	void AssertNotify(const char* anExpr, const char* aFile, int aLine, const char* aFmt, ...)
 	{
@@ -62,10 +60,10 @@ namespace DebugImpl
 			// before exiting, unlock the mutex so that it can get properly cleaned up
 			lock.release();
 			// using exit() instead of abort() to enable atexit() support that
-			// be used by 3rd party libraries
+			// can be used by 3rd party libraries
 			exit(-1);
 		}
-		else if (pickedAction == AssertAction::Continue)
+		else if (pickedAction == AssertAction::Ignore)
 		{
 			ignoreSet.insert(HashVal);
 		}

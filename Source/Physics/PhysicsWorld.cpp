@@ -10,6 +10,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
 PhysicsWorld::PhysicsWorld()
+	: myIsBeingStepped(false)
 {
 	myBroadphase = new btDbvtBroadphase();
 	myConfiguration = new btDefaultCollisionConfiguration();
@@ -68,19 +69,23 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 	// TODO: instead of relying on the internal time resolver, I should manually step
 	// simulation in order to accuratly call PrePhysicsFrame and PrePhysicsStep, otherwise they might
 	// get called when simulation doesn't step
-	PrePhysicsFrame();
+	PrePhysicsStep(aDeltaTime);
 
 	{
 #ifdef ASSERT_MUTEX
 		AssertWriteLock writeLock(mySimulationMutex);
 #endif
+
+		myIsBeingStepped = true;
 		// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
 		// the simulation, but it will update the motion states, thus achieving interpolation
 		myWorld->stepSimulation(aDeltaTime, MaxSteps, FixedStepLength);
+		myIsBeingStepped = false;
+
 		myWorld->debugDrawWorld();
 	}
 
-	PostPhysicsFrame();
+	PostPhysicsStep(aDeltaTime);
 }
 
 bool PhysicsWorld::RaycastClosest(glm::vec3 aFrom, glm::vec3 aDir, float aDist, PhysicsEntity*& aHitEntity) const
@@ -151,14 +156,25 @@ const vector<PosColorVertex>& PhysicsWorld::GetDebugLineCache() const
 	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetLineCache();
 }
 
-void PhysicsWorld::PrePhysicsFrame()
+void PhysicsWorld::AddPhysSystem(ISymCallbackListener* aSystem)
 {
-
+	myPhysSystems.push_back(aSystem);
 }
 
-void PhysicsWorld::PostPhysicsFrame()
+void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 {
+	for (ISymCallbackListener* system : myPhysSystems)
+	{
+		system->OnPrePhysicsStep(aDeltaTime);
+	}
+}
 
+void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
+{
+	for (ISymCallbackListener* system : myPhysSystems)
+	{
+		system->OnPostPhysicsStep(aDeltaTime);
+	}
 }
 
 // little macro helper for switch cases to reduce the length

@@ -16,6 +16,16 @@ class btDiscreteDynamicsWorld;
 class PhysicsWorld
 {
 public:
+	// A callback to support implementing per-world systems
+	// that want to provide physics simulation
+	class ISymCallbackListener
+	{
+	public:
+		virtual void OnPrePhysicsStep(float aDeltaTime) = 0;
+		virtual void OnPostPhysicsStep(float aDeltaTime) = 0;
+	};
+
+public:
 	PhysicsWorld();
 	~PhysicsWorld();
 
@@ -40,15 +50,20 @@ public:
 	// TODO: refactor this away
 	const vector<PosColorVertex>& GetDebugLineCache() const;
 
+	// Subscribes a system to Pre/PostPhys callbacks
+	// Not thread safe
+	void AddPhysSystem(ISymCallbackListener* aSystem);
+
 private:
 	const int MaxSteps = 4;
 	const float FixedStepLength = 1.f / 30.f;
 
 	// TODO: replace with u_map<UID, handle>
 	vector<shared_ptr<PhysicsEntity>> myEntities;
+	vector<ISymCallbackListener*> myPhysSystems;
 
-	void PrePhysicsFrame();
-	void PostPhysicsFrame();
+	void PrePhysicsStep(float aDeltaTime);
+	void PostPhysicsStep(float aDeltaTime);
 
 	btBroadphaseInterface* myBroadphase;
 	btDefaultCollisionConfiguration* myConfiguration;
@@ -57,6 +72,7 @@ private:
 	btDiscreteDynamicsWorld* myWorld;
 	
 	tbb::spin_mutex myCommandsLock;
+	std::atomic<bool> myIsBeingStepped;
 	// TODO: should probably have a reusable command cache, so that even it points to heap,
 	// it'll be layed out continuously - should make more cache friendly
 	vector<const PhysicsCommand*> myCommands;
@@ -66,6 +82,7 @@ private:
 private:
 	friend class PhysicsEntity;
 	void EnqueueCommand(const PhysicsCommand* aCmd);
+	bool IsStepping() const { return myIsBeingStepped; }
 
 #ifdef ASSERT_MUTEX
 	// Assert locks to ensure safety of stepping the world

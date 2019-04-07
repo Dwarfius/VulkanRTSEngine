@@ -19,10 +19,9 @@ namespace DebugImpl
 		{
 			action = AssertAction::Break;
 		}
-		else //if (pickedOpt == IDIGNORE)
+		else if (pickedOpt == IDIGNORE)
 		{
-			// TODO: need to add proper ignore error support!
-			action = AssertAction::Continue;
+			action = AssertAction::Ignore;
 		}
 		return action;
 	}

@@ -28,6 +28,7 @@ public:
 
 	bool IsStatic() const { return myIsStatic; }
 	bool IsDynamic() const { return !myIsStatic; } // declaring both for convenience
+	// TODO: add kinemitic object support
 	
 	State GetState() const { return myState; }
 	

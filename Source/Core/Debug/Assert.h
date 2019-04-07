@@ -33,7 +33,7 @@ namespace DebugImpl
 {
 	enum class AssertAction
 	{
-		Continue,
+		Ignore,
 		Break,
 		Exit
 	};

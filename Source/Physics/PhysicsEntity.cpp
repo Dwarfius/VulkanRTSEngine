@@ -87,7 +87,6 @@ glm::mat4 PhysicsEntity::GetTransformInterp() const
 	const btDefaultMotionState* motionState;
 	motionState = static_cast<const btDefaultMotionState*>(rigidBody->getMotionState());
 
-	// Note: m_graphicsWorldTrans might have CoM offset, but we don't provide one atm
 	return Utils::ConvertToGLM(motionState->m_graphicsWorldTrans);
 }
 
