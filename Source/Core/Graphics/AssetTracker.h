@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IGPUAllocator.h"
-#include "../RefCounted.h"
 
 // Class for handling different resource types using the same interface. 
 // Threadsafe
@@ -91,7 +90,7 @@ Handle<AssetType> AssetTracker::Create()
 
 	// add it to the queue of uploading
 	// the user will have to manually call Load on the Resource
-	myUploadQueue.push(handle.Get<Resource>());
+	myUploadQueue.push(handle.template Get<Resource>());
 
 	return handle;
 }

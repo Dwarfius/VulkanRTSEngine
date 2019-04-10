@@ -24,7 +24,7 @@ public:
 	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
 	~PhysicsEntity();
 
-	PhysicsEntity& PhysicsEntity::operator=(const PhysicsEntity&) = delete;
+	PhysicsEntity& operator=(const PhysicsEntity&) = delete;
 
 	bool IsStatic() const { return myIsStatic; }
 	bool IsDynamic() const { return !myIsStatic; } // declaring both for convenience

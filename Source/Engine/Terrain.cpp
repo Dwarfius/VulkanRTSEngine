@@ -5,7 +5,7 @@
 #include <Physics/PhysicsShapes.h>
 
 // TODO: write own header for collision object flags
-#include <BulletCollision\CollisionDispatch\btCollisionObject.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 
 #include <Core/Graphics/Texture.h>
 #include <Core/Graphics/AssetTracker.h>

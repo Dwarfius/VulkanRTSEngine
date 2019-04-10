@@ -178,7 +178,7 @@ void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 }
 
 // little macro helper for switch cases to reduce the length
-#define CALL_COMMAND_HANDLER(Type, Cmd) case PhysicsCommand::##Type: Type##Handler(static_cast<const PhysicsCommand##Type&>(Cmd)); break;
+#define CALL_COMMAND_HANDLER(Type, Cmd) case PhysicsCommand::Type: Type##Handler (static_cast<const PhysicsCommand##Type&>(Cmd)); break;
 void PhysicsWorld::ResolveCommands()
 {
 	tbb::spin_mutex::scoped_lock lock(myCommandsLock);

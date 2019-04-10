@@ -6,3 +6,10 @@ x64/
 
 # RenderDoc files used for saving testing configurations
 *.cap
+
+# VSCode - need to ignore everything except 
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json

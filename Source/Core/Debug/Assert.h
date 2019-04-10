@@ -6,11 +6,6 @@
 #	endif // _DEBUG
 #endif // ENABLE_ASSERTS
 
-#ifdef assert
-#	undef assert
-#	define assert(x) static_assert(false, "Don't use lowercase assert, use ASSERT(cond)");
-#endif
-
 #if defined(ENABLE_ASSERTS)
 
 // internal concatenation

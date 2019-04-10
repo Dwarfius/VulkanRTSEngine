@@ -55,5 +55,6 @@ UID::UID()
 
 void UID::GetString(char* string) const
 {
-	sprintf_s(string, 33, "%0.16zX%0.8X%0.8X\0", myMac, myTime, myRndNum);
+	sprintf(string, "%0.16zX%0.8X%0.8X", myMac, myTime, myRndNum);
+	string[32] = '\0';
 }

@@ -2,6 +2,8 @@
 
 #include "../RefCounted.h"
 
+class AssetTracker;
+
 // Base class for resources on the GPU.
 class GPUResource
 {

@@ -12,7 +12,7 @@ template<typename T, size_t Size>
 class RWBuffer
 {
 	using InternalBuffer = array<T, Size>;
-	using InternalIter = _Array_iterator<T, Size>;
+	using InternalIter = typename InternalBuffer::iterator;
 public:
 	// construct a buffer with first element default initialized
 	RWBuffer();
@@ -128,7 +128,7 @@ template<typename T>
 class RWBuffer<T, 2>
 {
 	using InternalBuffer = array<T, 2>;
-	using InternalIter = _Array_iterator<T, 2>;
+	using InternalIter = typename InternalBuffer::iterator;
 public:
 	// construct a buffer with first element default initialized
 	RWBuffer();
