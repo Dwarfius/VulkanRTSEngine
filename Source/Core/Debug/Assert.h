@@ -21,6 +21,8 @@
 // utility macro to execute code in assert-enabled environment
 #define DEBUG_ONLY(x) x FORCE_SEMICOLON
 
+// TODO: Need to expose callback points for triggering just before
+// the breakpoint, and potentially bringing up an info window
 // forward declaration of utility funcs
 namespace DebugImpl
 {
