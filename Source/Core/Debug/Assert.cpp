@@ -34,7 +34,17 @@ namespace DebugImpl
 #	elif defined(__APPLE__)
 static_assert(false, "Apple target not supported!");
 #	elif defined(__linux__)
-static_assert(false, "Linux target not supported!");
+	AssertAction ShowAssertDialog(const char* aTitle, const char* aMsg)
+	{
+		return AssertAction::Break;
+	}
+
+#include <signal.h>
+
+	void TriggerBreakpoint()
+	{
+		raise(SIGINT);
+	}
 #	endif // _WIN32 / __APPLE__ / __linux__
 }
 #endif // ENABLE_ASSERTS

@@ -1,17 +1,15 @@
 #pragma once
 
 #ifndef ENABLE_ASSERTS
-#	ifdef _DEBUG
+#	if !defined(NDEBUG)
 #		define ENABLE_ASSERTS
 #	endif // _DEBUG
 #endif // ENABLE_ASSERTS
 
 #if defined(ENABLE_ASSERTS)
 
-// internal concatenation
-#define CONCAT_IMPL(A, B) A ## B
 // internal concatenation that uses expanded macros
-#define CONCAT(A, B) CONCAT_IMPL(A, B)
+#define CONCAT(A, B) A B
 
 // internal stringifier
 #define STRINGIFY_IMPL(A) #A
