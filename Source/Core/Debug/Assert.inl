@@ -1,4 +1,6 @@
 #include <unordered_set>
+#include <cstdarg>
+#include <iostream>
 
 namespace DebugImpl
 {
@@ -31,24 +33,24 @@ namespace DebugImpl
 		{
 			va_list args;
 			va_start(args, aFmt);
-			vsnprintf_s(smallMsgBuffer, cSmallMsgSize, aFmt, args);
+			vsnprintf(smallMsgBuffer, cSmallMsgSize, aFmt, args);
 			va_end(args);
 		}
 		char fullMsg[cFullMsgSize + 1];
 		if (aFmt)
 		{
-			sprintf_s(fullMsg, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
+			sprintf(fullMsg, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
 		}
 		else
 		{
-			sprintf_s(fullMsg, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
+			sprintf(fullMsg, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
 		}
 
 #ifdef USE_DOUBLE_LOCK_IMPL
 		// to avoid popping 20 message boxes, halt other threads until this one resolves
 		lock.acquire(assertMutex);
 #endif
-		printf(fullMsg);
+		std::cout << fullMsg;
 
 		AssertAction pickedAction = ShowAssertDialog("Assert Failed!", fullMsg);
 		if (pickedAction == AssertAction::Break)

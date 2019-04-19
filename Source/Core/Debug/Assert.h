@@ -1,17 +1,15 @@
 #pragma once
 
 #ifndef ENABLE_ASSERTS
-#	ifdef _DEBUG
+#	if !defined(NDEBUG)
 #		define ENABLE_ASSERTS
 #	endif // _DEBUG
 #endif // ENABLE_ASSERTS
 
 #if defined(ENABLE_ASSERTS)
 
-// internal concatenation
-#define CONCAT_IMPL(A, B) A ## B
 // internal concatenation that uses expanded macros
-#define CONCAT(A, B) CONCAT_IMPL(A, B)
+#define CONCAT(A, B) A B
 
 // internal stringifier
 #define STRINGIFY_IMPL(A) #A
@@ -23,6 +21,8 @@
 // utility macro to execute code in assert-enabled environment
 #define DEBUG_ONLY(x) x FORCE_SEMICOLON
 
+// TODO: Need to expose callback points for triggering just before
+// the breakpoint, and potentially bringing up an info window
 // forward declaration of utility funcs
 namespace DebugImpl
 {

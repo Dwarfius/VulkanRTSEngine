@@ -1,8 +1,7 @@
 #pragma once
 
 #include "GraphicsTypes.h"
-
-class Descriptor;
+#include "Descriptor.h"
 
 // A class representing a single block of uniforms for submitting to the GPU.
 // Use:
