@@ -73,8 +73,7 @@ void EditorMode::Update(float aDeltaTime)
 		// Will trigger an assert!
 		if (myPhysWorld->RaycastClosest(from, dir, 100.f, physEntity))
 		{
-			
-			physEntity->AddForce(dir * 10.f);
+			physEntity->ScheduleAddForce(dir * 100.f);
 		}
 	}
 }

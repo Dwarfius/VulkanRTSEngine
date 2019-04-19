@@ -12,6 +12,7 @@ class Terrain;
 class PhysicsWorld;
 class PhysicsEntity;
 class PhysicsShapeBase;
+class PhysicsComponent;
 
 class Game
 {
@@ -88,7 +89,7 @@ private:
 
 	// temp
 	shared_ptr<PhysicsShapeBase> mySphereShape;
-	shared_ptr<PhysicsEntity> myBall;
+	PhysicsComponent* myBall;
 
 	// logging
 	void LogToFile(string aLine);

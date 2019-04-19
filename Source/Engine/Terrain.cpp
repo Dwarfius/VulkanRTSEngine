@@ -156,7 +156,7 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	return glm::mix(botNorm, topNorm, y);
 }
 
-shared_ptr<PhysicsEntity> Terrain::CreatePhysics()
+PhysicsEntity* Terrain::CreatePhysics()
 {
 	ASSERT_STR(myHeightsCache.empty(), "Terrain physics entity re-initialization");
 
@@ -175,7 +175,7 @@ shared_ptr<PhysicsEntity> Terrain::CreatePhysics()
 
 	shared_ptr<PhysicsShapeHeightfield> myShape = make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
-	shared_ptr<PhysicsEntity> myPhysicsEntity = make_shared<PhysicsEntity>(0.f, myShape, glm::mat4(1.f));
+	PhysicsEntity* myPhysicsEntity = new PhysicsEntity(0.f, myShape, glm::mat4(1.f));
 	myPhysicsEntity->SetCollisionFlags(myPhysicsEntity->GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 	return myPhysicsEntity;
 }

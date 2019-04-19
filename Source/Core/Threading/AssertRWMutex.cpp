@@ -34,6 +34,7 @@ void AssertRWMutex::LockWrite()
 void AssertRWMutex::UnlockWrite()
 {
 	// check whether we just unlocked an write-unlocked mutex
+	// (double unlock)
 	constexpr unsigned char writeVal = 1 << 7;
 	unsigned char currVal = myLock.fetch_xor(writeVal);
 	if (currVal != writeVal)

@@ -7,7 +7,6 @@
 class VisualObject;
 class ComponentBase;
 
-// TODO: need to split GameObject into Entity (logic and data) and Renderable(rendering)
 class GameObject
 {
 public:

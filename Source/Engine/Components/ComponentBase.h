@@ -7,10 +7,10 @@ class ComponentBase
 {
 public:
 	ComponentBase() : myOwner(nullptr) {}
+	virtual ~ComponentBase() {};
 
 	virtual void Init(GameObject* anOwner) { myOwner = anOwner; };
 	virtual void Update(float aDeltaTime) {};
-	virtual void Destroy() {};
 	virtual void OnCollideWithTerrain() {};
 	virtual void OnCollideWithGO(GameObject *other) {};
 

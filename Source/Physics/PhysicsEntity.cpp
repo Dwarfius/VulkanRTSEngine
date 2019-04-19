@@ -38,7 +38,8 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 	btCollisionShape* shape = myShape->GetShape();
 	if (!myIsStatic)
 	{
-		btDefaultMotionState* motionState = new btDefaultMotionState();
+		// TODO: replace with custom motion state that sets entity transform directly
+		btDefaultMotionState* motionState = new btDefaultMotionState(transf);
 		btVector3 localInertia(0, 0, 0);
 		shape->calculateLocalInertia(aMass, localInertia);
 		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, shape, localInertia);
@@ -103,15 +104,14 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
 }
 
-// TODO: move this out of the PhysicsEntity
-/*void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
+void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
 {
 	assert(myWorld);
 	assert(!Utils::IsNan(aForce));
 
 	const PhysicsCommandAddForce* cmd = new PhysicsCommandAddForce(this, aForce);
 	myWorld->EnqueueCommand(cmd);
-}*/
+}
 
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
@@ -119,9 +119,22 @@ void PhysicsEntity::AddForce(glm::vec3 aForce)
 	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
 	ASSERT(!Utils::IsNan(aForce));
 
+#ifdef ASSERT_MUTEX
+	if (myWorld)
+	{
+		AssertWriteLock lock(myWorld->mySimulationMutex);
+	}
+#endif
+
 	const btVector3 force = Utils::ConvertToBullet(aForce);
 	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
 	rigidBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	if (!rigidBody->isActive())
+	{
+		// Bullet doesn't automatically wake up on force application
+		// so have to do it manually
+		rigidBody->activate();
+	}
 }
 
 // TODO: add a command version of this
@@ -144,4 +157,10 @@ void PhysicsEntity::SetCollisionFlags(int aFlagSet)
 int PhysicsEntity::GetCollisionFlags() const 
 { 
 	return myBody->getCollisionFlags();
+}
+
+void PhysicsEntity::DeferDelete()
+{
+	ASSERT(myWorld);
+	myWorld->DeleteEntity(this);
 }

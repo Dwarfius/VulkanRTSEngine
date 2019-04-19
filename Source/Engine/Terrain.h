@@ -21,7 +21,7 @@ public:
 	glm::vec3 GetNormal(glm::vec3 pos) const;
 
 	// TODO: need to remove it from terrain class
-	shared_ptr<PhysicsEntity> CreatePhysics();
+	PhysicsEntity* CreatePhysics();
 
 	Handle<Model> GetModelHandle() const { return myModel; }
 

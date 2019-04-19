@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO: Refactor away debug drawer include
-
 #include "PhysicsCommands.h"
 
 #include <Core/Graphics/Graphics.h>
@@ -29,10 +27,12 @@ public:
 	PhysicsWorld();
 	~PhysicsWorld();
 
-	// Adds entity to the world - not thread safe
-	void AddEntity(weak_ptr<PhysicsEntity> anEntity);
-	// Removes entity from the world - not thread safe
-	void RemoveEntity(shared_ptr<PhysicsEntity> anEntity);
+	// Adds entity to the world - threadsafe
+	void AddEntity(PhysicsEntity* anEntity);
+	// Removes entity from the world - threadsafe
+	void RemoveEntity(PhysicsEntity* anEntity);
+	// Deletes entity and cleans up references - threadsafe
+	void DeleteEntity(PhysicsEntity* anEntity);
 
 	void Simulate(float aDeltaTime);
 
@@ -59,7 +59,7 @@ private:
 	const float FixedStepLength = 1.f / 30.f;
 
 	// TODO: replace with u_map<UID, handle>
-	vector<shared_ptr<PhysicsEntity>> myEntities;
+	vector<PhysicsEntity*> myEntities;
 	vector<ISymCallbackListener*> myPhysSystems;
 
 	void PrePhysicsStep(float aDeltaTime);
@@ -73,8 +73,9 @@ private:
 	
 	tbb::spin_mutex myCommandsLock;
 	std::atomic<bool> myIsBeingStepped;
-	// TODO: should probably have a reusable command cache, so that even it points to heap,
-	// it'll be layed out continuously - should make more cache friendly
+	// TODO: should probably have per-type reusable command caches, 
+	// so that even it points to heap, it'll be layed out continuously
+	// - should make more cache friendly
 	vector<const PhysicsCommand*> myCommands;
 
 	void ResolveCommands();
@@ -95,4 +96,5 @@ private:
 	void AddBodyHandler(const PhysicsCommandAddBody& aCmd);
 	void RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd);
 	void AddForceHandler(const PhysicsCommandAddForce& aCmd);
+	void DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd);
 };

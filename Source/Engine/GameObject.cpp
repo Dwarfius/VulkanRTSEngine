@@ -24,7 +24,6 @@ GameObject::~GameObject()
 
 	for (ComponentBase* comp : myComponents)
 	{
-		comp->Destroy();
 		delete comp;
 	}
 

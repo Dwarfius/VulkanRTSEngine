@@ -51,7 +51,7 @@ public:
 	void SetTransform(const glm::mat4& aTransf);
 
 	// Thread-safe: adds a force to the entity before the next simulation step
-	//void ScheduleAddForce(glm::vec3 aForce);
+	void ScheduleAddForce(glm::vec3 aForce);
 	// Not thread-safe: add a force immediatelly
 	void AddForce(glm::vec3 aForce);
 
@@ -63,6 +63,11 @@ public:
 	int GetCollisionFlags() const;
 
 	const PhysicsShapeBase& GetShape() const { return *myShape; }
+
+	// Method to schedule deletion of this entity
+	// after the world has finished simulating it and removes
+	// it from tracking
+	void DeferDelete();
 
 private:
 	friend class PhysicsWorld;

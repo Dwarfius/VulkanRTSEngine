@@ -118,7 +118,11 @@ void Game::Init()
 
 	// a sphere for testing
 	mySphereShape = make_shared<PhysicsShapeSphere>(1.f);
-	myBall = make_shared<PhysicsEntity>(1.f, mySphereShape, glm::mat4(1.f));
+	glm::mat4 transf = glm::translate(glm::vec3(0.f, 5.f, 0.f));
+	PhysicsEntity* ballEntity = new PhysicsEntity(1.f, mySphereShape, transf);
+	myBall = new PhysicsComponent();
+	myBall->SetPhysicsEntity(ballEntity);
+	myBall->RequestAddToWorld(*myPhysWorld);
 
 	// player
 	go = Instantiate();
@@ -204,7 +208,7 @@ void Game::CleanUp()
 	}
 
 	// physics clear
-	myBall.reset();
+	delete myBall;
 	delete myPhysWorld;
 
 	// we can mark that the engine is done - wrap the threads
@@ -284,21 +288,6 @@ void Game::Update()
 	for (const pair<UID, GameObject*>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
-	}
-
-	// experiment #2 - dynamic world addition-removal from different thread
-	if (myBall->GetState() == PhysicsEntity::NotInWorld)
-	{
-		// spawn the ball at the top
-		glm::mat4 transform = glm::translate(glm::vec3(0.f, 5.f, 0.f));
-		myBall->SetTransform(transform);
-		myBall->SetVelocity(glm::vec3());
-		myPhysWorld->AddEntity(myBall);
-	}
-	else if(myBall->GetState() == PhysicsEntity::InWorld && myBall->GetTransform()[3][1] < -5.f)
-	{
-		// despawn the ball
-		myPhysWorld->RemoveEntity(myBall);
 	}
 }
 

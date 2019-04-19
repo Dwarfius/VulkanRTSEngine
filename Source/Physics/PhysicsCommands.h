@@ -2,6 +2,8 @@
 
 class PhysicsEntity;
 
+// TODO: investigate to template it on a lambda, to reduce the 
+// amount of manual code writing
 struct PhysicsCommand
 {
 	// make sure to add handlers of the types to the PhysicsWorld!
@@ -11,6 +13,7 @@ struct PhysicsCommand
 		RemoveBody,
 		AddForce,
 		SetTranform,
+		DeleteBody,
 		Count
 	};
 
@@ -21,22 +24,29 @@ struct PhysicsCommand
 
 struct PhysicsCommandAddBody : PhysicsCommand
 {
-	explicit PhysicsCommandAddBody(weak_ptr<PhysicsEntity> anEntity);
+	explicit PhysicsCommandAddBody(PhysicsEntity* anEntity);
 
-	weak_ptr<PhysicsEntity> myEntity;
+	PhysicsEntity* myEntity;
 };
 
 struct PhysicsCommandRemoveBody : PhysicsCommand
 {
-	explicit PhysicsCommandRemoveBody(weak_ptr<PhysicsEntity> anEntity);
+	explicit PhysicsCommandRemoveBody(PhysicsEntity* anEntity);
 
-	weak_ptr<PhysicsEntity> myEntity;
+	PhysicsEntity* myEntity;
 };
 
 struct PhysicsCommandAddForce : PhysicsCommand
 {
-	explicit PhysicsCommandAddForce(weak_ptr<PhysicsEntity> anEntity, glm::vec3 aForce);
+	explicit PhysicsCommandAddForce(PhysicsEntity* anEntity, glm::vec3 aForce);
 
-	weak_ptr<PhysicsEntity> myEntity;
+	PhysicsEntity* myEntity;
 	glm::vec3 myForce;
+};
+
+struct PhysicsCommandDeleteBody : PhysicsCommand
+{
+	explicit PhysicsCommandDeleteBody(PhysicsEntity* anEntity);
+
+	PhysicsEntity* myEntity;
 };

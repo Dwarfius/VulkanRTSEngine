@@ -27,7 +27,14 @@ PhysicsWorld::PhysicsWorld()
 
 PhysicsWorld::~PhysicsWorld()
 {
-	for (const shared_ptr<PhysicsEntity>& entity : myEntities)
+	// first gonna pump through the delete/remove requests
+	// this will clear up the allocated requests and get rid
+	// of bodies that game doesn't need
+	ResolveCommands();
+
+	// everything that's left can be marked as outside of world
+	// if they want to be deleted later
+	for (PhysicsEntity* entity : myEntities)
 	{
 		entity->myState = PhysicsEntity::NotInWorld;
 	}
@@ -40,25 +47,33 @@ PhysicsWorld::~PhysicsWorld()
 	delete myBroadphase;
 }
 
-void PhysicsWorld::AddEntity(weak_ptr<PhysicsEntity> anEntity)
+void PhysicsWorld::AddEntity(PhysicsEntity* anEntity)
 {
-	ASSERT_STR(!anEntity.expired(), "Entity was removed before it could've been added to the world!");
-	shared_ptr<PhysicsEntity> entity = anEntity.lock();
-	ASSERT(entity->GetState() == PhysicsEntity::NotInWorld);
-	ASSERT(!entity->myWorld);
-	entity->myState = PhysicsEntity::PendingAddition;
+	ASSERT(anEntity->GetState() == PhysicsEntity::NotInWorld);
+	ASSERT(!anEntity->myWorld);
+	anEntity->myState = PhysicsEntity::PendingAddition;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandAddBody* cmd = new PhysicsCommandAddBody(anEntity);
 	EnqueueCommand(cmd);
 }
 
-void PhysicsWorld::RemoveEntity(shared_ptr<PhysicsEntity> anEntity)
+void PhysicsWorld::RemoveEntity(PhysicsEntity* anEntity)
 {
 	ASSERT(anEntity->GetState() == PhysicsEntity::InWorld);
 	ASSERT(anEntity->myWorld == this);
 	anEntity->myState = PhysicsEntity::PendingRemoval;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandRemoveBody* cmd = new PhysicsCommandRemoveBody(anEntity);
+	EnqueueCommand(cmd);
+}
+
+void PhysicsWorld::DeleteEntity(PhysicsEntity* anEntity)
+{
+	ASSERT(anEntity->GetState() == PhysicsEntity::InWorld);
+	ASSERT(anEntity->myWorld == this);
+	anEntity->myState = PhysicsEntity::PendingRemoval;
+	// TODO: get rid of allocs/deallocs by using an internal recycler
+	const PhysicsCommandDeleteBody* cmd = new PhysicsCommandDeleteBody(anEntity);
 	EnqueueCommand(cmd);
 }
 
@@ -190,6 +205,7 @@ void PhysicsWorld::ResolveCommands()
 			CALL_COMMAND_HANDLER(AddBody, cmdRef);
 			CALL_COMMAND_HANDLER(RemoveBody, cmdRef);
 			CALL_COMMAND_HANDLER(AddForce, cmdRef);
+			CALL_COMMAND_HANDLER(DeleteBody, cmdRef);
 			default: ASSERT(false);
 		}
 		// TODO: get rid of allocs/deallocs by using an internal recycler
@@ -207,12 +223,7 @@ void PhysicsWorld::EnqueueCommand(const PhysicsCommand* aCmd)
 
 void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 {
-	if (aCmd.myEntity.expired())
-	{
-		return;
-	}
-
-	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+	PhysicsEntity* entity = aCmd.myEntity;
 
 	ASSERT(!entity->myWorld);
 	ASSERT(entity->GetState() == PhysicsEntity::PendingAddition);
@@ -233,9 +244,7 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 
 void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 {
-	ASSERT_STR(!aCmd.myEntity.expired(), "Entity was removed before it could've been removed from the world!");
-
-	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+	PhysicsEntity* entity = aCmd.myEntity;
 
 	ASSERT(entity->myWorld == this);
 	ASSERT(entity->GetState() == PhysicsEntity::PendingRemoval);
@@ -266,17 +275,15 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 
 void PhysicsWorld::AddForceHandler(const PhysicsCommandAddForce& aCmd)
 {
-	if (aCmd.myEntity.expired())
-	{
-		return;
-	}
+	aCmd.myEntity->AddForce(aCmd.myForce);
+}
 
-	shared_ptr<PhysicsEntity> entity = aCmd.myEntity.lock();
+void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd)
+{
+	// remove it from the world first
+	PhysicsCommandRemoveBody remCmd(aCmd.myEntity);
+	RemoveBodyHandler(remCmd);
 
-	ASSERT_STR(!entity->myIsStatic, "Can't add force to static objects!");
-	// even though we check during scheduling, it's nice to do it here to maybe catch a corruption
-	ASSERT(!Utils::IsNan(aCmd.myForce)); 
-
-	const btVector3 force = Utils::ConvertToBullet(aCmd.myForce);
-	static_cast<btRigidBody*>(entity->myBody)->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	// now it's safe to delete it
+	delete aCmd.myEntity;
 }
