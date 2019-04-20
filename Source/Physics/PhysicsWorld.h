@@ -95,6 +95,5 @@ private:
 private:
 	void AddBodyHandler(const PhysicsCommandAddBody& aCmd);
 	void RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd);
-	void AddForceHandler(const PhysicsCommandAddForce& aCmd);
 	void DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd);
 };

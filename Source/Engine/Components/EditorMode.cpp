@@ -9,13 +9,7 @@
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
 
-EditorMode::EditorMode()
-	: ComponentBase()
-	, myPhysWorld(nullptr)
-{
-}
-
-void EditorMode::Update(float aDeltaTime)
+void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
 {
 	// FPS camera implementation
 	Camera* cam = Game::GetInstance()->GetCamera();
@@ -66,14 +60,13 @@ void EditorMode::Update(float aDeltaTime)
 
 	if (Input::GetMouseBtnPressed(0))
 	{
-		ASSERT(myPhysWorld);
 		glm::vec3 from = camTransf.GetPos();
 		glm::vec3 dir = camTransf.GetForward();
 		PhysicsEntity* physEntity;
 		// Will trigger an assert!
-		if (myPhysWorld->RaycastClosest(from, dir, 100.f, physEntity))
+		if (aWorld.RaycastClosest(from, dir, 100.f, physEntity))
 		{
-			physEntity->ScheduleAddForce(dir * 100.f);
+			physEntity->AddForce(dir * 100.f);
 		}
 	}
 }

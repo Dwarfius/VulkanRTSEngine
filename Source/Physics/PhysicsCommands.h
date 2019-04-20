@@ -11,7 +11,6 @@ struct PhysicsCommand
 	{
 		AddBody,
 		RemoveBody,
-		AddForce,
 		SetTranform,
 		DeleteBody,
 		Count
@@ -34,14 +33,6 @@ struct PhysicsCommandRemoveBody : PhysicsCommand
 	explicit PhysicsCommandRemoveBody(PhysicsEntity* anEntity);
 
 	PhysicsEntity* myEntity;
-};
-
-struct PhysicsCommandAddForce : PhysicsCommand
-{
-	explicit PhysicsCommandAddForce(PhysicsEntity* anEntity, glm::vec3 aForce);
-
-	PhysicsEntity* myEntity;
-	glm::vec3 myForce;
 };
 
 struct PhysicsCommandDeleteBody : PhysicsCommand

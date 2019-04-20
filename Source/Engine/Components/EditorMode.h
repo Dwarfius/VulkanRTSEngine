@@ -1,20 +1,13 @@
 #pragma once
 
-#include "ComponentBase.h"
-
 class PhysicsWorld;
 
-class EditorMode : public ComponentBase
+class EditorMode
 {
 public:
-	EditorMode();
-	void Update(float aDeltaTime) override;
-
-	void SetPhysWorld(const PhysicsWorld* aWorld) { myPhysWorld = aWorld; }
+	void Update(float aDeltaTime, const PhysicsWorld& aWorld) const;
 
 private:
 	const float myMouseSensitivity = 0.1f;
 	const float myFlightSpeed = 2.f;
-
-	const PhysicsWorld* myPhysWorld;
 };

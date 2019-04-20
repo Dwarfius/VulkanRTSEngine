@@ -20,13 +20,6 @@ PhysicsCommandRemoveBody::PhysicsCommandRemoveBody(PhysicsEntity* anEntity)
 {
 }
 
-PhysicsCommandAddForce::PhysicsCommandAddForce(PhysicsEntity* anEntity, glm::vec3 aForce)
-	: PhysicsCommand(PhysicsCommand::AddForce)
-	, myEntity(anEntity)
-	, myForce(aForce)
-{
-}
-
 PhysicsCommandDeleteBody::PhysicsCommandDeleteBody(PhysicsEntity* anEntity)
 	: PhysicsCommand(PhysicsCommand::DeleteBody)
 	, myEntity(anEntity)

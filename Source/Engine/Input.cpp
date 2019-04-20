@@ -2,6 +2,7 @@
 #include "Input.h"
 
 GLFWwindow* Input::ourWindow = nullptr;
+tbb::concurrent_queue<Input::InputMsg> Input::ourPendingMsgs;
 char Input::ourKbState[ourKeyCount];
 char Input::ourMState[ourMButtonCount];
 glm::vec2 Input::ourOldPos, Input::ourPos;
@@ -30,6 +31,27 @@ void Input::Update()
 {
 	ourOldPos = ourPos;
 	ourPos = GetMousePos();
+
+	InputMsg msg;
+	while (ourPendingMsgs.try_pop(msg))
+	{
+		if (msg.myIsKeyboard)
+		{
+			// avoid resetting repeat state
+			if (ourKbState[msg.myButton] != GLFW_REPEAT || msg.myNewState != GLFW_PRESS)
+			{
+				ourKbState[msg.myButton] = msg.myNewState;
+			}
+		}
+		else
+		{
+			// avoid resetting repeat state
+			if (ourMState[msg.myButton] != GLFW_REPEAT || msg.myNewState != GLFW_PRESS)
+			{
+				ourMState[msg.myButton] = msg.myNewState;
+			}
+		}
+	}
 }
 
 // This needs to be called at the end of the update loop - it gets around the slow repeat rate of OS
@@ -87,13 +109,13 @@ bool Input::GetMouseBtnPressed(char btn)
 void Input::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods)
 {
 	ASSERT_STR(aKey >= 0 && aKey < ourKeyCount, "Unsupported key: %d", aKey);
-	ourKbState[RemapKey(aKey)] = anAction;
+	ourPendingMsgs.push(InputMsg{ RemapKey(aKey), static_cast<uint32_t>(anAction), 1 });
 }
 
 void Input::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods)
 {
 	ASSERT_STR(aButton >= 0 && aButton < ourMButtonCount, "Unsupported button: %d", aButton);
-	ourMState[aButton] = anAction;
+	ourPendingMsgs.push(InputMsg{ aButton, static_cast<uint32_t>(anAction), 0 });
 }
 
 int Input::RemapKey(int key)

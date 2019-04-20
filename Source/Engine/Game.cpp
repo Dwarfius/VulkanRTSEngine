@@ -31,6 +31,7 @@ Game::Game(ReportError aReporterFunc)
 	, myIsRunning(true)
 	, myShouldEnd(false)
 	, myIsPaused(false)
+	, myEditorMode(nullptr)
 {
 	ourInstance = this;
 	UID::Init();
@@ -124,13 +125,7 @@ void Game::Init()
 	myBall->SetPhysicsEntity(ballEntity);
 	myBall->RequestAddToWorld(*myPhysWorld);
 
-	// player
-	go = Instantiate();
-	{
-		EditorMode* comp = new EditorMode();
-		comp->SetPhysWorld(myPhysWorld);
-		go->AddComponent(comp);
-	}
+	myEditorMode = new EditorMode();
 
 	// setting up a task tree
 	{
@@ -141,6 +136,11 @@ void Game::Init()
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
+		myTaskManager->AddTask(task);
+
+		task = GameTask(GameTask::EditorUpdate, bind(&Game::EditorUpdate, this));
+		task.AddDependency(GameTask::UpdateInput);
+		task.AddDependency(GameTask::PhysicsUpdate);
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
@@ -154,7 +154,7 @@ void Game::Init()
 
 		task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
 		task.AddDependency(GameTask::RemoveGameObjects);
-		task.AddDependency(GameTask::PhysicsUpdate);
+		task.AddDependency(GameTask::EditorUpdate);
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::Render, bind(&Game::Render, this));
@@ -206,6 +206,8 @@ void Game::CleanUp()
 	{
 		myFile.close();
 	}
+
+	delete myEditorMode;
 
 	// physics clear
 	delete myBall;
@@ -289,6 +291,12 @@ void Game::Update()
 	{
 		pair.second->Update(myDeltaTime);
 	}
+}
+
+void Game::EditorUpdate()
+{
+	ASSERT(myEditorMode);
+	myEditorMode->Update(myDeltaTime, *myPhysWorld);
 }
 
 void Game::PhysicsUpdate()

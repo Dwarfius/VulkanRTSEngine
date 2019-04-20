@@ -5,8 +5,9 @@
 #include <Core/UID.h>
 #include <Core/Graphics/AssetTracker.h>
 
-class GameObject;
 class Camera;
+class EditorMode;
+class GameObject;
 class Graphics;
 class Terrain;
 class PhysicsWorld;
@@ -60,6 +61,7 @@ private:
 	void AddGameObjects();
 	void UpdateInput();
 	void Update();
+	void EditorUpdate();
 	void PhysicsUpdate();
 	void Render();
 	void UpdateAudio();
@@ -74,6 +76,7 @@ private:
 	float myFrameStart;
 	float myDeltaTime;
 
+	EditorMode* myEditorMode;
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
 	unordered_map<UID, GameObject*> myGameObjects;

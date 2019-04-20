@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef ASSERT_MUTEX
+#include <Core/Threading/AssertMutex.h>
+#endif
+
 // will need to extend this once I find out how bullet handles layers
 enum CollisionLayers
 {
@@ -50,9 +54,7 @@ public:
 	// so if it needs to be fetched, use GetTransformInterp()
 	void SetTransform(const glm::mat4& aTransf);
 
-	// Thread-safe: adds a force to the entity before the next simulation step
-	void ScheduleAddForce(glm::vec3 aForce);
-	// Not thread-safe: add a force immediatelly
+	// Thread-safe: add a force, will resolve on next phys step
 	void AddForce(glm::vec3 aForce);
 
 	// Not thread-safe: updates velocity immediatelly
@@ -72,10 +74,18 @@ public:
 private:
 	friend class PhysicsWorld;
 
+	void ApplyForces();
+
 	shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody;
 	PhysicsWorld* myWorld;
 	State myState;
+
+#ifdef ASSERT_MUTEX
+	AssertMutex myAccumForcesMutex;
+#endif
+	glm::vec3 myAccumForces;
+	glm::vec3 myAccumTorque;
 
 	bool myIsFrozen, myIsSleeping;
 	bool myIsStatic;

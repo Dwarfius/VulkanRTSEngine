@@ -14,6 +14,8 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 	, myIsFrozen(false)
 	, myWorld(nullptr)
 	, myState(PhysicsEntity::NotInWorld)
+	, myAccumForces(0, 0, 0)
+	, myAccumTorque(0, 0, 0)
 {
 	/* A Note about MotionState, from https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12044
 		btMotionState::getWorldTransform() is called for only two cases:
@@ -104,36 +106,15 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
 }
 
-void PhysicsEntity::ScheduleAddForce(glm::vec3 aForce)
-{
-	assert(myWorld);
-	assert(!Utils::IsNan(aForce));
-
-	const PhysicsCommandAddForce* cmd = new PhysicsCommandAddForce(this, aForce);
-	myWorld->EnqueueCommand(cmd);
-}
-
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
 	ASSERT(myBody);
 	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
 	ASSERT(!Utils::IsNan(aForce));
 
-#ifdef ASSERT_MUTEX
-	if (myWorld)
 	{
-		AssertWriteLock lock(myWorld->mySimulationMutex);
-	}
-#endif
-
-	const btVector3 force = Utils::ConvertToBullet(aForce);
-	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
-	rigidBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
-	if (!rigidBody->isActive())
-	{
-		// Bullet doesn't automatically wake up on force application
-		// so have to do it manually
-		rigidBody->activate();
+		AssertLock lock(myAccumForcesMutex);
+		myAccumForces += aForce;
 	}
 }
 
@@ -163,4 +144,38 @@ void PhysicsEntity::DeferDelete()
 {
 	ASSERT(myWorld);
 	myWorld->DeleteEntity(this);
+}
+
+void PhysicsEntity::ApplyForces()
+{
+	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
+
+	btVector3 force;
+	btVector3 torque;
+
+	{
+		AssertLock lock(myAccumForcesMutex);
+		
+		force = Utils::ConvertToBullet(myAccumForces);
+		torque = Utils::ConvertToBullet(myAccumTorque);
+		myAccumForces = glm::vec3(0.f);
+		myAccumTorque = glm::vec3(0.f);
+	}
+
+	// no forces - don't wake up
+	if (force.isZero() && torque.isZero())
+	{
+		return;
+	}
+
+	btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
+	rigidBody->applyForce(force, btVector3(0.f, 0.f, 0.f));
+	rigidBody->applyTorque(torque);
+
+	if (!rigidBody->isActive())
+	{
+		// Bullet doesn't automatically wake up on force application
+		// so have to do it manually
+		rigidBody->activate();
+	}
 }

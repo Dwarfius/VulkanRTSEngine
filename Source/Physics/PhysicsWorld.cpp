@@ -17,6 +17,17 @@ PhysicsWorld::PhysicsWorld()
 	myDispatcher = new btCollisionDispatcher(myConfiguration);
 	mySolver = new btSequentialImpulseConstraintSolver();
 	myWorld = new btDiscreteDynamicsWorld(myDispatcher, myBroadphase, mySolver, myConfiguration);
+	
+	// Setting up pre physics step callback
+	myWorld->setInternalTickCallback([](btDynamicsWorld* aWorld, float aDeltaTime) {
+		PhysicsWorld* physWorld = static_cast<PhysicsWorld*>(aWorld->getWorldUserInfo());
+		physWorld->PrePhysicsStep(aDeltaTime);
+	}, this, true);
+	// Setting up post physics step callback
+	myWorld->setInternalTickCallback([](btDynamicsWorld* aWorld, float aDeltaTime) {
+		PhysicsWorld* physWorld = static_cast<PhysicsWorld*>(aWorld->getWorldUserInfo());
+		physWorld->PostPhysicsStep(aDeltaTime);
+	}, this, false);
 
 	myWorld->setDebugDrawer(new PhysicsDebugDrawer());
 	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints);
@@ -81,11 +92,6 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 {
 	ResolveCommands();
 
-	// TODO: instead of relying on the internal time resolver, I should manually step
-	// simulation in order to accuratly call PrePhysicsFrame and PrePhysicsStep, otherwise they might
-	// get called when simulation doesn't step
-	PrePhysicsStep(aDeltaTime);
-
 	{
 #ifdef ASSERT_MUTEX
 		AssertWriteLock writeLock(mySimulationMutex);
@@ -99,8 +105,6 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 
 		myWorld->debugDrawWorld();
 	}
-
-	PostPhysicsStep(aDeltaTime);
 }
 
 bool PhysicsWorld::RaycastClosest(glm::vec3 aFrom, glm::vec3 aDir, float aDist, PhysicsEntity*& aHitEntity) const
@@ -182,6 +186,15 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 	{
 		system->OnPrePhysicsStep(aDeltaTime);
 	}
+
+	// TODO: have a separate map for dynamic entities for faster iter
+	for (PhysicsEntity* entity : myEntities)
+	{
+		if (entity->IsDynamic())
+		{
+			entity->ApplyForces();
+		}
+	}
 }
 
 void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
@@ -204,7 +217,6 @@ void PhysicsWorld::ResolveCommands()
 		{
 			CALL_COMMAND_HANDLER(AddBody, cmdRef);
 			CALL_COMMAND_HANDLER(RemoveBody, cmdRef);
-			CALL_COMMAND_HANDLER(AddForce, cmdRef);
 			CALL_COMMAND_HANDLER(DeleteBody, cmdRef);
 			default: ASSERT(false);
 		}
@@ -271,11 +283,6 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 			break;
 		}
 	}
-}
-
-void PhysicsWorld::AddForceHandler(const PhysicsCommandAddForce& aCmd)
-{
-	aCmd.myEntity->AddForce(aCmd.myForce);
 }
 
 void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd)
