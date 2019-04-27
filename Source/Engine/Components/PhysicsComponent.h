@@ -4,6 +4,7 @@
 
 class PhysicsEntity;
 class PhysicsWorld;
+class PhysicsShapeBase;
 
 // Component that handles the life-cycle of a physics entity
 class PhysicsComponent : public ComponentBase
@@ -15,10 +16,8 @@ public:
 	bool IsInitialized() const { return myEntity != nullptr; }
 	PhysicsEntity& GetPhysicsEntity() const { return *myEntity; }
 
-	// TODO: instead of SetPhysicsEntity, have a 
-	// CreatePhysicsEntity, taking a physShape
-	// PhysicsComponent claims ownership of the body and the shape
-	void SetPhysicsEntity(PhysicsEntity* anEntity);
+	// A mass of 0 denotes a static phys entity!
+	void CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape);
 	void DeletePhysicsEntity();
 
 	bool IsInWorld() const;

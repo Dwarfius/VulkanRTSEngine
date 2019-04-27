@@ -19,6 +19,9 @@
 #include "Components/EditorMode.h"
 #include "Components/PhysicsComponent.h"
 
+// TODO: write own header for collision object flags
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
@@ -111,8 +114,9 @@ void Game::Init()
 	}
 
 	PhysicsComponent* physComp = new PhysicsComponent();
-	physComp->SetPhysicsEntity(myTerrains[0]->CreatePhysics());
 	go->AddComponent(physComp);
+	physComp->CreatePhysicsEntity(0, myTerrains[0]->CreatePhysicsShape());
+	physComp->GetPhysicsEntity().SetCollisionFlags(physComp->GetPhysicsEntity().GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 	physComp->RequestAddToWorld(*myPhysWorld);
 
 	myEditorMode = new EditorMode(*myPhysWorld);

@@ -71,7 +71,8 @@ void GameObject::SetTransformImpl(const glm::mat4& aTransf)
 	myTransf.SetRotation(glm::quat_cast(aTransf));
 }
 
-void GameObject::GetTransformImpl(glm::mat4& aTranfs) const
+void GameObject::GetTransformImpl(glm::mat4& aTransf) const
 {
-	aTranfs = myTransf.GetMatrix();
+	// We use no pivot here because Bullet allready offsets it internally
+	aTransf = myTransf.GetMatrixNoPivot();
 }

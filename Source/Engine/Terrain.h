@@ -2,7 +2,6 @@
 
 #include <Core/Graphics/Model.h>
 
-class PhysicsEntity;
 class PhysicsShapeHeightfield;
 
 class Terrain
@@ -20,8 +19,7 @@ public:
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
 
-	// TODO: need to remove it from terrain class
-	PhysicsEntity* CreatePhysics();
+	std::shared_ptr<PhysicsShapeHeightfield> CreatePhysicsShape();
 
 	Handle<Model> GetModelHandle() const { return myModel; }
 

@@ -13,6 +13,7 @@ public:
 
 	GameObject* GetOwner() { return myOwner; }
 
+	// TODO: come up with a better way
 	virtual int GetComponentType() { return Type; }
 	const static int Type;
 

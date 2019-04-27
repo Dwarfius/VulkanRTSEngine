@@ -50,11 +50,15 @@ void Transform::RotateToUp(glm::vec3 aNewUp)
 
 glm::mat4 Transform::GetMatrix() const
 {
+	return glm::translate(GetMatrixNoPivot(), -myCenter);
+}
+
+glm::mat4 Transform::GetMatrixNoPivot() const
+{
 	glm::mat4 modelMatrix;
 	modelMatrix = glm::translate(glm::mat4(1), myPos);
 	modelMatrix = modelMatrix * glm::mat4_cast(myRotation);
 	modelMatrix = glm::scale(modelMatrix, myScale);
-	modelMatrix = glm::translate(modelMatrix, -myCenter);
 	return modelMatrix;
 }
 

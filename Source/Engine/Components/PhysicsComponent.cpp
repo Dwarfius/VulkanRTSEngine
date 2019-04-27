@@ -5,6 +5,7 @@
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
+#include "GameObject.h"
 
 PhysicsComponent::PhysicsComponent()
 	: myEntity(nullptr)
@@ -19,9 +20,10 @@ PhysicsComponent::~PhysicsComponent()
 	}
 }
 
-void PhysicsComponent::SetPhysicsEntity(PhysicsEntity* anEntity)
+void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape)
 {
-	myEntity = anEntity;
+	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
+	myEntity = new PhysicsEntity(aMass, aShape, *myOwner);
 }
 
 void PhysicsComponent::DeletePhysicsEntity()

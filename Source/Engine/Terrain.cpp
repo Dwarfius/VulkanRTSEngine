@@ -1,11 +1,7 @@
 #include "Precomp.h"
 #include "Terrain.h"
 
-#include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsShapes.h>
-
-// TODO: write own header for collision object flags
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 
 #include <Core/Graphics/Texture.h>
 #include <Core/Graphics/AssetTracker.h>
@@ -27,17 +23,19 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	float minHeight = numeric_limits<float>::max();
 	float maxHeight = numeric_limits<float>::min();
 
-	//first, creating the vertices
+	// first, creating the vertices
 	vector<Vertex> verts;
 	verts.resize(myHeight * myWidth);
+	int startX = 0; // -myWidth / 2;
+	int startY = 0; // -myHeight / 2;
 	for (int y = 0; y < myHeight; y++)
 	{
 		for (int x = 0; x < myWidth; x++)
 		{
 			size_t index = y * myWidth + x;
 			Vertex v;
-			v.myPos.x = x * myStep;
-			v.myPos.z = y * myStep;
+			v.myPos.x = startX + x * myStep;
+			v.myPos.z = startY + y * myStep;
 			v.myPos.y = pixels[index] / 255.f * anYScale;
 			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
 			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
@@ -78,8 +76,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 
 	float fullWidth = (myWidth - 1) * myStep;
 	float fullDepth = (myHeight - 1) * myStep;
-	const glm::vec3 aabbMin(0, minHeight, 0);
-	const glm::vec3 aabbMax(fullWidth, maxHeight, fullDepth);
+	const glm::vec3 aabbMin(startX, minHeight, startY);
+	const glm::vec3 aabbMax(startX + fullWidth, maxHeight, startY + fullDepth);
 	// the largest dimension is the bounding sphere radius
 	const float sphereRadius = max(max(maxHeight - minHeight, fullDepth), fullWidth);
 
@@ -156,7 +154,7 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	return glm::mix(botNorm, topNorm, y);
 }
 
-PhysicsEntity* Terrain::CreatePhysics()
+std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 {
 	ASSERT_STR(myHeightsCache.empty(), "Terrain physics entity re-initialization");
 
@@ -175,9 +173,7 @@ PhysicsEntity* Terrain::CreatePhysics()
 
 	shared_ptr<PhysicsShapeHeightfield> myShape = make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
-	PhysicsEntity* myPhysicsEntity = new PhysicsEntity(0.f, myShape, glm::mat4(1.f));
-	myPhysicsEntity->SetCollisionFlags(myPhysicsEntity->GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
-	return myPhysicsEntity;
+	return myShape;
 }
 
 void Terrain::Normalize(vector<Vertex>& aVertices, const vector<Model::IndexType>& aIndices)
