@@ -99,7 +99,6 @@ void Game::Init()
 		go->SetVisualObject(vo);
 	}
 	go->GetTransform().SetPos(glm::vec3(0, 3, 0));
-	go->SetCollisionsEnabled(false);
 
 	// terrain
 	go = Instantiate();
@@ -110,22 +109,13 @@ void Game::Init()
 		vo->SetTexture(terrainText);
 		go->SetVisualObject(vo);
 	}
-	go->SetCollisionsEnabled(false);
 
 	PhysicsComponent* physComp = new PhysicsComponent();
 	physComp->SetPhysicsEntity(myTerrains[0]->CreatePhysics());
 	go->AddComponent(physComp);
 	physComp->RequestAddToWorld(*myPhysWorld);
 
-	// a sphere for testing
-	mySphereShape = make_shared<PhysicsShapeSphere>(1.f);
-	glm::mat4 transf = glm::translate(glm::vec3(0.f, 5.f, 0.f));
-	PhysicsEntity* ballEntity = new PhysicsEntity(1.f, mySphereShape, transf);
-	myBall = new PhysicsComponent();
-	myBall->SetPhysicsEntity(ballEntity);
-	myBall->RequestAddToWorld(*myPhysWorld);
-
-	myEditorMode = new EditorMode();
+	myEditorMode = new EditorMode(*myPhysWorld);
 
 	// setting up a task tree
 	{
@@ -166,6 +156,7 @@ void Game::Init()
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
 
+		// TODO: need to add functionality to draw out the task tree ingame
 		myTaskManager->ResolveDependencies();
 		myTaskManager->Run();
 	}
@@ -210,7 +201,6 @@ void Game::CleanUp()
 	delete myEditorMode;
 
 	// physics clear
-	delete myBall;
 	delete myPhysWorld;
 
 	// we can mark that the engine is done - wrap the threads
@@ -259,12 +249,6 @@ void Game::UpdateInput()
 
 void Game::Update()
 {
-	/*{
-		const float newTime = static_cast<float>(glfwGetTime());
-		myDeltaTime = newTime - myFrameStart;
-		myFrameStart = newTime;
-	}*/
-
 	if (Input::GetKey(27) || myShouldEnd)
 	{
 		myIsPaused = myIsRunning = false;
@@ -318,9 +302,9 @@ void Game::Render()
 	}
 
 	// adding axis for world navigation
-	myRenderThread->AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	myRenderThread->AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	myRenderThread->AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
+	AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
 	myRenderThread->AddLines(myPhysWorld->GetDebugLineCache());
 
 	// TODO: test moving it to the start of Render()
@@ -392,6 +376,11 @@ void Game::RemoveGameObject(GameObject* go)
 {
 	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
 	myRemoveQueue.push(go);
+}
+
+void Game::AddLine(glm::vec3 aBegin, glm::vec3 aEnd, glm::vec3 aColor)
+{
+	myRenderThread->AddLine(aBegin, aEnd, aColor);
 }
 
 void Game::LogToFile(string s)

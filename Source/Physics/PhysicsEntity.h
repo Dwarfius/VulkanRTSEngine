@@ -15,6 +15,17 @@ class PhysicsShapeBase;
 class btRigidBody;
 class btCollisionObject;
 
+class IPhysControllable
+{
+public:
+	void SetTransform(const glm::mat4& aTransf) { SetTransformImpl(aTransf); }
+	void GetTransform(glm::mat4& aTransf) const { GetTransformImpl(aTransf); }
+
+private:
+	virtual void SetTransformImpl(const glm::mat4& aTransf) = 0;
+	virtual void GetTransformImpl(glm::mat4& aTranfs) const = 0;
+};
+
 class PhysicsEntity
 {
 public:
@@ -25,7 +36,10 @@ public:
 		InWorld,
 		PendingRemoval,
 	};
+	// Creates an entity that is not linked to any game object, and has it's own transform
 	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
+	// Creates an entity that is linked to a game object, and synchronises the transform with it
+	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity);
 	~PhysicsEntity();
 
 	PhysicsEntity& operator=(const PhysicsEntity&) = delete;

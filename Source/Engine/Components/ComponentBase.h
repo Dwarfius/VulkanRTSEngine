@@ -10,9 +10,6 @@ public:
 	virtual ~ComponentBase() {};
 
 	virtual void Init(GameObject* anOwner) { myOwner = anOwner; };
-	virtual void Update(float aDeltaTime) {};
-	virtual void OnCollideWithTerrain() {};
-	virtual void OnCollideWithGO(GameObject *other) {};
 
 	GameObject* GetOwner() { return myOwner; }
 

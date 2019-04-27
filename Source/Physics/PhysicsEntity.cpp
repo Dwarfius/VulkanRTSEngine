@@ -7,6 +7,33 @@
 
 #include <Core/Utils.h>
 
+namespace
+{
+	struct EntityMotionState : public btMotionState
+	{
+	private:
+		IPhysControllable* myEntity;
+
+	public:
+		EntityMotionState(IPhysControllable* anEntity)
+			: myEntity(anEntity)
+		{
+		}
+
+		virtual void setWorldTransform(const btTransform& centerOfMassWorldTrans) override final
+		{
+			myEntity->SetTransform(Utils::ConvertToGLM(centerOfMassWorldTrans));
+		}
+
+		virtual void getWorldTransform(btTransform& centerOfMassWorldTrans) const override final
+		{
+			glm::mat4 transf;
+			myEntity->GetTransform(transf);
+			centerOfMassWorldTrans = Utils::ConvertToBullet(transf);
+		}
+	};
+}
+
 PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
 	: myShape(aShape)
 	, myIsStatic(aMass == 0)
@@ -17,31 +44,40 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 	, myAccumForces(0, 0, 0)
 	, myAccumTorque(0, 0, 0)
 {
-	/* A Note about MotionState, from https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12044
-		btMotionState::getWorldTransform() is called for only two cases:
-		(1) When you first add a body to the world, if it has a MotionState then 
-		getWorldTransform() on that state is called to place the object within the world.
-		(2) For each active kinematic object that has a MotionState: getWorldTransform() 
-		is called on that state at the end of each simulaition substep. The idea here is 
-		that the MotionState is supposed to fetch or compute the correct transform according 
-		to whatever logic is moving it around within the physics engine.
-		
-		btMotionState::setWorldTransform() is called for each dynamic active object at the 
-		end of each simulaition substep. You're supposed to implement that method such that 
-		it copies the body's transform into your GameObject. Note: setWorldTransform() will 
-		compute an interpolated transform when you're using fixed substeps but there is a 
-		timestep remainder: this to reduce aliasing effects between the physics substep rate 
-		and the render frame rate.
-
-		btDefaultMotionState is a minimal implementation of the pure virtual btMotionState 
-		interface.
-	*/
 	const btTransform transf = Utils::ConvertToBullet(aTransf);
 	btCollisionShape* shape = myShape->GetShape();
 	if (!myIsStatic)
 	{
-		// TODO: replace with custom motion state that sets entity transform directly
-		btDefaultMotionState* motionState = new btDefaultMotionState(transf);
+		btVector3 localInertia(0, 0, 0);
+		shape->calculateLocalInertia(aMass, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, nullptr, shape, localInertia);
+		constructInfo.m_startWorldTransform = transf;
+		myBody = new btRigidBody(constructInfo);
+	}
+	else
+	{
+		myBody = new btCollisionObject();
+		myBody->setWorldTransform(transf);
+		myBody->setCollisionShape(shape);
+	}
+
+	myBody->setUserPointer(this);
+}
+
+PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity)
+	: myShape(aShape)
+	, myIsStatic(aMass == 0)
+	, myIsSleeping(false)
+	, myIsFrozen(false)
+	, myWorld(nullptr)
+	, myState(PhysicsEntity::NotInWorld)
+	, myAccumForces(0, 0, 0)
+	, myAccumTorque(0, 0, 0)
+{
+	btCollisionShape* shape = myShape->GetShape();
+	if (!myIsStatic)
+	{
+		EntityMotionState* motionState = new EntityMotionState(&anEntity);
 		btVector3 localInertia(0, 0, 0);
 		shape->calculateLocalInertia(aMass, localInertia);
 		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, shape, localInertia);
@@ -49,8 +85,10 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 	}
 	else
 	{
+		glm::mat4 transf;
+		anEntity.GetTransform(transf);
 		myBody = new btCollisionObject();
-		myBody->setWorldTransform(transf);
+		myBody->setWorldTransform(Utils::ConvertToBullet(transf));
 		myBody->setCollisionShape(shape);
 	}
 

@@ -14,6 +14,9 @@ public:
 
 	bool IsInitialized() const { return myEntity != nullptr; }
 	PhysicsEntity& GetPhysicsEntity() const { return *myEntity; }
+
+	// TODO: instead of SetPhysicsEntity, have a 
+	// CreatePhysicsEntity, taking a physShape
 	// PhysicsComponent claims ownership of the body and the shape
 	void SetPhysicsEntity(PhysicsEntity* anEntity);
 	void DeletePhysicsEntity();

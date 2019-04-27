@@ -15,7 +15,7 @@ void UniformAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) con
 {
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	const glm::mat4& model = myVO.GetTransform().GetModelMatrix();
+	const glm::mat4& model = myVO.GetTransform().GetMatrix();
 	const glm::mat4& vp = aCam.Get();
 
 	aUB.SetUniform(0, model);

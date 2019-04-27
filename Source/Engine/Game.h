@@ -25,6 +25,8 @@ public:
 
 	static Game* GetInstance() { return ourInstance; }
 
+	AssetTracker& GetAssetTracker() { return myAssetTracker; }
+
 	void Init();
 	void RunMainThread();
 	void RunTaskGraph();
@@ -53,6 +55,9 @@ public:
 	const Graphics* GetGraphics() const { return myRenderThread->GetGraphics(); }
 
 	void RemoveGameObject(GameObject* aGo);
+
+	// TODO: Get rid of this temp debug code and have a standalone class/util
+	void AddLine(glm::vec3 aBegin, glm::vec3 aEnd, glm::vec3 aColor);
 
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
 	static bool ourGODeleteEnabled;
@@ -89,10 +94,6 @@ private:
 	bool myIsRunning;
 	bool myShouldEnd;
 	bool myIsPaused;
-
-	// temp
-	shared_ptr<PhysicsShapeBase> mySphereShape;
-	PhysicsComponent* myBall;
 
 	// logging
 	void LogToFile(string aLine);

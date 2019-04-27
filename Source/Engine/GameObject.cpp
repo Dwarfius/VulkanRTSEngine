@@ -10,11 +10,8 @@
 GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
 	: myUID(UID::Create())
 	, myTransf(aPos, aRot, aScale)
-	, myCurrentMat()
 	, myVisualObject(nullptr)
 	, myIsDead(false)
-	, myCollisionsEnabled(true)
-	, myCollidedWithTerrain(false)
 {
 }
 
@@ -35,13 +32,6 @@ GameObject::~GameObject()
 
 void GameObject::Update(float aDeltaTime)
 {
-	for (int i = 0; i < myComponents.size(); i++)
-	{
-		myComponents[i]->Update(aDeltaTime);
-	}
-
-	myTransf.UpdateModel();
-
 	// TODO: get rid of this in Update
 	if (myVisualObject)
 	{
@@ -67,42 +57,21 @@ ComponentBase* GameObject::GetComponent(int aType) const
 	return nullptr;
 }
 
-void GameObject::CollidedWithTerrain()
-{
-	if (myCollidedWithTerrain)
-	{
-		return;
-	}
-
-	myCollidedWithTerrain = true;
-	for (ComponentBase* base : myComponents)
-	{
-		base->OnCollideWithTerrain();
-	}
-}
-
-void GameObject::CollidedWithGO(GameObject* aGo)
-{
-	if (myObjsCollidedWith.count(aGo))
-	{
-		return;
-	}
-
-	myObjsCollidedWith.insert(aGo);
-	for (ComponentBase* base : myComponents)
-	{
-		base->OnCollideWithGO(aGo);
-	}
-}
-
-void GameObject::PreCollision()
-{
-	myCollidedWithTerrain = false;
-	myObjsCollidedWith.clear();
-}
-
 void GameObject::Die()
 {
 	myIsDead = true;
 	Game::GetInstance()->RemoveGameObject(this);
+}
+
+void GameObject::SetTransformImpl(const glm::mat4& aTransf)
+{
+	// because Bullet doesn't support scaled transforms, 
+	// we can safely split the mat4 into mat3 rot and pos
+	myTransf.SetPos(aTransf[3]);
+	myTransf.SetRotation(glm::quat_cast(aTransf));
+}
+
+void GameObject::GetTransformImpl(glm::mat4& aTranfs) const
+{
+	aTranfs = myTransf.GetMatrix();
 }
