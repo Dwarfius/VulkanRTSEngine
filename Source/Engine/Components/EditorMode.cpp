@@ -48,10 +48,6 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	}
 }
 
-EditorMode::~EditorMode()
-{
-}
-
 void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
 {
 	// FPS camera implementation

@@ -8,7 +8,6 @@ class EditorMode
 {
 public:
 	EditorMode(PhysicsWorld& aWorld);
-	~EditorMode();
 
 	void Update(float aDeltaTime, const PhysicsWorld& aWorld) const;
 
