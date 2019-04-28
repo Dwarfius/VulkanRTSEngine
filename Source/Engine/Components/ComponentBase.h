@@ -2,7 +2,6 @@
 
 class GameObject;
 
-// TODO: move logic from components to objects which are updated by manager. components will be data/state storages
 class ComponentBase
 {
 public:
@@ -15,7 +14,7 @@ public:
 
 	// TODO: come up with a better way
 	virtual int GetComponentType() { return Type; }
-	const static int Type;
+	constexpr static int Type = 0;
 
 protected:
 	GameObject* myOwner;
