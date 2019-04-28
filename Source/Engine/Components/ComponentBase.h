@@ -12,10 +12,6 @@ public:
 
 	GameObject* GetOwner() { return myOwner; }
 
-	// TODO: come up with a better way
-	virtual int GetComponentType() { return Type; }
-	constexpr static int Type = 0;
-
 protected:
 	GameObject* myOwner;
 };

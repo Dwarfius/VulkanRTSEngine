@@ -64,12 +64,11 @@ TComp* GameObject::AddComponent(TArgs&&... anArgs)
 template<class TComp>
 TComp* GameObject::GetComponent() const
 {
-	int aType = TComp::Type;
 	for (ComponentBase* comp : myComponents)
 	{
-		if (comp->GetComponentType() == aType)
+		if (TComp* dynComp = dynamic_cast<TComp*>(comp))
 		{
-			return comp;
+			return dynComp;
 		}
 	}
 	return nullptr;
