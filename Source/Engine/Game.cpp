@@ -113,8 +113,7 @@ void Game::Init()
 		go->SetVisualObject(vo);
 	}
 
-	PhysicsComponent* physComp = new PhysicsComponent();
-	go->AddComponent(physComp);
+	PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 	physComp->CreatePhysicsEntity(0, myTerrains[0]->CreatePhysicsShape());
 	physComp->GetPhysicsEntity().SetCollisionFlags(physComp->GetPhysicsEntity().GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 	physComp->RequestAddToWorld(*myPhysWorld);

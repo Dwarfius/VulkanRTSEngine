@@ -22,8 +22,11 @@ public:
 
 	const UID& GetUID() const { return myUID; }
 
-	void AddComponent(ComponentBase* aComponent);
-	ComponentBase* GetComponent(int aType) const;
+	template<class TComp, class... TArgs>
+	TComp* AddComponent(TArgs&&... anArgs);
+
+	template<class TComp>
+	TComp* GetComponent() const;
 
 	void SetVisualObject(VisualObject* aVisualObject) { myVisualObject = aVisualObject; }
 	const VisualObject* GetVisualObject() const { return myVisualObject; }
@@ -48,3 +51,26 @@ private:
 	vector<ComponentBase*> myComponents;
 	VisualObject* myVisualObject;
 };
+
+template<class TComp, class... TArgs>
+TComp* GameObject::AddComponent(TArgs&&... anArgs)
+{
+	TComp* newComp = new TComp(std::forward<TArgs>(anArgs)...);
+	newComp->Init(this);
+	myComponents.push_back(newComp);
+	return newComp;
+}
+
+template<class TComp>
+TComp* GameObject::GetComponent() const
+{
+	int aType = TComp::Type;
+	for (ComponentBase* comp : myComponents)
+	{
+		if (comp->GetComponentType() == aType)
+		{
+			return comp;
+		}
+	}
+	return nullptr;
+}

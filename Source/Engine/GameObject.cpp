@@ -39,24 +39,6 @@ void GameObject::Update(float aDeltaTime)
 	}
 }
 
-void GameObject::AddComponent(ComponentBase* aComponent)
-{
-	aComponent->Init(this);
-	myComponents.push_back(aComponent);
-}
-
-ComponentBase* GameObject::GetComponent(int aType) const
-{
-	for (ComponentBase* comp : myComponents)
-	{
-		if (comp->GetComponentType() == aType)
-		{
-			return comp;
-		}
-	}
-	return nullptr;
-}
-
 void GameObject::Die()
 {
 	myIsDead = true;

@@ -22,9 +22,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	// a sphere with no visual object (don't have a mesh atm)
 	GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0, 5, 0));
 	{
-		PhysicsComponent* physComp = new PhysicsComponent();
-		go->AddComponent(physComp);
-
+		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 		physComp->CreatePhysicsEntity(1, sphereShape);
 		physComp->RequestAddToWorld(aWorld);
 	}
@@ -33,9 +31,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	// a cube with a visual object
 	go = Game::GetInstance()->Instantiate(glm::vec3(2, 5, 0));
 	{
-		PhysicsComponent* physComp = new PhysicsComponent();
-		go->AddComponent(physComp);
-
+		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 		physComp->CreatePhysicsEntity(1, boxShape);
 		physComp->RequestAddToWorld(aWorld);
 
