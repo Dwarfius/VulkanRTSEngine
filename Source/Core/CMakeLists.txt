@@ -148,6 +148,7 @@ target_compile_definitions(${PROJECT_NAME}
 		GLM_ENABLE_EXPERIMENTAL # we use transform and hash implementations
 		ASSERT_MUTEX # enables utility mutex that asserts on concurrent use
 		# ENABLE_ASSERTS # uncomment this to force asserts
+		__STDC_WANT_LIB_EXT1__=1 # to get safe format functions from stdio
 )
 
 target_include_directories(${PROJECT_NAME}
