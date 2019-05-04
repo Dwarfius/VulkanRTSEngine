@@ -57,17 +57,14 @@ void RenderThread::AddRenderable(const VisualObject* aVO)
 	buffer.push_back(aVO);
 }
 
-void RenderThread::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)
+void RenderThread::AddDebugRenderable(const DebugDrawer* aDebugDrawer)
 {
-	vector<PosColorVertex>& buffer = myTrippleLines.GetWrite();
-	buffer.push_back(PosColorVertex{ aFrom, aColor });
-	buffer.push_back(PosColorVertex{ aTo, aColor });
-}
+	if (!aDebugDrawer->GetCurrentVertexCount())
+	{
+		return;
+	}
 
-void RenderThread::AddLines(const vector<PosColorVertex>& aLineCache)
-{
-	vector<PosColorVertex>& buffer = myTrippleLines.GetWrite();
-	buffer.insert(buffer.end(), aLineCache.begin(), aLineCache.end());
+	myDebugDrawers.GetWrite().push_back(aDebugDrawer);
 }
 
 void RenderThread::SubmitRenderables()
@@ -119,7 +116,7 @@ void RenderThread::SubmitRenderables()
 	myGraphics->BeginGather();
 
 	// processing our renderables
-	myTrippleRenderables.Swap();
+	myTrippleRenderables.Advance();
 	const vector<const VisualObject*>& myRenderables = myTrippleRenderables.GetRead();
 	myTrippleRenderables.GetWrite().clear();
 
@@ -136,12 +133,15 @@ void RenderThread::SubmitRenderables()
 	});
 
 	// schedule drawing out our debug drawings
-	myTrippleLines.Swap();
-	const vector<PosColorVertex>& myLines = myTrippleLines.GetRead();
-	myTrippleLines.GetWrite().clear();
+	myDebugDrawers.Advance();
+	const vector<const DebugDrawer*>& debugDrawers = myDebugDrawers.GetRead();
+	myDebugDrawers.GetWrite().clear();
 
-	myGraphics->PrepareLineCache(myLines.size());
-	myGraphics->DrawLines(cam, myLines);
+	myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
+	for (const DebugDrawer* drawer : debugDrawers)
+	{
+		myGraphics->RenderDebug(cam, *drawer);
+	}
 
 	myGraphics->Display();
 

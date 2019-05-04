@@ -236,6 +236,9 @@ GLFWwindow* Game::GetWindow() const
 
 void Game::AddGameObjects()
 {
+	// TODO: find a better place for this call
+	myDebugDrawer.BeginFrame();
+
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	while (myAddQueue.size())
 	{
@@ -305,10 +308,12 @@ void Game::Render()
 	}
 
 	// adding axis for world navigation
-	AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
-	myRenderThread->AddLines(myPhysWorld->GetDebugLineCache());
+	myDebugDrawer.AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
+
+	myRenderThread->AddDebugRenderable(&myDebugDrawer);
+	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());
 
 	// TODO: test moving it to the start of Render()
 	// we have to wait until the render thread finishes processing the submitted commands
@@ -379,11 +384,6 @@ void Game::RemoveGameObject(GameObject* go)
 {
 	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
 	myRemoveQueue.push(go);
-}
-
-void Game::AddLine(glm::vec3 aBegin, glm::vec3 aEnd, glm::vec3 aColor)
-{
-	myRenderThread->AddLine(aBegin, aEnd, aColor);
 }
 
 void Game::LogToFile(string s)

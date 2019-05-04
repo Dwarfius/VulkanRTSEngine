@@ -3,6 +3,8 @@
 #include "Resource.h"
 #include "../Vertex.h"
 
+// TODO: template the Model on vertex type
+// TODO: expand model to support more dynamic operations
 // A class representing a generic mesh, plus a couple utility methods to get info about the model.
 // Directly contstruct this class if you just need it on the CPU, otherwise use
 // Graphics::AllocateMesh() to get an instance that will be uploaded to the GPU.
@@ -27,6 +29,7 @@ public:
 		size_t myVertCount;
 		IndexType* myIndices; // optional
 		size_t myIndCount; // optional
+		UploadDescriptor* myNextDesc; // optional, used to chain multiple uploads together
 	};
 
 public:

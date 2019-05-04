@@ -21,7 +21,7 @@ public:
 	GPUResource* Create(Resource::Type aType) const override;
 
 	void PrepareLineCache(size_t aCacheSize) override {}
-	void DrawLines(const Camera& aCam, const vector<PosColorVertex>& aLineCache) override;
+	void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) override;
 
 	// TODO: get rid of the static method by using a bound functor object
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
@@ -56,7 +56,7 @@ private:
 	{
 		ModelGL* myBuffer;
 		glm::mat4 myVp;
-		Model::UploadDescriptor uploadDesc;
+		Model::UploadDescriptor myUploadDesc;
 	};
 	LineCache myLineCache;
 	void CreateLineCache();

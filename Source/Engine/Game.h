@@ -4,6 +4,7 @@
 #include "RenderThread.h"
 #include <Core/UID.h>
 #include <Core/Graphics/AssetTracker.h>
+#include <Core/Debug/DebugDrawer.h>
 
 class Camera;
 class EditorMode;
@@ -26,6 +27,7 @@ public:
 	static Game* GetInstance() { return ourInstance; }
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
+	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
 
 	void Init();
 	void RunMainThread();
@@ -55,9 +57,6 @@ public:
 	const Graphics* GetGraphics() const { return myRenderThread->GetGraphics(); }
 
 	void RemoveGameObject(GameObject* aGo);
-
-	// TODO: Get rid of this temp debug code and have a standalone class/util
-	void AddLine(glm::vec3 aBegin, glm::vec3 aEnd, glm::vec3 aColor);
 
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
 	static bool ourGODeleteEnabled;
@@ -90,6 +89,7 @@ private:
 	vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker myAssetTracker;
+	DebugDrawer myDebugDrawer;
 
 	bool myIsRunning;
 	bool myShouldEnd;

@@ -13,6 +13,7 @@
 #include <sstream>
 #include <Core/Camera.h>
 #include <Core/Graphics/AssetTracker.h>
+#include <Core/Debug/DebugDrawer.h>
 
 #ifdef _DEBUG
 #define DEBUG_GL_CALLS
@@ -205,9 +206,18 @@ void GraphicsGL::Render(const Camera& aCam, const VisualObject* aVO)
 void GraphicsGL::Display()
 {
 	// first going to process the debug lines
-	if(myLineCache.uploadDesc.myPrimitiveCount > 0)
+	if(myLineCache.myUploadDesc.myPrimitiveCount > 0)
 	{
-		myLineCache.myBuffer->Upload(myLineCache.uploadDesc);
+		// upload the entire chain
+		myLineCache.myBuffer->Upload(myLineCache.myUploadDesc);
+		
+		// clean up the upload descriptors
+		for (Model::UploadDescriptor* currDesc = &myLineCache.myUploadDesc;
+			currDesc != nullptr;
+			currDesc = currDesc->myNextDesc)
+		{
+			currDesc->myVertCount = 0;
+		}
 
 		// shader first
 		myDebugPipeline->Bind();
@@ -311,6 +321,20 @@ void GraphicsGL::CleanUp()
 	myLineCache.myBuffer->Unload();
 	delete myLineCache.myBuffer;
 
+	constexpr uint32_t kMaxExtraDescriptors = 32;
+	Model::UploadDescriptor* descriptors[kMaxExtraDescriptors];
+	uint32_t descInd = 0;
+	for (Model::UploadDescriptor* currDesc = myLineCache.myUploadDesc.myNextDesc;
+		currDesc != nullptr;
+		currDesc = currDesc->myNextDesc)
+	{
+		descriptors[descInd++] = currDesc;
+	}
+	while (descInd > 0)
+	{
+		delete descriptors[--descInd];
+	}
+
 	glfwDestroyWindow(myWindow);
 	ourActiveGraphics = nullptr;
 }
@@ -328,14 +352,31 @@ GPUResource* GraphicsGL::Create(Resource::Type aType) const
 	return nullptr;
 }
 
-void GraphicsGL::DrawLines(const Camera& aCam, const vector<PosColorVertex>& aLineCache)
+void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer)
 {
-	myLineCache.uploadDesc.myPrimitiveCount = aLineCache.size() / 2;
-	myLineCache.uploadDesc.myVertices = aLineCache.data();
-	myLineCache.uploadDesc.myVertCount = aLineCache.size();
-	myLineCache.uploadDesc.myIndices = nullptr;
-	myLineCache.uploadDesc.myIndCount = 0;
+	// there's always 1 space allocated for debug drawer, but we might need more
+	// if there are more drawers. Look for a slot that's free (doesn't have vertices)
+	// or create one if there isn't one.
+	Model::UploadDescriptor* currDesc;
+	for (currDesc = &myLineCache.myUploadDesc;
+		currDesc->myVertCount != 0; // keep iterating until we find an empty one
+		currDesc = currDesc->myNextDesc)
+	{
+		if (currDesc->myNextDesc == nullptr)
+		{
+			currDesc->myNextDesc = new Model::UploadDescriptor();
+			memset(currDesc->myNextDesc, 0, sizeof(Model::UploadDescriptor));
+		}
+	}
+	
+	// we've found a free one - fill it up
+	currDesc->myPrimitiveCount = aDebugDrawer.GetCurrentVertexCount();
+	currDesc->myVertices = aDebugDrawer.GetCurrentVertices();
+	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
+	currDesc->myIndices = nullptr;
+	currDesc->myIndCount = 0;
 
+	// TODO: this is wasteful - refactor to set it once or cache per debug drawer
 	myLineCache.myVp = aCam.Get();
 }
 

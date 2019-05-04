@@ -4,7 +4,9 @@
 #include <Core/Graphics/Graphics.h>
 
 class VisualObject;
+class DebugDrawer;
 
+// TODO: need to investigate and properly implement double/tripple buffering
 // a proxy class that handles the render thread
 class RenderThread
 {
@@ -22,8 +24,8 @@ public:
 	const Graphics* GetGraphics() const { return myGraphics.get(); }
 
 	void AddRenderable(const VisualObject* aVO);
-	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor);
-	void AddLines(const vector<PosColorVertex>& aLineCache);
+	// TODO: this is not threadsafe!
+	void AddDebugRenderable(const DebugDrawer* aDebugDrawer);
 
 	void SubmitRenderables();
 
@@ -33,7 +35,7 @@ private:
 
 	// TODO: separate gameobject and renderable
 	RWBuffer<vector<const VisualObject*>, 2> myTrippleRenderables;
-	RWBuffer<vector<PosColorVertex>, 2> myTrippleLines;
+	RWBuffer<vector<const DebugDrawer*>, 2> myDebugDrawers;
 
 	atomic<bool> myNeedsSwitch;
 	atomic<bool> myHasWorkPending;

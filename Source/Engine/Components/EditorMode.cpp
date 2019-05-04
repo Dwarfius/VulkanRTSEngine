@@ -112,7 +112,7 @@ void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
 	right = myBall->GetTransform().GetRight();
 	up = myBall->GetTransform().GetUp();
 	forward = myBall->GetTransform().GetForward();
-	Game::GetInstance()->AddLine(pos - right, pos + right, glm::vec3(1, 0, 0));
-	Game::GetInstance()->AddLine(pos - up, pos + up, glm::vec3(1, 0, 0));
-	Game::GetInstance()->AddLine(pos - forward, pos + forward, glm::vec3(1, 0, 0));
+	Game::GetInstance()->GetDebugDrawer().AddLine(pos - right, pos + right, glm::vec3(1, 0, 0));
+	Game::GetInstance()->GetDebugDrawer().AddLine(pos - up, pos + up, glm::vec3(1, 0, 0));
+	Game::GetInstance()->GetDebugDrawer().AddLine(pos - forward, pos + forward, glm::vec3(1, 0, 0));
 }

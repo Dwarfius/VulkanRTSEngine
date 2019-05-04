@@ -132,6 +132,7 @@ void Model::OnUpload(GPUResource* aGPURes)
 	uploadDesc.myVertCount = myVertices.size();
 	uploadDesc.myIndices = myIndices.data();
 	uploadDesc.myIndCount = myIndices.size();
+	uploadDesc.myNextDesc = nullptr; // upload everything in one go
 	myGPUResource->Upload(uploadDesc);
 
 	myState = State::Ready;

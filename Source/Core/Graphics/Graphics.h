@@ -13,6 +13,7 @@ struct GLFWwindow;
 class Camera;
 class Terrain;
 class AssetTracker;
+class DebugDrawer;
 
 class Graphics : public IGPUAllocator
 {
@@ -26,7 +27,7 @@ public:
 	virtual void CleanUp() = 0;
 	
 	virtual void PrepareLineCache(size_t aCacheSize) = 0;
-	virtual void DrawLines(const Camera& aCam, const vector<PosColorVertex>& aLineCache) = 0;
+	virtual void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) = 0;
 
 	GLFWwindow* GetWindow() const { return myWindow; }
 	

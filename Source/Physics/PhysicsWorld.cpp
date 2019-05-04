@@ -170,9 +170,9 @@ bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*
 	return false;
 }
 
-const vector<PosColorVertex>& PhysicsWorld::GetDebugLineCache() const
+const DebugDrawer& PhysicsWorld::GetDebugDrawer() const
 {
-	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetLineCache();
+	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetDebugDrawer();
 }
 
 void PhysicsWorld::AddPhysSystem(ISymCallbackListener* aSystem)

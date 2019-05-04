@@ -15,6 +15,8 @@ struct Vertex
 		return myPos == other.myPos && myUv == other.myUv && myNormal == other.myNormal;
 	}
 };
+// Vertex and PosColorVertex are intended to be lightweight, cheap structs
+static_assert(is_trivially_destructible_v<Vertex>, "Not trivially destructible!");
 
 struct PosColorVertex
 {
@@ -28,6 +30,7 @@ struct PosColorVertex
 		return myPos == other.myPos && myColor == other.myColor;
 	}
 };
+static_assert(is_trivially_destructible_v<PosColorVertex>, "Not trivially destructible!");
 
 namespace std
 {

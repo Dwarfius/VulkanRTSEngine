@@ -25,9 +25,7 @@ public:
 
 	T& GetWrite();
 	const T& GetRead() const;
-
-	void AdvanceWrite();
-	void AdvanceRead();
+	
 	// shortcut for advancing both the reader and the writer
 	void Advance() { AdvanceWrite(); AdvanceRead(); }
 	
@@ -36,6 +34,9 @@ public:
 	InternalIter end() { return myBuffers.end(); }
 
 private:
+	void AdvanceWrite();
+	void AdvanceRead();
+
 	InternalBuffer myBuffers;
 	size_t myReadBuffer;
 	size_t myWriteBuffer;
@@ -142,7 +143,11 @@ public:
 	T& GetWrite() { return myBuffers[myWriteBuffer ? 1 : 0]; }
 	const T& GetRead() const { return myBuffers[myWriteBuffer ? 0 : 1]; }
 
-	void Swap() { myWriteBuffer ^= true; }
+	void Advance() { myWriteBuffer ^= true; }
+
+	// range-for utility support
+	InternalIter begin() { return myBuffers.begin(); }
+	InternalIter end() { return myBuffers.end(); }
 
 private:
 	InternalBuffer myBuffers;

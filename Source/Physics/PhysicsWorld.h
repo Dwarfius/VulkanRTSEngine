@@ -10,6 +10,7 @@ class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
+class DebugDrawer;
 
 class PhysicsWorld
 {
@@ -48,7 +49,7 @@ public:
 	bool Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*>& anAllHits) const;
 
 	// TODO: refactor this away
-	const vector<PosColorVertex>& GetDebugLineCache() const;
+	const DebugDrawer& GetDebugDrawer() const;
 
 	// Subscribes a system to Pre/PostPhys callbacks
 	// Not thread safe
