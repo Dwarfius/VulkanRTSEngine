@@ -91,6 +91,17 @@ void Game::Init()
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("wireframe.png");
+	// TEST: testing tesselation shader loading and linking
+	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
+
+	go = Instantiate();
+	{
+		vo = new VisualObject(*go);
+		vo->SetModel(cubeModel);
+		vo->SetPipeline(terrainPipeline);
+		vo->SetTexture(cubeText);
+		go->SetVisualObject(vo);
+	}
 
 	// a box for rendering test
 	go = Instantiate();

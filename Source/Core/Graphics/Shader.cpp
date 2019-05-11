@@ -8,28 +8,16 @@ Shader::Shader(Resource::Id anId)
 
 Shader::Shader(Resource::Id anId, const string& aPath)
 	: Resource(anId, aPath)
-	, myType(Type::Vertex)
+	, myType(Type::Invalid)
 {
+	if (aPath.length() > 4)
+	{
+		myType = DetermineType(aPath);
+	}
 }
 
 void Shader::OnLoad(AssetTracker& anAssetTracker)
 {
-	// first determine the type of shader based on file extension
-	// currently only vertex and fragment shaders are supported
-	string ext = myPath.substr(myPath.length() - 4);
-	if (ext == "vert")
-	{
-		myType = Type::Vertex;
-	}
-	else if (ext == "frag")
-	{
-		myType = Type::Fragment;
-	}
-	else
-	{
-		ASSERT_STR(false, "Type not supported!");
-	}
-
 	bool success = ReadFile(myPath, myFileContents);
 	if (!success)
 	{
@@ -45,6 +33,8 @@ void Shader::OnLoad(AssetTracker& anAssetTracker)
 
 void Shader::OnUpload(GPUResource* aGPUResource)
 {
+	ASSERT_STR(myType != Type::Invalid, "This resource wasn't setup correctly for uploading!");
+
 	myGPUResource = aGPUResource;
 	
 	CreateDescriptor createDesc;
@@ -62,5 +52,35 @@ void Shader::OnUpload(GPUResource* aGPUResource)
 	else
 	{
 		SetErrMsg(myGPUResource->GetErrorMsg());
+	}
+}
+
+Shader::Type Shader::DetermineType(const string& aPath)
+{
+	const string ext = aPath.substr(aPath.length() - 4);
+	if (ext == "vert")
+	{
+		return Type::Vertex;
+	}
+	else if (ext == "frag")
+	{
+		return Type::Fragment;
+	}
+	else if (ext == "tctr")
+	{
+		return Type::TessControl;
+	}
+	else if (ext == "tevl")
+	{
+		return Type::TessEval;
+	}
+	else if (ext == "geom")
+	{
+		return Type::Geometry;
+	}
+	else
+	{
+		ASSERT_STR(false, "Type not supported!");
+		return Type::Invalid;
 	}
 }

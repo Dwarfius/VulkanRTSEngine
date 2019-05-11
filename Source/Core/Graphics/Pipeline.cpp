@@ -49,31 +49,32 @@ void Pipeline::OnLoad(AssetTracker& anAssetTracker)
 		ASSERT_STR(myType == Type::Graphics, "Compute pipeline type not supported!");
 	}
 
-	// TODO: add conditional checking based on myType
-	// vert shader...
 	{
-		const json& vertHandle = jsonObj["vert"];
-		if (vertHandle.is_null())
+		const json& shaderArrayHandle = jsonObj["shaders"];
+		if (!shaderArrayHandle.is_array())
 		{
-			SetErrMsg("Ppl missing vert!");
+			SetErrMsg("Ppl missing shader array!");
 			return;
 		}
-		string vertShaderName = vertHandle.get<string>();
-		Handle<Shader> vertShader = anAssetTracker.GetOrCreate<Shader>(vertShaderName);
-		AddShader(vertShader);
-	}
 
-	// ...frag shader...
-	{
-		const json& fragHandle = jsonObj["frag"];
-		if (fragHandle.is_null())
+		bool foundVert = false;
+		bool foundFrag = false;
+		const size_t shaderCount = shaderArrayHandle.size();
+		for (size_t i = 0; i < shaderCount; i++)
 		{
-			SetErrMsg("Ppl missing frag!");
+			const json& shaderHandle = shaderArrayHandle.at(i);
+			string shaderName = shaderHandle.get<string>();
+			Handle<Shader> shader = anAssetTracker.GetOrCreate<Shader>(shaderName);
+			foundVert |= shader->GetType() == Shader::Type::Vertex;
+			foundFrag |= shader->GetType() == Shader::Type::Fragment;
+			AddShader(shader);
+		}
+
+		if (!foundVert || !foundFrag)
+		{
+			SetErrMsg("Ppl missing vert of frag shaders!");
 			return;
 		}
-		string fragShaderName = fragHandle.get<string>();
-		Handle<Shader> fragShader = anAssetTracker.GetOrCreate<Shader>(fragShaderName);
-		AddShader(fragShader);
 	}
 
 	// ...descriptors
@@ -84,7 +85,7 @@ void Pipeline::OnLoad(AssetTracker& anAssetTracker)
 			SetErrMsg("Ppl missing descriptor array!");
 			return;
 		}
-		size_t descriptorCount = descriptorArrayHandle.size();
+		const size_t descriptorCount = descriptorArrayHandle.size();
 		myDescriptors.resize(descriptorCount);
 		for(size_t i=0; i<descriptorCount; i++)
 		{

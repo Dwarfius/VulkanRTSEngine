@@ -33,7 +33,6 @@ void UniformBufferGL::Create(any aDescriptor)
 
 	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 bool UniformBufferGL::Upload(any aDescriptor)
@@ -44,7 +43,6 @@ bool UniformBufferGL::Upload(any aDescriptor)
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, descriptor.mySize, descriptor.myData);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	return true;
 }
 

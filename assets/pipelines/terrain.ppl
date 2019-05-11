@@ -2,7 +2,9 @@
 	"type":0,
 	"shaders":[
 		"assets/GLShaders/base.vert",
-		"assets/GLShaders/base.frag"
+		"assets/GLShaders/base.frag",
+		"assets/GLShaders/tess-control.tctr",
+		"assets/GLShaders/tess-eval.tevl"
 	],
 	"descriptors":[  
 		{  

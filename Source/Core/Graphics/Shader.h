@@ -8,6 +8,7 @@ class Shader : public Resource
 public:
 	enum class Type
 	{
+		Invalid,
 		Vertex,
 		Fragment,
 		Geometry,
@@ -37,6 +38,8 @@ public:
 protected:
 	Type myType;
 	string myFileContents;
+
+	static Type DetermineType(const string& aPath);
 
 private:
 	void OnLoad(AssetTracker& anAssetTracker) override;

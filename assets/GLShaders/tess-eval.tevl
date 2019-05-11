@@ -1,0 +1,12 @@
+#version 420
+
+layout(triangles, fractional_even_spacing, cw) in;
+
+void main()
+{
+	vec3 accum = vec3(0.0f);
+	accum += gl_TessCoord[0] * vec3(gl_in[0].gl_Position);
+	accum += gl_TessCoord[1] * vec3(gl_in[0].gl_Position);
+	accum += gl_TessCoord[2] * vec3(gl_in[0].gl_Position);
+	gl_Position = vec4(accum, 1);
+}
