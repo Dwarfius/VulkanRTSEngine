@@ -1,8 +1,8 @@
 {  
 	"type":0,
 	"shaders":[
-		"assets/GLShaders/base.vert",
-		"assets/GLShaders/base.frag",
+		"assets/GLShaders/terrain.vert",
+		"assets/GLShaders/terrain.frag",
 		"assets/GLShaders/tess-control.tctr",
 		"assets/GLShaders/tess-eval.tevl"
 	],
@@ -12,6 +12,28 @@
 			"members":[  
 				"Mat4",
 				"Mat4"
+			]
+		},
+		{  
+			"adapter":"TerrainAdapter",
+			"members":[  
+				"Vec3",
+				"Int",
+				"Int",
+				"Int"
+			]
+		},
+		{
+			"adapter":"CameraAdapter",
+			"members":[
+				"Vec3",
+				"Vec3",
+				"Vec3",
+				"Vec3",
+				"Mat4",
+				"Mat4",
+				"Vec4",
+				"Vec4"
 			]
 		}
 	]

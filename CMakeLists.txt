@@ -19,5 +19,6 @@ endif()
 
 add_subdirectory(Source/Core)
 add_subdirectory(Source/Physics)
+add_subdirectory(Source/Graphics)
 add_subdirectory(Source/Engine)
 add_subdirectory(Source/Executable)

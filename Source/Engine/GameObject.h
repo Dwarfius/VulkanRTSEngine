@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Graphics/Graphics.h>
+#include <Graphics/Graphics.h>
 #include <Core/Transform.h>
 #include <Core/UID.h>
 #include <Physics/PhysicsEntity.h>

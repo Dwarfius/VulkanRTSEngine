@@ -6,7 +6,7 @@ Shader::Shader(Resource::Id anId)
 {
 }
 
-Shader::Shader(Resource::Id anId, const string& aPath)
+Shader::Shader(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
 	, myType(Type::Invalid)
 {
@@ -55,9 +55,9 @@ void Shader::OnUpload(GPUResource* aGPUResource)
 	}
 }
 
-Shader::Type Shader::DetermineType(const string& aPath)
+Shader::Type Shader::DetermineType(const std::string& aPath)
 {
-	const string ext = aPath.substr(aPath.length() - 4);
+	const std::string ext = aPath.substr(aPath.length() - 4);
 	if (ext == "vert")
 	{
 		return Type::Vertex;

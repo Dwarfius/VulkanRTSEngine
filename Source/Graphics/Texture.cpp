@@ -3,7 +3,7 @@
 
 #include <stb_image.h>
 
-unsigned char* Texture::LoadFromDisk(const string& aPath, Format aFormat, int& aWidth, int& aHeight)
+unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
 {
 	int desiredChannels;
 	switch (aFormat)
@@ -29,7 +29,7 @@ Texture::Texture(Resource::Id anId)
 {
 }
 
-Texture::Texture(Resource::Id anId, const string& aPath)
+Texture::Texture(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
 	, myType(Type::Color)
 	, myFormat(Format::UNorm_BGRA)
@@ -48,7 +48,7 @@ void Texture::FreeTextMem()
 
 void Texture::OnLoad(AssetTracker& anAssetTracker)
 {
-	const string basePath = "assets/textures/";
+	const std::string basePath = "assets/textures/";
 	myPixels = LoadFromDisk(basePath + myPath, myFormat, myWidth, myHeight);
 	if (!myPixels)
 	{

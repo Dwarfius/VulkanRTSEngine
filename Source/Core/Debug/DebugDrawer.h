@@ -2,6 +2,7 @@
 
 #include "../RWBuffer.h"
 #include "../Vertex.h"
+#include "../LazyVector.h"
 
 struct PosColorVertex;
 
@@ -11,8 +12,6 @@ struct PosColorVertex;
 class DebugDrawer
 {
 public:
-	DebugDrawer();
-
 	// Call this at the earliest opportunity in the frame to
 	// prepare accumulating debug lines for new frame
 	void BeginFrame();
@@ -34,8 +33,7 @@ private:
 	constexpr static size_t SingleFrameCacheSize = 1 << 10;
 	struct FrameCache
 	{
-		std::vector<PosColorVertex> myVertices;
-		size_t myCurrentIndex;
+		LazyVector<PosColorVertex, SingleFrameCacheSize> myVertices;
 	};
 	RWBuffer<FrameCache, 2> myFrameCaches;
 	tbb::spin_mutex myCacheMutex;
@@ -46,11 +44,17 @@ private:
 	struct TimedLineDrawCmd
 	{
 		PosColorVertex myP1, myP2;
+
+		TimedLineDrawCmd() = default;
+		TimedLineDrawCmd(PosColorVertex aP1, PosColorVertex aP2)
+			: myP1(aP1)
+			, myP2(aP2)
+		{
+		}
 	};
 	// separate vectors to better utilize cache during iteration
-	std::vector<uint32_t> myTimedOffsets;
-	std::vector<TimedLineDrawCmd> myTimedVertices;
-	size_t myFreeOffset;
+	LazyVector<uint32_t, TimedCacheSize> myTimedOffsets;
+	LazyVector<TimedLineDrawCmd, TimedCacheSize> myTimedVertices;
 	tbb::spin_mutex myTimedCacheMutex;
 
 	void UpdateTimedCache();

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Core/Graphics/Graphics.h>
+#include <Graphics/Graphics.h>
+#include <Core/RWBuffer.h>
 #include "ModelGL.h"
 #include "PipelineGL.h"
 #include "TextureGL.h"
@@ -14,7 +15,6 @@ public:
 
 	void Init() override;
 	void BeginGather() override;
-	void Render(const Camera& aCam, const VisualObject* aVO) override;
 	void Display() override;
 	void CleanUp() override;
 
@@ -26,26 +26,14 @@ public:
 	// TODO: get rid of the static method by using a bound functor object
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 
-private:
-	ModelGL* myCurrentModel;
-	PipelineGL* myCurrentPipeline;
-	TextureGL* myCurrentTexture;
+	[[nodiscard]]
+	RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) override;
 
+private:
 	void OnResize(int aWidth, int aHeight);
 
-	// emulating a render queue
-	// should cache the shader's uniforms as well
-	struct RenderJob 
-	{
-		Handle<Pipeline> myPipeline;
-		Handle<Texture> myTexture;
-		Handle<Model> myModel;
-
-		vector<shared_ptr<UniformBlock>> myUniforms;
-	};
-	// TODO: replace this with a double/tripple buffer concept
-	vector<RenderJob> myThreadJobs;
-	tbb::spin_mutex myJobsLock;
+	using RenderPassJobMap = std::unordered_map<uint32_t, RenderPassJob*>;
+	RWBuffer<RenderPassJobMap, 3> myRenderPassJobs;
 
 	// ================================================
 	// Debug drawing related
@@ -60,4 +48,11 @@ private:
 	};
 	LineCache myLineCache;
 	void CreateLineCache();
+
+	// TEST - used to output number of triangles
+	// generated during render calls, specifically
+	// tesselation of terrain (test detalization and gpu
+	// side culling)
+	uint32_t myGPUQuery;
+	// ======
 };

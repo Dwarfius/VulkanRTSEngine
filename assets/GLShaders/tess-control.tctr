@@ -2,15 +2,104 @@
 
 layout(vertices=1) out;
 
+layout (std140, binding = 0) uniform UniformAdapter // TODO: give it a proper name!
+{
+	mat4 Model;
+	mat4 mvp;
+};
+
+layout (std140, binding = 1) uniform TerrainAdapter
+{
+	vec3 GridOrigin;
+	int TileSize;
+	int GridWidth;
+	int GridHeight;
+};
+
+layout (std140, binding = 2) uniform CameraAdapter
+{
+	vec3 CamPos;
+	vec3 CamRight;
+	vec3 CamUp;
+	vec3 CamForward;
+	mat4 CamView;
+	mat4 CamProj;
+	vec4 CamPlanesAndDims;
+	vec4 CamSphereFactorsAndRatioAndTangent;
+};
+
+bool isVisible(vec3 aPos, float aRadius)
+{
+	// TODO: replace all of this with view-space calculations
+	const float camNearPlane = CamPlanesAndDims.x;
+	const float camFarPlane = CamPlanesAndDims.y;
+
+	const vec3 v = aPos - CamPos;
+	const float vZ = dot(v, CamForward);
+	if (vZ < camNearPlane - aRadius 
+		|| vZ > camFarPlane + aRadius)
+	{
+		return false;
+	}
+
+	const float camSphereFactorX = CamSphereFactorsAndRatioAndTangent.x;
+	const float camSphereFactorY = CamSphereFactorsAndRatioAndTangent.y;
+	const float camRatio = CamSphereFactorsAndRatioAndTangent.z;
+	const float camTangent = CamSphereFactorsAndRatioAndTangent.w;
+
+	const float vY = dot(v, CamUp);
+	const float height = vZ * camTangent;
+	float d = camSphereFactorY * aRadius; //distance from sphere center to yPlane
+	if (vY < -height - d 
+		|| vY > height + d)
+	{
+		return false;
+	}
+
+	const float vX = dot(v, CamRight);
+	const float width = height * camRatio;
+	d = camSphereFactorX * aRadius; //distance from sphere center to xPlane
+	if (vX < -width - d 
+		|| vX > width + d)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void main() 
 {
-	gl_TessLevelOuter[0] = 1;
-	gl_TessLevelOuter[1] = 1;
-	gl_TessLevelOuter[2] = 1;
-	gl_TessLevelOuter[3] = 1;
+	vec3 pos = (Model * gl_in[gl_InvocationID].gl_Position).xyz;
+	if(isVisible(pos, TileSize / 2)) // sphere bounding entire tile
+	{
+		float dist = distance(pos, CamPos); 
+		if(dist > 5)
+		{
+			gl_TessLevelOuter[0] = 1;
+			gl_TessLevelOuter[1] = 1;
+			gl_TessLevelOuter[2] = 1;
+			gl_TessLevelOuter[3] = 1;
+		}
+		else
+		{
+			gl_TessLevelOuter[0] = 4;
+			gl_TessLevelOuter[1] = 4;
+			gl_TessLevelOuter[2] = 4;
+			gl_TessLevelOuter[3] = 4;
+		}
+	}
+	else
+	{
+		gl_TessLevelOuter[0] = -1;
+		gl_TessLevelOuter[1] = -1;
+		gl_TessLevelOuter[2] = -1;
+		gl_TessLevelOuter[3] = -1;
+	}
 
-	gl_TessLevelInner[0] = 1;
-	gl_TessLevelInner[1] = 1;
+	// calc interior tessellation level - use average of outer levels
+    gl_TessLevelInner[0] = 0.5 * (gl_TessLevelOuter[1] + gl_TessLevelOuter[3]);
+    gl_TessLevelInner[1] = 0.5 * (gl_TessLevelOuter[0] + gl_TessLevelOuter[2]);
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 }

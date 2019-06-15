@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Transform.h"
+#include <Core/Transform.h>
 
 struct Frustum
 {
 	glm::vec3 myCamPos;
 	glm::vec3 myRight, myUp, myForward; //camera directions
-	float myNearPlane, myFarPlane, myWidth, myHeight, myRatio;
+	float myNearPlane, myFarPlane, myRatio;
 
 	//used to determine the width and height at distance between planes
 	float mySphereFactorX, mySphereFactorY;
@@ -94,12 +94,13 @@ public:
 	void SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop);
 
 	// checks a bounding sphere against the camera's frustum
-	bool CheckSphere(const glm::vec3& aPos, const float aRad) const { return myFrustrum.CheckSphere(aPos, aRad); }
+	bool CheckSphere(const glm::vec3& aPos, const float aRad) const { return myFrustum.CheckSphere(aPos, aRad); }
+	const Frustum& GetFrustum() const { return myFrustum; }
 
 private:
 	Transform myTransform;
 	glm::mat4 myProjMatrix, myViewMatrix, myVP;
 
 	bool myOrthoMode = false;
-	Frustum myFrustrum;
+	Frustum myFrustum;
 };

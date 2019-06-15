@@ -4,7 +4,10 @@
 #include "../Game.h"
 #include "../Input.h"
 
-#include <Core/Camera.h>
+#include <Graphics/Camera.h>
+#include <Graphics/Model.h>
+#include <Graphics/Texture.h>
+#include <Graphics/Pipeline.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
@@ -20,7 +23,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	shared_ptr<PhysicsShapeBox> boxShape = make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 
 	// a sphere with no visual object (don't have a mesh atm)
-	GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0, 5, 0));
+	/*GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0, 5, 0));
 	{
 		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 		physComp->CreatePhysicsEntity(1, sphereShape);
@@ -41,7 +44,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
 		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
 		go->SetVisualObject(vo);
-	}
+	}*/
 }
 
 void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
@@ -108,11 +111,11 @@ void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
 	// Because the ball doesn't have a visual object attached,
 	// have to draw out something in order to verify it's where
 	// it should be
-	pos = myBall->GetTransform().GetPos();
+	/*pos = myBall->GetTransform().GetPos();
 	right = myBall->GetTransform().GetRight();
 	up = myBall->GetTransform().GetUp();
 	forward = myBall->GetTransform().GetForward();
 	Game::GetInstance()->GetDebugDrawer().AddLine(pos - right, pos + right, glm::vec3(1, 0, 0));
 	Game::GetInstance()->GetDebugDrawer().AddLine(pos - up, pos + up, glm::vec3(1, 0, 0));
-	Game::GetInstance()->GetDebugDrawer().AddLine(pos - forward, pos + forward, glm::vec3(1, 0, 0));
+	Game::GetInstance()->GetDebugDrawer().AddLine(pos - forward, pos + forward, glm::vec3(1, 0, 0));*/
 }

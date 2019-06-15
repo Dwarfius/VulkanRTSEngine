@@ -28,7 +28,7 @@ public:
 
 public:
 	Pipeline(Resource::Id anId);
-	Pipeline(Resource::Id anId, const string& aPath);
+	Pipeline(Resource::Id anId, const std::string& aPath);
 
 	Resource::Type GetResType() const override { return Resource::Type::Pipeline; }
 
@@ -39,7 +39,7 @@ public:
 	// call SetState(Resource::State::PendingUpload) when done adding shaders!
 	void AddShader(Handle<Shader> aShader);
 
-	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(move(aDescriptor)); }
+	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(std::move(aDescriptor)); }
 
 	size_t GetShaderCount() const { return myShaders.size(); }
 	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
@@ -49,6 +49,6 @@ private:
 	void OnUpload(GPUResource* aGPURes) override;
 
 	Type myType;
-	vector<Descriptor> myDescriptors;
-	vector<Handle<Shader>> myShaders;
+	std::vector<Descriptor> myDescriptors;
+	std::vector<Handle<Shader>> myShaders;
 };

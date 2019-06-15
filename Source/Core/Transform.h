@@ -10,10 +10,6 @@ public:
 	// Creates a transform from position, rotation (in radians) and scale
 	Transform(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale);
 
-	// optional, allows to set a pivot for a transform
-	void SetCenter(glm::vec3 aCenter) { myCenter = aCenter; }
-	glm::vec3 GetCenter() const { return myCenter; }
-
 	glm::vec3 GetRight() const { return myRotation * glm::vec3(1, 0, 0); }
 	glm::vec3 GetForward() const { return myRotation * glm::vec3(0, 1, 0); }
 	glm::vec3 GetUp() const { return myRotation * glm::vec3(0, 0, 1); }
@@ -37,10 +33,8 @@ public:
 	void SetRotation(glm::vec3 anEuler) { SetRotation(glm::quat(anEuler)); }
 	void SetRotation(glm::quat aRot) { myRotation = aRot; }
 
-	// Returns a matrix with center pivot offset
+	// Returns a global matrix
 	glm::mat4 GetMatrix() const;
-	// Returns a matrix without a center pivot offset
-	glm::mat4 GetMatrixNoPivot() const;
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles);
@@ -49,7 +43,6 @@ private:
 	glm::vec3 myPos;
 	glm::vec3 myScale;
 	glm::quat myRotation;
-	glm::vec3 myCenter;
 
 	glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
 };

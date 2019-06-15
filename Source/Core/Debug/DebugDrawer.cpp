@@ -1,19 +1,6 @@
 #include "Precomp.h"
 #include "DebugDrawer.h"
 
-DebugDrawer::DebugDrawer()
-{
-	for (FrameCache& cache : myFrameCaches)
-	{
-		cache.myVertices.resize(SingleFrameCacheSize);
-		cache.myCurrentIndex = 0;
-	}
-
-	myTimedOffsets.resize(TimedCacheSize);
-	myTimedVertices.resize(TimedCacheSize);
-	myFreeOffset = 0;
-}
-
 void DebugDrawer::BeginFrame()
 {
 	UpdateFrameCache();
@@ -29,19 +16,14 @@ void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, 
 {
 	tbb::spin_mutex::scoped_lock lock(myCacheMutex);
 	FrameCache& cache = myFrameCaches.GetWrite();
-	if (cache.myCurrentIndex == cache.myVertices.size())
-	{
-		// For this frame we filled up the cache, so
-		// skip it till we grow it next frame
-		return;
-	}
 
-	PosColorVertex& v1 = cache.myVertices[cache.myCurrentIndex++];
-	v1.myPos = aFrom;
-	v1.myColor = aFromColor;
-	PosColorVertex& v2 = cache.myVertices[cache.myCurrentIndex++];
-	v2.myPos = aTo;
-	v2.myColor = aToColor;
+	if (cache.myVertices.EmplaceBack(aFrom, aFromColor))
+	{
+		ASSERT_STR(!cache.myVertices.NeedsToGrow(), "Size should be a multiple of 2");
+		cache.myVertices.EmplaceBack(aTo, aToColor);
+	}
+	// For this frame we filled up the cache, so
+	// skip it till we grow it next frame
 }
 
 void DebugDrawer::AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor, uint32_t aFramesToLive)
@@ -53,26 +35,27 @@ void DebugDrawer::AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFro
 {
 	tbb::spin_mutex::scoped_lock lock(myTimedCacheMutex);
 	// do we have space this frame?
-	if (myFreeOffset == myTimedOffsets.size())
+	if (myTimedOffsets.PushBack(aFramesToLive))
+	{
+		PosColorVertex a1 = { aFrom, aFromColor };
+		PosColorVertex a2 = { aTo, aToColor };
+		myTimedVertices.EmplaceBack(a1, a2);
+	}
+	else
 	{
 		ASSERT_STR(false, "There wasn't enough storage for debug timed lines, increase size!");
 		return;
 	}
-
-	// we give an extra frame to the life timer in order to make it threadsafe
-	// for frame buffering
-	myTimedOffsets[myFreeOffset] = aFramesToLive;
-	myTimedVertices[myFreeOffset++] = { { aFrom, aFromColor }, { aTo, aToColor } };
 }
 
 const PosColorVertex* DebugDrawer::GetCurrentVertices() const
 {
-	return myFrameCaches.GetRead().myVertices.data();
+	return myFrameCaches.GetRead().myVertices.Data();
 }
 
 size_t DebugDrawer::GetCurrentVertexCount() const
 {
-	return myFrameCaches.GetRead().myCurrentIndex;
+	return myFrameCaches.GetRead().myVertices.Size();
 }
 
 void DebugDrawer::UpdateFrameCache()
@@ -87,14 +70,13 @@ void DebugDrawer::UpdateFrameCache()
 	// So, either the cache that just switched out wasn't enough to store
 	// the data, or the cache that we just switched to is smaller than the
 	// old one - which means it wouldn't be able to fit old data, so it needs to grow
-	bool needsToGrow = oldCache.myCurrentIndex == oldCache.myVertices.size()
-		|| cache.myVertices.size() < oldCache.myVertices.size();
+	bool needsToGrow = oldCache.myVertices.NeedsToGrow()
+		|| cache.myVertices.Capacity() < oldCache.myVertices.Capacity();
 	if (needsToGrow)
 	{
-		size_t oldSize = cache.myVertices.size();
-		cache.myVertices.resize(oldSize << 1);
+		cache.myVertices.Grow();
 	}
-	cache.myCurrentIndex = 0;
+	cache.myVertices.Clear();
 }
 
 void DebugDrawer::UpdateTimedCache()
@@ -103,19 +85,20 @@ void DebugDrawer::UpdateTimedCache()
 	// the goal is to accumulate all expired ones at the end,
 	// so that we have to do less iterations overall and support
 	// O(1) insertion complexity
-	for (size_t i = 0; i < myFreeOffset;)
+	size_t count = myTimedOffsets.Size();
+	for (size_t i = 0; i < count;)
 	{
 		myTimedOffsets[i]--;
 		// has it expired?
 		if (myTimedOffsets[i] == 0)
 		{
 			// yeah - rotate it out to the end if possible
-			myFreeOffset--;
-			// not checking whether i == myFreeOffset because
-			// want to avoid branch, and thing doing 2 extra swaps with
+			count--;
+			// not checking whether i == count because
+			// want to avoid branch, and think doing 2 extra swaps with
 			// itself is better
-			std::swap(myTimedOffsets[i], myTimedOffsets[myFreeOffset]);
-			std::swap(myTimedVertices[i], myTimedVertices[myFreeOffset]);
+			std::swap(myTimedOffsets[i], myTimedOffsets[count]);
+			std::swap(myTimedVertices[i], myTimedVertices[count]);
 		}
 		else
 		{
@@ -125,4 +108,7 @@ void DebugDrawer::UpdateTimedCache()
 			i++;
 		}
 	}
+
+	myTimedOffsets.ClearFrom(count);
+	myTimedVertices.ClearFrom(count);
 }

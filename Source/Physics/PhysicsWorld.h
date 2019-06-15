@@ -2,7 +2,7 @@
 
 #include "PhysicsCommands.h"
 
-#include <Core/Graphics/Graphics.h>
+#include <Core/Threading/AssertRWMutex.h>
 
 class PhysicsEntity;
 class btBroadphaseInterface;

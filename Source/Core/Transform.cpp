@@ -10,7 +10,6 @@ Transform::Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
 	: myPos(pos)
 	, myScale(scale)
 	, myRotation(rot)
-	, myCenter(0.f)
 {
 }
 
@@ -49,11 +48,6 @@ void Transform::RotateToUp(glm::vec3 aNewUp)
 }
 
 glm::mat4 Transform::GetMatrix() const
-{
-	return glm::translate(GetMatrixNoPivot(), -myCenter);
-}
-
-glm::mat4 Transform::GetMatrixNoPivot() const
 {
 	glm::mat4 modelMatrix;
 	modelMatrix = glm::translate(glm::mat4(1), myPos);

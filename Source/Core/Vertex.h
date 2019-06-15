@@ -10,13 +10,21 @@ struct Vertex
 	glm::vec2 myUv;
 	glm::vec3 myNormal;
 
+	Vertex() = default;
+	Vertex(glm::vec3 aPos, glm::vec3 aUv, glm::vec3 aNormal)
+		: myPos(aPos)
+		, myUv(aUv)
+		, myNormal(aNormal)
+	{
+	}
+
 	bool operator==(const Vertex& other) const
 	{
 		return myPos == other.myPos && myUv == other.myUv && myNormal == other.myNormal;
 	}
 };
 // Vertex and PosColorVertex are intended to be lightweight, cheap structs
-static_assert(is_trivially_destructible_v<Vertex>, "Not trivially destructible!");
+static_assert(std::is_trivially_destructible_v<Vertex>, "Not trivially destructible!");
 
 struct PosColorVertex
 {
@@ -25,12 +33,19 @@ struct PosColorVertex
 	glm::vec3 myPos;
 	glm::vec3 myColor;
 
+	PosColorVertex() = default;
+	PosColorVertex(glm::vec3 aPos, glm::vec3 aColor)
+		: myPos(aPos)
+		, myColor(aColor)
+	{
+	}
+
 	bool operator==(const PosColorVertex& other) const
 	{
 		return myPos == other.myPos && myColor == other.myColor;
 	}
 };
-static_assert(is_trivially_destructible_v<PosColorVertex>, "Not trivially destructible!");
+static_assert(std::is_trivially_destructible_v<PosColorVertex>, "Not trivially destructible!");
 
 namespace std
 {

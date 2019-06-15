@@ -27,8 +27,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <tiny_obj_loader.h>
-
 #include "Debug/Assert.h"
 
 using namespace std;

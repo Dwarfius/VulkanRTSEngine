@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "ShaderGL.h"
 
+#include <Graphics/Shader.h>
+
 ShaderGL::ShaderGL()
 	: GPUResource()
 	, myGLShader(0)

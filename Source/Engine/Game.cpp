@@ -1,15 +1,18 @@
 #include "Precomp.h"
 #include "Game.h"
 
-#include "Graphics/UniformAdapterRegister.h"
+#include "Graphics/Adapters/UniformAdapterRegister.h"
 #include "Input.h"
 #include "Audio.h"
 #include "Terrain.h"
 #include "GameObject.h"
 #include "Terrain.h"
 
-#include <Core/Graphics/Graphics.h>
-#include <Core/Camera.h>
+#include <Graphics/Camera.h>
+#include <Graphics/Graphics.h>
+#include <Graphics/Model.h>
+#include <Graphics/Texture.h>
+#include <Graphics/Pipeline.h>
 
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsEntity.h>
@@ -91,20 +94,13 @@ void Game::Init()
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("wireframe.png");
-	// TEST: testing tesselation shader loading and linking
 	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
 
-	go = Instantiate();
-	{
-		vo = new VisualObject(*go);
-		vo->SetModel(cubeModel);
-		vo->SetPipeline(terrainPipeline);
-		vo->SetTexture(cubeText);
-		go->SetVisualObject(vo);
-	}
+	// TODO: replace heap allocation with using 
+	// a continuous allocated storage of VisualObjects
 
 	// a box for rendering test
-	go = Instantiate();
+	/*go = Instantiate();
 	{
 		vo = new VisualObject(*go);
 		vo->SetModel(cubeModel);
@@ -112,15 +108,16 @@ void Game::Init()
 		vo->SetTexture(cubeText);
 		go->SetVisualObject(vo);
 	}
-	go->GetTransform().SetPos(glm::vec3(0, 3, 0));
+	go->GetTransform().SetPos(glm::vec3(0, 3, 0));*/
 
 	// terrain
 	go = Instantiate();
 	{
 		vo = new VisualObject(*go);
 		vo->SetModel(myTerrains[0]->GetModelHandle());
-		vo->SetPipeline(defPipeline);
+		vo->SetPipeline(terrainPipeline);
 		vo->SetTexture(terrainText);
+		vo->SetCategory(VisualObject::Category::Terrain);
 		go->SetVisualObject(vo);
 	}
 

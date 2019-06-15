@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Resource.h"
-#include "../Vertex.h"
+#include <Core/Vertex.h>
 
 // TODO: template the Model on vertex type
 // TODO: expand model to support more dynamic operations
@@ -34,13 +34,13 @@ public:
 
 public:
 	Model(Resource::Id anId);
-	Model(Resource::Id anId, const string& aPath);
+	Model(Resource::Id anId, const std::string& aPath);
 
 	// Method for manually providing the model with data.
 	// anAABBMin and anAABBMax form axis-aligned bounding box,
 	// while aSphereRadius is the bounding sphere radius
 	// After calling it, the model will switch it state to PendingUpload
-	void SetData(vector<Vertex>&& aVerts, vector<IndexType>&& aIndices,
+	void SetData(std::vector<Vertex>&& aVerts, std::vector<IndexType>&& aIndices,
 		glm::vec3 anAABBMin, glm::vec3 anAABBMax, float aSphereRadius);
 
 	Resource::Type GetResType() const override { return Resource::Type::Model; }
@@ -68,8 +68,8 @@ private:
 	void OnUpload(GPUResource* aGPURes) override;
 
 	// TODO: this is potentially wasteful - not all models can have UVs or normals
-	vector<Vertex> myVertices;
-	vector<IndexType> myIndices;
+	std::vector<Vertex> myVertices;
+	std::vector<IndexType> myIndices;
 
 	glm::vec3 myAABBMin;
 	glm::vec3 myAABBMax;

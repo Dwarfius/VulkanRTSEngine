@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Graphics/Shader.h>
+#include <Graphics/Resource.h>
 
 class ShaderGL : public GPUResource
 {

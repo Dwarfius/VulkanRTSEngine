@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Graphics/Resource.h>
+#include <Graphics/Resource.h>
 
 class UniformBufferGL : public GPUResource
 {

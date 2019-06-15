@@ -2,6 +2,8 @@
 #include "UniformAdapterRegister.h"
 
 #include "UniformAdapter.h"
+#include "TerrainAdapter.h"
+#include "CameraAdapter.h"
 
 UniformAdapterRegister* UniformAdapterRegister::myInstance = nullptr;
 
@@ -17,7 +19,10 @@ UniformAdapterRegister* UniformAdapterRegister::GetInstance()
 
 void UniformAdapterRegister::RegisterTypes()
 {
+	// TODO: add autoregistration macros and get rid of this
 	Register<UniformAdapter>();
+	Register<TerrainAdapter>();
+	Register<CameraAdapter>();
 }
 
 shared_ptr<UniformAdapter> UniformAdapterRegister::GetAdapter

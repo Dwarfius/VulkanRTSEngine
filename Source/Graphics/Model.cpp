@@ -6,10 +6,10 @@ Model::Model(Resource::Id anId)
 {
 }
 
-Model::Model(Resource::Id anId, const string& aPath)
+Model::Model(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
-	, myAABBMin(numeric_limits<float>::max())
-	, myAABBMax(numeric_limits<float>::min())
+	, myAABBMin(std::numeric_limits<float>::max())
+	, myAABBMax(std::numeric_limits<float>::min())
 	, myCenter(0.f)
 	, mySphereRadius(0.f)
 	, myVertices()
@@ -17,7 +17,7 @@ Model::Model(Resource::Id anId, const string& aPath)
 {
 }
 
-void Model::SetData(vector<Vertex>&& aVerts, vector<IndexType>&& aIndices,
+void Model::SetData(std::vector<Vertex>&& aVerts, std::vector<IndexType>&& aIndices,
 	glm::vec3 anAABBMin, glm::vec3 anAABBMax, float aSphereRadius)
 {
 	myVertices = move(aVerts);
@@ -35,12 +35,12 @@ void Model::OnLoad(AssetTracker& anAssetTracker)
 	ASSERT_STR(myState == State::Invalid, "Double load detected!");
 
 	tinyobj::attrib_t attrib;
-	vector<tinyobj::shape_t> shapes;
-	vector<tinyobj::material_t> materials;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
 
-	const string baseDir = "assets/objects/";
-	string fullName = baseDir + myPath;
-	string err;
+	const std::string baseDir = "assets/objects/";
+	std::string fullName = baseDir + myPath;
+	std::string err;
 	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), baseDir.c_str());
 	if (!loaded)
 	{
@@ -54,7 +54,7 @@ void Model::OnLoad(AssetTracker& anAssetTracker)
 	}
 
 	myVertices.reserve(attrib.vertices.size());
-	unordered_map<Vertex, IndexType> uniqueVerts;
+	std::unordered_map<Vertex, IndexType> uniqueVerts;
 	for (const tinyobj::shape_t& shape : shapes)
 	{
 		for (const tinyobj::index_t& index : shape.mesh.indices)
@@ -100,7 +100,7 @@ void Model::OnLoad(AssetTracker& anAssetTracker)
 
 				// push back the new vertex and record it's position
 				size_t currIndex = myVertices.size();
-				ASSERT_STR(currIndex < numeric_limits<IndexType>::max(), "Vertex index overflow!");
+				ASSERT_STR(currIndex < std::numeric_limits<IndexType>::max(), "Vertex index overflow!");
 				uniqueVerts[vertex] = static_cast<IndexType>(currIndex); // marking that new vertex is at this index
 				myVertices.push_back(vertex); // adding it at the marked position
 			}

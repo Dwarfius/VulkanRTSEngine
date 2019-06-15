@@ -1,11 +1,14 @@
 #pragma once
 
-#include <Core/Graphics/Model.h>
+#include <Graphics/Model.h>
 
 class PhysicsShapeHeightfield;
 
 class Terrain
 {
+public:
+	// Controls the size of individual tiles inside a grid
+	static int TileSize;
 public:
 	Terrain();
 
@@ -22,6 +25,9 @@ public:
 	std::shared_ptr<PhysicsShapeHeightfield> CreatePhysicsShape();
 
 	Handle<Model> GetModelHandle() const { return myModel; }
+
+	float GetWidth() const { return (myWidth - 1) * myStep; }
+	float GetDepth() const { return (myHeight - 1) * myStep; }
 
 private:
 	Handle<Model> myModel;

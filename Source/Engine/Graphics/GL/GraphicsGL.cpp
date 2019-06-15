@@ -3,17 +3,23 @@
 
 #include "Terrain.h"
 #include "VisualObject.h"
-#include "Graphics/UniformAdapter.h"
+#include "Graphics/Adapters/UniformAdapter.h"
 #include "ShaderGL.h"
 #include "PipelineGL.h"
 #include "ModelGL.h"
 #include "TextureGL.h"
 #include "UniformBufferGL.h"
+#include "RenderPassJobGL.h"
 
 #include <sstream>
-#include <Core/Camera.h>
-#include <Core/Graphics/AssetTracker.h>
+
 #include <Core/Debug/DebugDrawer.h>
+
+#include <Graphics/Camera.h>
+#include <Graphics/AssetTracker.h>
+#include <Graphics/Shader.h>
+#include <Graphics/Pipeline.h>
+#include <Graphics/Texture.h>
 
 #ifdef _DEBUG
 #define DEBUG_GL_CALLS
@@ -26,9 +32,6 @@ void APIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 
 GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 	: Graphics(anAssetTracker)
-	, myCurrentModel(nullptr)
-	, myCurrentPipeline(nullptr)
-	, myCurrentTexture(nullptr)
 	, myDebugVertShader(nullptr)
 	, myDebugFragShader(nullptr)
 	, myDebugPipeline(nullptr)
@@ -83,24 +86,6 @@ void GraphicsGL::Init()
 			0, nullptr, GL_FALSE);
 	}
 #endif
-	
-	// clear settings
-	glClearColor(0, 0, 0, 0);
-	glClearDepth(1);
-
-	// enable depth testing
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL); //set less or equal func for depth testing
-
-	// enabling blending
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// turn on back face culling
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
-	glViewport(0, 0, ourWidth, ourHeight);
 
 	{
 		myDebugVertShader = new ShaderGL();
@@ -156,9 +141,9 @@ void GraphicsGL::Init()
 
 	CreateLineCache();
 
-	glActiveTexture(GL_TEXTURE0);
-
-	ResetRenderCalls();
+	// TEST
+	glGenQueries(1, &myGPUQuery);
+	// ===========
 }
 
 void GraphicsGL::BeginGather()
@@ -166,46 +151,32 @@ void GraphicsGL::BeginGather()
 	// before anything, process the accumulated resource requests
 	myAssetTracker.ProcessQueues();
 
-	// reset bind state to avoid misshaps with ProcessQueues that changes OpenGL state
-	myCurrentModel = nullptr;
-	myCurrentPipeline = nullptr;
-	myCurrentTexture = nullptr;
-
-	// clear the buffer for next frame render
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-void GraphicsGL::Render(const Camera& aCam, const VisualObject* aVO)
-{
-	ASSERT_STR(aVO, "Missing renderer!");
-
-	// updating the uniforms - grabbing game state!
-	size_t uboCount = aVO->GetPipeline()->GetDescriptorCount();
-	for(size_t i=0; i < uboCount; i++)
-	{
-		UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
-		const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
-		adapter.FillUniformBlock(aCam, uniformBlock);
-	}
-
-	RenderJob job{
-		aVO->GetPipeline(),
-		aVO->GetTexture(),
-		aVO->GetModel(),
-		aVO->GetUniforms()
-	};
-
-	// we don't actually render, we just create a render job, Display() does the rendering
-	{
-		tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
-		myThreadJobs.push_back(job);
-		myRenderCalls++;
-	}
+	Graphics::BeginGather();
 }
 
 void GraphicsGL::Display()
 {
-	// first going to process the debug lines
+	Graphics::Display();
+
+	myRenderPassJobs.Advance();
+
+	// TEST
+	glBeginQuery(GL_PRIMITIVES_GENERATED, myGPUQuery);
+	// ======
+	const RenderPassJobMap& jobs = myRenderPassJobs.GetRead();
+	for (const auto& pair : jobs)
+	{
+		pair.second->Execute();
+	}
+
+	// TEST
+	glEndQuery(GL_PRIMITIVES_GENERATED);
+	uint32_t triNum;
+	glGetQueryObjectuiv(myGPUQuery, GL_QUERY_RESULT, &triNum);
+	std::printf("Triangles: %u\n", triNum);
+	// ======
+
+	// lastly going to process the debug lines
 	if(myLineCache.myUploadDesc.myPrimitiveCount > 0)
 	{
 		// upload the entire chain
@@ -221,89 +192,18 @@ void GraphicsGL::Display()
 
 		// shader first
 		myDebugPipeline->Bind();
-		myCurrentPipeline = myDebugPipeline;
 
 		const GLfloat* vp = static_cast<const GLfloat*>(glm::value_ptr(myLineCache.myVp));
 		glUniformMatrix4fv(0, 1, false, vp);
 
 		// then VAO
 		myLineCache.myBuffer->Bind();
-		myCurrentModel = myLineCache.myBuffer;
 
 		// now just draw em out
 		GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetPrimitiveCount());
 		glDrawArrays(myLineCache.myBuffer->GetDrawMode(), 0, count);
 	}
 
-	// TODO: remove this once we have double/tripple buffering
-	tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
-	for (const RenderJob& r : myThreadJobs)
-	{
-		if (r.myPipeline.IsLastHandle()
-			|| r.myModel.IsLastHandle()
-			|| r.myTexture.IsLastHandle())
-		{
-			// one of the handles has expired, meaning noone needs it anymore
-			// cheaper to skip it
-			continue;
-		}
-
-		const Pipeline* pipelineRes = r.myPipeline.Get();
-		PipelineGL* pipeline = static_cast<PipelineGL*>(pipelineRes->GetGPUResource_Int());
-		ModelGL* model = static_cast<ModelGL*>(r.myModel->GetGPUResource_Int());
-		TextureGL* texture = static_cast<TextureGL*>(r.myTexture->GetGPUResource_Int());
-
-		if (pipeline != myCurrentPipeline)
-		{
-			pipeline->Bind();
-			myCurrentPipeline = pipeline;
-
-			// binding uniform blocks to according slots
-			size_t blockCount = pipeline->GetUBOCount();
-			ASSERT_STR(blockCount < numeric_limits<uint32_t>::max(), "Index of UBO block doesn't fit for binding!");
-			for (size_t i = 0; i < blockCount; i++)
-			{
-				// TODO: implement logic that doesn't rebind same slots:
-				// If pipeline A has X, Y, Z uniform blocks
-				// and pipeline B has X, V, W,
-				// if we bind from A to B (or vice versa), no need to rebind
-				pipeline->GetUBO(i).Bind(static_cast<uint32_t>(i));
-			}
-		}
-
-		if (texture != myCurrentTexture)
-		{
-			texture->Bind();
-			myCurrentTexture = texture;
-		}
-
-		if (model != myCurrentModel)
-		{
-			model->Bind();
-			myCurrentModel = model;
-		}
-
-		// Now we can update the uniform blocks
-		size_t descriptorCount = pipelineRes->GetDescriptorCount();
-		for (size_t i = 0; i < descriptorCount; i++)
-		{
-			// grabbing the descriptor because it has the locations
-			// of uniform values to be uploaded to
-			const Descriptor& aDesc = pipelineRes->GetDescriptor(i);
-			// there's a UBO for every descriptor of the pipeline
-			UniformBufferGL& ubo = pipeline->GetUBO(i);
-			UniformBufferGL::UploadDescriptor uploadDesc;
-			uploadDesc.mySize = aDesc.GetBlockSize();
-			uploadDesc.myData = r.myUniforms[i]->GetData();
-			ubo.Upload(uploadDesc);
-		}
-
-		uint32_t drawMode = model->GetDrawMode();
-		size_t primitiveCount = model->GetPrimitiveCount();
-		ASSERT_STR(primitiveCount < numeric_limits<GLsizei>::max(), "Exceeded the limit of primitives!");
-		glDrawElements(drawMode, static_cast<GLsizei>(primitiveCount), GL_UNSIGNED_INT, 0);
-	}
-	myThreadJobs.clear();
 	glfwSwapBuffers(myWindow);
 }
 
@@ -390,14 +290,28 @@ void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 	((GraphicsGL*)ourActiveGraphics)->OnResize(aWidth, aHeight);
 }
 
+RenderPassJob& GraphicsGL::GetRenderPassJob(uint32_t anId, const RenderContext& renderContext)
+{
+	RenderPassJob* foundJob;
+	RenderPassJobMap& map = myRenderPassJobs.GetWrite();
+	auto contextIter = map.find(anId);
+	if (contextIter != map.end())
+	{
+		foundJob = contextIter->second;
+	}
+	else
+	{
+		foundJob = new RenderPassJobGL();
+		map[anId] = foundJob;
+	}
+	foundJob->Initialize(renderContext);
+	return *foundJob;
+}
+
 void GraphicsGL::OnResize(int aWidth, int aHeight)
 {
 	ourWidth = aWidth;
 	ourHeight = aHeight;
-
-	// TODO: move this to BeginGather to get rid of the lock
-	tbb::spin_mutex::scoped_lock spinLock(myJobsLock);
-	glViewport(0, 0, aWidth, aHeight);
 }
 
 void GraphicsGL::CreateLineCache()

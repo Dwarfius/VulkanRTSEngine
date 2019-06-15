@@ -1,6 +1,5 @@
 #include "Precomp.h"
 #include "Camera.h"
-#include "Graphics/Graphics.h"
 
 Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)
 	: myOrthoMode(anOrthoMode)
@@ -24,7 +23,7 @@ void Camera::Recalculate()
 	glm::vec3 right = myTransform.GetRight();
 	glm::vec3 up = myTransform.GetUp();
 	glm::vec3 forward = myTransform.GetForward();
-	myFrustrum.UpdateFrustrum(pos, right, up, forward);
+	myFrustum.UpdateFrustrum(pos, right, up, forward);
 	myViewMatrix = glm::lookAt(pos, pos + forward, up);
 
 	myVP = myProjMatrix * myViewMatrix;
@@ -35,7 +34,7 @@ void Camera::SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFar
 	myOrthoMode = false;
 	
 	myProjMatrix = glm::perspective(aFov, aRatio, aNearPlane, fFarPlane);
-	myFrustrum.SetFrustrumDef(aFov, aRatio, aNearPlane, fFarPlane);
+	myFrustum.SetFrustrumDef(aFov, aRatio, aNearPlane, fFarPlane);
 }
 
 void Camera::SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop)

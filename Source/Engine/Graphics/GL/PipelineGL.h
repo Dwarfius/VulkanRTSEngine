@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Graphics/Pipeline.h>
+#include <Graphics/Resource.h>
 #include "UniformBufferGL.h"
 
 class PipelineGL : public GPUResource

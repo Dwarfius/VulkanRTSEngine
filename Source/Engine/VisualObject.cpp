@@ -2,33 +2,18 @@
 #include "VisualObject.h"
 
 #include "GameObject.h"
-#include "Graphics/UniformAdapter.h"
-#include "Graphics/UniformAdapterRegister.h"
+#include "Graphics/Adapters/UniformAdapter.h"
+#include "Graphics/Adapters/UniformAdapterRegister.h"
 
-#include <Core/Graphics/UniformBlock.h>
+#include <Graphics/UniformBlock.h>
+#include <Graphics/Pipeline.h>
+#include <Graphics/Texture.h>
+#include <Graphics/Model.h>
 
 VisualObject::VisualObject(GameObject& aGO)
 	: myGameObject(aGO)
+	, myCategory(Category::GameObject)
 {
-}
-
-void VisualObject::SetModel(Handle<Model> aModel)
-{
-	myModel = aModel;
-
-	if (myModel.IsValid())
-	{
-		Model* model = myModel.Get();
-		if (model->GetState() == Resource::State::Invalid)
-		{
-			// it hasn't finished loading from disk yet, so have to wait
-			model->AddOnLoadCB(bind(&VisualObject::UpdateCenter, this, std::placeholders::_1));
-		}
-		else
-		{
-			UpdateCenter(model);
-		}
-	}
 }
 
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
@@ -68,12 +53,6 @@ float VisualObject::GetRadius() const
 	const float maxScale = max({ scale.x, scale.y, scale.z });
 	const float radius = myModel->GetSphereRadius();
 	return maxScale * radius;
-}
-
-void VisualObject::UpdateCenter(const Resource* aModelRes)
-{
-	const Model* model = static_cast<const Model*>(aModelRes);
-	myGameObject.GetTransform().SetCenter(model->GetCenter());
 }
 
 void VisualObject::UpdateDescriptors(const Resource* aPipelineRes)

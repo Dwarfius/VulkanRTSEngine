@@ -24,12 +24,12 @@ public:
 
 	struct UploadDescriptor
 	{
-		string_view myFileContents;
+		std::string_view myFileContents;
 	};
 
 public:
 	Shader(Resource::Id anId);
-	Shader(Resource::Id anId, const string& aPath);
+	Shader(Resource::Id anId, const std::string& aPath);
 
 	Resource::Type GetResType() const { return Resource::Type::Shader; }
 
@@ -37,9 +37,9 @@ public:
 
 protected:
 	Type myType;
-	string myFileContents;
+	std::string myFileContents;
 
-	static Type DetermineType(const string& aPath);
+	static Type DetermineType(const std::string& aPath);
 
 private:
 	void OnLoad(AssetTracker& anAssetTracker) override;

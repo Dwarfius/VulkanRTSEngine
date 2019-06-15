@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "PipelineGL.h"
 
+#include <Graphics/Pipeline.h>
 #include "ShaderGL.h"
 
 PipelineGL::PipelineGL()
@@ -80,7 +81,7 @@ bool PipelineGL::Upload(any aDescriptor)
 			// TODO: get rid of this name hack, have a proper name string!
 			const string& uboName = descriptor.GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
-			glUniformBlockBinding(myGLProgram, uboIndex, 0); // point it at 0!
+			glUniformBlockBinding(myGLProgram, uboIndex, i);
 			
 			UniformBufferGL ubo;
 			ubo.Create(descriptor.GetBlockSize());

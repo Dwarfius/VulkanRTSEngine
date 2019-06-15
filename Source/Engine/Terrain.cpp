@@ -3,8 +3,10 @@
 
 #include <Physics/PhysicsShapes.h>
 
-#include <Core/Graphics/Texture.h>
-#include <Core/Graphics/AssetTracker.h>
+#include <Graphics/Texture.h>
+#include <Graphics/AssetTracker.h>
+
+int Terrain::TileSize = 10;
 
 Terrain::Terrain()
 	: myModel()
@@ -26,8 +28,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	// first, creating the vertices
 	vector<Vertex> verts;
 	verts.resize(myHeight * myWidth);
-	int startX = 0; // -myWidth / 2;
-	int startY = 0; // -myHeight / 2;
+	const float startX = 0.f;
+	const float startY = 0.f;
 	for (int y = 0; y < myHeight; y++)
 	{
 		for (int x = 0; x < myWidth; x++)
@@ -61,6 +63,12 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 			Model::IndexType br = bl + 1;
 			Model::IndexType tl = bl + myWidth;
 			Model::IndexType tr = tl + 1;
+
+			ASSERT(bl < verts.size());
+			ASSERT(br < verts.size());
+			ASSERT(tl < verts.size());
+			ASSERT(tr < verts.size());
+
 			indices[triangle + 0] = bl;
 			indices[triangle + 1] = tl;
 			indices[triangle + 2] = tr;
@@ -74,8 +82,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 
 	myModel = anAssetTracker.Create<Model>();
 
-	float fullWidth = (myWidth - 1) * myStep;
-	float fullDepth = (myHeight - 1) * myStep;
+	const float fullWidth = GetWidth();
+	const float fullDepth = GetDepth();
 	const glm::vec3 aabbMin(startX, minHeight, startY);
 	const glm::vec3 aabbMax(startX + fullWidth, maxHeight, startY + fullDepth);
 	// the largest dimension is the bounding sphere radius

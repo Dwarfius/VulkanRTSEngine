@@ -7,9 +7,9 @@
 class AssetTracker
 {
 private:
-	using AssetIter = unordered_map<Resource::Id, Resource*>::const_iterator;
-	using AssetPair = pair<const Resource::Id, Resource*>;
-	using RegisterIter = unordered_map<string, Resource::Id>::const_iterator;
+	using AssetIter = std::unordered_map<Resource::Id, Resource*>::const_iterator;
+	using AssetPair = std::pair<const Resource::Id, Resource*>;
+	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
 
 public:
 	AssetTracker();
@@ -25,7 +25,7 @@ public:
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
 	template<class AssetType>
-	Handle<AssetType> GetOrCreate(string aPath);
+	Handle<AssetType> GetOrCreate(std::string aPath);
 
 	// Cleans up the assets, as well as loads and uploads the new ones. 
 	// Changes OpenGL state if OpenGL backend is used.
@@ -55,12 +55,12 @@ private:
 
 	tbb::spin_mutex myRegisterMutex;
 	tbb::spin_mutex myAssetMutex;
-	atomic<Resource::Id> myCounter;
+	std::atomic<Resource::Id> myCounter;
 	// since all resources come from disk, we can track them by their path
-	unordered_map<string, Resource::Id> myRegister;
+	std::unordered_map<std::string, Resource::Id> myRegister;
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
-	unordered_map<Resource::Id, Resource*> myAssets;
+	std::unordered_map<Resource::Id, Resource*> myAssets;
 
 	// Queues support variables
 	tbb::concurrent_queue<GPUResource*> myReleaseQueue;
@@ -96,16 +96,16 @@ Handle<AssetType> AssetTracker::Create()
 }
 
 template<class AssetType>
-Handle<AssetType> AssetTracker::GetOrCreate(string aPath)
+Handle<AssetType> AssetTracker::GetOrCreate(std::string aPath)
 {
-	static_assert(is_base_of_v<Resource, AssetType>, "Asset tracker cannot track this type!");
+	static_assert(std::is_base_of_v<Resource, AssetType>, "Asset tracker cannot track this type!");
 
 	// first gotta check if we have it in the registry
 	bool needsCreating = false;
 	Resource::Id resourceId = Resource::InvalidId;
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-		unordered_map<string, Resource::Id>::const_iterator pair = myRegister.find(aPath);
+		std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(aPath);
 		if (pair != myRegister.end())
 		{
 			resourceId = pair->second;

@@ -42,12 +42,12 @@ public:
 		const void* myPixels;
 	};
 
-	static unsigned char* LoadFromDisk(const string& aPath, Format aFormat, int& aWidth, int& aHeight);
+	static unsigned char* LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight);
 	static void FreePixels(unsigned char* aBuffer);
 
 public:
 	Texture(Resource::Id anId);
-	Texture(Resource::Id anId, const string& aPath);
+	Texture(Resource::Id anId, const std::string& aPath);
 
 	Resource::Type GetResType() const override { return Resource::Type::Texture; }
 

@@ -11,7 +11,7 @@ Pipeline::Pipeline(Resource::Id anId)
 {
 }
 
-Pipeline::Pipeline(Resource::Id anId, const string& aPath)
+Pipeline::Pipeline(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
 	, myType(Type::Graphics)
 {
@@ -28,7 +28,7 @@ void Pipeline::AddShader(Handle<Shader> aShader)
 
 void Pipeline::OnLoad(AssetTracker& anAssetTracker)
 {
-	string contents;
+	std::string contents;
 	if (!ReadFile("assets/pipelines/" + myPath, contents))
 	{
 		SetErrMsg("Failed to read file!");
@@ -63,7 +63,7 @@ void Pipeline::OnLoad(AssetTracker& anAssetTracker)
 		for (size_t i = 0; i < shaderCount; i++)
 		{
 			const json& shaderHandle = shaderArrayHandle.at(i);
-			string shaderName = shaderHandle.get<string>();
+			std::string shaderName = shaderHandle.get<std::string>();
 			Handle<Shader> shader = anAssetTracker.GetOrCreate<Shader>(shaderName);
 			foundVert |= shader->GetType() == Shader::Type::Vertex;
 			foundFrag |= shader->GetType() == Shader::Type::Fragment;
@@ -110,7 +110,7 @@ void Pipeline::OnUpload(GPUResource* aGPURes)
 	CreateDescriptor createDesc;
 	myGPUResource->Create(createDesc);
 
-	vector<const GPUResource*> shaders;
+	std::vector<const GPUResource*> shaders;
 	shaders.resize(myShaders.size());
 	for (size_t i=0; i<myShaders.size(); i++)
 	{

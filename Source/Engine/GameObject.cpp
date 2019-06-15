@@ -2,10 +2,11 @@
 #include "GameObject.h"
 #include "Game.h"
 #include "VisualObject.h"
-
-#include <Core/Graphics/Graphics.h>
-#include <Core/Transform.h>
 #include "Components/ComponentBase.h"
+
+#include <Core/Transform.h>
+
+#include <Graphics/Graphics.h>
 
 GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
 	: myUID(UID::Create())
@@ -55,6 +56,5 @@ void GameObject::SetTransformImpl(const glm::mat4& aTransf)
 
 void GameObject::GetTransformImpl(glm::mat4& aTransf) const
 {
-	// We use no pivot here because Bullet allready offsets it internally
-	aTransf = myTransf.GetMatrixNoPivot();
+	aTransf = myTransf.GetMatrix();
 }

@@ -2,10 +2,10 @@
 #include "Resource.h"
 
 // TODO: move it to IO
-bool Resource::ReadFile(const string& aPath, string& aContents)
+bool Resource::ReadFile(const std::string& aPath, std::string& aContents)
 {
 	// opening at the end allows us to know size quickly
-	ifstream file(aPath, ios::ate | ios::binary);
+	std::ifstream file(aPath, std::ios::ate | std::ios::binary);
 	if (!file.is_open())
 	{
 		return false;
@@ -24,7 +24,7 @@ Resource::Resource(Id anId)
 {
 }
 
-Resource::Resource(Id anId, const string& aPath)
+Resource::Resource(Id anId, const std::string& aPath)
 	: myId(anId)
 	, myState(State::Invalid)
 	, myPath(aPath)
@@ -43,11 +43,11 @@ Resource::~Resource()
 	}
 }
 
-void Resource::SetErrMsg(string&& anErrString)
+void Resource::SetErrMsg(std::string&& anErrString)
 {
 	myState = State::Error;
 #ifdef _DEBUG
-	myErrString = move(anErrString);
+	myErrString = std::move(anErrString);
 	printf("[Error] %s: %s\n", myPath.c_str(), myErrString.c_str());
 #endif
 }

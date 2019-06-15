@@ -5,8 +5,14 @@
 #include "Graphics/VK/GraphicsVK.h"
 #include "Input.h"
 #include "Game.h"
-#include <Core/Camera.h>
 #include "VisualObject.h"
+#include "Graphics/Adapters/UniformAdapter.h"
+#include "Terrain.h"
+#include "Graphics/RenderPasses/GenericRenderPasses.h"
+
+#include <Graphics/Camera.h>
+#include <Graphics/Pipeline.h>
+
 
 RenderThread::RenderThread()
 	: myIsUsingVulkan(false)
@@ -38,6 +44,8 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	}
 	myGraphics->SetMaxThreads(thread::hardware_concurrency());
 	myGraphics->Init();
+	myGraphics->AddRenderPass(new DefaultRenderPass());
+	myGraphics->AddRenderPass(new TerrainRenderPass());
 	Input::SetWindow(myGraphics->GetWindow());
 }
 
@@ -107,8 +115,6 @@ void RenderThread::SubmitRenderables()
 	}
 #endif // USE_VULKAN
 
-	myGraphics->ResetRenderCalls();
-
 	// update the mvp
 	Game::GetInstance()->GetCamera()->Recalculate();
 
@@ -123,14 +129,50 @@ void RenderThread::SubmitRenderables()
 	// TODO: this is most probably overkill considering that Render call is lightweight
 	// need to look into batching those
 	const Camera& cam = *Game::GetInstance()->GetCamera();
-	tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
-		[&](const VisualObject* aVO)
+	/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
+		[&](const VisualObject* aVO)*/
+	for(const VisualObject* aVO : myRenderables)
 	{
 		if (cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
 		{
-			myGraphics->Render(cam, aVO);
+			// updating the uniforms - grabbing game state!
+			size_t uboCount = aVO->GetPipeline()->GetDescriptorCount();
+			for (size_t i = 0; i < uboCount; i++)
+			{
+				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
+				const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
+				adapter.FillUniformBlock(cam, uniformBlock);
+			}
+
+			// building a render job
+			RenderJob renderJob(
+				aVO->GetPipeline(), 
+				aVO->GetModel(), 
+				{ aVO->GetTexture() }, 
+				aVO->GetUniforms() 
+			);
+			switch (aVO->GetCategory())
+			{
+			case VisualObject::Category::GameObject:
+			{
+				IRenderPass::IParams params;
+				params.myDistance = 0; // TODO: implement it
+				myGraphics->Render(IRenderPass::Category::Renderables, cam, renderJob, params);
+			}
+				break;
+			case VisualObject::Category::Terrain:
+			{
+				const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
+				glm::vec3 scale = aVO->GetTransform().GetScale();
+				TerrainRenderParams params;
+				params.myDistance = 0;
+				params.mySize = scale * glm::vec3(terrain->GetWidth(), 0, terrain->GetDepth());
+				myGraphics->Render(IRenderPass::Category::Terrain, cam, renderJob, params);
+			}
+				break;
+			}
 		}
-	});
+	}//);
 
 	// schedule drawing out our debug drawings
 	myDebugDrawers.Advance();

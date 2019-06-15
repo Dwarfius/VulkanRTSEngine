@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/RWBuffer.h>
-#include <Core/Graphics/Graphics.h>
+#include <Graphics/Graphics.h>
 
 class VisualObject;
 class DebugDrawer;

@@ -74,7 +74,7 @@ void AssetTracker::ProcessUploads()
 {
 	// using a separate queue to keep track of items that can't be uploaded this
 	// update frame because they have dependencies that haven't uploaded
-	queue<Handle<Resource>> delayQueue;
+	std::queue<Handle<Resource>> delayQueue;
 	Handle<Resource> uploadItem;
 	while (myUploadQueue.try_pop(uploadItem))
 	{
@@ -95,7 +95,7 @@ void AssetTracker::ProcessUploads()
 		}
 
 		// check whether dependencies have loaded
-		const vector<Handle<Resource>>& deps = resource->GetDependencies();
+		const std::vector<Handle<Resource>>& deps = resource->GetDependencies();
 
 		bool dependenciesValid = true;
 		bool dependenciesUploaded = true;
@@ -158,7 +158,7 @@ void AssetTracker::ProcessUploads()
 
 void AssetTracker::RemoveResource(const Resource* aRes)
 {
-	const string& path = aRes->GetPath();
+	const std::string& path = aRes->GetPath();
 
 	if(path.length())
 	{

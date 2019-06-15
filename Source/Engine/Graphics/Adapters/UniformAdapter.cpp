@@ -1,9 +1,10 @@
 #include "Precomp.h"
 #include "UniformAdapter.h"
 
-#include <Core/Camera.h>
-#include <Core/Graphics/UniformBlock.h>
-#include "VisualObject.h"
+#include <Graphics/Camera.h>
+#include <Graphics/UniformBlock.h>
+
+#include "../../VisualObject.h"
 
 UniformAdapter::UniformAdapter(const GameObject& aGO, const VisualObject& aVO)
 	: myGO(aGO)

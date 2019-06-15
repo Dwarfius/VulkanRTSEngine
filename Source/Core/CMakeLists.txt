@@ -36,30 +36,6 @@ if(NOT tbb_POPULATED)
 endif()
 
 FetchContent_Declare(
-	nlohmann_json
-	GIT_REPOSITORY	https://github.com/nlohmann/json
-	GIT_TAG			v3.4.0
-)
-
-FetchContent_GetProperties(nlohmann_json)
-if(NOT nlohmann_json_POPULATED)
-	FetchContent_Populate(nlohmann_json)
-
-	# Since we grab a particular version, we know that it
-	# is stable, so we can get rid of tests and other bits
-	set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
-	set(JSON_Coverage OFF CACHE BOOL "" FORCE)
-	set(JSON_MultipleHeaders ON CACHE BOOL "" FORCE)
-	set(JSON_NoExceptions ON CACHE BOOL "" FORCE)
-	set(JSON_Sanitizer OFF CACHE BOOL "" FORCE)
-	set(JSON_Valgrind OFF CACHE BOOL "" FORCE)
-
-	# Removes extra generated projects
-	set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-	add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
-endif()
-
-FetchContent_Declare(
 	glm
 	GIT_REPOSITORY	https://github.com/g-truc/glm
 	GIT_TAG			0.9.9.3
@@ -99,8 +75,8 @@ endif()
 set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
-	"Camera.cpp" "Camera.h"
 	"CRC32.h"
+	"LazyVector.h"
 	"Transform.cpp" "Transform.h"
 	"UID.cpp" "UID.h"
 	"RefCounted.cpp" "RefCounted.h"
@@ -111,18 +87,6 @@ set(SRC "Precomp.cpp" "Precomp.h"
 
 set(SRC_THREADING "Threading/AssertMutex.cpp" "Threading/AssertMutex.h"
 	"Threading/AssertRWMutex.cpp" "Threading/AssertRWMutex.h"
-)
-
-set(SRC_GRAPHICS "Graphics/AssetTracker.cpp" "Graphics/AssetTracker.h"
-	"Graphics/Descriptor.cpp" "Graphics/Descriptor.h"
-	"Graphics/Graphics.cpp" "Graphics/Graphics.h"
-	"Graphics/GraphicsTypes.h"
-	"Graphics/Model.cpp" "Graphics/Model.h"
-	"Graphics/Pipeline.cpp" "Graphics/Pipeline.h"
-	"Graphics/Resource.cpp" "Graphics/Resource.h"
-	"Graphics/Shader.cpp" "Graphics/Shader.h"
-	"Graphics/Texture.cpp" "Graphics/Texture.h"
-	"Graphics/UniformBlock.cpp" "Graphics/UniformBlock.h"
 )
 
 set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl" 

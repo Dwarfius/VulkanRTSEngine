@@ -29,7 +29,7 @@ private:
 	// ==========================
 
 private:
-	atomic<uint32_t> myCounter;
+	std::atomic<uint32_t> myCounter;
 };
 
 // =======================================================
@@ -41,7 +41,6 @@ private:
 template<typename T>
 class Handle
 {
-	static_assert(is_base_of_v<RefCounted, T>, "T isn't RefCounted-based!");
 public:
 	Handle()
 		: myObject(nullptr)
@@ -124,7 +123,7 @@ public:
 #ifdef HANDLE_HEAVY_DEBUG
 		AssertReadLock ourLock(myDebugMutex);
 #endif
-		static_assert(is_convertible_v<T*, TOther*>, "Can't convert types!");
+		static_assert(std::is_convertible_v<T*, TOther*>, "Can't convert types!");
 		return static_cast<TOther*>(myObject); 
 	}
 

@@ -74,15 +74,27 @@ set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
 )
 
-set(SRC_GRAPHICS "Graphics/UniformAdapter.cpp" "Graphics/UniformAdapter.h"
-	"Graphics/UniformAdapterRegister.cpp" "Graphics/UniformAdapterRegister.h")
+set(SRC_GRAPHICS 
+)
+
+set(SRC_GRAPHICS_RENDERPASSES
+	"Graphics/RenderPasses/GenericRenderPasses.cpp" "Graphics/RenderPasses/GenericRenderPasses.h"
+)
 
 set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/ModelGL.cpp" "Graphics/GL/ModelGL.h"
 	"Graphics/GL/PipelineGL.cpp" "Graphics/GL/PipelineGL.h"
+	"Graphics/GL/RenderPassJobGL.cpp" "Graphics/GL/RenderPassJobGL.h"
 	"Graphics/GL/ShaderGL.cpp" "Graphics/GL/ShaderGL.h"
 	"Graphics/GL/TextureGL.cpp" "Graphics/GL/TextureGL.h"
 	"Graphics/GL/UniformBufferGL.cpp" "Graphics/GL/UniformBufferGL.h"
+)
+
+set(SRC_GRAPHICS_ADAPTERS 
+	"Graphics/Adapters/CameraAdapter.cpp" "Graphics/Adapters/CameraAdapter.h"
+	"Graphics/Adapters/TerrainAdapter.cpp" "Graphics/Adapters/TerrainAdapter.h"
+	"Graphics/Adapters/UniformAdapter.cpp" "Graphics/Adapters/UniformAdapter.h"
+	"Graphics/Adapters/UniformAdapterRegister.cpp" "Graphics/Adapters/UniformAdapterRegister.h"
 )
 
 if(VENGINE_BUILD_WITH_VULKAN)
@@ -94,8 +106,10 @@ add_library(${PROJECT_NAME} STATIC
 	${SRC} 
 		${SRC_COMP} 
 		${SRC_GRAPHICS} 
+			${SRC_GRAPHICS_RENDERPASSES}
 			${SRC_GRAPHICS_GL} 
 			${SRC_GRAPHICS_VK}
+			${SRC_GRAPHICS_ADAPTERS}
 )
 
 if (MSVC)
@@ -107,6 +121,8 @@ endif(MSVC)
 source_group("" FILES ${SRC})
 source_group(Components FILES ${SRC_COMP})
 source_group(Graphics FILES ${SRC_GRAPHICS})
+source_group(Graphics\\Adapters FILES ${SRC_GRAPHICS_ADAPTERS})
+source_group(Graphics\\RenderPasses FILES ${SRC_GRAPHICS_RENDERPASSES})
 source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
 if(VENGINE_BUILD_WITH_VULKAN)
 	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
@@ -130,6 +146,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} 
 	Core 
+	Graphics
 	Physics 
 	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:OpenAL>
 	libglew_static # TODO: generalize this

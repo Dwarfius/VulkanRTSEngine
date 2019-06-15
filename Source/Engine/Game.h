@@ -3,8 +3,8 @@
 #include "GameTaskManager.h"
 #include "RenderThread.h"
 #include <Core/UID.h>
-#include <Core/Graphics/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
+#include <Graphics/AssetTracker.h>
 
 class Camera;
 class EditorMode;

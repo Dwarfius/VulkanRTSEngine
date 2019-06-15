@@ -19,9 +19,9 @@ public:
 	void UnlockRead();
 
 private:
-	atomic<unsigned char> myLock;
-	thread::id myLastReadThreadId; // for debug info
-	thread::id myWriteThreadId; // for debug info
+	std::atomic<unsigned char> myLock;
+	std::thread::id myLastReadThreadId; // for debug info
+	std::thread::id myWriteThreadId; // for debug info
 };
 
 // A locker utility that implements RAII on AssertRWMutex for read

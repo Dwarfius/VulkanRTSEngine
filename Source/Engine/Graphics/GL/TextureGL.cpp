@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "TextureGL.h"
 
+#include <Graphics/Texture.h>
+
 TextureGL::TextureGL()
 	: GPUResource()
 	, myGLTexture(0)
