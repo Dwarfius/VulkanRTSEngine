@@ -13,11 +13,13 @@ Terrain::Terrain()
 	, myWidth(0)
 	, myHeight(0)
 	, myStep(0.f)
+	, myYScale(0.f)
 {
 }
 
 void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, float anYScale, float anUvScale)
 {
+	myYScale = anYScale;
 	myStep = aStep;
 	unsigned char* pixels = Texture::LoadFromDisk(aName, Texture::Format::UNorm_R, myWidth, myHeight);
 
@@ -35,10 +37,12 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 		for (int x = 0; x < myWidth; x++)
 		{
 			size_t index = y * myWidth + x;
+			// TODO: there's no longer any need to store actual vertices.
+			// should replace with heightfields
 			Vertex v;
 			v.myPos.x = startX + x * myStep;
 			v.myPos.z = startY + y * myStep;
-			v.myPos.y = pixels[index] / 255.f * anYScale;
+			v.myPos.y = pixels[index] / 255.f * myYScale;
 			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
 			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
 			verts[index] = v;

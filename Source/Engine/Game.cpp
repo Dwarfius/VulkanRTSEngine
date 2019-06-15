@@ -61,7 +61,7 @@ Game::Game(ReportError aReporterFunc)
 	UniformAdapterRegister::GetInstance();
 
 	Terrain* terr = new Terrain();
-	terr->Load(myAssetTracker, "assets/textures/heightmapSmall.png", 1.f, 1.f, 1.f);
+	terr->Load(myAssetTracker, "assets/textures/heightmap.png", 1.f, 25.f, 1.f);
 	myTerrains.push_back(terr);
 
 	myRenderThread = new RenderThread();
@@ -93,7 +93,7 @@ void Game::Init()
 	// ==========================
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
-	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("wireframe.png");
+	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("heightmap.png");
 	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 

@@ -173,7 +173,7 @@ void GraphicsGL::Display()
 	glEndQuery(GL_PRIMITIVES_GENERATED);
 	uint32_t triNum;
 	glGetQueryObjectuiv(myGPUQuery, GL_QUERY_RESULT, &triNum);
-	std::printf("Triangles: %u\n", triNum);
+	//std::printf("Triangles: %u\n", triNum);
 	// ======
 
 	// lastly going to process the debug lines

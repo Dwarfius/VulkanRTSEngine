@@ -45,6 +45,10 @@ bool Descriptor::FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc)
 		{
 			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Int);
 		}
+		else if (uniformTypeName == "Float")
+		{
+			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Float);
+		}
 		else
 		{
 			ASSERT_STR(false, "Not supported!");

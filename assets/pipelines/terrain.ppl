@@ -20,7 +20,8 @@
 				"Vec3",
 				"Int",
 				"Int",
-				"Int"
+				"Int",
+				"Float"
 			]
 		},
 		{

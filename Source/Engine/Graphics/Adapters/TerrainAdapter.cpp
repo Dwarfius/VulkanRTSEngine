@@ -39,4 +39,5 @@ void TerrainAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) con
 	aUB.SetUniform(1, tileSize); // TODO: split into XY size instead of X size
 	aUB.SetUniform(2, gridWidth);
 	aUB.SetUniform(3, gridDepth);
+	aUB.SetUniform(4, terrain->GetYScale());
 }

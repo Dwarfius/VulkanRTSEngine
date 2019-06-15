@@ -1,4 +1,5 @@
 #version 420
+#extension GL_ARB_separate_shader_objects : enable
 
 layout(vertices=1) out;
 
@@ -14,6 +15,7 @@ layout (std140, binding = 1) uniform TerrainAdapter
 	int TileSize;
 	int GridWidth;
 	int GridHeight;
+	float YScale;
 };
 
 layout (std140, binding = 2) uniform CameraAdapter
@@ -27,6 +29,17 @@ layout (std140, binding = 2) uniform CameraAdapter
 	vec4 CamPlanesAndDims;
 	vec4 CamSphereFactorsAndRatioAndTangent;
 };
+
+layout(location = 0) in DataIn
+{
+	mediump vec2 TexCoords;
+} In[];
+
+layout(location = 0) out DataOut
+{
+	mediump vec2 TexCoords;
+	int TessLevel;
+} Out[];
 
 bool isVisible(vec3 aPos, float aRadius)
 {
@@ -74,20 +87,14 @@ void main()
 	if(isVisible(pos, TileSize / 2)) // sphere bounding entire tile
 	{
 		float dist = distance(pos, CamPos); 
-		if(dist > 5)
-		{
-			gl_TessLevelOuter[0] = 1;
-			gl_TessLevelOuter[1] = 1;
-			gl_TessLevelOuter[2] = 1;
-			gl_TessLevelOuter[3] = 1;
-		}
-		else
-		{
-			gl_TessLevelOuter[0] = 4;
-			gl_TessLevelOuter[1] = 4;
-			gl_TessLevelOuter[2] = 4;
-			gl_TessLevelOuter[3] = 4;
-		}
+		const float kMaxDist = 100;
+		int level = int(64 * (kMaxDist - dist) / kMaxDist);
+		level = clamp(level, 1, 64);
+		gl_TessLevelOuter[0] = level;
+		gl_TessLevelOuter[1] = level;
+		gl_TessLevelOuter[2] = level;
+		gl_TessLevelOuter[3] = level;
+		Out[gl_InvocationID].TessLevel = level;
 	}
 	else
 	{
@@ -102,4 +109,5 @@ void main()
     gl_TessLevelInner[1] = 0.5 * (gl_TessLevelOuter[0] + gl_TessLevelOuter[2]);
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+	Out[gl_InvocationID].TexCoords = In[gl_InvocationID].TexCoords;
 }

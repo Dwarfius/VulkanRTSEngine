@@ -28,6 +28,7 @@ public:
 
 	float GetWidth() const { return (myWidth - 1) * myStep; }
 	float GetDepth() const { return (myHeight - 1) * myStep; }
+	float GetYScale() const { return myYScale; }
 
 private:
 	Handle<Model> myModel;
@@ -36,6 +37,8 @@ private:
 	int myWidth, myHeight;
 	// distance between neighbouring terrain vertices
 	float myStep;
+	// controls how much texture should be scaled "vertically"
+	float myYScale;
 
 	void Normalize(vector<Vertex>& aVertices, const vector<Model::IndexType>& aIndices);
 
