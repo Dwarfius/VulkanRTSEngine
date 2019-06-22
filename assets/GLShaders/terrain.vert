@@ -1,10 +1,11 @@
 #version 420
 #extension GL_ARB_separate_shader_objects : enable
 
-layout (std140, binding = 0) uniform UniformAdapter // TODO: give it a proper name!
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
 {
 	mat4 Model;
-	mat4 mvp;
+	mat4 ModelView;
+	mat4 MVP;
 };
 
 layout (std140, binding = 1) uniform TerrainAdapter

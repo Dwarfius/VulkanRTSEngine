@@ -1,7 +1,7 @@
 #include "Precomp.h"
 #include "UniformAdapterRegister.h"
 
-#include "UniformAdapter.h"
+#include "ObjectMatricesAdapter.h"
 #include "TerrainAdapter.h"
 #include "CameraAdapter.h"
 
@@ -20,7 +20,7 @@ UniformAdapterRegister* UniformAdapterRegister::GetInstance()
 void UniformAdapterRegister::RegisterTypes()
 {
 	// TODO: add autoregistration macros and get rid of this
-	Register<UniformAdapter>();
+	Register<ObjectMatricesAdapter>();
 	Register<TerrainAdapter>();
 	Register<CameraAdapter>();
 }

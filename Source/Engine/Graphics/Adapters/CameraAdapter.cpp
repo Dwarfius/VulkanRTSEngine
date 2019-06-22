@@ -3,6 +3,7 @@
 
 #include <Graphics/Camera.h>
 #include <Graphics/UniformBlock.h>
+#include <Graphics/Graphics.h>
 
 #include "../../VisualObject.h"
 
@@ -15,22 +16,20 @@ void CameraAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) cons
 {
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	glm::vec3 pos = aCam.GetTransform().GetPos();
-	glm::vec3 right = aCam.GetTransform().GetRight();
-	glm::vec3 up = aCam.GetTransform().GetUp();
-	glm::vec3 forward = aCam.GetTransform().GetForward();
-	glm::mat4 viewMatrix = aCam.GetView();
-	glm::mat4 projMatrix = aCam.GetProj();
+	const glm::vec3 pos = aCam.GetTransform().GetPos();
+	const glm::mat4 viewMatrix = aCam.GetView();
+	const glm::mat4 projMatrix = aCam.GetProj();
 	const Frustum& frustum = aCam.GetFrustum();
-	glm::vec4 camPack1(frustum.myNearPlane, frustum.myFarPlane, 0, 0);
-	glm::vec4 camPack2(frustum.mySphereFactorX, frustum.mySphereFactorY, frustum.myRatio, frustum.myTangent);
+	const glm::vec2 viewport(Graphics::GetWidth(), Graphics::GetHeight());
 
-	aUB.SetUniform(0, pos);
-	aUB.SetUniform(1, right);
-	aUB.SetUniform(2, up);
-	aUB.SetUniform(3, forward);
-	aUB.SetUniform(4, viewMatrix);
-	aUB.SetUniform(5, projMatrix);
-	aUB.SetUniform(6, camPack1);
-	aUB.SetUniform(7, camPack2);
+	aUB.SetUniform(0, viewMatrix);
+	aUB.SetUniform(1, projMatrix);
+	aUB.SetUniform(2, frustum.myPlanes[0]);
+	aUB.SetUniform(3, frustum.myPlanes[1]);
+	aUB.SetUniform(4, frustum.myPlanes[2]);
+	aUB.SetUniform(5, frustum.myPlanes[3]);
+	aUB.SetUniform(6, frustum.myPlanes[4]);
+	aUB.SetUniform(7, frustum.myPlanes[5]);
+	aUB.SetUniform(8, pos);
+	aUB.SetUniform(9, viewport);
 }

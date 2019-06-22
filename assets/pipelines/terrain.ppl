@@ -8,8 +8,9 @@
 	],
 	"descriptors":[  
 		{  
-			"adapter":"UniformAdapter",
+			"adapter":"ObjectMatricesAdapter",
 			"members":[  
+				"Mat4",
 				"Mat4",
 				"Mat4"
 			]
@@ -27,14 +28,16 @@
 		{
 			"adapter":"CameraAdapter",
 			"members":[
-				"Vec3",
-				"Vec3",
-				"Vec3",
-				"Vec3",
 				"Mat4",
 				"Mat4",
 				"Vec4",
-				"Vec4"
+				"Vec4",
+				"Vec4",
+				"Vec4",
+				"Vec4",
+				"Vec4",
+				"Vec3",
+				"Vec2"
 			]
 		}
 	]

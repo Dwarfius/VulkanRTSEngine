@@ -93,7 +93,8 @@ set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 set(SRC_GRAPHICS_ADAPTERS 
 	"Graphics/Adapters/CameraAdapter.cpp" "Graphics/Adapters/CameraAdapter.h"
 	"Graphics/Adapters/TerrainAdapter.cpp" "Graphics/Adapters/TerrainAdapter.h"
-	"Graphics/Adapters/UniformAdapter.cpp" "Graphics/Adapters/UniformAdapter.h"
+	"Graphics/Adapters/ObjectMatricesAdapter.cpp" "Graphics/Adapters/ObjectMatricesAdapter.h"
+	"Graphics/Adapters/UniformAdapter.h"
 	"Graphics/Adapters/UniformAdapterRegister.cpp" "Graphics/Adapters/UniformAdapterRegister.h"
 )
 

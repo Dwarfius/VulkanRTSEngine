@@ -3,10 +3,11 @@
 
 layout(quads, fractional_even_spacing, cw) in;
 
-layout (std140, binding = 0) uniform UniformAdapter // TODO: give it a proper name!
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
 {
 	mat4 Model;
-	mat4 mvp;
+	mat4 ModelView;
+	mat4 MVP;
 };
 
 layout (std140, binding = 1) uniform TerrainAdapter
@@ -43,5 +44,5 @@ void main()
     Out.TexCoords = uv;
     Out.TessLevel = In[0].TessLevel;
 
-	gl_Position = mvp * vec4(pos, 1);
+	gl_Position = MVP * vec4(pos, 1);
 }

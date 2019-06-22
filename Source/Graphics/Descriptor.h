@@ -44,8 +44,7 @@ public:
 
 	size_t GetSlotSize(uint32_t aSlot) const;
 
-	// Sets the name of the uniform adapter that will be used to fetch
-	// uniform data from game object to GPU
+	// Name of the adapter that is related to the Uniform Buffer Object
 	const std::string& GetUniformAdapter() const { return myUniformAdapter; }
 
 private:

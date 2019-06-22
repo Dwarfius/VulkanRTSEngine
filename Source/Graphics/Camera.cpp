@@ -23,10 +23,9 @@ void Camera::Recalculate()
 	glm::vec3 right = myTransform.GetRight();
 	glm::vec3 up = myTransform.GetUp();
 	glm::vec3 forward = myTransform.GetForward();
-	myFrustum.UpdateFrustrum(pos, right, up, forward);
 	myViewMatrix = glm::lookAt(pos, pos + forward, up);
-
 	myVP = myProjMatrix * myViewMatrix;
+	myFrustum.UpdateFrustumPlanes(myVP);
 }
 
 void Camera::SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFarPlane)
@@ -34,7 +33,8 @@ void Camera::SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFar
 	myOrthoMode = false;
 	
 	myProjMatrix = glm::perspective(aFov, aRatio, aNearPlane, fFarPlane);
-	myFrustum.SetFrustrumDef(aFov, aRatio, aNearPlane, fFarPlane);
+	myVP = myProjMatrix * myViewMatrix;
+	myFrustum.UpdateFrustumPlanes(myProjMatrix);
 }
 
 void Camera::SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop)

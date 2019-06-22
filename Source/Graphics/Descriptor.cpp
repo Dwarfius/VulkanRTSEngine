@@ -41,6 +41,10 @@ bool Descriptor::FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc)
 		{
 			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Vec3);
 		}
+		else if (uniformTypeName == "Vec2")
+		{
+			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Vec2);
+		}
 		else if (uniformTypeName == "Int")
 		{
 			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Int);

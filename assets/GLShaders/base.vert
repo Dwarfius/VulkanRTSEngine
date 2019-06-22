@@ -7,10 +7,11 @@ layout(location = 2) in vec3 normal;
 out vec3 normalOut;
 out vec2 uvsOut;
 
-layout (std140) uniform UniformAdapter // TODO: give it a proper name!
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
 {
 	mat4 Model;
-	mat4 mvp;
+	mat4 ModelView;
+	mat4 MVP;
 };
 
 void main() 

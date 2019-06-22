@@ -3,10 +3,11 @@
 
 layout(vertices=1) out;
 
-layout (std140, binding = 0) uniform UniformAdapter // TODO: give it a proper name!
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
 {
 	mat4 Model;
-	mat4 mvp;
+	mat4 ModelView;
+	mat4 MVP;
 };
 
 layout (std140, binding = 1) uniform TerrainAdapter
@@ -20,14 +21,17 @@ layout (std140, binding = 1) uniform TerrainAdapter
 
 layout (std140, binding = 2) uniform CameraAdapter
 {
-	vec3 CamPos;
-	vec3 CamRight;
-	vec3 CamUp;
-	vec3 CamForward;
 	mat4 CamView;
 	mat4 CamProj;
-	vec4 CamPlanesAndDims;
-	vec4 CamSphereFactorsAndRatioAndTangent;
+	// TODO: add ability to adapters to have arrays
+	vec4 FrustumPlaneLeft;
+	vec4 FrustumPlaneRight;
+	vec4 FrustumPlaneDown;
+	vec4 FrustumPlaneUp;
+	vec4 FrustumPlaneFar;
+	vec4 FrustumPlaneNear;
+	vec3 CamPos;
+	vec2 Viewport;
 };
 
 layout(location = 0) in DataIn
@@ -41,60 +45,89 @@ layout(location = 0) out DataOut
 	int TessLevel;
 } Out[];
 
+// Taken from NVidia's terrain tesselation whitepaper sample
+// Sphere-frustum intersection test in world space
 bool isVisible(vec3 aPos, float aRadius)
 {
-	// TODO: replace all of this with view-space calculations
-	const float camNearPlane = CamPlanesAndDims.x;
-	const float camFarPlane = CamPlanesAndDims.y;
-
-	const vec3 v = aPos - CamPos;
-	const float vZ = dot(v, CamForward);
-	if (vZ < camNearPlane - aRadius 
-		|| vZ > camFarPlane + aRadius)
-	{
-		return false;
-	}
-
-	const float camSphereFactorX = CamSphereFactorsAndRatioAndTangent.x;
-	const float camSphereFactorY = CamSphereFactorsAndRatioAndTangent.y;
-	const float camRatio = CamSphereFactorsAndRatioAndTangent.z;
-	const float camTangent = CamSphereFactorsAndRatioAndTangent.w;
-
-	const float vY = dot(v, CamUp);
-	const float height = vZ * camTangent;
-	float d = camSphereFactorY * aRadius; //distance from sphere center to yPlane
-	if (vY < -height - d 
-		|| vY > height + d)
-	{
-		return false;
-	}
-
-	const float vX = dot(v, CamRight);
-	const float width = height * camRatio;
-	d = camSphereFactorX * aRadius; //distance from sphere center to xPlane
-	if (vX < -width - d 
-		|| vX > width + d)
-	{
-		return false;
-	}
-
-	return true;
+    const vec4 pos = vec4(aPos, 1.f);
+	bool isOutside = (dot(pos, FrustumPlaneLeft) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneRight) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneDown) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneUp) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneFar) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneNear) + aRadius < 0.0);
+	return !isOutside;
 }
+
+vec2 clipToScreen(vec4 pos)
+{
+	vec4 p = pos; // clip space
+	p.xy /= p.w; // project (now [-1, 1])
+	p.xy *= Viewport;
+	return p.xy;
+}
+
+// given 2 points, calculates the distance between the 2 points
+// in screen space
+int edgeTesselation(vec2 v1, vec2 v2)
+{
+	const float kTriangleSize = 5.f;
+	const float dist = distance(v1, v2);
+	return int(clamp(dist / kTriangleSize, 1.f, 64.f));
+}
+
+// given 2 points in Local Space, calculates edge tesselation by wrapping
+// it in a sphere and determining the size in screen space
+int edgeTesselationSphere(vec3 v1, vec3 v2, float sphereRadius)
+{
+	vec3 midPointLS = (v1 + v2) / 2.f;
+	vec4 midPointES = ModelView * vec4(midPointLS, 1.f);
+	vec4 perpEyePointES = midPointES + vec4(sphereRadius, 0, 0, 0);
+	vec4 midPointSS = CamProj * midPointES;
+	vec4 perpEyePointSS = CamProj * perpEyePointES;
+	return edgeTesselation(clipToScreen(midPointSS), clipToScreen(perpEyePointSS));
+}
+
+#define SQRT2 1.41421356f
 
 void main() 
 {
-	vec3 pos = (Model * gl_in[gl_InvocationID].gl_Position).xyz;
-	if(isVisible(pos, TileSize / 2)) // sphere bounding entire tile
+	vec4 avgHeightPosLS = gl_in[gl_InvocationID].gl_Position + vec4(0, YScale / 2.f, 0, 0);
+	vec3 centerPosWS = (Model * avgHeightPosLS).xyz;
+	if(isVisible(centerPosWS, TileSize / 2.f * SQRT2)) // sphere around entire tile
 	{
-		float dist = distance(pos, CamPos); 
-		const float kMaxDist = 100;
-		int level = int(64 * (kMaxDist - dist) / kMaxDist);
-		level = clamp(level, 1, 64);
-		gl_TessLevelOuter[0] = level;
-		gl_TessLevelOuter[1] = level;
-		gl_TessLevelOuter[2] = level;
-		gl_TessLevelOuter[3] = level;
-		Out[gl_InvocationID].TessLevel = level;
+		vec4 topLeftLS = avgHeightPosLS + vec4(-TileSize / 2.f, 0, TileSize / 2.f, 0);
+		vec4 topRightLS = avgHeightPosLS + vec4(TileSize / 2.f, 0, TileSize / 2.f, 0);
+		vec4 bottomLeftLS = avgHeightPosLS + vec4(-TileSize / 2.f, 0, -TileSize / 2.f, 0);
+		vec4 bottomRightLS = avgHeightPosLS + vec4(TileSize / 2.f, 0, -TileSize / 2.f, 0);
+#if 0
+		vec2 topLeftSS = clipToScreen(MVP * topLeftLS);
+		vec2 topRightSS = clipToScreen(MVP * topRightLS);
+		vec2 bottomLeftSS = clipToScreen(MVP * bottomLeftLS);
+		vec2 bottomRightSS = clipToScreen(MVP * bottomRightLS);
+
+		// TODO: this version isn't accurate when the view direction is parallel with the edge
+		// so need to replace it with the bounding sphere logic in view space
+		// left
+		gl_TessLevelOuter[0] = edgeTesselation(topLeftSS, bottomLeftSS);
+		// bottom
+		gl_TessLevelOuter[1] = edgeTesselation(bottomLeftSS, bottomRightSS);
+		// right
+		gl_TessLevelOuter[2] = edgeTesselation(bottomRightSS, topRightSS);
+		// top
+		gl_TessLevelOuter[3] = edgeTesselation(topLeftSS, topRightSS);
+#else
+		// left
+		gl_TessLevelOuter[0] = edgeTesselationSphere(topLeftLS.xyz, bottomLeftLS.xyz, TileSize / 2.f);
+		// bottom
+		gl_TessLevelOuter[1] = edgeTesselationSphere(bottomLeftLS.xyz, bottomRightLS.xyz, TileSize / 2.f);
+		// right
+		gl_TessLevelOuter[2] = edgeTesselationSphere(bottomRightLS.xyz, topRightLS.xyz, TileSize / 2.f);
+		// top
+		gl_TessLevelOuter[3] = edgeTesselationSphere(topLeftLS.xyz, topRightLS.xyz, TileSize / 2.f);
+#endif
+
+		Out[gl_InvocationID].TessLevel = int(max(max(gl_TessLevelOuter[0], gl_TessLevelOuter[1]), max(gl_TessLevelOuter[2], gl_TessLevelOuter[3])));
 	}
 	else
 	{

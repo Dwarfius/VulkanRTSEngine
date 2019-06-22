@@ -4,69 +4,57 @@
 
 struct Frustum
 {
-	glm::vec3 myCamPos;
-	glm::vec3 myRight, myUp, myForward; //camera directions
-	float myNearPlane, myFarPlane, myRatio;
+	glm::vec4 myPlanes[6]; // left, right, bottom, top, far, near
 
-	//used to determine the width and height at distance between planes
-	float mySphereFactorX, mySphereFactorY;
-
-	//tangent used to calculate the height
-	float myTangent;
-
-	//sets the frustrums parameters - near/far planes and near width/height
-	void SetFrustrumDef(float aFov, float aRatio, float aNearPlane, float aFarPlane)
+	// taken from NVidia's tesselated terrain whitepaper implementation
+	// calculate frustum planes (in world space) from current 
+	// projection and view matrices
+	// http://fgiesen.wordpress.com/2012/08/31/frustum-planes-from-the-projection-matrix/
+	void UpdateFrustumPlanes(const glm::mat4& aViewProjMat)
 	{
-		myRatio = aRatio;
-		myNearPlane = aNearPlane;
-		myFarPlane = aFarPlane;
-
-		//computing the vertical fov
-		myTangent = glm::tan(glm::radians(aFov));
-		mySphereFactorY = 1.0f / glm::cos(glm::radians(aFov));
-
-		//computing horizontal fov
-		const float angleX = glm::atan(myTangent * myRatio);
-		mySphereFactorX = 1.0f / glm::cos(angleX);
+		const glm::vec4 rowX = GetRow(aViewProjMat, 0);
+		const glm::vec4 rowY = GetRow(aViewProjMat, 1);
+		const glm::vec4 rowZ = GetRow(aViewProjMat, 2);
+		const glm::vec4 rowW = GetRow(aViewProjMat, 3);
+		myPlanes[0] = rowW + rowX;   // left
+		myPlanes[1] = rowW - rowX;   // right
+		myPlanes[2] = rowW + rowY;   // bottom
+		myPlanes[3] = rowW - rowY;   // top
+		myPlanes[4] = rowW + rowZ;   // far
+		myPlanes[5] = rowW - rowZ;   // near
+		// normalize planes
+		for (int i = 0; i < 6; i++) 
+		{
+			const float l = glm::length(glm::vec3(myPlanes[i]));
+			myPlanes[i] = myPlanes[i] / l;
+		}
 	}
 
-	//updates the frustrums directions and position
-	void UpdateFrustrum(glm::vec3 aPos, glm::vec3 aRight, glm::vec3 anUp, glm::vec3 aForward)
-	{
-		myCamPos = aPos;
-
-		myRight = aRight;
-		myUp = anUp;
-		myForward = aForward;
-	}
-
-	//check if sphere is intersecting the frustrum
+	// taken from NVidia's tesselated terrain whitepaper implementation
+	// check if sphere is intersecting the frustrum
 	bool CheckSphere(glm::vec3 aPos, float aRadius) const
 	{
-		const glm::vec3 v = aPos - myCamPos;
-		const float vZ = glm::dot(v, myForward);
-		if (vZ < myNearPlane - aRadius || vZ > myFarPlane + aRadius)
+		const glm::vec4 pos = glm::vec4(aPos, 1.0);
+		for (int i = 0; i < 6; i++) 
 		{
-			return false;
+			if (glm::dot(pos, myPlanes[i]) + aRadius < 0.0)
+			{
+				// sphere outside plane
+				return false;
+			}
 		}
-
-		const float vY = glm::dot(v, myUp);
-		const float height = vZ * myTangent;
-		float d = mySphereFactorY * aRadius; //distance from sphere center to yPlane
-		if (vY < -height - d || vY > height + d)
-		{
-			return false;
-		}
-
-		const float vX = glm::dot(v, myRight);
-		const float width = height * myRatio;
-		d = mySphereFactorX * aRadius; //distance from sphere center to xPlane
-		if (vX < -width - d || vX > width + d)
-		{
-			return false;
-		}
-
 		return true;
+	}
+
+private:
+	static glm::vec4 GetRow(const glm::mat4& aMat, int aRow)
+	{
+		return glm::vec4(	
+			aMat[0][aRow],
+			aMat[1][aRow],
+			aMat[2][aRow],
+			aMat[3][aRow]
+		);
 	}
 };
 
