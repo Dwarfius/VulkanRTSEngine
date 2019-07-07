@@ -13,7 +13,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 layout (std140, binding = 1) uniform TerrainAdapter
 {
 	vec3 GridOrigin;
-	int TileSize;
+	float TileSize;
 	int GridWidth;
 	int GridHeight;
 	float YScale;
@@ -21,14 +21,17 @@ layout (std140, binding = 1) uniform TerrainAdapter
 
 layout(location = 0) in DataIn
 {
-	mediump vec2 TexCoords;
-	int TessLevel;
+	vec2 TexCoords;
+	int TessLevel[4]; // left, bottom, right, top
+	int CheckerInd;
 } In[];
 
 layout(location = 0) out DataOut
 {
-	mediump vec2 TexCoords;
-	flat int TessLevel;
+	vec2 TexCoords;
+	int TessLevel;
+	float DistFromCenter;
+	int CheckerInd;
 } Out;
 
 uniform sampler2D TexHeightmap;
@@ -38,11 +41,15 @@ void main()
 	// only have 1 control point
 	vec3 pos = gl_in[0].gl_Position.xyz;
     pos.xz += (gl_TessCoord.xy - 0.5f) * TileSize;
-
-    vec2 uv = In[0].TexCoords + (vec2(1.f / GridWidth, 1.f / GridHeight) * gl_TessCoord.xy);
+    vec2 uv = In[0].TexCoords + vec2(gl_TessCoord.x / GridWidth, gl_TessCoord.y / GridHeight);
     pos.y = texture2D(TexHeightmap, uv).x * YScale;
-    Out.TexCoords = uv;
-    Out.TessLevel = In[0].TessLevel;
+    gl_Position = MVP * vec4(pos, 1);
 
-	gl_Position = MVP * vec4(pos, 1);
+    Out.DistFromCenter = distance(gl_in[0].gl_Position.xyz, pos);
+    Out.TexCoords.xy = uv;
+    Out.CheckerInd = In[0].CheckerInd;
+
+    float tessHor = mix(In[0].TessLevel[0], In[0].TessLevel[2], gl_TessCoord.x);
+    float tessVert = mix(In[0].TessLevel[1], In[0].TessLevel[3], gl_TessCoord.y);
+    Out.TessLevel = int((tessHor + tessVert) / 2);
 }

@@ -21,11 +21,10 @@ void TerrainAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) con
 	const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
 	const glm::vec3 scale = myVO.GetTransform().GetScale();
 	const glm::vec3 size = scale * glm::vec3(terrain->GetWidth(), 0, terrain->GetDepth());
-	const float TerrainTileSize = static_cast<float>(Terrain::TileSize);
-	const glm::vec3 tiles = size / TerrainTileSize;
+	const glm::vec3 tiles = size / Terrain::TileSize;
 	const int gridWidth = static_cast<int>(glm::max(tiles.x, 1.f));
 	const int gridDepth = static_cast<int>(glm::max(tiles.z, 1.f));
-	const int tileSize = static_cast<int>(glm::min(TerrainTileSize, size.x));
+	const float tileSize = glm::min(Terrain::TileSize, size.x);
 	const float halfTileSize = tileSize / 2.f;
 
 	glm::vec3 terrainOrigin = myVO.GetTransform().GetPos();

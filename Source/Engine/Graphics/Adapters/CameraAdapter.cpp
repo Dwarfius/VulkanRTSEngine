@@ -5,7 +5,9 @@
 #include <Graphics/UniformBlock.h>
 #include <Graphics/Graphics.h>
 
+
 #include "../../VisualObject.h"
+#include "../../Terrain.h"
 
 CameraAdapter::CameraAdapter(const GameObject& aGO, const VisualObject& aVO)
 	: UniformAdapter(aGO, aVO)

@@ -8,7 +8,7 @@ class Terrain
 {
 public:
 	// Controls the size of individual tiles inside a grid
-	static int TileSize;
+	static float TileSize;
 public:
 	Terrain();
 
@@ -26,8 +26,8 @@ public:
 
 	Handle<Model> GetModelHandle() const { return myModel; }
 
-	float GetWidth() const { return (myWidth - 1) * myStep; }
-	float GetDepth() const { return (myHeight - 1) * myStep; }
+	float GetWidth() const { return (myWidth) * myStep; }
+	float GetDepth() const { return (myHeight) * myStep; }
 	float GetYScale() const { return myYScale; }
 
 private:

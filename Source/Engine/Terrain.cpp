@@ -6,7 +6,7 @@
 #include <Graphics/Texture.h>
 #include <Graphics/AssetTracker.h>
 
-int Terrain::TileSize = 16;
+float Terrain::TileSize = 0.25f;
 
 Terrain::Terrain()
 	: myModel()

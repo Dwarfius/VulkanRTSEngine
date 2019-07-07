@@ -19,7 +19,7 @@
 			"adapter":"TerrainAdapter",
 			"members":[  
 				"Vec3",
-				"Int",
+				"Float",
 				"Int",
 				"Int",
 				"Float"

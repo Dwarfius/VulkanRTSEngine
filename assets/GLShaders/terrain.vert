@@ -11,7 +11,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 layout (std140, binding = 1) uniform TerrainAdapter
 {
 	vec3 GridOrigin;
-	int TileSize;
+	float TileSize;
 	int GridWidth;
 	int GridHeight;
 	float YScale; 
@@ -19,7 +19,8 @@ layout (std140, binding = 1) uniform TerrainAdapter
 
 layout(location = 0) out DataOut 
 {
-    mediump vec2 TexCoords;
+    vec2 TexCoords;
+    int CheckerInd;
 };
 
 void main() 
@@ -29,5 +30,6 @@ void main()
     int iy = gl_InstanceID / GridHeight;
     vec3 pos = GridOrigin + vec3(float(ix)*TileSize, 0, float(iy)*TileSize);
     TexCoords = vec2(ix / float(GridWidth), iy / float(GridHeight));
-    gl_Position = vec4(pos, 1.0);
+    CheckerInd = (ix + iy) % 2;
+    gl_Position = vec4(pos, 1.f);
 }

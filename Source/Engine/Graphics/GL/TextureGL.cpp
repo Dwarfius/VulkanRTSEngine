@@ -69,6 +69,8 @@ void TextureGL::Create(any aDescriptor)
 	case GPUResource::Filter::Linear_MipMapLinear:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		break;
+	default:
+		ASSERT(false);
 	}
 	
 	switch (desc.myMagFilter)
@@ -79,18 +81,8 @@ void TextureGL::Create(any aDescriptor)
 	case GPUResource::Filter::Linear:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		break;
-	case GPUResource::Filter::Nearest_MipMapNearest:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-		break;
-	case GPUResource::Filter::Linear_MipMapNearest:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		break;
-	case GPUResource::Filter::Nearest_MipMapLinear:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-		break;
-	case GPUResource::Filter::Linear_MipMapLinear:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		break;
+	default:
+		ASSERT(false);
 	}
 }
 

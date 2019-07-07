@@ -13,7 +13,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 layout (std140, binding = 1) uniform TerrainAdapter
 {
 	vec3 GridOrigin;
-	int TileSize;
+	float TileSize;
 	int GridWidth;
 	int GridHeight;
 	float YScale;
@@ -36,14 +36,19 @@ layout (std140, binding = 2) uniform CameraAdapter
 
 layout(location = 0) in DataIn
 {
-	mediump vec2 TexCoords;
+	vec2 TexCoords;
+	int CheckerInd;
 } In[];
 
 layout(location = 0) out DataOut
 {
-	mediump vec2 TexCoords;
-	int TessLevel;
+	vec2 TexCoords;
+	int TessLevel[4];
+	int CheckerInd;
 } Out[];
+
+#define SQRT2 1.41421356f
+#define TRIANGLE_SIZE 5
 
 // Taken from NVidia's terrain tesselation whitepaper sample
 // Sphere-frustum intersection test in world space
@@ -59,75 +64,65 @@ bool isVisible(vec3 aPos, float aRadius)
 	return !isOutside;
 }
 
-vec2 clipToScreen(vec4 pos)
+vec2 localToScreen(vec4 pos)
 {
-	vec4 p = pos; // clip space
+	vec4 p = MVP * pos; // clip space
 	p.xy /= p.w; // project (now [-1, 1])
+	p.xy = p.xy * 0.5f + 0.5f; // to NDC
 	p.xy *= Viewport;
 	return p.xy;
 }
 
-// given 2 points, calculates the distance between the 2 points
-// in screen space
-int edgeTesselation(vec2 v1, vec2 v2)
+vec2 eyeToScreen(vec4 pos)
 {
-	const float kTriangleSize = 5.f;
-	const float dist = distance(v1, v2);
-	return int(clamp(dist / kTriangleSize, 1.f, 64.f));
+	vec4 p = CamProj * pos; // clip space
+	p.xy /= p.w; // project (now [-1, 1])
+	p.xy = p.xy * 0.5f + 0.5f; // to NDC
+	p.xy *= Viewport;
+	return p.xy;
 }
 
-// given 2 points in Local Space, calculates edge tesselation by wrapping
-// it in a sphere and determining the size in screen space
-int edgeTesselationSphere(vec3 v1, vec3 v2, float sphereRadius)
+// given 2 points in Local Space, calculates size(of pixels) of sphere wrapping
+// an edge transformed to screen space
+float tessViaEdgeSphere(vec3 v1, vec3 v2, float sphereRadius)
 {
-	vec3 midPointLS = (v1 + v2) / 2.f;
-	vec4 midPointES = ModelView * vec4(midPointLS, 1.f);
-	vec4 perpEyePointES = midPointES + vec4(sphereRadius, 0, 0, 0);
-	vec4 midPointSS = CamProj * midPointES;
-	vec4 perpEyePointSS = CamProj * perpEyePointES;
-	return edgeTesselation(clipToScreen(midPointSS), clipToScreen(perpEyePointSS));
+	vec3 midPointLS = (v1 + v2) * 0.5f;
+	vec4 centerES = ModelView * vec4(midPointLS, 1.f);
+	vec4 p1ES = centerES - vec4(sphereRadius, 0, 0, 0);
+	vec4 p2ES = centerES + vec4(sphereRadius, 0, 0, 0);
+	vec2 midPointSS = eyeToScreen(p1ES);
+	vec2 perpEyePointSS = eyeToScreen(p2ES);
+	float d = distance(midPointSS, perpEyePointSS);
+	return clamp(d / TRIANGLE_SIZE, 1, 64);
 }
-
-#define SQRT2 1.41421356f
 
 void main() 
 {
-	vec4 avgHeightPosLS = gl_in[gl_InvocationID].gl_Position + vec4(0, YScale / 2.f, 0, 0);
-	vec3 centerPosWS = (Model * avgHeightPosLS).xyz;
-	if(isVisible(centerPosWS, TileSize / 2.f * SQRT2)) // sphere around entire tile
+	vec3 avgHeightPosLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, YScale / 2.f, 0);
+	const vec3 centerPosWS = (Model * vec4(avgHeightPosLS, 1.f)).xyz;
+	const float halfSize = TileSize / 2.f;
+	if(isVisible(centerPosWS, halfSize * SQRT2)) // sphere around entire tile
 	{
-		vec4 topLeftLS = avgHeightPosLS + vec4(-TileSize / 2.f, 0, TileSize / 2.f, 0);
-		vec4 topRightLS = avgHeightPosLS + vec4(TileSize / 2.f, 0, TileSize / 2.f, 0);
-		vec4 bottomLeftLS = avgHeightPosLS + vec4(-TileSize / 2.f, 0, -TileSize / 2.f, 0);
-		vec4 bottomRightLS = avgHeightPosLS + vec4(TileSize / 2.f, 0, -TileSize / 2.f, 0);
+		vec3 topLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(-halfSize, 0, halfSize);
+		vec3 topRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, 0, halfSize);
+		vec3 bottomLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(-halfSize, 0, -halfSize);
+		vec3 bottomRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, 0, -halfSize);
 #if 0
-		vec2 topLeftSS = clipToScreen(MVP * topLeftLS);
-		vec2 topRightSS = clipToScreen(MVP * topRightLS);
-		vec2 bottomLeftSS = clipToScreen(MVP * bottomLeftLS);
-		vec2 bottomRightSS = clipToScreen(MVP * bottomRightLS);
-
-		// TODO: this version isn't accurate when the view direction is parallel with the edge
-		// so need to replace it with the bounding sphere logic in view space
-		// left
-		gl_TessLevelOuter[0] = edgeTesselation(topLeftSS, bottomLeftSS);
-		// bottom
-		gl_TessLevelOuter[1] = edgeTesselation(bottomLeftSS, bottomRightSS);
-		// right
-		gl_TessLevelOuter[2] = edgeTesselation(bottomRightSS, topRightSS);
-		// top
-		gl_TessLevelOuter[3] = edgeTesselation(topLeftSS, topRightSS);
-#else
-		// left
-		gl_TessLevelOuter[0] = edgeTesselationSphere(topLeftLS.xyz, bottomLeftLS.xyz, TileSize / 2.f);
-		// bottom
-		gl_TessLevelOuter[1] = edgeTesselationSphere(bottomLeftLS.xyz, bottomRightLS.xyz, TileSize / 2.f);
-		// right
-		gl_TessLevelOuter[2] = edgeTesselationSphere(bottomRightLS.xyz, topRightLS.xyz, TileSize / 2.f);
-		// top
-		gl_TessLevelOuter[3] = edgeTesselationSphere(topLeftLS.xyz, topRightLS.xyz, TileSize / 2.f);
+		// use top down distance
+		topLeftLS.y = CamPos.y;
+		topRightLS.y = CamPos.y;
+		bottomLeftLS.y = CamPos.y;
+		bottomRightLS.y = CamPos.y;
 #endif
 
-		Out[gl_InvocationID].TessLevel = int(max(max(gl_TessLevelOuter[0], gl_TessLevelOuter[1]), max(gl_TessLevelOuter[2], gl_TessLevelOuter[3])));
+		gl_TessLevelOuter[0] = tessViaEdgeSphere(topLeftLS, bottomLeftLS, halfSize); // left
+		gl_TessLevelOuter[1] = tessViaEdgeSphere(bottomLeftLS, bottomRightLS, halfSize); // bottom
+		gl_TessLevelOuter[2] = tessViaEdgeSphere(bottomRightLS, topRightLS, halfSize); // right
+		gl_TessLevelOuter[3] = tessViaEdgeSphere(topRightLS, topLeftLS, halfSize); // top
+
+		// calc interior tessellation level - use average of outer levels
+		gl_TessLevelInner[0] = 0.5f * (gl_TessLevelOuter[1] + gl_TessLevelOuter[3]);
+    	gl_TessLevelInner[1] = 0.5f * (gl_TessLevelOuter[0] + gl_TessLevelOuter[2]);
 	}
 	else
 	{
@@ -135,12 +130,17 @@ void main()
 		gl_TessLevelOuter[1] = -1;
 		gl_TessLevelOuter[2] = -1;
 		gl_TessLevelOuter[3] = -1;
+
+		gl_TessLevelInner[0] = -1;
+		gl_TessLevelInner[1] = -1;
 	}
 
-	// calc interior tessellation level - use average of outer levels
-    gl_TessLevelInner[0] = 0.5 * (gl_TessLevelOuter[1] + gl_TessLevelOuter[3]);
-    gl_TessLevelInner[1] = 0.5 * (gl_TessLevelOuter[0] + gl_TessLevelOuter[2]);
+	for(int i=0; i<4; i++)
+	{
+		Out[gl_InvocationID].TessLevel[i] = int(gl_TessLevelOuter[i]);
+	}
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	Out[gl_InvocationID].TexCoords = In[gl_InvocationID].TexCoords;
+	Out[gl_InvocationID].CheckerInd = In[gl_InvocationID].CheckerInd;
 }

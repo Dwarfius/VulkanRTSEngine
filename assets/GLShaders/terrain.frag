@@ -3,12 +3,17 @@
 
 layout(location = 0) in DataIn
 {
-	mediump vec2 TexCoords;
+	vec2 TexCoords;
 	flat int TessLevel;
+	float DistFromCenter;
+	flat int CheckerInd;
 };
 layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-    outColor = mix(vec4(1, 0, 0, 1), vec4(0, 1, 0, 1), float(TessLevel) / 64);
+	outColor.r = CheckerInd;
+	outColor.g = TessLevel / 64.f;
+	outColor.b = 0.f;
+    outColor.a = 1.f;
 }
