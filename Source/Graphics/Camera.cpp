@@ -13,7 +13,7 @@ Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)
 	}
 	else
 	{
-		SetProjPersp(45, aWidth / aHeight, 0.1f, 1000.f);
+		SetProjPersp(45, aWidth / aHeight, 0.1f, 10000.f);
 	}
 }
 

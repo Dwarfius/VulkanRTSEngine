@@ -14,7 +14,7 @@ protected:
 
 struct TerrainRenderParams : public IRenderPass::IParams
 {
-	glm::vec3 mySize;
+	int myTileCount;
 };
 
 class TerrainRenderPass : public RenderPass
@@ -24,4 +24,5 @@ protected:
 	void PrepareContext(RenderContext& aContext) const override;
 	Category GetCategory() const override { return Category::Terrain; }
 	void Process(RenderJob& aJob, const IParams& aParams) const override;
+	bool HasDynamicRenderContext() const override { return true; }
 };

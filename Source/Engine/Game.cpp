@@ -30,6 +30,10 @@ bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
 
+// Heightmaps generated via https://terrain.party/
+constexpr char kHeightmapName[] = "tynemouth.png";
+constexpr char kHeightmapRelPath[] = "assets/textures/tynemouth.png";
+
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
 	, myDeltaTime(0.f)
@@ -60,9 +64,13 @@ Game::Game(ReportError aReporterFunc)
 	// Trigger initialization
 	UniformAdapterRegister::GetInstance();
 
-	Terrain* terr = new Terrain();
-	terr->Load(myAssetTracker, "assets/textures/heightmap.png", 1 / 256.f, 0.2f, 1.f);
-	myTerrains.push_back(terr);
+	{
+		constexpr float kTerrSize = 8000; // 8km heightmaps
+		constexpr float kResolution = 1081;
+		Terrain* terr = new Terrain();
+		terr->Load(myAssetTracker, kHeightmapRelPath, kTerrSize / kResolution, 1024.f, 1.f);
+		myTerrains.push_back(terr);
+	}
 
 	myRenderThread = new RenderThread();
 
@@ -93,7 +101,7 @@ void Game::Init()
 	// ==========================
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
-	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("heightmap.png");
+	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>(kHeightmapName);
 	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 

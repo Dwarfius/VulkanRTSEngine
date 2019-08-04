@@ -6,7 +6,8 @@
 #include <Graphics/Texture.h>
 #include <Graphics/AssetTracker.h>
 
-float Terrain::TileSize = 0.25f;
+// have a tile spanning every n meters
+float Terrain::TileSize = 2.f;
 
 Terrain::Terrain()
 	: myModel()
@@ -21,7 +22,10 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 {
 	myYScale = anYScale;
 	myStep = aStep;
-	unsigned char* pixels = Texture::LoadFromDisk(aName, Texture::Format::UNorm_R, myWidth, myHeight);
+
+	using PixelType = unsigned short;
+	PixelType* pixels = Texture::LoadFromDisk16(aName, Texture::Format::UNorm_R, myWidth, myHeight);
+	constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
 
 	// variables for calculating extents
 	float minHeight = numeric_limits<float>::max();
@@ -42,7 +46,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 			Vertex v;
 			v.myPos.x = startX + x * myStep;
 			v.myPos.z = startY + y * myStep;
-			v.myPos.y = pixels[index] / 255.f * myYScale;
+			
+			v.myPos.y = pixels[index] / kMaxPixelVal * myYScale;
 			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
 			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
 			verts[index] = v;

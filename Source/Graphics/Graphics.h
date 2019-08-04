@@ -18,6 +18,10 @@ class RenderContext;
 class Graphics : public IGPUAllocator
 {
 public:
+	// TODO: move this to a settings struct
+	static bool ourUseWireframe;
+
+public:
 	Graphics(AssetTracker& anAssetTracker);
 
 	virtual void Init() = 0;

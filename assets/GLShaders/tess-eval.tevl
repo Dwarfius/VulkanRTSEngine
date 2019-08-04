@@ -29,27 +29,45 @@ layout(location = 0) in DataIn
 layout(location = 0) out DataOut
 {
 	vec2 TexCoords;
-	int TessLevel;
-	float DistFromCenter;
+	vec4 TessLevel;
+	float Height;
 	int CheckerInd;
 } Out;
 
 uniform sampler2D TexHeightmap;
 
+// ===================================================================
+
+#define PI 3.1415926535897f
+
+// NOTE: make sure this is in sync with tess-control.tctr
+// produce a sine field
+float terrain(vec2 uv)
+{
+#define USE_SINE_FIELD 0
+#if USE_SINE_FIELD
+	vec2 denormalizedUV = uv * vec2(GridWidth, GridHeight);
+	vec2 piCycles = denormalizedUV * (PI / 2.f);
+	float h = (sin(piCycles.x) + sin(piCycles.y)) / 2.f;
+	return h * YScale * 0.5f; // div by 2 because h is [-1, 1] and not [0, 1]
+#else
+	return texture2D(TexHeightmap, uv).x * YScale;
+#endif
+}
+
+// ===================================================================
+
 void main()
 {
 	// only have 1 control point
 	vec3 pos = gl_in[0].gl_Position.xyz;
-    pos.xz += (gl_TessCoord.xy - 0.5f) * TileSize;
+    pos.xz += gl_TessCoord.xy * TileSize;
     vec2 uv = In[0].TexCoords + vec2(gl_TessCoord.x / GridWidth, gl_TessCoord.y / GridHeight);
-    pos.y = texture2D(TexHeightmap, uv).x * YScale;
+    pos.y = terrain(uv);
     gl_Position = MVP * vec4(pos, 1);
 
-    Out.DistFromCenter = distance(gl_in[0].gl_Position.xyz, pos);
+    Out.Height = pos.y;
     Out.TexCoords.xy = uv;
     Out.CheckerInd = In[0].CheckerInd;
-
-    float tessHor = mix(In[0].TessLevel[0], In[0].TessLevel[2], gl_TessCoord.x);
-    float tessVert = mix(In[0].TessLevel[1], In[0].TessLevel[3], gl_TessCoord.y);
-    Out.TessLevel = int((tessHor + tessVert) / 2);
+    Out.TessLevel = vec4(In[0].TessLevel[0], In[0].TessLevel[1], In[0].TessLevel[2], In[0].TessLevel[3]);
 }

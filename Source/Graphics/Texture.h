@@ -43,7 +43,9 @@ public:
 	};
 
 	static unsigned char* LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight);
+	static unsigned short* LoadFromDisk16(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight);
 	static void FreePixels(unsigned char* aBuffer);
+	static void FreePixels(unsigned short* aBuffer);
 
 public:
 	Texture(Resource::Id anId);

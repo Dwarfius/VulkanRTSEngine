@@ -47,6 +47,8 @@ layout(location = 0) out DataOut
 	int CheckerInd;
 } Out[];
 
+uniform sampler2D TexHeightmap;
+
 #define SQRT2 1.41421356f
 #define TRIANGLE_SIZE 5
 
@@ -64,15 +66,6 @@ bool isVisible(vec3 aPos, float aRadius)
 	return !isOutside;
 }
 
-vec2 localToScreen(vec4 pos)
-{
-	vec4 p = MVP * pos; // clip space
-	p.xy /= p.w; // project (now [-1, 1])
-	p.xy = p.xy * 0.5f + 0.5f; // to NDC
-	p.xy *= Viewport;
-	return p.xy;
-}
-
 vec2 eyeToScreen(vec4 pos)
 {
 	vec4 p = CamProj * pos; // clip space
@@ -82,11 +75,18 @@ vec2 eyeToScreen(vec4 pos)
 	return p.xy;
 }
 
+float getComponentMax(vec3 v)
+{
+	return max(v.x, max(v.y, v.z));
+}
+
 // given 2 points in Local Space, calculates size(of pixels) of sphere wrapping
 // an edge transformed to screen space
-float tessViaEdgeSphere(vec3 v1, vec3 v2, float sphereRadius)
+float tessViaEdgeSphere(vec3 v1, vec3 v2)
 {
+	vec3 distanceLS = abs(v2 - v1);
 	vec3 midPointLS = (v1 + v2) * 0.5f;
+	float sphereRadius = getComponentMax(distanceLS) * 0.5f;
 	vec4 centerES = ModelView * vec4(midPointLS, 1.f);
 	vec4 p1ES = centerES - vec4(sphereRadius, 0, 0, 0);
 	vec4 p2ES = centerES + vec4(sphereRadius, 0, 0, 0);
@@ -96,29 +96,62 @@ float tessViaEdgeSphere(vec3 v1, vec3 v2, float sphereRadius)
 	return clamp(d / TRIANGLE_SIZE, 1, 64);
 }
 
+// ===================================================================
+
+#define PI 3.1415926535897f
+
+// NOTE: make sure this is in sync with tess-control.tevl
+// produce a sine field
+float terrain(vec2 uv)
+{
+#define USE_SINE_FIELD 0
+#if USE_SINE_FIELD
+	vec2 denormalizedUV = uv * vec2(GridWidth, GridHeight);
+	vec2 piCycles = denormalizedUV * (PI / 2.f);
+	float h = (sin(piCycles.x) + sin(piCycles.y)) / 2.f;
+	return h * YScale * 0.5f; // div by 2 because h is [-1, 1] and not [0, 1]
+#else
+	return texture2D(TexHeightmap, uv).x * YScale;
+#endif
+}
+
+// ===================================================================
+
 void main() 
 {
-	vec3 avgHeightPosLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, YScale / 2.f, 0);
-	const vec3 centerPosWS = (Model * vec4(avgHeightPosLS, 1.f)).xyz;
 	const float halfSize = TileSize / 2.f;
-	if(isVisible(centerPosWS, halfSize * SQRT2)) // sphere around entire tile
+	const vec2 uvStep = vec2(1.f / GridWidth, 1.f / GridHeight);
+	const vec2 uvHalfStep = uvStep * 0.5f;
+
+	// use average height estimate
+	const vec3 centerLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, YScale / 2.f, halfSize);
+
+	const vec3 centerPosWS = (Model * vec4(centerLS, 1.f)).xyz;
+	const float boundingSphereRad = max(halfSize * SQRT2, YScale / 2.f);
+	if(isVisible(centerPosWS, boundingSphereRad)) // sphere around entire tile
 	{
-		vec3 topLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(-halfSize, 0, halfSize);
-		vec3 topRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, 0, halfSize);
-		vec3 bottomLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(-halfSize, 0, -halfSize);
-		vec3 bottomRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, 0, -halfSize);
-#if 0
-		// use top down distance
-		topLeftLS.y = CamPos.y;
-		topRightLS.y = CamPos.y;
-		bottomLeftLS.y = CamPos.y;
-		bottomRightLS.y = CamPos.y;
+		float topLeftHeight = 0;
+		float topRightHeight = 0;
+		float bottomLeftHeight = 0;
+		float bottomRightHeight = 0;
+
+#define USE_SAMPLE_HEIGHT 1
+#if USE_SAMPLE_HEIGHT
+		topLeftHeight = terrain(In[gl_InvocationID].TexCoords + vec2(0, uvStep.y));
+		topRightHeight = terrain(In[gl_InvocationID].TexCoords + uvStep);
+		bottomLeftHeight = terrain(In[gl_InvocationID].TexCoords);
+		bottomRightHeight = terrain(In[gl_InvocationID].TexCoords + vec2(uvStep.x, 0));
 #endif
 
-		gl_TessLevelOuter[0] = tessViaEdgeSphere(topLeftLS, bottomLeftLS, halfSize); // left
-		gl_TessLevelOuter[1] = tessViaEdgeSphere(bottomLeftLS, bottomRightLS, halfSize); // bottom
-		gl_TessLevelOuter[2] = tessViaEdgeSphere(bottomRightLS, topRightLS, halfSize); // right
-		gl_TessLevelOuter[3] = tessViaEdgeSphere(topRightLS, topLeftLS, halfSize); // top
+		vec3 topLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, topLeftHeight, TileSize);
+		vec3 topRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(TileSize, topRightHeight, TileSize);
+		vec3 bottomLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, bottomLeftHeight, 0);
+		vec3 bottomRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(TileSize, bottomRightHeight, 0);
+
+		gl_TessLevelOuter[0] = tessViaEdgeSphere(topLeftLS, bottomLeftLS); // left
+		gl_TessLevelOuter[1] = tessViaEdgeSphere(bottomLeftLS, bottomRightLS); // bottom
+		gl_TessLevelOuter[2] = tessViaEdgeSphere(bottomRightLS, topRightLS); // right
+		gl_TessLevelOuter[3] = tessViaEdgeSphere(topRightLS, topLeftLS); // top
 
 		// calc interior tessellation level - use average of outer levels
 		gl_TessLevelInner[0] = 0.5f * (gl_TessLevelOuter[1] + gl_TessLevelOuter[3]);

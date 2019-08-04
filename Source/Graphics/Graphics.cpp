@@ -4,6 +4,7 @@
 #include "Camera.h"
 
 Graphics* Graphics::ourActiveGraphics = NULL;
+bool Graphics::ourUseWireframe = false;
 int Graphics::ourWidth = 800;
 int Graphics::ourHeight = 600;
 

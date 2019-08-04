@@ -18,6 +18,8 @@
 #include "VisualObject.h"
 
 EditorMode::EditorMode(PhysicsWorld& aWorld)
+	: myMouseSensitivity(0.1f)
+	, myFlightSpeed(2.f)
 {
 	shared_ptr<PhysicsShapeBase> sphereShape = make_shared<PhysicsShapeSphere>(1.f);
 	shared_ptr<PhysicsShapeBox> boxShape = make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
@@ -47,7 +49,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	}*/
 }
 
-void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
+void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld)
 {
 	// FPS camera implementation
 	Camera* cam = Game::GetInstance()->GetCamera();
@@ -82,6 +84,21 @@ void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld) const
 		pos -= up * myFlightSpeed * aDeltaTime;
 	}
 	camTransf.SetPos(pos);
+
+	// General controls
+	if (Input::GetKeyPressed('K'))
+	{
+		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
+	}
+
+	if (Input::GetKeyPressed('U'))
+	{
+		myFlightSpeed *= 2;
+	}
+	if (Input::GetKeyPressed('J'))
+	{
+		myFlightSpeed /= 2;
+	}
 
 	// to avoid accumulating roll from quaternion applications, have to apply then separately
 	const glm::vec2 mouseDelta = Input::GetMouseDelta();

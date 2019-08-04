@@ -19,7 +19,28 @@ unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, i
 	return stbi_load(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);
 }
 
+unsigned short* Texture::LoadFromDisk16(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
+{
+	int desiredChannels;
+	switch (aFormat)
+	{
+	case Format::UNorm_R: desiredChannels = STBI_grey; break;
+	case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
+	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
+	case Format::UNorm_RGBA: // fallthrough
+	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	}
+
+	int actualChannels = 0;
+	return stbi_load_16(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);
+}
+
 void Texture::FreePixels(unsigned char* aBuffer)
+{
+	stbi_image_free(aBuffer);
+}
+
+void Texture::FreePixels(unsigned short* aBuffer)
 {
 	stbi_image_free(aBuffer);
 }
@@ -65,8 +86,9 @@ void Texture::OnUpload(GPUResource* aGPUResource)
 
 	CreateDescriptor createDesc;
 	createDesc.myWrapMode = GPUResource::WrapMode::Repeat;
-	createDesc.myMinFilter = GPUResource::Filter::Linear;
-	createDesc.myMagFilter = GPUResource::Filter::Nearest;
+	// TODO: expose the following filters!
+	createDesc.myMinFilter = GPUResource::Filter::Nearest;
+	createDesc.myMagFilter = GPUResource::Filter::Linear;
 	myGPUResource->Create(createDesc);
 
 	UploadDescriptor uploadDesc;

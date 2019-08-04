@@ -26,8 +26,11 @@ public:
 
 	Handle<Model> GetModelHandle() const { return myModel; }
 
-	float GetWidth() const { return (myWidth) * myStep; }
-	float GetDepth() const { return (myHeight) * myStep; }
+	// TEMP - returning tile size which allows to have a pixel
+	// per vertex mapping when using max (64) level of tesselation
+	float GetTileSize() const { return myStep * 64.f; }
+	float GetWidth() const { return myWidth * myStep; }
+	float GetDepth() const { return myHeight * myStep; }
 	float GetYScale() const { return myYScale; }
 
 private:
