@@ -6,9 +6,6 @@
 #include <Graphics/Texture.h>
 #include <Graphics/AssetTracker.h>
 
-// have a tile spanning every n meters
-float Terrain::TileSize = 2.f;
-
 Terrain::Terrain()
 	: myModel()
 	, myWidth(0)

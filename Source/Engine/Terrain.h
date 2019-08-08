@@ -7,9 +7,6 @@ class PhysicsShapeHeightfield;
 class Terrain
 {
 public:
-	// Controls the size of individual tiles inside a grid
-	static float TileSize;
-public:
 	Terrain();
 
 	void Load(AssetTracker& anAssetTracker, string aName, float aStep, float anYScale, float anUvScale);

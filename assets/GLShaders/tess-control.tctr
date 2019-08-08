@@ -123,20 +123,49 @@ void main()
 	const vec2 uvStep = vec2(1.f / GridWidth, 1.f / GridHeight);
 	const vec2 uvHalfStep = uvStep * 0.5f;
 
-	// use average height estimate
+#define USE_PRECISE_CENTER 1
+#if USE_PRECISE_CENTER
+	// position the sphere exactly where it should be
+	const float centerHeight = terrain(In[gl_InvocationID].TexCoords + uvHalfStep);
+	const vec3 centerLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, centerHeight, halfSize);
+#else
+	// sphere is positioned on the middle-plane, may cause erroneous culling
 	const vec3 centerLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, YScale / 2.f, halfSize);
+#endif
 
 	const vec3 centerPosWS = (Model * vec4(centerLS, 1.f)).xyz;
+
+	float topLeftHeight = 0;
+	float topRightHeight = 0;
+	float bottomLeftHeight = 0;
+	float bottomRightHeight = 0;
+
+// using improved bounds without precise center might lead to worse results
+#define USE_IMPROVED_BOUNDS 1
+#if USE_IMPROVED_BOUNDS
+	// instead of assumming worst case scenario,
+	// assume extremum points are at tile vertices
+	topLeftHeight = terrain(In[gl_InvocationID].TexCoords + vec2(0, uvStep.y));
+	topRightHeight = terrain(In[gl_InvocationID].TexCoords + uvStep);
+	bottomLeftHeight = terrain(In[gl_InvocationID].TexCoords);
+	bottomRightHeight = terrain(In[gl_InvocationID].TexCoords + vec2(uvStep.x, 0));
+	const float minHeight = min(min(topLeftHeight, topRightHeight), 
+								min(bottomLeftHeight, bottomRightHeight));
+	const float maxHeight = max(max(topLeftHeight, topRightHeight), 
+								max(bottomLeftHeight, bottomRightHeight));
+	// using center as an sphere center to calculate 
+	// bounding sphere radius
+	const float minDelta = abs(minHeight - centerLS.y);
+	const float maxDelta = abs(maxHeight - centerLS.y);
+	const float boundingSphereRad = max(halfSize * SQRT2, max(minDelta, maxDelta));
+#else
+	// extremelly inaccurate, can miss culling quite a bit
 	const float boundingSphereRad = max(halfSize * SQRT2, YScale / 2.f);
+#endif
 	if(isVisible(centerPosWS, boundingSphereRad)) // sphere around entire tile
 	{
-		float topLeftHeight = 0;
-		float topRightHeight = 0;
-		float bottomLeftHeight = 0;
-		float bottomRightHeight = 0;
-
 #define USE_SAMPLE_HEIGHT 1
-#if USE_SAMPLE_HEIGHT
+#if USE_SAMPLE_HEIGHT && !USE_IMPROVED_BOUNDS
 		topLeftHeight = terrain(In[gl_InvocationID].TexCoords + vec2(0, uvStep.y));
 		topRightHeight = terrain(In[gl_InvocationID].TexCoords + uvStep);
 		bottomLeftHeight = terrain(In[gl_InvocationID].TexCoords);
