@@ -32,7 +32,7 @@ constexpr bool BootWithVK = false;
 
 // Heightmaps generated via https://terrain.party/
 constexpr char kHeightmapName[] = "tynemouth.png";
-constexpr char kHeightmapRelPath[] = "assets/textures/tynemouth.png";
+constexpr char kHeightmapRelPath[] = "../assets/textures/tynemouth.png";
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)

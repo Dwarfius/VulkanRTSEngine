@@ -15,9 +15,3 @@ endif(MSVC)
 target_link_libraries(${PROJECT_NAME} Engine)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$(OutDir)")
-
-add_custom_command(
-	TARGET ${PROJECT_NAME} 
-	PRE_BUILD COMMAND ${CMAKE_COMMAND}
-		-E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-)

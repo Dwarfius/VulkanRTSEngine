@@ -22,7 +22,7 @@ void Audio::Init(int* anArgc /* =nullptr */, char** anArgv /* =nullptr */)
 	// load our audios
 	for (const string& name : AudioFiles)
 	{
-		const string fullName = "assets/audio/" + name;
+		const string fullName = "../assets/audio/" + name;
 		ourBuffers.push_back(alutCreateBufferFromFile(fullName.c_str()));
 		CHECK_ERROR();
 	}

@@ -1,10 +1,10 @@
 {  
 	"type":0,
 	"shaders":[
-		"assets/GLShaders/terrain.vert",
-		"assets/GLShaders/terrain.frag",
-		"assets/GLShaders/tess-control.tctr",
-		"assets/GLShaders/tess-eval.tevl"
+		"../assets/GLShaders/terrain.vert",
+		"../assets/GLShaders/terrain.frag",
+		"../assets/GLShaders/tess-control.tctr",
+		"../assets/GLShaders/tess-eval.tevl"
 	],
 	"descriptors":[  
 		{  

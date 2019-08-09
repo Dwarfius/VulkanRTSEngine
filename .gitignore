@@ -1,4 +1,5 @@
 # Ignore all the build directories
+bin/
 build/
 x64/
 # SpirV shader bytecode - just to avoid platform-dependent issues, force users to compile it on their own

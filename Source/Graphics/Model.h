@@ -62,7 +62,7 @@ public:
 	glm::vec3 GetAABBMax() const { return myAABBMax; }
 
 private:
-	// Processes an .obj file in folder "assets/objects/".
+	// Processes an .obj file in folder "../assets/objects/".
 	void OnLoad(AssetTracker& anAssetTracker) override;
 	// Uploads to GPU
 	void OnUpload(GPUResource* aGPURes) override;

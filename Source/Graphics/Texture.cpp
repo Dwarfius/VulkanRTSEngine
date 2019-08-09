@@ -69,7 +69,7 @@ void Texture::FreeTextMem()
 
 void Texture::OnLoad(AssetTracker& anAssetTracker)
 {
-	const std::string basePath = "assets/textures/";
+	const std::string basePath = "../assets/textures/";
 	myPixels = LoadFromDisk(basePath + myPath, myFormat, myWidth, myHeight);
 	if (!myPixels)
 	{

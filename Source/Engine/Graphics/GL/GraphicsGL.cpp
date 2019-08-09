@@ -95,7 +95,7 @@ void GraphicsGL::Init()
 		myDebugVertShader->Create(createDesc);
 
 		string contents;
-		bool success = Resource::ReadFile("assets/GLShaders/debug.vert", contents);
+		bool success = Resource::ReadFile("../assets/GLShaders/debug.vert", contents);
 		ASSERT_STR(success, "Failed to open debug.vert!");
 
 		Shader::UploadDescriptor uploadDesc;
@@ -113,7 +113,7 @@ void GraphicsGL::Init()
 		myDebugFragShader->Create(createDesc);
 
 		string contents;
-		bool success = Resource::ReadFile("assets/GLShaders/debug.frag", contents);
+		bool success = Resource::ReadFile("../assets/GLShaders/debug.frag", contents);
 		ASSERT_STR(success, "Failed to open debug.vert!");
 
 		Shader::UploadDescriptor uploadDesc;
