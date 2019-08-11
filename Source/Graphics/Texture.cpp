@@ -69,8 +69,8 @@ void Texture::FreeTextMem()
 
 void Texture::OnLoad(AssetTracker& anAssetTracker)
 {
-	const std::string basePath = "../assets/textures/";
-	myPixels = LoadFromDisk(basePath + myPath, myFormat, myWidth, myHeight);
+	constexpr StaticString kDir = Resource::AssetsFolder + "textures/";
+	myPixels = LoadFromDisk(kDir.CStr() + myPath, myFormat, myWidth, myHeight);
 	if (!myPixels)
 	{
 		SetErrMsg("Failed to load texture");

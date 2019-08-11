@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/RefCounted.h>
+#include <Core/StaticString.h>
 
 class AssetTracker;
 
@@ -70,6 +71,7 @@ private:
 public:
 	using Id = uint32_t;
 	constexpr static Id InvalidId = 0;
+	constexpr static StaticString AssetsFolder = "../assets/";
 
 	enum class State
 	{
@@ -90,6 +92,8 @@ public:
 	virtual Type GetResType() const = 0;
 
 public:
+	// TODO: might be worthwhile later to provide StaticString alternative versions
+	// of these methods
 	static bool ReadFile(const std::string& aPath, std::string& aContents);
 
 public:

@@ -8,6 +8,8 @@
 #include "GameObject.h"
 #include "Terrain.h"
 
+#include <Core/StaticString.h>
+
 #include <Graphics/Camera.h>
 #include <Graphics/Graphics.h>
 #include <Graphics/Model.h>
@@ -30,9 +32,8 @@ bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
 
-// Heightmaps generated via https://terrain.party/
-constexpr char kHeightmapName[] = "Tynemouth-tangrams.png";
-constexpr char kHeightmapRelPath[] = "../assets/textures/Tynemouth-tangrams.png";
+// Heightmaps generated via https://tangrams.github.io/heightmapper/
+constexpr StaticString kHeightmapName("Tynemouth-tangrams.png");
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
@@ -68,7 +69,8 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kTerrSize = 18000;
 		constexpr float kResolution = 928;
 		Terrain* terr = new Terrain();
-		terr->Load(myAssetTracker, kHeightmapRelPath, kTerrSize / kResolution, 1000.f, 1.f);
+		constexpr StaticString kFullPath = Resource::AssetsFolder + "textures/" + kHeightmapName;
+		terr->Load(myAssetTracker, kFullPath.CStr(), kTerrSize / kResolution, 1000.f, 1.f);
 		myTerrains.push_back(terr);
 	}
 
@@ -101,7 +103,7 @@ void Game::Init()
 	// ==========================
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
-	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>(kHeightmapName);
+	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>(kHeightmapName.CStr());
 	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 

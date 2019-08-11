@@ -28,8 +28,9 @@ void Pipeline::AddShader(Handle<Shader> aShader)
 
 void Pipeline::OnLoad(AssetTracker& anAssetTracker)
 {
+	constexpr StaticString kDir = Resource::AssetsFolder + "pipelines/";
 	std::string contents;
-	if (!ReadFile("../assets/pipelines/" + myPath, contents))
+	if (!ReadFile(kDir.CStr() + myPath, contents))
 	{
 		SetErrMsg("Failed to read file!");
 		return;

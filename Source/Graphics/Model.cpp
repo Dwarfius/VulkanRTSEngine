@@ -38,10 +38,10 @@ void Model::OnLoad(AssetTracker& anAssetTracker)
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 
-	const std::string baseDir = "../assets/objects/";
-	std::string fullName = baseDir + myPath;
+	constexpr StaticString kDir = Resource::AssetsFolder + "objects/";
+	std::string fullName = kDir.CStr() + myPath;
 	std::string err;
-	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), baseDir.c_str());
+	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullName.c_str(), kDir.CStr());
 	if (!loaded)
 	{
 		SetErrMsg(move(err));

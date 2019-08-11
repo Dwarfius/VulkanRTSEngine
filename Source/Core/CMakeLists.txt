@@ -81,6 +81,7 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"UID.cpp" "UID.h"
 	"RefCounted.cpp" "RefCounted.h"
 	"RWBuffer.h"
+	"StaticString.h"
 	"Utils.cpp" "Utils.h"
 	"Vertex.h"
 ) 
