@@ -20,8 +20,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	myYScale = anYScale;
 	myStep = aStep;
 
-	using PixelType = unsigned short;
-	PixelType* pixels = Texture::LoadFromDisk16(aName, Texture::Format::UNorm_R, myWidth, myHeight);
+	using PixelType = unsigned char;
+	PixelType* pixels = Texture::LoadFromDisk(aName, Texture::Format::UNorm_R, myWidth, myHeight);
 	constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
 
 	// variables for calculating extents

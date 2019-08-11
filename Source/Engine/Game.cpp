@@ -31,8 +31,8 @@ bool Game::ourGODeleteEnabled = false;
 constexpr bool BootWithVK = false;
 
 // Heightmaps generated via https://terrain.party/
-constexpr char kHeightmapName[] = "tynemouth.png";
-constexpr char kHeightmapRelPath[] = "../assets/textures/tynemouth.png";
+constexpr char kHeightmapName[] = "Tynemouth-tangrams.png";
+constexpr char kHeightmapRelPath[] = "../assets/textures/Tynemouth-tangrams.png";
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
@@ -65,10 +65,10 @@ Game::Game(ReportError aReporterFunc)
 	UniformAdapterRegister::GetInstance();
 
 	{
-		constexpr float kTerrSize = 8000; // 8km heightmaps
-		constexpr float kResolution = 1081;
+		constexpr float kTerrSize = 18000;
+		constexpr float kResolution = 928;
 		Terrain* terr = new Terrain();
-		terr->Load(myAssetTracker, kHeightmapRelPath, kTerrSize / kResolution, 1024.f, 1.f);
+		terr->Load(myAssetTracker, kHeightmapRelPath, kTerrSize / kResolution, 1000.f, 1.f);
 		myTerrains.push_back(terr);
 	}
 
