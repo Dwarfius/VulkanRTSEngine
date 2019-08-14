@@ -37,14 +37,11 @@ layout (std140, binding = 2) uniform CameraAdapter
 layout(location = 0) in DataIn
 {
 	vec2 TexCoords;
-	int CheckerInd;
 } In[];
 
 layout(location = 0) out DataOut
 {
 	vec2 TexCoords;
-	int TessLevel[4];
-	int CheckerInd;
 } Out[];
 
 uniform sampler2D TexHeightmap;
@@ -197,12 +194,6 @@ void main()
 		gl_TessLevelInner[1] = -1;
 	}
 
-	for(int i=0; i<4; i++)
-	{
-		Out[gl_InvocationID].TessLevel[i] = int(gl_TessLevelOuter[i]);
-	}
-
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	Out[gl_InvocationID].TexCoords = In[gl_InvocationID].TexCoords;
-	Out[gl_InvocationID].CheckerInd = In[gl_InvocationID].CheckerInd;
 }

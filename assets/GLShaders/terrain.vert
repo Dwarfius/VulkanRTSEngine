@@ -20,7 +20,6 @@ layout (std140, binding = 1) uniform TerrainAdapter
 layout(location = 0) out DataOut 
 {
     vec2 TexCoords;
-    int CheckerInd;
 };
 
 void main() 
@@ -30,6 +29,5 @@ void main()
     int iy = gl_InstanceID / GridHeight;
     vec3 pos = GridOrigin + vec3(float(ix)*TileSize, 0, float(iy)*TileSize);
     TexCoords = vec2(ix / float(GridWidth), iy / float(GridHeight));
-    CheckerInd = (ix + iy) % 2;
     gl_Position = vec4(pos, 1.f);
 }

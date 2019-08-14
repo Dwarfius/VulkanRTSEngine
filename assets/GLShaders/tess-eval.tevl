@@ -22,16 +22,12 @@ layout (std140, binding = 1) uniform TerrainAdapter
 layout(location = 0) in DataIn
 {
 	vec2 TexCoords;
-	int TessLevel[4]; // left, bottom, right, top
-	int CheckerInd;
 } In[];
 
 layout(location = 0) out DataOut
 {
 	vec2 TexCoords;
-	vec4 TessLevel;
 	float Height;
-	int CheckerInd;
 } Out;
 
 uniform sampler2D TexHeightmap;
@@ -68,6 +64,4 @@ void main()
 
     Out.Height = pos.y;
     Out.TexCoords.xy = uv;
-    Out.CheckerInd = In[0].CheckerInd;
-    Out.TessLevel = vec4(In[0].TessLevel[0], In[0].TessLevel[1], In[0].TessLevel[2], In[0].TessLevel[3]);
 }
