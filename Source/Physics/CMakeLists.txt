@@ -40,6 +40,7 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"PhysicsShapes.cpp" "PhysicsShapes.h"
 	"PhysicsDebugDrawer.cpp" "PhysicsDebugDrawer.h"
 	"PhysicsCommands.cpp" "PhysicsCommands.h"
+	"Utils.cpp"
 )
 
 source_group("" FILES ${SRC})

@@ -4,8 +4,6 @@
 #include "../Vertex.h"
 #include "../LazyVector.h"
 
-struct PosColorVertex;
-
 // TODO: add line life support
 // A threadsafe debug drawing utility class. 
 // Has capacity for 2 frames - current and past.
@@ -28,6 +26,7 @@ public:
 
 	const PosColorVertex* GetCurrentVertices() const;
 	size_t GetCurrentVertexCount() const;
+	int GetVertexType() const { return PosColorVertex::Type; }
 
 private:
 	constexpr static size_t SingleFrameCacheSize = 1 << 10;

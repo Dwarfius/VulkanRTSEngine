@@ -5,10 +5,11 @@
 #include "ModelGL.h"
 #include "TextureGL.h"
 
-#include <Graphics/Pipeline.h>
+#include <Graphics/Resources/Pipeline.h>
 #include <Graphics/UniformBlock.h>
-#include <Graphics/Texture.h>
+#include <Graphics/Resources/Texture.h>
 
+#include "Graphics/GL/UniformBufferGL.h"
 #include "../../Terrain.h"
 
 void RenderPassJobGL::Add(const RenderJob& aJob)
@@ -19,11 +20,6 @@ void RenderPassJobGL::Add(const RenderJob& aJob)
 void RenderPassJobGL::AddRange(std::vector<RenderJob>&& aJobs)
 {
 	myJobs = std::move(aJobs);
-}
-
-RenderPassJobGL::operator std::vector<RenderJob>() &&
-{
-	return myJobs;
 }
 
 bool RenderPassJobGL::HasWork() const
@@ -151,7 +147,7 @@ void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 
 void RenderPassJobGL::RunJobs()
 {
-	for (const RenderJob& r : myJobs)
+	for (RenderJob& r : myJobs)
 	{
 		if (r.HasLastHandles())
 		{
@@ -160,9 +156,8 @@ void RenderPassJobGL::RunJobs()
 			continue;
 		}
 
-		const Pipeline* pipelineRes = r.myPipeline.Get();
-		PipelineGL* pipeline = static_cast<PipelineGL*>(pipelineRes->GetGPUResource_Int());
-		ModelGL* model = static_cast<ModelGL*>(r.myModel->GetGPUResource_Int());
+		PipelineGL* pipeline = r.myPipeline.Get<PipelineGL>();
+		ModelGL* model = r.myModel.Get<ModelGL>();
 
 		if (pipeline != myCurrentPipeline)
 		{
@@ -177,7 +172,7 @@ void RenderPassJobGL::RunJobs()
 				// TODO: implement logic that doesn't rebind same slots:
 				// If pipeline A has X, Y, Z uniform blocks
 				// and pipeline B has X, V, W,
-				// if we bind from A to B (or vice versa), no need to rebind
+				// if we bind from A to B (or vice versa), no need to rebind X
 				pipeline->GetUBO(i).Bind(static_cast<uint32_t>(i));
 			}
 		}
@@ -191,7 +186,7 @@ void RenderPassJobGL::RunJobs()
 				continue;
 			}
 
-			TextureGL* texture = static_cast<TextureGL*>(r.myTextures[textureInd]->GetGPUResource_Int());
+			TextureGL* texture = r.myTextures[textureInd].Get<TextureGL>();
 			if (myCurrentTextures[slotToUse] != texture)
 			{
 				glActiveTexture(GL_TEXTURE0 + slotToUse);
@@ -207,18 +202,18 @@ void RenderPassJobGL::RunJobs()
 		}
 
 		// Now we can update the uniform blocks
-		size_t descriptorCount = pipelineRes->GetDescriptorCount();
+		size_t descriptorCount = pipeline->GetDescriptorCount();
 		for (size_t i = 0; i < descriptorCount; i++)
 		{
 			// grabbing the descriptor because it has the locations
 			// of uniform values to be uploaded to
-			const Descriptor& aDesc = pipelineRes->GetDescriptor(i);
+			const Descriptor& aDesc = pipeline->GetDescriptor(i);
 			// there's a UBO for every descriptor of the pipeline
 			UniformBufferGL& ubo = pipeline->GetUBO(i);
 			UniformBufferGL::UploadDescriptor uploadDesc;
 			uploadDesc.mySize = aDesc.GetBlockSize();
 			uploadDesc.myData = r.myUniforms[i]->GetData();
-			ubo.Upload(uploadDesc);
+			ubo.UploadData(uploadDesc);
 		}
 
 		switch (r.GetDrawMode())

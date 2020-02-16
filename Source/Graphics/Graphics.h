@@ -3,8 +3,8 @@
 #include <Core/Vertex.h>
 #include "Descriptor.h"
 #include "UniformBlock.h"
-#include "IGPUAllocator.h"
 #include "RenderPass.h"
+#include "Resource.h" // needed for Resource::Id
 
 class VisualObject;
 struct GLFWwindow;
@@ -14,8 +14,9 @@ class AssetTracker;
 class DebugDrawer;
 class RenderPassJob;
 class RenderContext;
+class GPUResource;
 
-class Graphics : public IGPUAllocator
+class Graphics
 {
 public:
 	// TODO: move this to a settings struct
@@ -54,15 +55,38 @@ public:
 	// takes ownership of the renderpass
 	void AddRenderPass(IRenderPass* aRenderPass);
 
-protected:
-	GLFWwindow* myWindow;
-	static int ourWidth, ourHeight;
+	Handle<GPUResource> GetOrCreate(Handle<Resource> aRes, bool aShouldKeepRes = false);
+	void ScheduleCreate(Handle<GPUResource> aGPUResource);
+	void ScheduleUpload(Handle<GPUResource> aGPUResource);
+	void ScheduleUnload(GPUResource* aGPUResource);
 
+protected:
+	static int ourWidth, ourHeight;
 	static Graphics* ourActiveGraphics;
+
+	void TriggerUpload(GPUResource* aGPUResource);
 
 	AssetTracker& myAssetTracker;
 
+	GLFWwindow* myWindow;
 	uint32_t myRenderCalls;
-
 	std::vector<IRenderPass*> myRenderPasses;
+
+	void UnloadAll();
+
+private:
+	using ResourceMap = std::unordered_map<Resource::Id, GPUResource*>;
+
+	tbb::concurrent_queue<Handle<GPUResource>> myCreateQueue;
+	tbb::concurrent_queue<Handle<GPUResource>> myUploadQueue;
+	// Not using handles since it already made here after last handle
+	// got destroyed, or requested directly
+	tbb::concurrent_queue<GPUResource*> myUnloadQueue;
+	ResourceMap myResources;
+	tbb::spin_mutex myResourceMutex;
+
+	void ProcessGPUQueues();
+
+	virtual GPUResource* Create(Resource::Type aType) const = 0;
 };
+

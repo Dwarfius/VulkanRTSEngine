@@ -1,38 +1,23 @@
 #pragma once
 
-#include "Resource.h"
-#include "Descriptor.h"
-#include "Shader.h"
+#include "../Resource.h"
+#include "../Interfaces/IPipeline.h"
+#include "../Descriptor.h"
+#include "../Resources/Shader.h"
 
 // A base class describing a generic pipeline
-class Pipeline : public Resource
+class Pipeline : public Resource, public IPipeline
 {
 public:
-	enum class Type
-	{
-		Graphics,
-		Compute
-	};
-
-	struct CreateDescriptor
-	{
-	};
-
-	struct UploadDescriptor
-	{
-		const GPUResource** myShaders;
-		size_t myShaderCount;
-		const Descriptor* myDescriptors;
-		size_t myDescriptorCount;
-	};
+	static constexpr StaticString kDir = Resource::AssetsFolder + "pipelines/";
 
 public:
-	Pipeline(Resource::Id anId);
+	Pipeline();
 	Pipeline(Resource::Id anId, const std::string& aPath);
 
 	Resource::Type GetResType() const override { return Resource::Type::Pipeline; }
 
-	size_t GetDescriptorCount() const { return myDescriptors.size(); }
+	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
 	const Descriptor& GetDescriptor(size_t anIndex) const { return myDescriptors[anIndex]; }
 
 	// takes ownership of the shader
@@ -45,10 +30,9 @@ public:
 	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
 
 private:
-	void OnLoad(AssetTracker& anAssetTracker) override;
-	void OnUpload(GPUResource* aGPURes) override;
+	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
 
-	Type myType;
+	IPipeline::Type myType;
 	std::vector<Descriptor> myDescriptors;
 	std::vector<Handle<Shader>> myShaders;
 };

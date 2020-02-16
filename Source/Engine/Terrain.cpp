@@ -3,7 +3,7 @@
 
 #include <Physics/PhysicsShapes.h>
 
-#include <Graphics/Texture.h>
+#include <Graphics/Resources/Texture.h>
 #include <Graphics/AssetTracker.h>
 
 Terrain::Terrain()
@@ -22,15 +22,16 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 
 	using PixelType = unsigned char;
 	PixelType* pixels = Texture::LoadFromDisk(aName, Texture::Format::UNorm_R, myWidth, myHeight);
+	ASSERT_STR(pixels, "Failed to load image data!");
 	constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
 
 	// variables for calculating extents
-	float minHeight = numeric_limits<float>::max();
-	float maxHeight = numeric_limits<float>::min();
+	float minHeight = std::numeric_limits<float>::max();
+	float maxHeight = std::numeric_limits<float>::min();
 
 	// first, creating the vertices
-	vector<Vertex> verts;
-	verts.resize(myHeight * myWidth);
+	const size_t vertCount = myHeight * myWidth;
+	Vertex* vertices = new Vertex[vertCount];
 	const float startX = 0.f;
 	const float startY = 0.f;
 	for (int y = 0; y < myHeight; y++)
@@ -47,7 +48,7 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 			v.myPos.y = pixels[index] / kMaxPixelVal * myYScale;
 			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
 			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
-			verts[index] = v;
+			vertices[index] = v;
 
 			// tracking min/max heights for AABB
 			minHeight = min(minHeight, v.myPos.y);
@@ -57,8 +58,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	Texture::FreePixels(pixels);
 
 	//now creating indices
-	vector<Model::IndexType> indices;
-	indices.resize((myHeight - 1) * (myWidth - 1) * 6);
+	const size_t indexCount = (myHeight - 1) * (myWidth - 1) * 6;
+	Model::IndexType* indices = new Model::IndexType[indexCount];
 	for (int y = 0; y < myHeight - 1; y++)
 	{
 		for (int x = 0; x < myWidth - 1; x++)
@@ -70,10 +71,10 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 			Model::IndexType tl = bl + myWidth;
 			Model::IndexType tr = tl + 1;
 
-			ASSERT(bl < verts.size());
-			ASSERT(br < verts.size());
-			ASSERT(tl < verts.size());
-			ASSERT(tr < verts.size());
+			ASSERT(bl < vertCount);
+			ASSERT(br < vertCount);
+			ASSERT(tl < vertCount);
+			ASSERT(tr < vertCount);
 
 			indices[triangle + 0] = bl;
 			indices[triangle + 1] = tl;
@@ -84,18 +85,31 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 		}
 	}
 
-	Normalize(verts, indices);
+	Normalize(vertices, vertCount, indices, indexCount);
 
-	myModel = anAssetTracker.Create<Model>();
+	myModel = new Model(PrimitiveType::Triangles, Vertex::Type);
 
 	const float fullWidth = GetWidth();
 	const float fullDepth = GetDepth();
-	const glm::vec3 aabbMin(startX, minHeight, startY);
-	const glm::vec3 aabbMax(startX + fullWidth, maxHeight, startY + fullDepth);
-	// the largest dimension is the bounding sphere radius
-	const float sphereRadius = max(max(maxHeight - minHeight, fullDepth), fullWidth);
-
-	myModel->SetData(move(verts), move(indices), aabbMin, aabbMax, sphereRadius);
+	{
+		const glm::vec3 aabbMin(startX, minHeight, startY);
+		const glm::vec3 aabbMax(startX + fullWidth, maxHeight, startY + fullDepth);
+		myModel->SetAABB(aabbMin, aabbMax);
+	}
+	{
+		// the largest dimension is the bounding sphere radius
+		const float sphereRadius = max(max(maxHeight - minHeight, fullDepth), fullWidth);
+		myModel->SetSphereRadius(sphereRadius);
+	}
+	
+	Model::UploadDescriptor uploadDesc;
+	uploadDesc.myVertices = vertices;
+	uploadDesc.myVertCount = vertCount;
+	uploadDesc.myIndices = indices;
+	uploadDesc.myIndCount = indexCount;
+	uploadDesc.myNextDesc = nullptr;
+	uploadDesc.myVertexType = Vertex::Type;
+	myModel->Update(uploadDesc);
 }
 
 float Terrain::GetHeight(glm::vec3 pos) const
@@ -118,7 +132,7 @@ float Terrain::GetHeight(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	const Vertex* verts = model.GetVertices();
+	const Vertex* verts = static_cast<const Vertex*>(model.GetVertices());
 	Vertex v0 = verts[yMin * myWidth + xMin];
 	Vertex v1 = verts[yMax * myWidth + xMin];
 	Vertex v2 = verts[yMin * myWidth + xMax];
@@ -154,7 +168,7 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	const Vertex* verts = model.GetVertices();
+	const Vertex* verts = static_cast<const Vertex*>(model.GetVertices());
 	Vertex v0 = verts[yMin * myWidth + xMin];
 	Vertex v1 = verts[yMax * myWidth + xMin];
 	Vertex v2 = verts[yMin * myWidth + xMax];
@@ -181,7 +195,7 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	float maxHeight = model.GetAABBMax().y;
 	for (size_t i=0; i<count; i++)
 	{
-		const Vertex& vert = model.GetVertices()[i];
+		const Vertex& vert = static_cast<const Vertex*>(model.GetVertices())[i];
 		myHeightsCache.push_back(vert.myPos.y);
 	}
 
@@ -190,14 +204,15 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	return myShape;
 }
 
-void Terrain::Normalize(vector<Vertex>& aVertices, const vector<Model::IndexType>& aIndices)
+void Terrain::Normalize(Vertex* aVertices, size_t aVertCount,
+	Model::IndexType* aIndices, size_t aIndCount)
 {
-	size_t vertCount = aVertices.size();
-	size_t indexCount = aIndices.size();
-	//holds the sum of all surface normals per vertex
-	vector<glm::vec3> surfNormals(vertCount, glm::vec3());
-	//gotta update the faces
-	for (int i = 0; i < indexCount; i += 3)
+	ASSERT_STR(aVertCount != 0 && aIndCount != 0, "Missing data!");
+
+	// holds the sum of all surface normals per vertex
+	vector<glm::vec3> surfNormals(aVertCount, glm::vec3());
+	// gotta update the faces
+	for (int i = 0; i < aIndCount; i += 3)
 	{
 		size_t i1 = aIndices[i + 0];
 		size_t i2 = aIndices[i + 1];
@@ -207,7 +222,7 @@ void Terrain::Normalize(vector<Vertex>& aVertices, const vector<Model::IndexType
 		glm::vec3 v2 = aVertices[i2].myPos;
 		glm::vec3 v3 = aVertices[i3].myPos;
 
-		//calculating the surf normal
+		// calculating the surf normal
 		glm::vec3 u = v2 - v1;
 		glm::vec3 v = v3 - v1;
 
@@ -218,7 +233,7 @@ void Terrain::Normalize(vector<Vertex>& aVertices, const vector<Model::IndexType
 		surfNormals[i3] += normal;
 	}
 	
-	for (int vertInd = 0; vertInd < vertCount; vertInd++)
+	for (int vertInd = 0; vertInd < aVertCount; vertInd++)
 	{
 		aVertices[vertInd].myNormal = normalize(surfNormals[vertInd]);
 	}

@@ -5,10 +5,11 @@ class GameTask
 public:
 	enum Type
 	{
-		/* RESERVED */
+		/* vvv RESERVED vvv */
 		Uninitialised,
 		GraphBroadcast, // special reserved type for kicking off the graph execution
-		/* RESERVED */
+		/* ^^^ RESERVED ^^^ */
+		UpdateAssetTracker,
 		AddGameObjects,
 		EditorUpdate,
 		UpdateInput,

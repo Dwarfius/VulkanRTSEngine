@@ -17,9 +17,11 @@
 
 #include <Graphics/Camera.h>
 #include <Graphics/AssetTracker.h>
-#include <Graphics/Shader.h>
-#include <Graphics/Pipeline.h>
-#include <Graphics/Texture.h>
+#include <Graphics/Resources/Shader.h>
+#include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/Texture.h>
+#include <Graphics/Resources/Model.h>
+#include <Graphics/GPUResource.h>
 
 #ifdef _DEBUG
 #define DEBUG_GL_CALLS
@@ -32,8 +34,6 @@ void APIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 
 GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 	: Graphics(anAssetTracker)
-	, myDebugVertShader(nullptr)
-	, myDebugFragShader(nullptr)
 	, myDebugPipeline(nullptr)
 {
 	memset(&myLineCache, 0, sizeof(myLineCache));
@@ -88,57 +88,8 @@ void GraphicsGL::Init()
 #endif
 
 	{
-		myDebugVertShader = new ShaderGL();
-		
-		Shader::CreateDescriptor createDesc;
-		createDesc.myType = Shader::Type::Vertex;
-		myDebugVertShader->Create(createDesc);
-
-		string contents;
-		constexpr StaticString kDebugVertShader = Resource::AssetsFolder + "GLShaders/debug.vert";
-		bool success = Resource::ReadFile(kDebugVertShader.CStr(), contents);
-		ASSERT_STR(success, "Failed to open debug.vert!");
-
-		Shader::UploadDescriptor uploadDesc;
-		uploadDesc.myFileContents = contents;
-		success = myDebugVertShader->Upload(uploadDesc);
-		ASSERT_STR(success, "Debug vertex shader failed to upload! Error: %s", 
-			myDebugVertShader->GetErrorMsg().c_str());
-	}
-	
-	{
-		myDebugFragShader = new ShaderGL();
-
-		Shader::CreateDescriptor createDesc;
-		createDesc.myType = Shader::Type::Fragment;
-		myDebugFragShader->Create(createDesc);
-
-		string contents;
-		constexpr StaticString kDebugFragShader = Resource::AssetsFolder + "GLShaders/debug.frag";
-		bool success = Resource::ReadFile(kDebugFragShader.CStr(), contents);
-		ASSERT_STR(success, "Failed to open debug.vert!");
-
-		Shader::UploadDescriptor uploadDesc;
-		uploadDesc.myFileContents = contents;
-		success = myDebugFragShader->Upload(uploadDesc);
-		ASSERT_STR(success, "Debug fragment shader failed to upload! Error: %s", 
-			myDebugFragShader->GetErrorMsg().c_str());
-	}
-
-	{
-		myDebugPipeline = new PipelineGL();
-
-		Pipeline::CreateDescriptor createDesc;
-		myDebugPipeline->Create(createDesc);
-
-		constexpr size_t DebugShaderCount = 2;
-		const GPUResource* debugShaders[DebugShaderCount] = { myDebugFragShader, myDebugVertShader };
-		Pipeline::UploadDescriptor uploadDesc;
-		uploadDesc.myShaderCount = DebugShaderCount;
-		uploadDesc.myShaders = debugShaders;
-		uploadDesc.myDescriptors = nullptr;
-		uploadDesc.myDescriptorCount = 0;
-		myDebugPipeline->Upload(uploadDesc);
+		Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("debug.ppl");
+		myDebugPipeline = GetOrCreate(debugPipeline).Get<PipelineGL>();
 	}
 
 	CreateLineCache();
@@ -150,9 +101,6 @@ void GraphicsGL::Init()
 
 void GraphicsGL::BeginGather()
 {
-	// before anything, process the accumulated resource requests
-	myAssetTracker.ProcessQueues();
-
 	Graphics::BeginGather();
 }
 
@@ -179,11 +127,15 @@ void GraphicsGL::Display()
 	// ======
 
 	// lastly going to process the debug lines
-	if(myLineCache.myUploadDesc.myPrimitiveCount > 0)
+	if(myDebugPipeline->GetState() == GPUResource::State::Valid
+		&& myLineCache.myUploadDesc.myPrimitiveCount > 0)
 	{
 		// upload the entire chain
-		myLineCache.myBuffer->Upload(myLineCache.myUploadDesc);
+		Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
+		debugModel->Update(myLineCache.myUploadDesc);
+		Graphics::TriggerUpload(myLineCache.myBuffer.Get());
 		
+		// TODO: move this to AssetTracker
 		// clean up the upload descriptors
 		for (Model::UploadDescriptor* currDesc = &myLineCache.myUploadDesc;
 			currDesc != nullptr;
@@ -202,7 +154,7 @@ void GraphicsGL::Display()
 		myLineCache.myBuffer->Bind();
 
 		// now just draw em out
-		GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetPrimitiveCount());
+		GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetVertexCount());
 		glDrawArrays(myLineCache.myBuffer->GetDrawMode(), 0, count);
 	}
 
@@ -211,17 +163,8 @@ void GraphicsGL::Display()
 
 void GraphicsGL::CleanUp()
 {
-	myAssetTracker.UnloadAll();
-
-	myDebugPipeline->Unload();
-	delete myDebugPipeline;
-	myDebugFragShader->Unload();
-	delete myDebugFragShader;
-	myDebugVertShader->Unload();
-	delete myDebugVertShader;
-
-	myLineCache.myBuffer->Unload();
-	delete myLineCache.myBuffer;
+	myDebugPipeline = Handle<PipelineGL>();
+	myLineCache.myBuffer = Handle<ModelGL>();
 
 	constexpr uint32_t kMaxExtraDescriptors = 32;
 	Model::UploadDescriptor* descriptors[kMaxExtraDescriptors];
@@ -236,6 +179,8 @@ void GraphicsGL::CleanUp()
 	{
 		delete descriptors[--descInd];
 	}
+
+	UnloadAll();
 
 	glfwDestroyWindow(myWindow);
 	ourActiveGraphics = nullptr;
@@ -277,6 +222,7 @@ void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 	currDesc->myIndices = nullptr;
 	currDesc->myIndCount = 0;
+	currDesc->myVertexType = aDebugDrawer.GetVertexType();
 
 	// TODO: this is wasteful - refactor to set it once or cache per debug drawer
 	myLineCache.myVp = aCam.Get();
@@ -318,13 +264,9 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 
 void GraphicsGL::CreateLineCache()
 {
-	myLineCache.myBuffer = new ModelGL();
-	Model::CreateDescriptor createDesc;
-	createDesc.myPrimitiveType = GPUResource::Primitive::Lines;
-	createDesc.myUsage = GPUResource::Usage::Dynamic;
-	createDesc.myVertType = PosColorVertex::Type;
-	createDesc.myIsIndexed = false;
-	myLineCache.myBuffer->Create(createDesc);
+	myLineCache.myBuffer = new ModelGL(PrimitiveType::Lines, GPUResource::UsageType::Dynamic, PosColorVertex::Type, false);
+	Handle<Model> cpuBuffer = new Model(PrimitiveType::Lines, PosColorVertex::Type);
+	myLineCache.myBuffer->Create(*this, cpuBuffer, true);
 }
 
 #ifdef DEBUG_GL_CALLS

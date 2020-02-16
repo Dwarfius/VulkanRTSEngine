@@ -34,20 +34,38 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"AssetTracker.cpp" "AssetTracker.h"
 	"Camera.cpp" "Camera.h"
 	"Descriptor.cpp" "Descriptor.h"
+	"GPUResource.cpp" "GPUResource.h"
 	"Graphics.cpp" "Graphics.h"
 	"GraphicsTypes.h"
-	"Model.cpp" "Model.h"
-	"Pipeline.cpp" "Pipeline.h"
 	"RenderContext.h"
 	"RenderPass.cpp" "RenderPass.h"
 	"RenderPassJob.cpp" "RenderPassJob.h"
 	"Resource.cpp" "Resource.h"
-	"Shader.cpp" "Shader.h"
-	"Texture.cpp" "Texture.h"
 	"UniformBlock.cpp" "UniformBlock.h"
 )
 
-add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_GRAPHICS})
+set(SRC_INTERFACES "Interfaces/IModel.h"
+	"Interfaces/IPipeline.h"
+	"Interfaces/IShader.h"
+	"Interfaces/ITexture.h"
+)
+
+set(SRC_RESOURCES "Resources/GPUModel.h"
+	"Resources/GPUPipeline.h"
+	"Resources/GPUShader.h"
+	"Resources/GPUTexture.h"
+	"Resources/Model.cpp" "Resources/Model.h"
+	"Resources/Pipeline.cpp" "Resources/Pipeline.h"
+	"Resources/Shader.cpp" "Resources/Shader.h"
+	"Resources/Texture.cpp" "Resources/Texture.h"
+)
+
+add_library(${PROJECT_NAME} STATIC 
+	${SRC} 
+		${SRC_INTERFACES}
+		${SRC_RESOURCES}
+)
+
 if (MSVC)
    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
    set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
@@ -55,6 +73,8 @@ endif(MSVC)
 
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
+source_group(Interfaces FILES ${SRC_INTERFACES})
+source_group(Resources FILES ${SRC_RESOURCES})
 
 target_include_directories(${PROJECT_NAME}
 	PRIVATE 

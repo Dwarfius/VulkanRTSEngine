@@ -8,15 +8,15 @@
 #include "Threading/AssertRWMutex.h"
 #endif
 
-// a base for objects that need to be managed via Handle
+// A base for objects that need to be managed via Handle.
+// Using an intrusive implementation to allow to spawn a Handle from a
+// pointer, allowing forced extension of life
+// This gives more freedom down the line, and if it turns out as unnecessary
+// we can always discard it
 class RefCounted
 {
 public:
 	RefCounted();
-
-	// Necessary to allow calling child destructors 
-	// and avoiding memory leaks
-	virtual ~RefCounted() {}
 
 private:
 	// ==========================
@@ -29,16 +29,24 @@ private:
 	// ==========================
 
 private:
+	virtual void Cleanup() { delete this; }
 	std::atomic<uint32_t> myCounter;
+};
+
+// A special subclass of RefCounted that prevents deletion of
+// the object, and instead delegates it to Destroy func
+// User has to provide static void Destroy(T*)!
+template<class T>
+class RefCountedWithDestroy : public RefCounted
+{
+	void Cleanup() override final { T::Destroy(static_cast<T*>(this)); }
 };
 
 // =======================================================
 
 // A smart-handle that shares ownership of RefCounted-ables.
 // Not thread-safe. Will assert on contention.
-// To avoid threading issues, don't pass around by refs around threads,
-// instead pass by value, so every thread has it's own object
-template<typename T>
+template<class T>
 class Handle
 {
 public:
@@ -74,6 +82,32 @@ public:
 		aHandle.myObject = nullptr;
 	}
 
+	// TODO: replace with concepts!
+	// Allow copies from subclasses of T
+	template<class TOther, typename std::enable_if_t<
+		std::is_base_of_v<T, TOther>, int> = 0>
+	Handle(const Handle<TOther>& aHandle)
+	{
+#ifdef HANDLE_HEAVY_DEBUG
+		AssertReadLock theirLock(aHandle.myDebugMutex);
+#endif
+		myObject = aHandle.myObject;
+		if (myObject)
+		{
+			myObject->AddRef();
+		}
+	}
+
+	// TODO: replace with concepts!
+	// Allow moves from subclasses of T
+	template<class TOther, typename std::enable_if_t<
+		std::is_base_of_v<T, TOther>, int> = 0>
+	Handle(Handle<TOther>&& aHandle)
+	{
+		myObject = aHandle.myObject;
+		aHandle.myObject = nullptr;
+	}
+
 	~Handle()
 	{
 		if (myObject)
@@ -94,7 +128,10 @@ public:
 		}
 
 		myObject = aHandle.myObject;
-		myObject->AddRef();
+		if (myObject)
+		{
+			myObject->AddRef();
+		}
 		return *this;
 	}
 
@@ -123,7 +160,6 @@ public:
 #ifdef HANDLE_HEAVY_DEBUG
 		AssertReadLock ourLock(myDebugMutex);
 #endif
-		static_assert(std::is_convertible_v<T*, TOther*>, "Can't convert types!");
 		return static_cast<TOther*>(myObject); 
 	}
 
@@ -134,7 +170,6 @@ public:
 #ifdef HANDLE_HEAVY_DEBUG
 		AssertReadLock ourLock(myDebugMutex);
 #endif
-		static_assert(is_convertible_v<T*, TOther*>, "Can't convert types!");
 		return static_cast<const TOther*>(myObject); 
 	}
 
@@ -162,6 +197,15 @@ public:
 	const T* operator->() const
 	{
 		return Get();
+	}
+
+	// TODO: replace with concepts!
+	// Allow conversions to super-classes of T
+	template<class TOther, typename std::enable_if_t<
+		std::is_base_of_v<TOther, T>, int> = 0>
+	operator Handle<TOther>()
+	{
+		return Get<typename TOther>();
 	}
 
 private:

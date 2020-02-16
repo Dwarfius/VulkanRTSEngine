@@ -3,15 +3,13 @@
 #include "RenderContext.h"
 
 #include <Core/RefCounted.h>
+#include <Graphics/UniformBlock.h>
 
-class Model;
-class Pipeline;
-class Texture;
-class UniformBlock;
+class GPUResource;
 
 struct RenderJob
 {
-	using TextureSet = std::vector<Handle<Texture>>;
+	using TextureSet = std::vector<Handle<GPUResource>>;
 	using UniformSet = std::vector<std::shared_ptr<UniformBlock>>;
 
 	enum class DrawMode : char
@@ -31,15 +29,15 @@ struct RenderJob
 	};
 
 public:
-	Handle<Pipeline> myPipeline;
-	Handle<Model> myModel;
+	Handle<GPUResource> myPipeline;
+	Handle<GPUResource> myModel;
 
 	TextureSet myTextures;
 	UniformSet myUniforms;
 
 	RenderJob() = default;
-	RenderJob(Handle<Pipeline> aPipeline,
-		Handle<Model> aModel,
+	RenderJob(Handle<GPUResource> aPipeline,
+		Handle<GPUResource> aModel,
 		TextureSet aTextures,
 		UniformSet aUniforms)
 		: myPipeline(aPipeline)
@@ -48,13 +46,14 @@ public:
 		, myUniforms(aUniforms)
 		, myPriority(0)
 		, myDrawMode(DrawMode::Indexed)
+		, myDrawParams()
 	{
 	}
 
 	bool HasLastHandles() const
 	{
 		bool lastTexture = false;
-		for (const Handle<Texture>& texture : myTextures)
+		for (const Handle<GPUResource>& texture : myTextures)
 		{
 			lastTexture |= texture.IsLastHandle();
 		}

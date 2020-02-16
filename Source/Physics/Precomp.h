@@ -2,7 +2,6 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
-#include <any>
 #include <atomic>
 
 #include <btBulletDynamicsCommon.h>

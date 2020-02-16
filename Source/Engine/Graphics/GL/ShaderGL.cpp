@@ -1,51 +1,43 @@
 #include "Precomp.h"
 #include "ShaderGL.h"
 
-#include <Graphics/Shader.h>
+#include <Graphics/Resources/Shader.h>
+#include <Graphics/Graphics.h>
 
 ShaderGL::ShaderGL()
-	: GPUResource()
-	, myGLShader(0)
+	: myGLShader(0)
 {
 }
 
-ShaderGL::~ShaderGL()
-{
-	if (myGLShader)
-	{
-		Unload();
-	}
-}
-
-void ShaderGL::Create(any aDescriptor)
+void ShaderGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLShader, "Shader already created!");
 
-	const Shader::CreateDescriptor& desc = 
-		any_cast<const Shader::CreateDescriptor&>(aDescriptor);
+	const Shader* shader = myResHandle.Get<const Shader>();
 
 	uint32_t glType;
-	switch (desc.myType)
+	switch (shader->GetType())
 	{
-	case Shader::Type::Vertex:		glType = GL_VERTEX_SHADER; break;
-	case Shader::Type::Fragment:	glType = GL_FRAGMENT_SHADER; break;
-	case Shader::Type::Geometry:	glType = GL_GEOMETRY_SHADER; break;
-	case Shader::Type::TessControl: glType = GL_TESS_CONTROL_SHADER; break;
-	case Shader::Type::TessEval:	glType = GL_TESS_EVALUATION_SHADER; break;
-	case Shader::Type::Compute:		glType = GL_COMPUTE_SHADER; break;
+	case IShader::Type::Vertex:		glType = GL_VERTEX_SHADER; break;
+	case IShader::Type::Fragment:	glType = GL_FRAGMENT_SHADER; break;
+	case IShader::Type::Geometry:	glType = GL_GEOMETRY_SHADER; break;
+	case IShader::Type::TessControl: glType = GL_TESS_CONTROL_SHADER; break;
+	case IShader::Type::TessEval:	glType = GL_TESS_EVALUATION_SHADER; break;
+	case IShader::Type::Compute:		glType = GL_COMPUTE_SHADER; break;
+	default: ASSERT(false);
 	}
 	myGLShader = glCreateShader(glType);
 }
 
-bool ShaderGL::Upload(any aDescriptor)
+bool ShaderGL::OnUpload(Graphics& aGraphics)
 {
-	const Shader::UploadDescriptor& desc = 
-		any_cast<const Shader::UploadDescriptor&>(aDescriptor);
-
 	ASSERT_STR(myGLShader, "Shader missing!");
 
-	const char* dataPtrs[] = {						desc.myFileContents.data()   };
-	int dataSizes[] = {			static_cast<GLint>(	desc.myFileContents.size() ) };
+	const Shader* shader = myResHandle.Get<const Shader>();
+	const std::string& shaderBuffer = shader->GetBuffer();
+
+	const char* dataPtrs[] = {						shaderBuffer.data()   };
+	int dataSizes[] = {			static_cast<GLint>(	shaderBuffer.size() ) };
 	glShaderSource(myGLShader, 1, dataPtrs, dataSizes);
 
 	glCompileShader(myGLShader);
@@ -63,15 +55,14 @@ bool ShaderGL::Upload(any aDescriptor)
 		errStr.resize(length);
 		glGetShaderInfoLog(myGLShader, length, &length, &errStr[0]);
 
-		myErrorMsg = "Shader failed to compile" + errStr;
+		SetErrMsg("Shader failed to compile" + errStr);
 #endif
 		return false;
 	}
-
 	return true;
 }
 
-void ShaderGL::Unload()
+void ShaderGL::OnUnload(Graphics& aGraphics)
 {
 	ASSERT_STR(myGLShader, "Empty shader detected!");
 	glDeleteShader(myGLShader);

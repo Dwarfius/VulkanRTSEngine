@@ -1,25 +1,29 @@
 #include "Precomp.h"
 #include "ModelGL.h"
 
+#include <Graphics/Resources/Model.h>
+
 ModelGL::ModelGL()
-	: GPUResource()
-	, myVAO(0)
-	, myVBO(0)
-	, myEBO(0)
-	, myDrawMode(0)
-	, myPrimitiveCount(0)
-	, myVertCount(0)
-	, myIndexCount(0)
-	, myUsage(GPUResource::Usage::Static)
-	, myVertType(0)
+	: ModelGL(PrimitiveType::Lines, UsageType::Static, 0, false)
 {
 }
 
-ModelGL::~ModelGL()
+ModelGL::ModelGL(PrimitiveType aPrimType, UsageType aUsage, int aVertType, bool aIsIndexed)
+	: myVAO(0)
+	, myVBO(0)
+	, myEBO(0)
+	, myPrimitiveCount(0)
+	, myVertCount(0)
+	, myIndexCount(0)
+	, myUsage(aUsage)
+	, myVertType(aVertType)
+	, myIsIndexed(aIsIndexed)
 {
-	if (myVAO)
+	switch (aPrimType)
 	{
-		Unload();
+	case PrimitiveType::Lines:	   myDrawMode = GL_LINES; break;
+	case PrimitiveType::Triangles: myDrawMode = GL_TRIANGLES; break;
+	default: ASSERT(false);
 	}
 }
 
@@ -30,17 +34,17 @@ void ModelGL::Bind()
 	glBindVertexArray(myVAO);
 }
 
-void ModelGL::Create(any aDescriptor)
+void ModelGL::OnCreate(Graphics& aGraphics)
 {
-	const Model::CreateDescriptor& descriptor = 
-		any_cast<const Model::CreateDescriptor&>(aDescriptor);
-
 	ASSERT_STR(!myVBO, "Already have a buffer allocated!");
+
+	const Model* model = myResHandle.Get<const Model>();
+	myIsIndexed = model->GetIndexCount() > 0;
 
 	glGenVertexArrays(1, &myVAO);
 	glBindVertexArray(myVAO);
 
-	if (descriptor.myIsIndexed)
+	if (myIsIndexed)
 	{
 		uint32_t buffers[2];
 		glGenBuffers(2, buffers);
@@ -57,7 +61,7 @@ void ModelGL::Create(any aDescriptor)
 		glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	}
 
-	myVertType = descriptor.myVertType;
+	myVertType = model->GetVertexType();
 	switch (myVertType)
 	{
 	case Vertex::Type:
@@ -87,40 +91,39 @@ void ModelGL::Create(any aDescriptor)
 		break;
 	}
 
-	switch (descriptor.myPrimitiveType)
+	switch (model->GetPrimitiveType())
 	{
-	case GPUResource::Primitive::Lines:		myDrawMode = GL_LINES; break;
-	case GPUResource::Primitive::Triangles: myDrawMode = GL_TRIANGLES; break;
+	case PrimitiveType::Lines:		myDrawMode = GL_LINES; break;
+	case PrimitiveType::Triangles:	myDrawMode = GL_TRIANGLES; break;
 	default: ASSERT(false);
 	}
 
-	myUsage = descriptor.myUsage;
 	glBindVertexArray(0);
 }
 
-bool ModelGL::Upload(any aDescriptor)
+bool ModelGL::OnUpload(Graphics& aGraphics)
 {
-	const Model::UploadDescriptor& descriptor = 
-		any_cast<const Model::UploadDescriptor&>(aDescriptor);
+	const Model* model = static_cast<const Model*>(myResHandle.Get());
 	
 	ASSERT_STR(myVAO, "Don't have a buffer alocated!");
 
 	glBindVertexArray(myVAO);
 
 	// first need to count how many vertices and indices are there in total
-	size_t newPrimCount = 0;
-	size_t vertCount = 0;
-	size_t indexCount = 0;
-	for(const Model::UploadDescriptor* currDesc = &descriptor; 
-		currDesc != nullptr; 
-		currDesc = currDesc->myNextDesc)
+	// and adjust internal buffers if there aren't enough
+	char vertsPerPrim = 0;
+	switch (model->GetPrimitiveType())
 	{
-		vertCount += currDesc->myVertCount;
-		indexCount += currDesc->myIndCount;
-		newPrimCount += currDesc->myPrimitiveCount;
+	case PrimitiveType::Lines:		vertsPerPrim = 2; break;
+	case PrimitiveType::Triangles:	vertsPerPrim = 3; break;
+	default: ASSERT(false);
 	}
+	const size_t newPrimCount = model->GetVertexCount() / vertsPerPrim;
+	const size_t vertCount = model->GetVertexCount();
+	const size_t indexCount = model->GetIndexCount();
 
-	ASSERT_STR((indexCount != 0 && myEBO) || (indexCount == 0 && !myEBO), "Didn't have indices for an index buffer!");
+	ASSERT_STR((indexCount != 0 && myEBO) || (indexCount == 0 && !myEBO), 
+		"Didn't have indices for an index buffer!");
 
 	// Maybe the model has been dynamically modified - might need to grow.
 	// Definitelly need to allocate if it's our first upload
@@ -135,32 +138,24 @@ bool ModelGL::Upload(any aDescriptor)
 	
 	// Now that we have enough allocated, we can start uploading data from
 	// the descriptors
-	size_t vertOffset = 0;
-	size_t indOffset = 0;
-	for (const Model::UploadDescriptor* currDesc = &descriptor;
-		currDesc != nullptr;
-		currDesc = currDesc->myNextDesc)
+	if (vertCount > 0)
 	{
-		size_t currVertCount = currDesc->myVertCount;
-		ASSERT_STR(currVertCount > 0, "Missing additional vertices for a model!");
-		UploadVertices(currDesc->myVertices, currVertCount, vertOffset);
-		vertOffset += currVertCount;
+		UploadVertices(model->GetVertices(), vertCount, 0);
+	}
 
-		if (indexCount > 0)
-		{
-			size_t currIndCount = currDesc->myIndCount;
-			ASSERT_STR(currIndCount > 0, "Missing additional indices for a model!");
-			UploadIndices(currDesc->myIndices, currIndCount, indOffset);
-			indOffset += currIndCount;
-		}
+	if (indexCount > 0)
+	{
+		UploadIndices(model->GetIndices(), indexCount, 0);
 	}
 
 	myPrimitiveCount = newPrimCount;
+	myCenter = model->GetCenter();
+	myRadius = model->GetSphereRadius();
 
 	return true;
 }
 
-void ModelGL::Unload()
+void ModelGL::OnUnload(Graphics& aGraphics)
 {
 	ASSERT_STR(myVAO, "Uninitialized Model detected!");
 	if (myEBO)
@@ -181,7 +176,7 @@ void ModelGL::AllocateVertices(size_t aTotalCount)
 {
 	ASSERT_STR(myVBO, "Tried to allocate vertices for missing buffer!");
 
-	uint32_t usage = myUsage == GPUResource::Usage::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
+	uint32_t usage = myUsage == UsageType::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 	size_t vertSize = 0;
 	switch (myVertType)
 	{
@@ -201,7 +196,6 @@ void ModelGL::AllocateVertices(size_t aTotalCount)
 
 	glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	glBufferData(GL_ARRAY_BUFFER, vertSize * aTotalCount, NULL, usage);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	myVertCount = aTotalCount;
 }
@@ -211,10 +205,9 @@ void ModelGL::AllocateIndices(size_t aTotalCount)
 	ASSERT_STR(myEBO, "Tried to allocate indices for missing buffer!");
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, myEBO);
-	uint32_t usage = myUsage == GPUResource::Usage::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
+	uint32_t usage = myUsage == UsageType::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Model::IndexType) * aTotalCount, NULL, GL_STATIC_DRAW);
 	myIndexCount = aTotalCount;
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void ModelGL::UploadVertices(const void* aVertices, size_t aVertexCount, size_t anOffset)
@@ -222,22 +215,10 @@ void ModelGL::UploadVertices(const void* aVertices, size_t aVertexCount, size_t 
 	ASSERT_STR(myVBO, "Tried to upload vertices for missing buffer!");
 	ASSERT_STR(aVertexCount > 0 && aVertices != nullptr, "Missing vertices!");
 
-	size_t vertSize = 0;
-	switch (myVertType)
-	{
-	case Vertex::Type:
-		vertSize = sizeof(Vertex);
-		break;
-	case PosColorVertex::Type:
-		vertSize = sizeof(PosColorVertex);
-		break;
-	default:
-		ASSERT(false);
-	}
+	size_t vertSize = Model::GetVertexSize(myVertType);
 
 	glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, anOffset * vertSize, aVertexCount * vertSize, aVertices);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void ModelGL::UploadIndices(const Model::IndexType* aIndices, size_t aIndexCount, size_t anOffset)
@@ -248,5 +229,4 @@ void ModelGL::UploadIndices(const Model::IndexType* aIndices, size_t aIndexCount
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, myEBO);
 	size_t indSize = sizeof(Model::IndexType);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, anOffset * indSize, aIndexCount * indSize, aIndices);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

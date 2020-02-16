@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Graphics/Resource.h>
+#include <Graphics/GPUResource.h>
 
 class UniformBufferGL : public GPUResource
 {
@@ -12,20 +12,22 @@ public:
 	};
 
 public:
-	UniformBufferGL();
-	~UniformBufferGL();
-	UniformBufferGL(UniformBufferGL&& anOther);
+	UniformBufferGL(size_t aBufferSize);
 
 	// Binds the UniformBuffer to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
 	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
-	// Changes OpenGL state, not thread safe.
-	void Create(any aDescriptor) override;
-	bool Upload(any aDescriptor) override;
-	void Unload() override;
-
 private:
+	void OnCreate(Graphics& aGraphics) override final;
+	bool OnUpload(Graphics& aGraphics) override final;
+	void OnUnload(Graphics& aGraphics) override final;
+
+	size_t myBufferSize;
 	uint32_t myBuffer;
+	UploadDescriptor myUploadDesc;
+
+	friend class RenderPassJobGL;
+	void UploadData(const UploadDescriptor& anUploadDesc);
 };

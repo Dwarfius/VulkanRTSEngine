@@ -1,19 +1,25 @@
 #pragma once
 
-#include <Graphics/Resource.h>
+#include <Graphics/Resources/GPUTexture.h>
 
-class TextureGL : public GPUResource
+class Texture;
+
+class TextureGL : public GPUTexture
 {
 public:
 	TextureGL();
-	~TextureGL();
 
 	void Bind();
 
-	void Create(any aDescriptor) override;
-	bool Upload(any aDescriptor) override;
-	void Unload() override;
-
 private:
+	void OnCreate(Graphics& aGraphics) override final;
+	bool OnUpload(Graphics& aGraphics) override final;
+	void OnUnload(Graphics& aGraphics) override final;
+
+	void UpdateTexParams(const Texture* aTexture);
+
 	uint32_t myGLTexture;
+	WrapMode myWrapMode;
+	Filter myMinFilter;
+	Filter myMagFilter;
 };

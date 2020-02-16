@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IGPUAllocator.h"
+#include "Resource.h"
 
 // Class for handling different resource types using the same interface. 
 // Threadsafe
@@ -14,44 +14,30 @@ private:
 public:
 	AssetTracker();
 
-	// Sets the object for allocating GPU resources
-	void SetGPUAllocator(IGPUAllocator* anAllocator) { myGPUAllocator = anAllocator; }
-
-	// Creates a dynamic asset. Caller responsible for calling Load manually.
-	// Once Load is done, Tracker will schedule it for upload. Threadsafe
-	template<class AssetType>
-	Handle<AssetType> Create();
+	// Saves an asset to the disk. Tracks it for future use
+	// Threadsafe
+	template<class TAsset>
+	void SaveAndTrack(
+		const std::string& aPath,
+		Handle<TAsset> aHandle
+	);
 
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
-	template<class AssetType>
-	Handle<AssetType> GetOrCreate(std::string aPath);
+	template<class TAsset>
+	Handle<TAsset> GetOrCreate(std::string aPath);
 
+	// TODO: get rid of this
 	// Cleans up the assets, as well as loads and uploads the new ones. 
-	// Changes OpenGL state if OpenGL backend is used.
 	void ProcessQueues();
 
 private:
-	// ==========================
-	// Graphics support
-	friend class Graphics;
-	friend class GraphicsGL;
-	friend class GraphicsVk;
-	// Unloads all resources from the GPU
-	void UnloadAll();
-	// ==========================
-	
-	void ProcessReleases();
 	void ProcessLoads();
-	void ProcessUploads();
 
 	// Utility method to clean-up the resource from registry and asset collections
 	// Doesn't delete the actual resource - it's Handle's responsibility
-	// Schedules GPUResource to be removed
 	// Threadsafe
 	void RemoveResource(const Resource* aRes);
-
-	IGPUAllocator* myGPUAllocator;
 
 	tbb::spin_mutex myRegisterMutex;
 	tbb::spin_mutex myAssetMutex;
@@ -63,42 +49,22 @@ private:
 	std::unordered_map<Resource::Id, Resource*> myAssets;
 
 	// Queues support variables
-	tbb::concurrent_queue<GPUResource*> myReleaseQueue;
 	tbb::concurrent_queue<Handle<Resource>> myLoadQueue;
-	tbb::concurrent_queue<Handle<Resource>> myUploadQueue;
 };
 
-template<class AssetType>
-Handle<AssetType> AssetTracker::Create()
+template<class TAsset>
+void AssetTracker::SaveAndTrack(
+	const std::string& aPath,
+	Handle<TAsset> aHandle
+)
 {
-	static_assert(is_base_of_v<Resource, AssetType>, "Asset tracker cannot track this type!");
-
-	Resource::Id resourceId = ++myCounter;
-	AssetType* asset = new AssetType(resourceId);
-
-	// safely add it to the tracked assets
-	{
-		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-		myAssets[resourceId] = asset;
-	}
-
-	// set up the onDestroy callback, so that we can clean up 
-	// the registry and assets containters when it gets removed
-	asset->AddOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
-
-	Handle<AssetType> handle(asset);
-
-	// add it to the queue of uploading
-	// the user will have to manually call Load on the Resource
-	myUploadQueue.push(handle.template Get<Resource>());
-
-	return handle;
+	ASSERT_STR(false, "NYI");
 }
 
-template<class AssetType>
-Handle<AssetType> AssetTracker::GetOrCreate(std::string aPath)
+template<class TAsset>
+Handle<TAsset> AssetTracker::GetOrCreate(std::string aPath)
 {
-	static_assert(std::is_base_of_v<Resource, AssetType>, "Asset tracker cannot track this type!");
+	static_assert(std::is_base_of_v<Resource, TAsset>, "Asset tracker cannot track this type!");
 
 	// first gotta check if we have it in the registry
 	bool needsCreating = false;
@@ -121,7 +87,7 @@ Handle<AssetType> AssetTracker::GetOrCreate(std::string aPath)
 
 	if (needsCreating)
 	{
-		AssetType* asset = new AssetType(resourceId, aPath);
+		TAsset* asset = new TAsset(resourceId, aPath);
 
 		// safely add it to the tracked assets
 		{
@@ -131,18 +97,18 @@ Handle<AssetType> AssetTracker::GetOrCreate(std::string aPath)
 
 		// set up the onDestroy callback, so that we can clean up 
 		// the registry and assets containters when it gets removed
-		asset->AddOnDestroyCB(bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
+		asset->AddOnDestroyCB(std::bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
 
 		// adding it to the queue of loading, since we know that it'll be loaded from file
 		myLoadQueue.push(asset);
 
-		return Handle<AssetType>(asset);
+		return Handle<TAsset>(asset);
 	}
 	else
 	{
 		// now that we have an id, we can find it
 		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
 		AssetIter pair = myAssets.find(resourceId);
-		return Handle<AssetType>(pair->second);
+		return Handle<TAsset>(pair->second);
 	}
 }

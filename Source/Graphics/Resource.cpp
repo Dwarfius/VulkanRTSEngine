@@ -1,34 +1,17 @@
 #include "Precomp.h"
 #include "Resource.h"
+#include <Core/File.h>
 
-// TODO: move it to IO
-bool Resource::ReadFile(const std::string& aPath, std::string& aContents)
-{
-	// opening at the end allows us to know size quickly
-	std::ifstream file(aPath, std::ios::ate | std::ios::binary);
-	if (!file.is_open())
-	{
-		return false;
-	}
-
-	size_t size = file.tellg();
-	aContents.resize(size);
-	file.seekg(0);
-	file.read(&aContents[0], size);
-	file.close();
-	return true;
-}
-
-Resource::Resource(Id anId)
-	: Resource(anId, "")
+Resource::Resource()
+	: myId(InvalidId)
+	, myState(State::Uninitialized)
 {
 }
 
 Resource::Resource(Id anId, const std::string& aPath)
 	: myId(anId)
-	, myState(State::Invalid)
+	, myState(State::Uninitialized)
 	, myPath(aPath)
-	, myGPUResource(nullptr)
 {
 }
 
@@ -54,7 +37,20 @@ void Resource::SetErrMsg(std::string&& anErrString)
 
 void Resource::Load(AssetTracker& anAssetTracker)
 {
-	OnLoad(anAssetTracker);
+	ASSERT_STR(myPath.size(), "Empty path during resource load!");
+	
+	const bool needsRawRes = LoadResDescriptor(anAssetTracker, myPath);
+	if (needsRawRes)
+	{
+		File file(myPath);
+		if (!file.Read())
+		{
+			SetErrMsg("Failed to read file!");
+			return;
+		}
+		OnLoad(anAssetTracker, file);
+	}
+
 	if (myOnLoadCBs.size())
 	{
 		for (const Callback& loadCB : myOnLoadCBs)
@@ -64,24 +60,5 @@ void Resource::Load(AssetTracker& anAssetTracker)
 		myOnLoadCBs.clear();
 		myOnLoadCBs.shrink_to_fit();
 	}
-}
-
-void Resource::Upload(GPUResource* aResource)
-{
-	OnUpload(aResource);
-	if (myOnUploadCBs.size())
-	{
-		for (const Callback& uploadCB : myOnUploadCBs)
-		{
-			uploadCB(this);
-		}
-		myOnUploadCBs.clear();
-		myOnUploadCBs.shrink_to_fit();
-	}
-}
-
-void Resource::Unload()
-{
-	myGPUResource->Unload();
-	myGPUResource = nullptr;
+	myState = State::Ready;
 }

@@ -12,9 +12,9 @@
 
 #include <Graphics/Camera.h>
 #include <Graphics/Graphics.h>
-#include <Graphics/Model.h>
-#include <Graphics/Texture.h>
-#include <Graphics/Pipeline.h>
+#include <Graphics/Resources/Model.h>
+#include <Graphics/Resources/Texture.h>
+#include <Graphics/Resources/Pipeline.h>
 
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsEntity.h>
@@ -69,7 +69,7 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kTerrSize = 18000;
 		constexpr float kResolution = 928;
 		Terrain* terr = new Terrain();
-		constexpr StaticString kFullPath = Resource::AssetsFolder + "textures/" + kHeightmapName;
+		constexpr StaticString kFullPath = Texture::kDir + kHeightmapName;
 		terr->Load(myAssetTracker, kFullPath.CStr(), kTerrSize / kResolution, 1000.f, 1.f);
 		myTerrains.push_back(terr);
 	}
@@ -177,6 +177,10 @@ void Game::Init()
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
 
+		// a free task
+		task = GameTask(GameTask::UpdateAssetTracker, bind(&Game::UpdateAssetTracker, this));
+		myTaskManager->AddTask(task);
+
 		// TODO: need to add functionality to draw out the task tree ingame
 		myTaskManager->ResolveDependencies();
 		myTaskManager->Run();
@@ -250,6 +254,11 @@ bool Game::IsRunning() const
 GLFWwindow* Game::GetWindow() const
 {
 	return myRenderThread->GetWindow();
+}
+
+void Game::UpdateAssetTracker()
+{
+	myAssetTracker.ProcessQueues();
 }
 
 void Game::AddGameObjects()
@@ -326,9 +335,10 @@ void Game::Render()
 	}
 
 	// adding axis for world navigation
-	myDebugDrawer.AddLine(glm::vec3(-10.f, 0.f, 0.f), glm::vec3(10.f, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, -10.f, 0.f), glm::vec3(0.f, 10.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -10.f), glm::vec3(0.f, 0.f, 10.f), glm::vec3(0.f, 0.f, 1.f));
+	constexpr float kLength = 1000;
+	myDebugDrawer.AddLine(glm::vec3(-kLength, 0.f, 0.f), glm::vec3(kLength, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, -kLength, 0.f), glm::vec3(0.f, kLength, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -kLength), glm::vec3(0.f, 0.f, kLength), glm::vec3(0.f, 0.f, 1.f));
 
 	myRenderThread->AddDebugRenderable(&myDebugDrawer);
 	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());

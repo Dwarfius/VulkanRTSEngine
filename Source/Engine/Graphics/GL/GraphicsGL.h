@@ -2,11 +2,11 @@
 
 #include <Graphics/Graphics.h>
 #include <Core/RWBuffer.h>
-#include "ModelGL.h"
-#include "PipelineGL.h"
-#include "TextureGL.h"
+#include <Graphics/Resources/Model.h>
 
 class ShaderGL;
+class PipelineGL;
+class ModelGL;
 
 class GraphicsGL : public Graphics
 {
@@ -17,8 +17,6 @@ public:
 	void BeginGather() override;
 	void Display() override;
 	void CleanUp() override;
-
-	GPUResource* Create(Resource::Type aType) const override;
 
 	void PrepareLineCache(size_t aCacheSize) override {}
 	void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) override;
@@ -37,14 +35,12 @@ private:
 
 	// ================================================
 	// Debug drawing related
-	ShaderGL* myDebugVertShader;
-	ShaderGL* myDebugFragShader;
-	PipelineGL* myDebugPipeline;
+	Handle<PipelineGL> myDebugPipeline;
 	struct LineCache
 	{
-		ModelGL* myBuffer;
 		glm::mat4 myVp;
 		Model::UploadDescriptor myUploadDesc;
+		Handle<ModelGL> myBuffer;
 	};
 	LineCache myLineCache;
 	void CreateLineCache();
@@ -55,4 +51,6 @@ private:
 	// side culling)
 	uint32_t myGPUQuery;
 	// ======
+
+	GPUResource* Create(Resource::Type aType) const override final;
 };

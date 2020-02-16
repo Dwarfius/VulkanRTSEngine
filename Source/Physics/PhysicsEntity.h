@@ -37,9 +37,9 @@ public:
 		PendingRemoval,
 	};
 	// Creates an entity that is not linked to any game object, and has it's own transform
-	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
+	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
 	// Creates an entity that is linked to a game object, and synchronises the transform with it
-	PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity);
+	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity);
 	~PhysicsEntity();
 
 	PhysicsEntity& operator=(const PhysicsEntity&) = delete;
@@ -90,7 +90,7 @@ private:
 
 	void ApplyForces();
 
-	shared_ptr<PhysicsShapeBase> myShape;
+	std::shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody;
 	PhysicsWorld* myWorld;
 	State myState;

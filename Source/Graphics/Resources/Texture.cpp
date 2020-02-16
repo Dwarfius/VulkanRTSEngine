@@ -1,11 +1,12 @@
 #include "Precomp.h"
 #include "Texture.h"
 
+#include <Core/File.h>
 #include <stb_image.h>
 
 unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
 {
-	int desiredChannels;
+	int desiredChannels = STBI_default;
 	switch (aFormat)
 	{
 	case Format::UNorm_R: desiredChannels = STBI_grey; break;
@@ -13,15 +14,17 @@ unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, i
 	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
 	case Format::UNorm_RGBA: // fallthrough
 	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	default: ASSERT(false);
 	}
 
 	int actualChannels = 0;
-	return stbi_load(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);
+	unsigned char* data = stbi_load(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);;
+	return data;
 }
 
 unsigned short* Texture::LoadFromDisk16(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
 {
-	int desiredChannels;
+	int desiredChannels = STBI_default;
 	switch (aFormat)
 	{
 	case Format::UNorm_R: desiredChannels = STBI_grey; break;
@@ -29,6 +32,7 @@ unsigned short* Texture::LoadFromDisk16(const std::string& aPath, Format aFormat
 	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
 	case Format::UNorm_RGBA: // fallthrough
 	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	default: ASSERT(false);
 	}
 
 	int actualChannels = 0;
@@ -45,18 +49,28 @@ void Texture::FreePixels(unsigned short* aBuffer)
 	stbi_image_free(aBuffer);
 }
 
-Texture::Texture(Resource::Id anId)
-	: Texture(anId, "")
+Texture::Texture()
+	: myPixels(nullptr)
+	, myFormat(Format::UNorm_RGB)
+	, myWrapMode(WrapMode::Clamp)
+	, myMinFilter(Filter::Linear)
+	, myMagFilter(Filter::Linear)
+	, myWidth(0)
+	, myHeight(0)
+	, myEnableMipmaps(false)
 {
 }
 
 Texture::Texture(Resource::Id anId, const std::string& aPath)
-	: Resource(anId, aPath)
-	, myType(Type::Color)
-	, myFormat(Format::UNorm_BGRA)
+	: Resource(anId, kDir.CStr() + aPath)
+	, myPixels(nullptr)
+	, myFormat(Format::UNorm_RGB)
+	, myWrapMode(WrapMode::Clamp)
+	, myMinFilter(Filter::Linear)
+	, myMagFilter(Filter::Linear)
 	, myWidth(0)
 	, myHeight(0)
-	, myPixels(nullptr)
+	, myEnableMipmaps(false)
 {
 }
 
@@ -67,37 +81,32 @@ void Texture::FreeTextMem()
 	myPixels = nullptr;
 }
 
-void Texture::OnLoad(AssetTracker& anAssetTracker)
+void Texture::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 {
-	constexpr StaticString kDir = Resource::AssetsFolder + "textures/";
-	myPixels = LoadFromDisk(kDir.CStr() + myPath, myFormat, myWidth, myHeight);
+	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aFile.GetCBuffer());
+	int desiredChannels = STBI_default;
+	switch (myFormat)
+	{
+	case Format::UNorm_R: desiredChannels = STBI_grey; break;
+	case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
+	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
+	case Format::UNorm_RGBA: // fallthrough
+	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	}
+
+	int actualChannels = 0;
+	myPixels = stbi_load_from_memory(buffer, static_cast<int>(aFile.GetSize()), 
+										&myWidth, &myHeight, 
+										&actualChannels, desiredChannels);
 	if (!myPixels)
 	{
 		SetErrMsg("Failed to load texture");
 		return;
 	}
-
-	myState = State::PendingUpload;
 }
 
-void Texture::OnUpload(GPUResource* aGPUResource)
+bool Texture::LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath)
 {
-	myGPUResource = aGPUResource;
-
-	CreateDescriptor createDesc;
-	createDesc.myWrapMode = GPUResource::WrapMode::Repeat;
-	// TODO: expose the following filters!
-	createDesc.myMinFilter = GPUResource::Filter::Nearest;
-	createDesc.myMagFilter = GPUResource::Filter::Linear;
-	myGPUResource->Create(createDesc);
-
-	UploadDescriptor uploadDesc;
-	uploadDesc.myEnableMipmaps = false;
-	uploadDesc.myFormat = myFormat;
-	uploadDesc.myWidth = myWidth;
-	uploadDesc.myHeight = myHeight;
-	uploadDesc.myPixels = myPixels;
-	myGPUResource->Upload(uploadDesc);
-
-	myState = State::Ready;
+	// TODO: finish this for different texture support
+	return true;
 }

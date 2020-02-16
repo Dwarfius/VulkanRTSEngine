@@ -22,7 +22,9 @@ void UID::Init()
 
 	DWORD dwStatus = GetAdaptersInfo(adapterInfo, &dwBufLen);
 	if (dwStatus != ERROR_SUCCESS)
+	{
 		return; // no adapters.
+	}
 
 	PIP_ADAPTER_INFO pAdapterInfo = adapterInfo;
 	for (UINT i = 0, end = pAdapterInfo->AddressLength; i < end; i++)

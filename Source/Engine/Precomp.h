@@ -15,7 +15,6 @@
 #include <random>
 #include <chrono>
 #include <memory>
-#include <any>
 
 #ifdef USE_AUDIO
 #include <AL/alut.h>

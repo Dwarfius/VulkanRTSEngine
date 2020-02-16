@@ -1,19 +1,18 @@
 #pragma once
 
-#include <Graphics/Resource.h>
+#include <Graphics/Resources/GPUShader.h>
 
-class ShaderGL : public GPUResource
+class ShaderGL : public GPUShader
 {
 public:
 	ShaderGL();
-	~ShaderGL();
 
 	uint32_t GetShaderId() const { return myGLShader; }
 
-	void Create(any aDescriptor) override;
-	bool Upload(any aDescriptor) override;
-	void Unload() override;
-
 private:
+	void OnCreate(Graphics& aGraphics) override final;
+	bool OnUpload(Graphics& aGraphics) override final;
+	void OnUnload(Graphics& aGraphics) override final;
+
 	uint32_t myGLShader;
 };

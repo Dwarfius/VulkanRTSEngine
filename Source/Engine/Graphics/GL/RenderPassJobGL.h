@@ -12,7 +12,7 @@ public:
 	void Add(const RenderJob& aJob) override final;
 	void AddRange(std::vector<RenderJob>&& aJobs) override final;
 	void Clear() override final { myJobs.clear(); };
-	operator std::vector<RenderJob>() && override final;
+	operator std::vector<RenderJob>() && override final { return myJobs; }
 
 private:
 	// returns whether there's any work in this job

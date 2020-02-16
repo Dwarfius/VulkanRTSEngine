@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Graphics/Resource.h>
-#include "UniformBufferGL.h"
+#include <Graphics/Resources/GPUPipeline.h>
 
-class PipelineGL : public GPUResource
+class UniformBufferGL;
+
+class PipelineGL : public GPUPipeline
 {
 public:
 	PipelineGL();
@@ -14,18 +15,21 @@ public:
 	// Changes OpenGL state, not thread safe.
 	void Bind();
 
-	// Changes OpenGL state, not thread safe.
-	void Create(any aDescriptor) override;
-	bool Upload(any aDescriptor) override;
-	void Unload() override;
-
 	size_t GetUBOCount() const { return myBuffers.size(); }
-	UniformBufferGL& GetUBO(size_t anIndex) { return myBuffers[anIndex]; }
+	UniformBufferGL& GetUBO(size_t anIndex) { return *myBuffers[anIndex].Get(); }
+
+	bool AreDependenciesValid() const override final;
 
 private:
-	uint32_t myGLProgram;
-	vector<uint32_t> mySamplerUniforms;
-	vector<uint32_t> mySamplerTypes;
+	// Changes OpenGL state, not thread safe.
+	void OnCreate(Graphics& aGraphics) override final;
+	bool OnUpload(Graphics& aGraphics) override final;
+	void OnUnload(Graphics& aGraphics) override final;
 
-	vector<UniformBufferGL> myBuffers;
+	uint32_t myGLProgram;
+	std::vector<uint32_t> mySamplerUniforms;
+	std::vector<uint32_t> mySamplerTypes; 
+
+	vector<Handle<UniformBufferGL>> myBuffers;
+	
 };

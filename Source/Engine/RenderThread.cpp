@@ -11,8 +11,8 @@
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 
 #include <Graphics/Camera.h>
-#include <Graphics/Pipeline.h>
-
+#include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/GPUPipeline.h>
 
 RenderThread::RenderThread()
 	: myIsUsingVulkan(false)
@@ -40,7 +40,6 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 #endif // USE_VULKAN
 	{
 		myGraphics = make_unique<GraphicsGL>(anAssetTracker);
-		anAssetTracker.SetGPUAllocator(myGraphics.get());
 	}
 	myGraphics->SetMaxThreads(thread::hardware_concurrency());
 	myGraphics->Init();
@@ -136,7 +135,7 @@ void RenderThread::SubmitRenderables()
 		if (cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
 		{
 			// updating the uniforms - grabbing game state!
-			size_t uboCount = aVO->GetPipeline()->GetDescriptorCount();
+			const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);

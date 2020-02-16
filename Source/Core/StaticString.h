@@ -1,4 +1,5 @@
 #pragma once
+
 #include <type_traits>
 
 // TODO: add static-runtime asserts for safety
@@ -147,8 +148,8 @@ public:
 	}
 
 private:
-	int myLength;
 	char myBuffer[N];
+	int myLength;
 };
 
 template<int N, int M>

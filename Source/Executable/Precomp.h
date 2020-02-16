@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <fstream>
 #include <random>
-#include <any>
 
 #include <tbb/tbb.h>
 

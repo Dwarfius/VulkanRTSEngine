@@ -1,12 +1,12 @@
 #include "Precomp.h"
 #include "PipelineGL.h"
 
-#include <Graphics/Pipeline.h>
+#include <Graphics/Resources/Pipeline.h>
 #include "ShaderGL.h"
+#include "UniformBufferGL.h"
 
 PipelineGL::PipelineGL()
-	: GPUResource()
-	, myGLProgram(0)
+	: myGLProgram(0)
 {
 }
 
@@ -30,24 +30,36 @@ void PipelineGL::Bind()
 	}
 }
 
-void PipelineGL::Create(any aDescriptor)
+void PipelineGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLProgram, "Pipeline already created!");
 	myGLProgram = glCreateProgram();
+
+	// request the creation of uniform buffers,
+	// since they're not kept as part of myDependencies
+	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
+	size_t descCount = pipeline->GetDescriptorCount();
+	myBuffers.reserve(descCount);
+	myDescriptors.reserve(descCount);
+	for(size_t i=0; i<descCount; i++)
+	{
+		const Descriptor& descriptor = pipeline->GetDescriptor(i);
+		myDescriptors.push_back(descriptor);
+		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor.GetBlockSize());
+		ubo->Create(aGraphics, nullptr);
+		myBuffers.push_back(ubo);
+	}
 }
 
-bool PipelineGL::Upload(any aDescriptor)
+bool PipelineGL::OnUpload(Graphics& aGraphics)
 {
-	const Pipeline::UploadDescriptor& desc = 
-		any_cast<const Pipeline::UploadDescriptor&>(aDescriptor);
-
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
 	// Upload is just linking the dependencies on the GPU
-	size_t shaderCount = desc.myShaderCount;
+	size_t shaderCount = myDependencies.size();
 	for (size_t ind = 0; ind < shaderCount; ind++)
 	{
-		const ShaderGL* shader = static_cast<const ShaderGL*>(desc.myShaders[ind]);
+		const ShaderGL* shader = myDependencies[ind].Get<const ShaderGL>();
 		glAttachShader(myGLProgram, shader->GetShaderId());
 	}
 	glLinkProgram(myGLProgram);
@@ -66,26 +78,22 @@ bool PipelineGL::Upload(any aDescriptor)
 		errStr.resize(length);
 		glGetProgramInfoLog(myGLProgram, length, &length, &errStr[0]);
 
-		myErrorMsg = "Linking error: " + errStr;
+		SetErrMsg("Linking error: " + errStr);
 #endif
 	}
 	else
 	{
 		// we've succesfully linked, time to resolve the UBOs
-		size_t descCount = desc.myDescriptorCount;
-		myBuffers.reserve(descCount);
+		const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
+		const size_t descCount = pipeline->GetDescriptorCount();
 		for (size_t i = 0; i < descCount; i++)
 		{
-			const Descriptor& descriptor = desc.myDescriptors[i];
+			const Descriptor& descriptor = pipeline->GetDescriptor(i);
 
 			// TODO: get rid of this name hack, have a proper name string!
 			const string& uboName = descriptor.GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
-			glUniformBlockBinding(myGLProgram, uboIndex, i);
-			
-			UniformBufferGL ubo;
-			ubo.Create(descriptor.GetBlockSize());
-			myBuffers.push_back(move(ubo));
+			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}
 
 		// Because samplers can't be part of the uniform blocks, 
@@ -124,9 +132,25 @@ bool PipelineGL::Upload(any aDescriptor)
 	return linked;
 }
 
-void PipelineGL::Unload()
+void PipelineGL::OnUnload(Graphics& aGraphics)
 {
 	ASSERT_STR(myGLProgram, "Empty pipeline detected!");
 	glDeleteProgram(myGLProgram);
 	myGLProgram = 0;
+}
+
+bool PipelineGL::AreDependenciesValid() const
+{
+	if (!GPUResource::AreDependenciesValid())
+	{
+		return false;
+	}
+	for (Handle<UniformBufferGL> buffer : myBuffers)
+	{
+		if (buffer->GetState() != State::Valid)
+		{
+			return false;
+		}
+	}
+	return true;
 }

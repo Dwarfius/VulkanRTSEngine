@@ -23,7 +23,8 @@ if(NOT tbb_POPULATED)
 		DESTINATION ${tbb_SOURCE_DIR}
 	)
 	file(RENAME ${tbb_SOURCE_DIR}/TBB-CMakeLists.txt
-		${tbb_SOURCE_DIR}/CMakeLists.txt)
+		${tbb_SOURCE_DIR}/CMakeLists.txt
+	)
 
 	set(TBB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 	set(TBB_BUILD_STATIC ON CACHE BOOL "" FORCE)
@@ -38,19 +39,19 @@ endif()
 FetchContent_Declare(
 	glm
 	GIT_REPOSITORY	https://github.com/g-truc/glm
-	GIT_TAG			0.9.9.3
+	GIT_TAG			0.9.9.7
 )
 
 FetchContent_GetProperties(glm)
 if(NOT glm_POPULATED)
 	FetchContent_Populate(glm)
+
+	# disable unit tests
+	# TODO: play around with simd toggles
+	set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
+
 	set(CMAKE_FOLDER GLM)
 	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
-
-	# in CMake 3.13 has an issue where it skips custom_targets for CMAKE_FOLDER var
-	# https://gitlab.kitware.com/cmake/cmake/issues/18372
-	# So have to do it manually
-	set_property(TARGET uninstall PROPERTY FOLDER GLM)
 endif()
 
 FetchContent_Declare(
@@ -76,6 +77,7 @@ set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"CRC32.h"
+	"File.cpp" "File.h"
 	"LazyVector.h"
 	"Transform.cpp" "Transform.h"
 	"UID.cpp" "UID.h"

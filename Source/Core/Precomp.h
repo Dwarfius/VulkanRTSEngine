@@ -15,7 +15,6 @@
 #include <random>
 #include <chrono>
 #include <memory>
-#include <any>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

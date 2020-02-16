@@ -4,80 +4,24 @@
 #include <Core/StaticString.h>
 
 class AssetTracker;
+class File;
 
-// Base class for resources on the GPU.
-class GPUResource
-{
-public:
-	enum class Usage
-	{
-		Static, // upload once and use
-		Dynamic // can upload multiple times
-	};
-
-	enum class Primitive
-	{
-		Lines,
-		Triangles
-	};
-
-	enum class WrapMode
-	{
-		Clamp,
-		Repeat,
-		MirroredRepeat
-	};
-
-	enum class Filter
-	{
-		// Mag/Min
-		Nearest,
-		Linear,
-
-		// Min only
-		Nearest_MipMapNearest,
-		Linear_MipMapNearest,
-		Nearest_MipMapLinear,
-		Linear_MipMapLinear
-	};
-
-	GPUResource() {}
-	GPUResource(const GPUResource& anOther) = delete;
-	GPUResource& operator=(const GPUResource& anOther) = delete;
-	GPUResource(GPUResource&& anOther) = default;
-
-public:
-	virtual void Create(std::any aDescriptor) = 0;
-	virtual bool Upload(std::any aDescriptor) = 0;
-	virtual void Unload() = 0;
-
-#ifdef _DEBUG
-	std::string GetErrorMsg() const { return myErrorMsg; }
-
-protected:
-	// used for tracking what went wrong
-	std::string myErrorMsg;
-#else
-	std::string GetErrorMsg() const { return ""; }
-#endif
-};
-
-// Base class for resources. Disables copying. All resources must be loaded from drive.
+// Base class for resources. Disables copying. All resources must be loaded from disk.
 class Resource : public RefCounted
 {
-private:
 	using Callback = std::function<void(const Resource*)>;
 
 public:
 	using Id = uint32_t;
+
 	constexpr static Id InvalidId = 0;
 	constexpr static StaticString AssetsFolder = "../assets/";
 
 	enum class State
 	{
 		Error,
-		Invalid,
-		PendingUpload,
+		Uninitialized,
+		PendingLoad,
 		Ready
 	};
 
@@ -92,13 +36,8 @@ public:
 	virtual Type GetResType() const = 0;
 
 public:
-	// TODO: might be worthwhile later to provide StaticString alternative versions
-	// of these methods
-	static bool ReadFile(const std::string& aPath, std::string& aContents);
-
-public:
 	// creates a dynamic resource
-	Resource(Id anId);
+	Resource();
 
 	// creates a resource from a file
 	Resource(Id anId, const std::string& aPath);
@@ -116,13 +55,10 @@ public:
 	void SetState(State aNewState) { myState = aNewState; }
 
 	const std::vector<Handle<Resource>>& GetDependencies() const { return myDependencies; }
-	const GPUResource& GetGPUResource() const { return *myGPUResource; }
 
 	// TODO: add DebugAsserts for scheduling callbacks during AssetTracker::Process time
 	// Sets the callback to call when the object finishes loading from disk
 	void AddOnLoadCB(Callback aOnLoadCB) { myOnLoadCBs.push_back(aOnLoadCB); }
-	// Sets the callback to call when the object finishes uploading to GPU
-	void AddOnUploadCB(Callback aOnUploadCB) { myOnUploadCBs.push_back(aOnUploadCB); }
 	// Sets the callback to call when the object gets destroyed
 	void AddOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
@@ -141,33 +77,21 @@ protected:
 #endif
 
 	std::vector<Handle<Resource>> myDependencies;
-	// AssetTracker will set this for the upload
-	GPUResource* myGPUResource;
 
 private:
 	// ============================
 	// AssetTracker support
 	friend class AssetTracker;
 	void Load(AssetTracker& anAssetTracker);
-	void Upload(GPUResource* aResource);
-	void Unload();
 	// ============================
 
-	// ============================
-	// Graphics && AssetTracker Support
-	friend class GraphicsGL;
-	friend class RenderPassJobGL;
-	friend class GraphicsVK;
-	GPUResource* GetGPUResource_Int() const { return myGPUResource; }
-	// ============================
-
-	// This is strictly for interacting with files!
-	virtual void OnLoad(AssetTracker& assetTracker) = 0;
-	// This is for interacting with the GPU
-	virtual void OnUpload(GPUResource* aResource) = 0;
+	// Loads a raw resource (png, obj, etc)
+	virtual void OnLoad(AssetTracker& assetTracker, const File& aFile) = 0;
+	// Loads a resource descriptor. Returns true if an actual resource 
+	// load is needed, false otherwise.
+	virtual bool LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath) { return true; }
 
 	Id myId;
 	std::vector<Callback> myOnLoadCBs;
-	std::vector<Callback> myOnUploadCBs;
 	std::vector<Callback> myOnDestroyCBs;
 };

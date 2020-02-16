@@ -5,9 +5,9 @@
 #include "../Input.h"
 
 #include <Graphics/Camera.h>
-#include <Graphics/Model.h>
-#include <Graphics/Texture.h>
-#include <Graphics/Pipeline.h>
+#include <Graphics/Resources/Model.h>
+#include <Graphics/Resources/Texture.h>
+#include <Graphics/Resources/Pipeline.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
@@ -24,6 +24,7 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	shared_ptr<PhysicsShapeBase> sphereShape = make_shared<PhysicsShapeSphere>(1.f);
 	shared_ptr<PhysicsShapeBox> boxShape = make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 
+	// Physics test
 	// a sphere with no visual object (don't have a mesh atm)
 	/*GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0, 5, 0));
 	{
