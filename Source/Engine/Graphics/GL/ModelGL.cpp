@@ -177,22 +177,7 @@ void ModelGL::AllocateVertices(size_t aTotalCount)
 	ASSERT_STR(myVBO, "Tried to allocate vertices for missing buffer!");
 
 	uint32_t usage = myUsage == UsageType::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
-	size_t vertSize = 0;
-	switch (myVertType)
-	{
-	case Vertex::Type:
-	{
-		vertSize = sizeof(Vertex);
-		break;
-	}
-	case PosColorVertex::Type:
-	{
-		vertSize = sizeof(PosColorVertex);
-		break;
-	}
-	default:
-		ASSERT(false);
-	}
+	size_t vertSize = Model::GetVertexSize(myVertType);
 
 	glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	glBufferData(GL_ARRAY_BUFFER, vertSize * aTotalCount, NULL, usage);

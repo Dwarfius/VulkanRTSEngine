@@ -22,10 +22,13 @@ Model::Model(PrimitiveType aPrimitiveType, int aVertexType)
 	, myCenter(0.f)
 	, mySphereRadius(0.f)
 	, myPrimitiveType(aPrimitiveType)
-	, myVertType(aVertexType)
-	, myVertices(nullptr)
-	, myVertexCount(0)
 {
+	switch (aVertexType)
+	{
+	case Vertex::Type: myVertices = new VertStorage<Vertex>(0); break;
+	case PosColorVertex::Type: myVertices = new VertStorage<PosColorVertex>(0); break;
+	default: ASSERT(false);
+	}
 }
 
 Model::Model(Resource::Id anId, const std::string& aPath)
@@ -35,10 +38,32 @@ Model::Model(Resource::Id anId, const std::string& aPath)
 	, myCenter(0.f)
 	, mySphereRadius(0.f)
 	, myPrimitiveType(PrimitiveType::Triangles)
-	, myVertType(Vertex::Type)
 	, myVertices(nullptr)
-	, myVertexCount(0)
 {
+}
+
+const Model::BaseStorage* Model::GetBaseVertexStorage() const
+{
+	ASSERT_STR(myVertices, "Model missing vertex storage!");
+	return myVertices;
+}
+
+const void* Model::GetVertices() const
+{
+	ASSERT_STR(myVertices, "Model missing vertex storage!");
+	return myVertices->GetRawData();
+}
+
+size_t Model::GetVertexCount() const
+{
+	ASSERT_STR(myVertices, "Model missing vertex storage!");
+	return myVertices->GetCount();
+}
+
+int Model::GetVertexType() const
+{
+	ASSERT_STR(myVertices, "Model missing vertex storage!");
+	return myVertices->GetType();
 }
 
 void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
@@ -48,72 +73,10 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 }
 
-void Model::Update(const UploadDescriptor& aDescChain)
-{
-	ASSERT_STR(myVertType == aDescChain.myVertexType, "Incompatible descriptor!");
-	
-	// first need to count how many vertices and indices are there in total
-	size_t vertCount = 0;
-	size_t indexCount = 0;
-	for (const UploadDescriptor* currDesc = &aDescChain;
-		currDesc != nullptr;
-		currDesc = currDesc->myNextDesc)
-	{
-		vertCount += currDesc->myVertCount;
-		indexCount += currDesc->myIndCount;
-	}
-
-	// Maybe the model has been dynamically modified - might need to grow.
-	// Definitelly need to allocate if it's our first upload
-	if (vertCount > myVertexCount)
-	{
-		if (myVertices)
-		{
-			delete[] myVertices;
-		}
-		myVertexCount = vertCount;
-		switch (myVertType)
-		{
-		case Vertex::Type: myVertices = new Vertex[vertCount]; break;
-		case PosColorVertex::Type: myVertices = new PosColorVertex[vertCount]; break;
-		default: ASSERT(false);
-		}
-	}
-	myVertexCount = vertCount;
-	myIndices.resize(indexCount);
-
-	// Now that we have enough allocated, we can start uploading data from
-	// the descriptors
-	const size_t vertexSize = GetVertexSize(myVertType);
-	size_t vertOffset = 0;
-	size_t indOffset = 0;
-	char* vertBuffer = static_cast<char*>(myVertices);
-	for (const UploadDescriptor* currDesc = &aDescChain;
-		currDesc != nullptr;
-		currDesc = currDesc->myNextDesc)
-	{
-		size_t currVertCount = currDesc->myVertCount;
-		ASSERT_STR(currVertCount > 0, "Missing additional vertices for a model!");
-		std::memcpy(vertBuffer + vertOffset * vertexSize, currDesc->myVertices, currVertCount * vertexSize);
-		vertOffset += currVertCount;
-
-		if (indexCount > 0)
-		{
-			size_t currIndCount = currDesc->myIndCount;
-			ASSERT_STR(currIndCount > 0, "Missing additional indices for a model!");
-			std::memcpy(myIndices.data() + indOffset, currDesc->myIndices, currIndCount * sizeof(IndexType));
-			indOffset += currIndCount;
-		}
-	}
-
-	myState = State::Ready;
-}
-
 void Model::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 {
 	ASSERT_STR(myState == State::Uninitialized, "Double load detected!");
-	// TODO: extend Model to support more than 1 Vertex type
-	ASSERT_STR(myVertType == Vertex::Type, "Unsupported vertex type!");
+	// TODO: extend Model to support more than 1 Vertex type loading
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -144,24 +107,20 @@ void Model::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 		indexCount += shape.mesh.indices.size();
 	}
 	myIndices.resize(indexCount);
-	// this can overallocate if there is vertex duplication
-	switch (myVertType)
-	{
-	case Vertex::Type: myVertices = new Vertex[attrib.vertices.size()]; break;
-	case PosColorVertex::Type: myVertices = new PosColorVertex[attrib.vertices.size()]; break;
-	default: ASSERT(false);
-	}
+
+	VertStorage<Vertex>* vertStorage = new VertStorage<Vertex>(attrib.vertices.size());
+	myVertices = vertStorage;
 	
-	using VertMap = std::unordered_map<VertexType, IndexType>;
+	using VertMap = std::unordered_map<Vertex, IndexType>;
 	VertMap uniqueVerts;
 	size_t vertsFound = 0;
 	indexCount = 0;
-	VertexType* vertexBuffer = static_cast<Vertex*>(myVertices);
+	Vertex* vertexBuffer = vertStorage->GetData();
 	for (const tinyobj::shape_t& shape : shapes)
 	{
 		for (const tinyobj::index_t& index : shape.mesh.indices)
 		{
-			VertexType vertex;
+			Vertex vertex;
 			vertex.myPos = {
 				attrib.vertices[3 * index.vertex_index + 0],
 				attrib.vertices[3 * index.vertex_index + 1],

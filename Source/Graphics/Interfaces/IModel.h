@@ -8,11 +8,9 @@ enum class PrimitiveType
 	Triangles
 };
 
-// TODO: template the Model on vertex and index type
 class IModel
 {
 public:
-	using VertexType = Vertex;
 	using IndexType = uint32_t;
 
 	virtual glm::vec3 GetCenter() const = 0;

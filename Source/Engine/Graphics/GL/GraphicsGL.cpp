@@ -135,9 +135,8 @@ void GraphicsGL::Display()
 		debugModel->Update(myLineCache.myUploadDesc);
 		Graphics::TriggerUpload(myLineCache.myBuffer.Get());
 		
-		// TODO: move this to AssetTracker
 		// clean up the upload descriptors
-		for (Model::UploadDescriptor* currDesc = &myLineCache.myUploadDesc;
+		for (LineCache::UploadDesc* currDesc = &myLineCache.myUploadDesc;
 			currDesc != nullptr;
 			currDesc = currDesc->myNextDesc)
 		{
@@ -167,9 +166,9 @@ void GraphicsGL::CleanUp()
 	myLineCache.myBuffer = Handle<ModelGL>();
 
 	constexpr uint32_t kMaxExtraDescriptors = 32;
-	Model::UploadDescriptor* descriptors[kMaxExtraDescriptors];
+	LineCache::UploadDesc* descriptors[kMaxExtraDescriptors];
 	uint32_t descInd = 0;
-	for (Model::UploadDescriptor* currDesc = myLineCache.myUploadDesc.myNextDesc;
+	for (LineCache::UploadDesc* currDesc = myLineCache.myUploadDesc.myNextDesc;
 		currDesc != nullptr;
 		currDesc = currDesc->myNextDesc)
 	{
@@ -204,15 +203,15 @@ void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer
 	// there's always 1 space allocated for debug drawer, but we might need more
 	// if there are more drawers. Look for a slot that's free (doesn't have vertices)
 	// or create one if there isn't one.
-	Model::UploadDescriptor* currDesc;
+	LineCache::UploadDesc* currDesc;
 	for (currDesc = &myLineCache.myUploadDesc;
 		currDesc->myVertCount != 0; // keep iterating until we find an empty one
 		currDesc = currDesc->myNextDesc)
 	{
 		if (currDesc->myNextDesc == nullptr)
 		{
-			currDesc->myNextDesc = new Model::UploadDescriptor();
-			memset(currDesc->myNextDesc, 0, sizeof(Model::UploadDescriptor));
+			currDesc->myNextDesc = new LineCache::UploadDesc();
+			std::memset(currDesc->myNextDesc, 0, sizeof(LineCache::UploadDesc));
 		}
 	}
 	
@@ -222,7 +221,6 @@ void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 	currDesc->myIndices = nullptr;
 	currDesc->myIndCount = 0;
-	currDesc->myVertexType = aDebugDrawer.GetVertexType();
 
 	// TODO: this is wasteful - refactor to set it once or cache per debug drawer
 	myLineCache.myVp = aCam.Get();

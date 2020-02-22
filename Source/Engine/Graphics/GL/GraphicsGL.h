@@ -38,8 +38,11 @@ private:
 	Handle<PipelineGL> myDebugPipeline;
 	struct LineCache
 	{
+		using VertType = PosColorVertex;
+		using UploadDesc = Model::UploadDescriptor<VertType>;
+
 		glm::mat4 myVp;
-		Model::UploadDescriptor myUploadDesc;
+		UploadDesc myUploadDesc;
 		Handle<ModelGL> myBuffer;
 	};
 	LineCache myLineCache;

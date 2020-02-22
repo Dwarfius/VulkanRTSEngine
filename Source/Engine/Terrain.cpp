@@ -102,13 +102,12 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 		myModel->SetSphereRadius(sphereRadius);
 	}
 	
-	Model::UploadDescriptor uploadDesc;
+	Model::UploadDescriptor<Vertex> uploadDesc;
 	uploadDesc.myVertices = vertices;
 	uploadDesc.myVertCount = vertCount;
 	uploadDesc.myIndices = indices;
 	uploadDesc.myIndCount = indexCount;
 	uploadDesc.myNextDesc = nullptr;
-	uploadDesc.myVertexType = Vertex::Type;
 	myModel->Update(uploadDesc);
 }
 
@@ -132,7 +131,7 @@ float Terrain::GetHeight(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	const Vertex* verts = static_cast<const Vertex*>(model.GetVertices());
+	const Vertex* verts = model.GetVertexStorage<Vertex>()->GetData();
 	Vertex v0 = verts[yMin * myWidth + xMin];
 	Vertex v1 = verts[yMax * myWidth + xMin];
 	Vertex v2 = verts[yMin * myWidth + xMax];
@@ -168,7 +167,7 @@ glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
 	int yMax = yMin + 1;
 
 	// getting vertices for lerping
-	const Vertex* verts = static_cast<const Vertex*>(model.GetVertices());
+	const Vertex* verts = model.GetVertexStorage<Vertex>()->GetData();
 	Vertex v0 = verts[yMin * myWidth + xMin];
 	Vertex v1 = verts[yMax * myWidth + xMin];
 	Vertex v2 = verts[yMin * myWidth + xMax];
@@ -193,9 +192,10 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	myHeightsCache.reserve(count);
 	float minHeight = model.GetAABBMin().y;
 	float maxHeight = model.GetAABBMax().y;
+	const Vertex* vertBuffer = model.GetVertexStorage<Vertex>()->GetData();
 	for (size_t i=0; i<count; i++)
 	{
-		const Vertex& vert = static_cast<const Vertex*>(model.GetVertices())[i];
+		const Vertex& vert = vertBuffer[i];
 		myHeightsCache.push_back(vert.myPos.y);
 	}
 
