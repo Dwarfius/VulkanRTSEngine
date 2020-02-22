@@ -30,14 +30,13 @@ public:
 	void SubmitRenderables();
 
 private:
-	unique_ptr<Graphics> myGraphics;
+	std::unique_ptr<Graphics> myGraphics;
 	bool myIsUsingVulkan;
 
-	// TODO: separate gameobject and renderable
-	RWBuffer<vector<const VisualObject*>, 2> myTrippleRenderables;
-	RWBuffer<vector<const DebugDrawer*>, 2> myDebugDrawers;
+	RWBuffer<std::vector<const VisualObject*>, 2> myTrippleRenderables;
+	RWBuffer<std::vector<const DebugDrawer*>, 2> myDebugDrawers;
 
-	atomic<bool> myNeedsSwitch;
-	atomic<bool> myHasWorkPending;
+	std::atomic<bool> myNeedsSwitch;
+	std::atomic<bool> myHasWorkPending;
 };
 

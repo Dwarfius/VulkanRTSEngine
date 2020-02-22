@@ -9,7 +9,7 @@ class Terrain
 public:
 	Terrain();
 
-	void Load(AssetTracker& anAssetTracker, string aName, float aStep, float anYScale, float anUvScale);
+	void Load(AssetTracker& anAssetTracker, const std::string& aName, float aStep, float anYScale, float anUvScale);
 	
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
@@ -40,5 +40,5 @@ private:
 	float Wrap(float aVal, float aRange) const;
 
 	// Preserve the heights so that physics can still reference to it
-	vector<float> myHeightsCache;
+	std::vector<float> myHeightsCache;
 };

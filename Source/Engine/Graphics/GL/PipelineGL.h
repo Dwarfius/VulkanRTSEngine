@@ -30,6 +30,5 @@ private:
 	std::vector<uint32_t> mySamplerUniforms;
 	std::vector<uint32_t> mySamplerTypes; 
 
-	vector<Handle<UniformBufferGL>> myBuffers;
-	
+	std::vector<Handle<UniformBufferGL>> myBuffers;
 };

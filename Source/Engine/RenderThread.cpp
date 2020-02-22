@@ -33,15 +33,15 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 #ifdef USE_VULKAN
 	if (myIsUsingVulkan)
 	{
-		myGraphics = make_unique<GraphicsVK>();
+		myGraphics = std::make_unique<GraphicsVK>();
 		Game::GetInstance()->GetCamera()->InvertProj();
 	}
 	else
 #endif // USE_VULKAN
 	{
-		myGraphics = make_unique<GraphicsGL>(anAssetTracker);
+		myGraphics = std::make_unique<GraphicsGL>(anAssetTracker);
 	}
-	myGraphics->SetMaxThreads(thread::hardware_concurrency());
+	myGraphics->SetMaxThreads(std::thread::hardware_concurrency());
 	myGraphics->Init();
 	myGraphics->AddRenderPass(new DefaultRenderPass());
 	myGraphics->AddRenderPass(new TerrainRenderPass());
@@ -60,7 +60,7 @@ GLFWwindow* RenderThread::GetWindow() const
 
 void RenderThread::AddRenderable(const VisualObject* aVO)
 {
-	vector<const VisualObject*>& buffer = myTrippleRenderables.GetWrite();
+	std::vector<const VisualObject*>& buffer = myTrippleRenderables.GetWrite();
 	buffer.push_back(aVO);
 }
 
@@ -78,7 +78,7 @@ void RenderThread::SubmitRenderables()
 {
 	if (Game::GetInstance()->IsPaused() || !myHasWorkPending)
 	{
-		this_thread::yield();
+		std::this_thread::yield();
 	}
 
 	if (!myIsUsingVulkan)
@@ -122,7 +122,7 @@ void RenderThread::SubmitRenderables()
 
 	// processing our renderables
 	myTrippleRenderables.Advance();
-	const vector<const VisualObject*>& myRenderables = myTrippleRenderables.GetRead();
+	const std::vector<const VisualObject*>& myRenderables = myTrippleRenderables.GetRead();
 	myTrippleRenderables.GetWrite().clear();
 
 	// TODO: this is most probably overkill considering that Render call is lightweight
@@ -178,7 +178,7 @@ void RenderThread::SubmitRenderables()
 
 	// schedule drawing out our debug drawings
 	myDebugDrawers.Advance();
-	const vector<const DebugDrawer*>& debugDrawers = myDebugDrawers.GetRead();
+	const std::vector<const DebugDrawer*>& debugDrawers = myDebugDrawers.GetRead();
 	myDebugDrawers.GetWrite().clear();
 
 	myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly

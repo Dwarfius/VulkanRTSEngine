@@ -44,9 +44,9 @@ public:
 
 	// TODO: use stack-allocated aligned vector to match up with btAlignedArray
 	// Makes a raycast and returns all the hits
-	bool Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, vector<PhysicsEntity*>& anAllHits) const;
+	bool Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, std::vector<PhysicsEntity*>& anAllHits) const;
 	// Makes a raycast and returns all the hits
-	bool Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*>& anAllHits) const;
+	bool Raycast(glm::vec3 aFrom, glm::vec3 aTo, std::vector<PhysicsEntity*>& anAllHits) const;
 
 	// TODO: refactor this away
 	const DebugDrawer& GetDebugDrawer() const;
@@ -60,8 +60,8 @@ private:
 	const float FixedStepLength = 1.f / 30.f;
 
 	// TODO: replace with u_map<UID, handle>
-	vector<PhysicsEntity*> myEntities;
-	vector<ISymCallbackListener*> myPhysSystems;
+	std::vector<PhysicsEntity*> myEntities;
+	std::vector<ISymCallbackListener*> myPhysSystems;
 
 	void PrePhysicsStep(float aDeltaTime);
 	void PostPhysicsStep(float aDeltaTime);
@@ -77,7 +77,7 @@ private:
 	// TODO: should probably have per-type reusable command caches, 
 	// so that even it points to heap, it'll be layed out continuously
 	// - should make more cache friendly
-	vector<const PhysicsCommand*> myCommands;
+	std::vector<const PhysicsCommand*> myCommands;
 
 	void ResolveCommands();
 

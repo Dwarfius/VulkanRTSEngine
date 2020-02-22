@@ -51,7 +51,7 @@ bool ShaderGL::OnUpload(Graphics& aGraphics)
 		int length = 0;
 		glGetShaderiv(myGLShader, GL_INFO_LOG_LENGTH, &length);
 
-		string errStr;
+		std::string errStr;
 		errStr.resize(length);
 		glGetShaderInfoLog(myGLShader, length, &length, &errStr[0]);
 

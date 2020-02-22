@@ -21,8 +21,8 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	: myMouseSensitivity(0.1f)
 	, myFlightSpeed(2.f)
 {
-	shared_ptr<PhysicsShapeBase> sphereShape = make_shared<PhysicsShapeSphere>(1.f);
-	shared_ptr<PhysicsShapeBox> boxShape = make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
+	std::shared_ptr<PhysicsShapeBase> sphereShape = std::make_shared<PhysicsShapeSphere>(1.f);
+	std::shared_ptr<PhysicsShapeBox> boxShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 
 	// Physics test
 	// a sphere with no visual object (don't have a mesh atm)

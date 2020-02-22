@@ -78,7 +78,7 @@ Game::Game(ReportError aReporterFunc)
 
 	myCamera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
 
-	myTaskManager = make_unique<GameTaskManager>();
+	myTaskManager = std::make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
 }
@@ -140,45 +140,45 @@ void Game::Init()
 
 	// setting up a task tree
 	{
-		GameTask task(GameTask::UpdateInput, bind(&Game::UpdateInput, this));
+		GameTask task(GameTask::UpdateInput, [this]() { UpdateInput(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::AddGameObjects, bind(&Game::AddGameObjects, this));
+		task = GameTask(GameTask::AddGameObjects, [this]() { AddGameObjects(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::PhysicsUpdate, bind(&Game::PhysicsUpdate, this));
+		task = GameTask(GameTask::PhysicsUpdate, [this]() { PhysicsUpdate(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::EditorUpdate, bind(&Game::EditorUpdate, this));
+		task = GameTask(GameTask::EditorUpdate, [this]() { EditorUpdate(); });
 		task.AddDependency(GameTask::UpdateInput);
 		task.AddDependency(GameTask::PhysicsUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::GameUpdate, bind(&Game::Update, this));
+		task = GameTask(GameTask::GameUpdate, [this]() { Update(); });
 		task.AddDependency(GameTask::UpdateInput);
 		task.AddDependency(GameTask::AddGameObjects);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::RemoveGameObjects, bind(&Game::RemoveGameObjects, this));
+		task = GameTask(GameTask::RemoveGameObjects, [this]() { RemoveGameObjects(); });
 		task.AddDependency(GameTask::GameUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::UpdateEnd, bind(&Game::UpdateEnd, this));
+		task = GameTask(GameTask::UpdateEnd, [this]() { UpdateEnd(); });
 		task.AddDependency(GameTask::RemoveGameObjects);
 		task.AddDependency(GameTask::EditorUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::Render, bind(&Game::Render, this));
+		task = GameTask(GameTask::Render, [this]() { Render(); });
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
 
 		// TODO: will need to fix up audio
-		task = GameTask(GameTask::UpdateAudio, bind(&Game::UpdateAudio, this));
+		task = GameTask(GameTask::UpdateAudio, [this]() { UpdateAudio(); });
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
 
 		// a free task
-		task = GameTask(GameTask::UpdateAssetTracker, bind(&Game::UpdateAssetTracker, this));
+		task = GameTask(GameTask::UpdateAssetTracker, [this]() { UpdateAssetTracker(); });
 		myTaskManager->AddTask(task);
 
 		// TODO: need to add functionality to draw out the task tree ingame
@@ -304,7 +304,7 @@ void Game::Update()
 	}
 
 	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
-	for (const pair<UID, GameObject*>& pair : myGameObjects)
+	for (const std::pair<UID, GameObject*>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
 	}
@@ -325,7 +325,7 @@ void Game::Render()
 {
 	// TODO: get rid of single map, and use a separate vector for Renderables
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
-	for (const pair<UID, GameObject*>& elem : myGameObjects)
+	for (const std::pair<UID, GameObject*>& elem : myGameObjects)
 	{
 		const VisualObject* visObj = elem.second->GetVisualObject();
 		if (visObj && visObj->IsValid())
@@ -414,10 +414,10 @@ void Game::RemoveGameObject(GameObject* go)
 	myRemoveQueue.push(go);
 }
 
-void Game::LogToFile(string s)
+void Game::LogToFile(const std::string& s)
 {
 	if (myFile.is_open())
 	{
-		myFile << s << endl;
+		myFile << s << std::endl;
 	}
 }

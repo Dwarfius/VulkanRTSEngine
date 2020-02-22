@@ -15,7 +15,7 @@ Terrain::Terrain()
 {
 }
 
-void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, float anYScale, float anUvScale)
+void Terrain::Load(AssetTracker& anAssetTracker, const std::string& aName, float aStep, float anYScale, float anUvScale)
 {
 	myYScale = anYScale;
 	myStep = aStep;
@@ -51,8 +51,8 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 			vertices[index] = v;
 
 			// tracking min/max heights for AABB
-			minHeight = min(minHeight, v.myPos.y);
-			maxHeight = max(maxHeight, v.myPos.y);
+			minHeight = std::min(minHeight, v.myPos.y);
+			maxHeight = std::max(maxHeight, v.myPos.y);
 		}
 	}
 	Texture::FreePixels(pixels);
@@ -98,7 +98,7 @@ void Terrain::Load(AssetTracker& anAssetTracker, string aName, float aStep, floa
 	}
 	{
 		// the largest dimension is the bounding sphere radius
-		const float sphereRadius = max(max(maxHeight - minHeight, fullDepth), fullWidth);
+		const float sphereRadius = std::max(std::max(maxHeight - minHeight, fullDepth), fullWidth);
 		myModel->SetSphereRadius(sphereRadius);
 	}
 	
@@ -199,7 +199,7 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 		myHeightsCache.push_back(vert.myPos.y);
 	}
 
-	shared_ptr<PhysicsShapeHeightfield> myShape = make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
+	std::shared_ptr<PhysicsShapeHeightfield> myShape = std::make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
 	return myShape;
 }
@@ -210,7 +210,7 @@ void Terrain::Normalize(Vertex* aVertices, size_t aVertCount,
 	ASSERT_STR(aVertCount != 0 && aIndCount != 0, "Missing data!");
 
 	// holds the sum of all surface normals per vertex
-	vector<glm::vec3> surfNormals(aVertCount, glm::vec3());
+	std::vector<glm::vec3> surfNormals(aVertCount, glm::vec3());
 	// gotta update the faces
 	for (int i = 0; i < aIndCount; i += 3)
 	{

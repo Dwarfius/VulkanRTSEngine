@@ -14,8 +14,6 @@
 
 #include <Core/Debug/Assert.h>
 
-using namespace std;
-
 namespace Utils
 {
 	glm::vec3 ConvertToGLM(btVector3 aVec);

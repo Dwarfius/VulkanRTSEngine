@@ -2,7 +2,7 @@
 
 class Transform;
 
-const vector<string> AudioFiles 
+const std::vector<std::string> AudioFiles 
 {
 	"explosion.wav",
 	"tankShot.wav",

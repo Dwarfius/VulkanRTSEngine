@@ -166,7 +166,7 @@ void RenderPassJobGL::RunJobs()
 
 			// binding uniform blocks to according slots
 			size_t blockCount = pipeline->GetUBOCount();
-			ASSERT_STR(blockCount < numeric_limits<uint32_t>::max(), "Index of UBO block doesn't fit for binding!");
+			ASSERT_STR(blockCount < std::numeric_limits<uint32_t>::max(), "Index of UBO block doesn't fit for binding!");
 			for (size_t i = 0; i < blockCount; i++)
 			{
 				// TODO: implement logic that doesn't rebind same slots:
@@ -222,7 +222,7 @@ void RenderPassJobGL::RunJobs()
 		{
 			uint32_t drawMode = model->GetDrawMode();
 			size_t primitiveCount = model->GetPrimitiveCount();
-			ASSERT_STR(primitiveCount < numeric_limits<GLsizei>::max(), "Exceeded the limit of primitives!");
+			ASSERT_STR(primitiveCount < std::numeric_limits<GLsizei>::max(), "Exceeded the limit of primitives!");
 			glDrawElements(drawMode, static_cast<GLsizei>(primitiveCount), GL_UNSIGNED_INT, 0);
 			break;
 		}

@@ -41,5 +41,3 @@
 #include <GLFW/glfw3.h>
 
 #include <Core/Debug/Assert.h>
-
-using namespace std;

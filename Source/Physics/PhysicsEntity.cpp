@@ -34,7 +34,7 @@ namespace
 	};
 }
 
-PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
+PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
 	: myShape(aShape)
 	, myIsStatic(aMass == 0)
 	, myIsSleeping(false)
@@ -64,7 +64,7 @@ PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, c
 	myBody->setUserPointer(this);
 }
 
-PhysicsEntity::PhysicsEntity(float aMass, shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity)
+PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity)
 	: myShape(aShape)
 	, myIsStatic(aMass == 0)
 	, myIsSleeping(false)

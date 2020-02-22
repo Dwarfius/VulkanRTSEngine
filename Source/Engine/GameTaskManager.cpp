@@ -6,7 +6,7 @@ GameTask::GameTask()
 {
 }
 
-GameTask::GameTask(Type aType, function<void()> aCallback)
+GameTask::GameTask(Type aType, std::function<void()> aCallback)
 	: myType(aType)
 	, myCallback(aCallback)
 {
@@ -29,14 +29,14 @@ void GameTaskManager::AddTask(const GameTask& aTask)
 
 void GameTaskManager::ResolveDependencies()
 {
-	myTaskGraph = make_shared<tbb::flow::graph>();
+	myTaskGraph = std::make_shared<tbb::flow::graph>();
 	
 	// first construct all the graph nodes
-	myTaskNodes[GameTask::Type::GraphBroadcast] = make_shared<StartNodeType>(*myTaskGraph);
-	for (const pair<GameTask::Type, GameTask>& pair : myTasks)
+	myTaskNodes[GameTask::Type::GraphBroadcast] = std::make_shared<StartNodeType>(*myTaskGraph);
+	for (const std::pair<GameTask::Type, GameTask>& pair : myTasks)
 	{
 		const GameTask::Type taskType = pair.first;
-		myTaskNodes[taskType] = make_shared<TaskNodeType>(*myTaskGraph, myTasks[taskType]);;
+		myTaskNodes[taskType] = std::make_shared<TaskNodeType>(*myTaskGraph, myTasks[taskType]);;
 	}
 
 	// then we can make the graph edges

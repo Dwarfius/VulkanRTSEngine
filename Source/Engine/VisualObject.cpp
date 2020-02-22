@@ -63,7 +63,7 @@ glm::vec3 VisualObject::GetCenter() const
 float VisualObject::GetRadius() const
 {
 	const glm::vec3 scale = myTransf.GetScale();
-	const float maxScale = max({ scale.x, scale.y, scale.z });
+	const float maxScale = std::max({ scale.x, scale.y, scale.z });
 	const float radius = myModel.Get<const GPUModel>()->GetSphereRadius();
 	return maxScale * radius;
 }
@@ -82,7 +82,7 @@ void VisualObject::UpdateDescriptors(const Resource* aPipelineRes)
 		const Descriptor& descriptor = pipeline->GetDescriptor(i);
 
 		myUniforms.push_back(std::make_shared<UniformBlock>(descriptor));
-		const string& adapterName = descriptor.GetUniformAdapter();
+		const std::string& adapterName = descriptor.GetUniformAdapter();
 		myAdapters.push_back(
 			UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
 		);

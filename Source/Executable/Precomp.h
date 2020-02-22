@@ -10,5 +10,3 @@
 #include <tbb/tbb.h>
 
 #include <Core/Debug/Assert.h>
-
-using namespace std;

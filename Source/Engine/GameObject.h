@@ -48,7 +48,7 @@ private:
 
 	bool myIsDead;
 
-	vector<ComponentBase*> myComponents;
+	std::vector<ComponentBase*> myComponents;
 	VisualObject* myVisualObject;
 };
 

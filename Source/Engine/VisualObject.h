@@ -44,7 +44,7 @@ public:
 	const Transform& GetTransform() const { return myTransf; }
 
 	UniformBlock& GetUniformBlock(size_t anIndex) const { return *myUniforms[anIndex]; }
-	const vector<shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
+	const std::vector<std::shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
 	const UniformAdapter& GetUniformAdapter(size_t anIndex) const { return *myAdapters[anIndex]; }
 
 	void SetCategory(Category aCategory) { myCategory = aCategory; }
@@ -56,8 +56,8 @@ private:
 	Handle<GPUResource> myPipeline;
 	Handle<GPUResource> myTexture;
 
-	vector<shared_ptr<UniformBlock>> myUniforms;
-	vector<shared_ptr<UniformAdapter>> myAdapters;
+	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
+	std::vector<std::shared_ptr<UniformAdapter>> myAdapters;
 	GameObject& myGameObject;
 	Category myCategory;
 

@@ -22,7 +22,7 @@ void PipelineGL::Bind()
 {
 	glUseProgram(myGLProgram);
 
-	ASSERT_STR(mySamplerUniforms.size() < numeric_limits<GLint>::max(), "Sampler index doesn't fit!");
+	ASSERT_STR(mySamplerUniforms.size() < std::numeric_limits<GLint>::max(), "Sampler index doesn't fit!");
 	// rebinding samplers to texture slots
 	for(size_t i=0; i<mySamplerUniforms.size(); i++)
 	{
@@ -74,7 +74,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		int length = 0;
 		glGetProgramiv(myGLProgram, GL_INFO_LOG_LENGTH, &length);
 
-		string errStr;
+		std::string errStr;
 		errStr.resize(length);
 		glGetProgramInfoLog(myGLProgram, length, &length, &errStr[0]);
 
@@ -91,7 +91,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 			const Descriptor& descriptor = pipeline->GetDescriptor(i);
 
 			// TODO: get rid of this name hack, have a proper name string!
-			const string& uboName = descriptor.GetUniformAdapter();
+			const std::string& uboName = descriptor.GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
 			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}
@@ -105,7 +105,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		// We will need the name in order to find the location of the uniform
 		int maxNameLength = 0;
 		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
-		string uniformName;
+		std::string uniformName;
 		uniformName.resize(maxNameLength + 1);
 		for (int i = 0; i < uniformCount; i++)
 		{

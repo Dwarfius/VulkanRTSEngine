@@ -12,13 +12,13 @@ class Camera;
 		friend class UniformAdapterRegister; \
 		static constexpr const char* GetName() { return #Type; } \
 		using CreationMethod = \
-			shared_ptr<UniformAdapter>(*)(const GameObject&, const VisualObject&); \
+			std::shared_ptr<UniformAdapter>(*)(const GameObject&, const VisualObject&); \
 		static constexpr CreationMethod GetCreationMethod() \
 		{ \
 			return [](const GameObject& aGO, const VisualObject& aVO) \
-				-> shared_ptr<UniformAdapter> \
+				-> std::shared_ptr<UniformAdapter> \
 			{ \
-				return make_shared<Type>(aGO, aVO); \
+				return std::make_shared<Type>(aGO, aVO); \
 			}; \
 		}
 

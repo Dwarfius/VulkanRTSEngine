@@ -39,7 +39,7 @@ public:
 	bool IsPaused() const { return myIsPaused; }
 	GLFWwindow* GetWindow() const;
 
-	const unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
+	const std::unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
 	GameObject* Instantiate(glm::vec3 aPos = glm::vec3(), glm::vec3 aRot = glm::vec3(), glm::vec3 aScale = glm::vec3(1));
 	// TODO: get rid of this limit by improving VK renderer
@@ -75,7 +75,7 @@ private:
 
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
-	unique_ptr<GameTaskManager> myTaskManager;
+	std::unique_ptr<GameTaskManager> myTaskManager;
 
 	// timer measurements
 	float myFrameStart;
@@ -84,10 +84,10 @@ private:
 	EditorMode* myEditorMode;
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
-	unordered_map<UID, GameObject*> myGameObjects;
-	queue<GameObject*> myAddQueue;
-	queue<GameObject*> myRemoveQueue;
-	vector<Terrain*> myTerrains;
+	std::unordered_map<UID, GameObject*> myGameObjects;
+	std::queue<GameObject*> myAddQueue;
+	std::queue<GameObject*> myRemoveQueue;
+	std::vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker myAssetTracker;
 	DebugDrawer myDebugDrawer;
@@ -97,6 +97,6 @@ private:
 	bool myIsPaused;
 
 	// logging
-	void LogToFile(string aLine);
-	ofstream myFile;
+	void LogToFile(const std::string& aLine);
+	std::ofstream myFile;
 };

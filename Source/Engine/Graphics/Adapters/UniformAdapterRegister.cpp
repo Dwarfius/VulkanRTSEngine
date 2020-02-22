@@ -25,10 +25,10 @@ void UniformAdapterRegister::RegisterTypes()
 	Register<CameraAdapter>();
 }
 
-shared_ptr<UniformAdapter> UniformAdapterRegister::GetAdapter
-	(const string& aName, const GameObject& aGO, const VisualObject& aVO) const
+std::shared_ptr<UniformAdapter> UniformAdapterRegister::GetAdapter
+	(const std::string& aName, const GameObject& aGO, const VisualObject& aVO) const
 {
-	unordered_map<string, CreationMethod>::const_iterator iter = myCreationMethods.find(aName);
+	std::unordered_map<std::string, CreationMethod>::const_iterator iter = myCreationMethods.find(aName);
 	ASSERT_STR(iter != myCreationMethods.end(), "Requested unregistered adapter!");
 	const CreationMethod& createMethod = iter->second;
 	return createMethod(aGO, aVO);

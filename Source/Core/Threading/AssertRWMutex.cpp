@@ -7,8 +7,8 @@
 
 AssertRWMutex::AssertRWMutex()
 	: myLock(0)
-	, myLastReadThreadId(thread::id())
-	, myWriteThreadId(thread::id())
+	, myLastReadThreadId(std::thread::id())
+	, myWriteThreadId(std::thread::id())
 {
 }
 
@@ -20,15 +20,15 @@ void AssertRWMutex::LockWrite()
 	unsigned char currVal = myLock.fetch_or(writeVal);
 	if (currVal) // if any of the bits are set, then a reader write/read-lock is active
 	{
-		basic_stringstream<string::value_type> stream;
+		std::basic_stringstream<std::string::value_type> stream;
 		stream << "Contention! Thread ";
-		stream << this_thread::get_id();
+		stream << std::this_thread::get_id();
 		stream << " tried to lock mutex for write (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
 		ASSERT_STR(false, stream.str().c_str());
 	}
-	myWriteThreadId = this_thread::get_id();
+	myWriteThreadId = std::this_thread::get_id();
 }
 
 void AssertRWMutex::UnlockWrite()
@@ -39,15 +39,15 @@ void AssertRWMutex::UnlockWrite()
 	unsigned char currVal = myLock.fetch_xor(writeVal);
 	if (currVal != writeVal)
 	{
-		basic_stringstream<string::value_type> stream;
+		std::basic_stringstream<std::string::value_type> stream;
 		stream << "Magic! Thread ";
-		stream << this_thread::get_id();
+		stream << std::this_thread::get_id();
 		stream << " tried to unlock mutex for write (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
 		ASSERT_STR(false, stream.str().c_str());
 	}
-	myWriteThreadId = thread::id();
+	myWriteThreadId = std::thread::id();
 }
 
 void AssertRWMutex::LockRead()
@@ -57,15 +57,15 @@ void AssertRWMutex::LockRead()
 	unsigned char currVal = myLock.fetch_add(1);
 	if (currVal & writeVal)
 	{
-		basic_stringstream<string::value_type> stream;
+		std::basic_stringstream<std::string::value_type> stream;
 		stream << "Contention! Thread ";
-		stream << this_thread::get_id();
+		stream << std::this_thread::get_id();
 		stream << " tried to lock mutex for read (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
 		ASSERT_STR(false, stream.str().c_str());
 	}
-	myLastReadThreadId = this_thread::get_id();
+	myLastReadThreadId = std::this_thread::get_id();
 }
 
 void AssertRWMutex::UnlockRead()
@@ -74,9 +74,9 @@ void AssertRWMutex::UnlockRead()
 	unsigned char currVal = myLock.fetch_sub(1);
 	if (currVal == 0)
 	{
-		basic_stringstream<string::value_type> stream;
+		std::basic_stringstream<std::string::value_type> stream;
 		stream << "Magic! Thread ";
-		stream << this_thread::get_id();
+		stream << std::this_thread::get_id();
 		stream << " tried to unlock mutex for read (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
@@ -86,7 +86,7 @@ void AssertRWMutex::UnlockRead()
 	if (currVal == 1)
 	{
 		// and if so, invalidate the thread index
-		myLastReadThreadId = thread::id();
+		myLastReadThreadId = std::thread::id();
 	}
 }
 

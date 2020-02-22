@@ -17,7 +17,7 @@ public:
 	}
 
 private:
-	static mt19937 ourRandomGen;
+	static std::mt19937 ourRandomGen;
 	static size_t ourThisPCMac;
 	static bool ourIsInitialized;
 

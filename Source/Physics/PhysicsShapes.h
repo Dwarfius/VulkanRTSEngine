@@ -75,7 +75,7 @@ class PhysicsShapeConvexHull : public PhysicsShapeBase
 {
 public:
 	// Takes in a vector of xyz points
-	PhysicsShapeConvexHull(const vector<float>& aVertBuffer);
+	PhysicsShapeConvexHull(const std::vector<float>& aVertBuffer);
 };
 
 // simple heightfield shape which uses Y as up axis
@@ -84,5 +84,5 @@ class PhysicsShapeHeightfield : public PhysicsShapeBase
 public:
 	// Constructs a heightfield of aWidth x aLength of heights from aHeightBuffer
 	// aMinHeight and aMaxHeight are used for fast calculating AABB
-	PhysicsShapeHeightfield(int aWidth, int aLength, const vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight);
+	PhysicsShapeHeightfield(int aWidth, int aLength, const std::vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight);
 };

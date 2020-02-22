@@ -27,5 +27,3 @@
 #include <GLFW/glfw3.h>
 
 #include "Debug/Assert.h"
-
-using namespace std;

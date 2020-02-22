@@ -23,7 +23,7 @@ public:
 
 public:
 	GameTask();
-	GameTask(Type aType, function<void()> aCallback);
+	GameTask(Type aType, std::function<void()> aCallback);
 	void operator()(tbb::flow::continue_msg) const { myCallback(); }
 
 	void AddDependency(Type aType) { myDependencies.push_back(aType); }
@@ -34,9 +34,9 @@ private:
 	friend class GameTaskManager;
 	Type GetType() const { return myType; }
 
-	function<void()> myCallback;
+	std::function<void()> myCallback;
 	Type myType;
-	vector<Type> myDependencies;
+	std::vector<Type> myDependencies;
 };
 
 // thanks https://software.intel.com/en-us/node/506218
@@ -52,12 +52,12 @@ public:
 	void Reset();
 
 private:
-	unordered_map<GameTask::Type, GameTask> myTasks;
+	std::unordered_map<GameTask::Type, GameTask> myTasks;
 
 	typedef tbb::flow::graph_node BaseTaskNodeType;
 	typedef tbb::flow::broadcast_node<tbb::flow::continue_msg> StartNodeType;
 	typedef tbb::flow::continue_node<tbb::flow::continue_msg> TaskNodeType;
-	unordered_map<GameTask::Type, shared_ptr<BaseTaskNodeType>> myTaskNodes;
-	shared_ptr<tbb::flow::graph> myTaskGraph;
+	std::unordered_map<GameTask::Type, std::shared_ptr<BaseTaskNodeType>> myTaskNodes;
+	std::shared_ptr<tbb::flow::graph> myTaskGraph;
 };
 

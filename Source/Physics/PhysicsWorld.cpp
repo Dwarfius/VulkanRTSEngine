@@ -136,13 +136,13 @@ bool PhysicsWorld::RaycastClosest(glm::vec3 aFrom, glm::vec3 aTo, PhysicsEntity*
 	return false;
 }
 
-bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, vector<PhysicsEntity*>& anAllHits) const
+bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aDir, float aDist, std::vector<PhysicsEntity*>& anAllHits) const
 {
 	glm::vec3 to = aFrom + aDir * aDist;
 	return Raycast(aFrom, to, anAllHits);
 }
 
-bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aTo, vector<PhysicsEntity*>& anAllHits) const
+bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aTo, std::vector<PhysicsEntity*>& anAllHits) const
 {
 	const btVector3 from = Utils::ConvertToBullet(aFrom);
 	const btVector3 to = Utils::ConvertToBullet(aTo);

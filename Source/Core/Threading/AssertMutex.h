@@ -15,7 +15,7 @@ public:
 	void Unlock();
 
 private:
-	std::atomic<thread::id> myWriter;
+	std::atomic<std::thread::id> myWriter;
 };
 
 // A locker utility that implements RAII on AssertMutex

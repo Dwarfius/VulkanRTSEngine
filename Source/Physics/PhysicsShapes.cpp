@@ -76,7 +76,7 @@ PhysicsShapeCapsule::PhysicsShapeCapsule(float aRadius, float aHeight)
 }
 
 // ====================================================
-PhysicsShapeConvexHull::PhysicsShapeConvexHull(const vector<float>& aVertBuffer)
+PhysicsShapeConvexHull::PhysicsShapeConvexHull(const std::vector<float>& aVertBuffer)
 	: PhysicsShapeBase()
 {
 	ASSERT_STR(aVertBuffer.size() % 3 == 0, "Convex hull shape requires XYZ-form vertices");
@@ -86,7 +86,7 @@ PhysicsShapeConvexHull::PhysicsShapeConvexHull(const vector<float>& aVertBuffer)
 }
 
 // ====================================================
-PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight)
+PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const std::vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight)
 	: PhysicsShapeBase()
 {
 	myShape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer.data(), 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);

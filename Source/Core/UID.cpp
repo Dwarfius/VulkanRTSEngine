@@ -6,14 +6,14 @@
 #include <iphlpapi.h>
 #endif
 
-mt19937 UID::ourRandomGen;
+std::mt19937 UID::ourRandomGen;
 size_t UID::ourThisPCMac = 0;
 bool UID::ourIsInitialized = false;
 
 void UID::Init()
 {
 	std::random_device rd;
-	ourRandomGen = mt19937(rd());
+	ourRandomGen = std::mt19937(rd());
 
 	// thanks https://oroboro.com/unique-machine-fingerprint/!
 #ifdef _WIN32
