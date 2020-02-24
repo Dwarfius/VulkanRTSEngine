@@ -62,7 +62,6 @@ public:
 	static bool ourGODeleteEnabled;
 
 private:
-	void UpdateAssetTracker();
 	void AddGameObjects();
 	void UpdateInput();
 	void Update();

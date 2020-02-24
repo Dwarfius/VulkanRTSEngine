@@ -177,10 +177,6 @@ void Game::Init()
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
 
-		// a free task
-		task = GameTask(GameTask::UpdateAssetTracker, [this]() { UpdateAssetTracker(); });
-		myTaskManager->AddTask(task);
-
 		// TODO: need to add functionality to draw out the task tree ingame
 		myTaskManager->ResolveDependencies();
 		myTaskManager->Run();
@@ -254,11 +250,6 @@ bool Game::IsRunning() const
 GLFWwindow* Game::GetWindow() const
 {
 	return myRenderThread->GetWindow();
-}
-
-void Game::UpdateAssetTracker()
-{
-	myAssetTracker.ProcessQueues();
 }
 
 void Game::AddGameObjects()

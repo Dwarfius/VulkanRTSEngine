@@ -11,6 +11,22 @@ private:
 	using AssetPair = std::pair<const Resource::Id, Resource*>;
 	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
 
+	class LoadTask : public tbb::task
+	{
+	public:
+		LoadTask(AssetTracker& anAssetTracker, Handle<Resource> aRes)
+			: myAssetTracker(anAssetTracker)
+			, myRes(aRes)
+		{
+		}
+
+		tbb::task* execute() override final;
+
+	private:
+		AssetTracker& myAssetTracker;
+		Handle<Resource> myRes;
+	};
+
 public:
 	AssetTracker();
 
@@ -27,13 +43,7 @@ public:
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(std::string aPath);
 
-	// TODO: get rid of this
-	// Cleans up the assets, as well as loads and uploads the new ones. 
-	void ProcessQueues();
-
 private:
-	void ProcessLoads();
-
 	// Utility method to clean-up the resource from registry and asset collections
 	// Doesn't delete the actual resource - it's Handle's responsibility
 	// Threadsafe
@@ -47,9 +57,6 @@ private:
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
-
-	// Queues support variables
-	tbb::concurrent_queue<Handle<Resource>> myLoadQueue;
 };
 
 template<class TAsset>
@@ -100,9 +107,11 @@ Handle<TAsset> AssetTracker::GetOrCreate(std::string aPath)
 		asset->AddOnDestroyCB(std::bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
 
 		// adding it to the queue of loading, since we know that it'll be loaded from file
-		myLoadQueue.push(asset);
+		Handle<TAsset> assetHandle = Handle<TAsset>(asset);
+		LoadTask* loadTask = new (tbb::task::allocate_root()) LoadTask(*this, assetHandle);
+		tbb::task::enqueue(*loadTask);
 
-		return Handle<TAsset>(asset);
+		return assetHandle;
 	}
 	else
 	{
