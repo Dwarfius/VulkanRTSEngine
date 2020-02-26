@@ -104,7 +104,7 @@ Handle<TAsset> AssetTracker::GetOrCreate(std::string aPath)
 
 		// set up the onDestroy callback, so that we can clean up 
 		// the registry and assets containters when it gets removed
-		asset->AddOnDestroyCB(std::bind(&AssetTracker::RemoveResource, this, std::placeholders::_1));
+		asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
 
 		// adding it to the queue of loading, since we know that it'll be loaded from file
 		Handle<TAsset> assetHandle = Handle<TAsset>(asset);

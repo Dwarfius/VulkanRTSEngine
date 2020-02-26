@@ -56,10 +56,15 @@ private:
 	Handle<GPUResource> myPipeline;
 	Handle<GPUResource> myTexture;
 
+	// TODO: rework this to use a index-based Handle into
+	// a pool of UniformBlocks
 	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
+	// TODO: move this to pipeline itself
 	std::vector<std::shared_ptr<UniformAdapter>> myAdapters;
 	GameObject& myGameObject;
 	Category myCategory;
 
+	// TODO: get rid of this by sourcing the resources
+	// either on pipeline or elsewhere
 	void UpdateDescriptors(const Resource* aPipelineRes);
 };

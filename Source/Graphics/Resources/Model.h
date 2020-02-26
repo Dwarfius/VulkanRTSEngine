@@ -174,5 +174,5 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 		}
 	}
 
-	myState = State::Ready;
+	SetReady();
 }

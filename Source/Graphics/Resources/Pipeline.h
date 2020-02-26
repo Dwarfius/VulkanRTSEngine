@@ -21,7 +21,6 @@ public:
 	const Descriptor& GetDescriptor(size_t anIndex) const { return myDescriptors[anIndex]; }
 
 	// takes ownership of the shader
-	// call SetState(Resource::State::PendingUpload) when done adding shaders!
 	void AddShader(Handle<Shader> aShader);
 
 	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(std::move(aDescriptor)); }

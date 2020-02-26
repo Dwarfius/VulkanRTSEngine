@@ -31,15 +31,8 @@ void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 	if (myPipeline.IsValid())
 	{
 		Pipeline* pipeline = aPipeline.Get();
-		if (pipeline->GetState() != Resource::State::Ready)
-		{
-			// pipeline hasn't finished loading, so there are no descriptors atm
-			pipeline->AddOnLoadCB([=](const Resource* aRes) { UpdateDescriptors(aRes); });
-		}
-		else
-		{
-			UpdateDescriptors(pipeline);
-		}
+		// TODO: this pointer might become dangling!
+		pipeline->ExecLambdaOnLoad([=](const Resource* aRes) { UpdateDescriptors(aRes); });
 	}
 }
 

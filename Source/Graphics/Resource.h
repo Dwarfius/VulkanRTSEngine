@@ -38,10 +38,8 @@ public:
 public:
 	// creates a dynamic resource
 	Resource();
-
 	// creates a resource from a file
 	Resource(Id anId, const std::string& aPath);
-
 	~Resource();
 
 	// We disable copies to avoid accidental resource duplication
@@ -50,31 +48,23 @@ public:
 
 	Id GetId() const { return myId; }
 	const std::string& GetPath() const { return myPath; }
-
+	
+	// Not synchronized, might be out of date for a frame
 	State GetState() const { return myState; }
-	void SetState(State aNewState) { myState = aNewState; }
 
 	const std::vector<Handle<Resource>>& GetDependencies() const { return myDependencies; }
 
 	// TODO: add DebugAsserts for scheduling callbacks during AssetTracker::Process time
 	// Sets the callback to call when the object finishes loading from disk
-	void AddOnLoadCB(Callback aOnLoadCB) { myOnLoadCBs.push_back(aOnLoadCB); }
+	void ExecLambdaOnLoad(Callback aOnLoadCB);
 	// Sets the callback to call when the object gets destroyed
 	void AddOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
 protected:
-	// Current state of the resource
-	State myState;
-	std::string myPath;
-
+	void SetReady();
 	// A convinience wrapper to set the error message in debug builds.
 	// Sets the state to Error
 	void SetErrMsg(std::string&& anErrString);
-
-#ifdef _DEBUG
-	// used for tracking what went wrong
-	std::string myErrString;
-#endif
 
 	std::vector<Handle<Resource>> myDependencies;
 
@@ -91,7 +81,17 @@ private:
 	// load is needed, false otherwise.
 	virtual bool LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath) { return true; }
 
-	Id myId;
+#ifdef _DEBUG
+	// used for tracking what went wrong
+	std::string myErrString;
+#endif
+
+	std::string myPath;
 	std::vector<Callback> myOnLoadCBs;
 	std::vector<Callback> myOnDestroyCBs;
+	Id myId;
+	State myState;
+
+	tbb::spin_rw_mutex myStateMutex;
+	tbb::spin_mutex myLoadCBMutex;
 };

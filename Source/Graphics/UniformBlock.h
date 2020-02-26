@@ -5,7 +5,7 @@
 
 // A class representing a single block of uniforms for submitting to the GPU.
 // Use:
-// UniformBlock block(1, descriptor);
+// UniformBlock block(descriptor);
 // block.SetUniform<glm::vec3>(0, glm::vec3(0.f));
 class UniformBlock
 {

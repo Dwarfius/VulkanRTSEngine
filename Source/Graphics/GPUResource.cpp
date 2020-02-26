@@ -27,17 +27,7 @@ void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShoul
 	if (myResHandle.IsValid())
 	{
 		myResId = myResHandle->GetId();
-
-		// since the file might not load in, it might not have
-		// it's dependencies resolved, sohave to delay this query
-		if (myResHandle->GetState() != Resource::State::Ready)
-		{
-			myResHandle->AddOnLoadCB([=](const Resource* aRes) { UpdateDependencies(aRes); });
-		}
-		else
-		{
-			UpdateDependencies(myResHandle.Get());
-		}
+		myResHandle->ExecLambdaOnLoad([=](const Resource* aRes) { UpdateDependencies(aRes); });
 	}
 
 	// schedule ourselves for creation

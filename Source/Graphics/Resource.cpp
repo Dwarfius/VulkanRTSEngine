@@ -26,6 +26,36 @@ Resource::~Resource()
 	}
 }
 
+void Resource::ExecLambdaOnLoad(Callback aOnLoadCB)
+{
+	// we rely on the fact that we lock on state = Status::Ready
+	// before executing the callbacks once OnLoad finishes, so
+	// we can rely on status to be up-to-date
+	tbb::spin_rw_mutex::scoped_lock lockState(myStateMutex, false);
+	if (myState != State::Ready)
+	{
+		// we have to delay it till OnLoad runs
+		tbb::spin_mutex::scoped_lock lockCB(myLoadCBMutex);
+		myOnLoadCBs.push_back(aOnLoadCB);
+	}
+	else
+	{
+		// scheduled callbacks already ran,
+		// we can just execute new one right now
+		aOnLoadCB(this);
+		// Note: it's okay if above call prolongs mutex read-lock 
+		// since nothing should rely on it at this point
+	}
+}
+
+void Resource::SetReady()
+{
+	// we only care about synchronizing Ready state to guarantee
+	// that the OnLoad callbacks will be executed
+	tbb::spin_rw_mutex::scoped_lock lock(myStateMutex);
+	myState = State::Ready;
+}
+
 void Resource::SetErrMsg(std::string&& anErrString)
 {
 	myState = State::Error;
@@ -38,6 +68,7 @@ void Resource::SetErrMsg(std::string&& anErrString)
 void Resource::Load(AssetTracker& anAssetTracker)
 {
 	ASSERT_STR(myPath.size(), "Empty path during resource load!");
+	ASSERT_STR(myState == State::Uninitialized, "Double load detected!");
 	
 	const bool needsRawRes = LoadResDescriptor(anAssetTracker, myPath);
 	if (needsRawRes)
@@ -51,14 +82,26 @@ void Resource::Load(AssetTracker& anAssetTracker)
 		OnLoad(anAssetTracker, file);
 	}
 
-	if (myOnLoadCBs.size())
+	if (myState == State::Error)
 	{
-		for (const Callback& loadCB : myOnLoadCBs)
-		{
-			loadCB(this);
-		}
-		myOnLoadCBs.clear();
-		myOnLoadCBs.shrink_to_fit();
+		return;
 	}
-	myState = State::Ready;
+
+	// The order of the following locks/execution is important:
+	// we do the status change first to ensure we can reliably
+	// execute both the scheduled callbacks as well as the ones
+	// that are about to be scheduled
+	SetReady();
+	{
+		tbb::spin_mutex::scoped_lock lock(myLoadCBMutex);
+		if (myOnLoadCBs.size())
+		{
+			for (const Callback& loadCB : myOnLoadCBs)
+			{
+				loadCB(this);
+			}
+			myOnLoadCBs.clear();
+			myOnLoadCBs.shrink_to_fit();
+		}
+	}
 }

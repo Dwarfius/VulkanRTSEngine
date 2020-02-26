@@ -75,9 +75,7 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 
 void Model::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 {
-	ASSERT_STR(myState == State::Uninitialized, "Double load detected!");
 	// TODO: extend Model to support more than 1 Vertex type loading
-
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
