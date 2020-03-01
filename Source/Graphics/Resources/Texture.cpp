@@ -62,7 +62,7 @@ Texture::Texture()
 }
 
 Texture::Texture(Resource::Id anId, const std::string& aPath)
-	: Resource(anId, kDir.CStr() + aPath)
+	: Resource(anId, aPath)
 	, myPixels(nullptr)
 	, myFormat(Format::UNorm_RGB)
 	, myWrapMode(WrapMode::Clamp)

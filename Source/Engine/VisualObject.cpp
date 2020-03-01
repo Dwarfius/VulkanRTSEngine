@@ -12,10 +12,12 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/GPUModel.h>
+#include <Graphics/Resources/GPUPipeline.h>
 
-VisualObject::VisualObject(GameObject& aGO)
+VisualObject::VisualObject(const GameObject& aGO)
 	: myGameObject(aGO)
 	, myCategory(Category::GameObject)
+	, myIsResolved(false)
 {
 }
 
@@ -27,13 +29,6 @@ void VisualObject::SetModel(Handle<Model> aModel)
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = Game::GetInstance()->GetGraphics()->GetOrCreate(aPipeline);
-
-	if (myPipeline.IsValid())
-	{
-		Pipeline* pipeline = aPipeline.Get();
-		// TODO: this pointer might become dangling!
-		pipeline->ExecLambdaOnLoad([=](const Resource* aRes) { UpdateDescriptors(aRes); });
-	}
 }
 
 void VisualObject::SetTexture(Handle<Texture> aTexture)
@@ -61,14 +56,19 @@ float VisualObject::GetRadius() const
 	return maxScale * radius;
 }
 
-void VisualObject::UpdateDescriptors(const Resource* aPipelineRes)
+bool VisualObject::Resolve()
 {
+	if (myPipeline->GetState() != GPUResource::State::Valid)
+	{
+		return false;
+	}
+
 	// Since we got a new pipeline, time to replace
 	// descriptors, UBOs and adapters
 	myUniforms.clear();
 	myAdapters.clear();
 
-	const Pipeline* pipeline = static_cast<const Pipeline*>(aPipelineRes);
+	const GPUPipeline* pipeline = myPipeline.Get<const GPUPipeline>();
 	size_t descriptorCount = pipeline->GetDescriptorCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{
@@ -80,4 +80,7 @@ void VisualObject::UpdateDescriptors(const Resource* aPipelineRes)
 			UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
 		);
 	}
+
+	myIsResolved = true;
+	return myIsResolved;
 }

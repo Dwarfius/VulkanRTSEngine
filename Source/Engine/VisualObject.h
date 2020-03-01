@@ -22,7 +22,7 @@ public:
 	};
 
 public:
-	VisualObject(GameObject& aGO);
+	VisualObject(const GameObject& aGO);
 
 	void SetModel(Handle<Model> aModel);
 	Handle<GPUResource> GetModel() const { return myModel; }
@@ -36,6 +36,8 @@ public:
 	// Returns true if object can be used for rendering 
 	// (all resources have finished loading)
 	bool IsValid() const;
+	// Returns true if some dependencies need to be resolved
+	bool IsResolved() const { return myIsResolved; }
 
 	glm::vec3 GetCenter() const;
 	float GetRadius() const;
@@ -50,6 +52,8 @@ public:
 	void SetCategory(Category aCategory) { myCategory = aCategory; }
 	Category GetCategory() const { return myCategory; }
 
+	bool Resolve();
+
 private:
 	Transform myTransf;
 	Handle<GPUResource> myModel;
@@ -61,10 +65,7 @@ private:
 	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
 	// TODO: move this to pipeline itself
 	std::vector<std::shared_ptr<UniformAdapter>> myAdapters;
-	GameObject& myGameObject;
+	const GameObject& myGameObject;
 	Category myCategory;
-
-	// TODO: get rid of this by sourcing the resources
-	// either on pipeline or elsewhere
-	void UpdateDescriptors(const Resource* aPipelineRes);
+	bool myIsResolved;
 };

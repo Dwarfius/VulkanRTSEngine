@@ -35,3 +35,25 @@ void UniformBlock::SetUniform(uint32_t aSlot, const T& aValue)
 	T* slotPointer = (T*)(myData + myDescriptor.GetOffset(aSlot));
 	*slotPointer = aValue;
 }
+
+// A traits class to enable building different Pools for
+// UniformBlock storage
+class UniformBlockPoolTraits
+{
+public:
+	UniformBlockPoolTraits(const Descriptor& aDescriptor);
+
+	// ===============================
+	// Traits type conformance
+	using Element = char;
+	// Get size, in bytes, of a single element
+	size_t GetSize() const;
+	// Get new allocation size, in elements, based on previous count
+	size_t GetNextCount(size_t aOldCount) const { return aOldCount * 2; }
+	// Gets the initial number of elements
+	size_t GetInitialCount() const { return 40; }
+	// ===============================
+
+private:
+	Descriptor myDescriptor;
+};

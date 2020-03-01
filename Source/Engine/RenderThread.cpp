@@ -58,10 +58,18 @@ GLFWwindow* RenderThread::GetWindow() const
 	return myGraphics->GetWindow();
 }
 
-void RenderThread::AddRenderable(const VisualObject* aVO)
+void RenderThread::AddRenderable(VisualObject* aVO)
 {
-	std::vector<const VisualObject*>& buffer = myTrippleRenderables.GetWrite();
-	buffer.push_back(aVO);
+	// TODO: [[likely]]
+	if (!aVO->IsResolved())
+	{
+		myResolveQueue.push_back(aVO);
+	}
+	else
+	{
+		std::vector<const VisualObject*>& buffer = myRenderables.GetWrite();
+		buffer.push_back(aVO);
+	}
 }
 
 void RenderThread::AddDebugRenderable(const DebugDrawer* aDebugDrawer)
@@ -120,17 +128,26 @@ void RenderThread::SubmitRenderables()
 	// the current render queue has been used up, we can fill it up again
 	myGraphics->BeginGather();
 
+	// try to resolve all the pending VisualObjects
+	for (VisualObject* vo : myResolveQueue)
+	{
+		if (vo->Resolve())
+		{
+			myRenderables.GetWrite().push_back(vo);
+		}
+	}
+
 	// processing our renderables
-	myTrippleRenderables.Advance();
-	const std::vector<const VisualObject*>& myRenderables = myTrippleRenderables.GetRead();
-	myTrippleRenderables.GetWrite().clear();
+	myRenderables.Advance();
+	const std::vector<const VisualObject*>& currRenderables = myRenderables.GetRead();
+	myRenderables.GetWrite().clear();
 
 	// TODO: this is most probably overkill considering that Render call is lightweight
 	// need to look into batching those
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
 		[&](const VisualObject* aVO)*/
-	for(const VisualObject* aVO : myRenderables)
+	for(const VisualObject* aVO : currRenderables)
 	{
 		if (cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
 		{

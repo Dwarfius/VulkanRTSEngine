@@ -1,8 +1,8 @@
 {  
 	"type":0,
 	"shaders":[
-		"../assets/GLShaders/debug.vert",
-		"../assets/GLShaders/debug.frag"
+		"debug.vert",
+		"debug.frag"
 	],
 	"descriptors":[]
 }

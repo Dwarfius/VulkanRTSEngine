@@ -2,6 +2,7 @@
 
 class PhysicsWorld;
 class GameObject;
+class PhysicsShapeBase;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -9,11 +10,11 @@ class EditorMode
 public:
 	EditorMode(PhysicsWorld& aWorld);
 
-	void Update(float aDeltaTime, const PhysicsWorld& aWorld);
+	void Update(float aDeltaTime, PhysicsWorld& aWorld);
 
 private:
 	const float myMouseSensitivity;
 	float myFlightSpeed;
 
-	GameObject* myBall;
+	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 };

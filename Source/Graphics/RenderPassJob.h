@@ -92,26 +92,17 @@ public:
 	// reclaim memory, if possible
 	virtual operator std::vector<RenderJob>() && = 0;
 
-	void Execute()
-	{
-		if (HasWork())
-		{
-			SetupContext(myContext);
-			RunJobs();
-		}
-	}
+	void Execute();
 
-	void Initialize(const RenderContext& aContext)
-	{
-		myContext = aContext;
-		OnInitialize(myContext);
-	}
+	void Initialize(const RenderContext& aContext);
 
 private:
 	// returns whether there's any work in this job
 	virtual bool HasWork() const = 0;
 	// called immediatelly after creating a job
 	virtual void OnInitialize(const RenderContext& aContext) = 0;
+	// called if context requests clearing
+	virtual void Clear(const RenderContext& aContext) = 0;
 	// called just before executing the jobs
 	virtual void SetupContext(const RenderContext& aContext) = 0;
 	// called last to submit render jobs

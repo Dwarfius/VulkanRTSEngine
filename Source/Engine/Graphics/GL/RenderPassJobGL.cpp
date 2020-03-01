@@ -32,6 +32,29 @@ void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 	// do nothing explicitly
 }
 
+void RenderPassJobGL::Clear(const RenderContext& aContext)
+{
+	uint32_t clearMask = 0;
+	if (aContext.myShouldClearColor)
+	{
+		clearMask |= GL_COLOR_BUFFER_BIT;
+		glClearColor(aContext.myClearColor[0],
+			aContext.myClearColor[1],
+			aContext.myClearColor[2],
+			aContext.myClearColor[3]);
+	}
+	if (aContext.myShouldClearDepth)
+	{
+		clearMask |= GL_DEPTH_BUFFER_BIT;
+		glClearDepth(aContext.myClearDepth);
+	}
+
+	if (clearMask)
+	{
+		glClear(clearMask);
+	}
+}
+
 void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 {
 	myCurrentPipeline = nullptr;
@@ -122,26 +145,6 @@ void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 	case RenderContext::PolygonMode::Line:	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); break;
 	case RenderContext::PolygonMode::Fill:	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); break;
 	default: ASSERT_STR(false, "Unrecognized polygon mode!");
-	}
-
-	uint32_t clearMask = 0;
-	if (aContext.myShouldClearColor)
-	{
-		clearMask |= GL_COLOR_BUFFER_BIT;
-		glClearColor(aContext.myClearColor[0],
-			aContext.myClearColor[1],
-			aContext.myClearColor[2],
-			aContext.myClearColor[3]);
-	}
-	if (aContext.myShouldClearDepth)
-	{
-		clearMask |= GL_DEPTH_BUFFER_BIT;
-		glClearDepth(aContext.myClearDepth);
-	}
-
-	if (clearMask)
-	{
-		glClear(clearMask);
 	}
 }
 

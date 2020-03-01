@@ -2,8 +2,12 @@
 #include "PipelineGL.h"
 
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Graphics.h>
+#include <Graphics/AssetTracker.h>
+
 #include "ShaderGL.h"
 #include "UniformBufferGL.h"
+
 
 PipelineGL::PipelineGL()
 	: myGLProgram(0)
@@ -48,6 +52,14 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor.GetBlockSize());
 		ubo->Create(aGraphics, nullptr);
 		myBuffers.push_back(ubo);
+	}
+
+	size_t shaderCount = pipeline->GetShaderCount();
+	for (size_t i = 0; i < shaderCount; i++)
+	{
+		const std::string& shaderName = "GL/" + pipeline->GetShader(i);
+		Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
+		myDependencies.push_back(aGraphics.GetOrCreate(shader));
 	}
 }
 

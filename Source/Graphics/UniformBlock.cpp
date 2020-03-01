@@ -1,8 +1,6 @@
 #include "Precomp.h"
 #include "UniformBlock.h"
 
-#include "Descriptor.h"
-
 UniformBlock::UniformBlock(const Descriptor& aDescriptor)
 	: myData(nullptr)
 	, myDescriptor(aDescriptor)
@@ -21,3 +19,14 @@ size_t UniformBlock::GetSize() const
 {
 	return myDescriptor.GetBlockSize();
 }
+
+UniformBlockPoolTraits::UniformBlockPoolTraits(const Descriptor& aDescriptor)
+	: myDescriptor(aDescriptor)
+{
+}
+
+size_t UniformBlockPoolTraits::GetSize() const
+{
+	return myDescriptor.GetBlockSize();
+}
+

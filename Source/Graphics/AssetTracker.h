@@ -41,7 +41,7 @@ public:
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
 	template<class TAsset>
-	Handle<TAsset> GetOrCreate(std::string aPath);
+	Handle<TAsset> GetOrCreate(const std::string& aPath);
 
 private:
 	// Utility method to clean-up the resource from registry and asset collections
@@ -69,16 +69,17 @@ void AssetTracker::SaveAndTrack(
 }
 
 template<class TAsset>
-Handle<TAsset> AssetTracker::GetOrCreate(std::string aPath)
+Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 {
 	static_assert(std::is_base_of_v<Resource, TAsset>, "Asset tracker cannot track this type!");
 
 	// first gotta check if we have it in the registry
+	std::string path = TAsset::kDir.CStr() + aPath;
 	bool needsCreating = false;
 	Resource::Id resourceId = Resource::InvalidId;
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-		std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(aPath);
+		std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(path);
 		if (pair != myRegister.end())
 		{
 			resourceId = pair->second;
@@ -88,13 +89,13 @@ Handle<TAsset> AssetTracker::GetOrCreate(std::string aPath)
 			// we don't have one, so register one
 			needsCreating = true;
 			resourceId = ++myCounter;
-			myRegister[aPath] = resourceId;
+			myRegister[path] = resourceId;
 		}
 	}
 
 	if (needsCreating)
 	{
-		TAsset* asset = new TAsset(resourceId, aPath);
+		TAsset* asset = new TAsset(resourceId, path);
 
 		// safely add it to the tracked assets
 		{

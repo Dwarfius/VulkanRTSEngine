@@ -1,12 +1,10 @@
 #pragma once
 
 #include <Core/Vertex.h>
-#include "Descriptor.h"
 #include "UniformBlock.h"
 #include "RenderPass.h"
 #include "Resource.h" // needed for Resource::Id
 
-class VisualObject;
 struct GLFWwindow;
 class Camera;
 class Terrain;
@@ -59,6 +57,8 @@ public:
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
+
+	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 
 protected:
 	static int ourWidth, ourHeight;

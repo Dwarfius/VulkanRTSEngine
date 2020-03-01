@@ -61,12 +61,6 @@ void GPUResource::Unload()
 
 bool GPUResource::AreDependenciesValid() const
 {
-	if (myResHandle.IsValid() && myResHandle->GetState() != Resource::State::Ready)
-	{
-		// if we have a resource, then it must finish loading, 
-		// or we can't upload from it
-		return false;
-	}
 	// Not thread safe, but worst case scenario is
 	// it's going to be 1 frame delayed result
 	for (Handle<GPUResource> dependency : myDependencies)
@@ -84,7 +78,14 @@ void GPUResource::SetErrMsg(std::string&& anErrString)
 	myState = State::Error;
 #ifdef _DEBUG
 	myErrorMsg = std::move(anErrString);
-	printf("[Error] %s\n", myErrorMsg.c_str());
+	if (myResHandle.IsValid())
+	{
+		printf("[Error] %s: %s\n", myResHandle->GetPath().c_str(), myErrorMsg.c_str());
+	}
+	else
+	{
+		printf("[Error] %s\n", myErrorMsg.c_str());
+	}
 #endif
 }
 

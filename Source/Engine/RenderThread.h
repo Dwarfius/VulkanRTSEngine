@@ -23,7 +23,7 @@ public:
 	Graphics* GetGraphics() { return myGraphics.get(); }
 	const Graphics* GetGraphics() const { return myGraphics.get(); }
 
-	void AddRenderable(const VisualObject* aVO);
+	void AddRenderable(VisualObject* aVO);
 	// TODO: this is not threadsafe!
 	void AddDebugRenderable(const DebugDrawer* aDebugDrawer);
 
@@ -33,7 +33,8 @@ private:
 	std::unique_ptr<Graphics> myGraphics;
 	bool myIsUsingVulkan;
 
-	RWBuffer<std::vector<const VisualObject*>, 2> myTrippleRenderables;
+	std::vector<VisualObject*> myResolveQueue;
+	RWBuffer<std::vector<const VisualObject*>, 2> myRenderables;
 	RWBuffer<std::vector<const DebugDrawer*>, 2> myDebugDrawers;
 
 	std::atomic<bool> myNeedsSwitch;

@@ -19,6 +19,8 @@ private:
 	bool HasWork() const override final;
 	// called immediatelly after creating a job
 	void OnInitialize(const RenderContext& aContext) override final;
+	// called if context requests clearing
+	void Clear(const RenderContext& aContext) override final;
 	// called just before executing the jobs
 	void SetupContext(const RenderContext& aContext) override final;
 	// called last to submit render jobs

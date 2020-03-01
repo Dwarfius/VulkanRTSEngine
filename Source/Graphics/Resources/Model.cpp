@@ -32,7 +32,7 @@ Model::Model(PrimitiveType aPrimitiveType, int aVertexType)
 }
 
 Model::Model(Resource::Id anId, const std::string& aPath)
-	: Resource(anId, kDir.CStr() + aPath)
+	: Resource(anId, aPath)
 	, myAABBMin(std::numeric_limits<float>::max())
 	, myAABBMax(std::numeric_limits<float>::min())
 	, myCenter(0.f)
@@ -169,7 +169,7 @@ void Model::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 			}
 
 			// reusing the vertex
-			myIndices[indexCount] = iter->second;
+			myIndices[indexCount++] = iter->second;
 		}
 	}
 

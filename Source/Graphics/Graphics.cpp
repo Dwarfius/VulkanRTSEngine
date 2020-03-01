@@ -128,6 +128,7 @@ void Graphics::ProcessGPUQueues()
 	// TODO: overwrite implementation for Vulkan to allow for parallel
 	// generation/processing
 	Handle<GPUResource> aResourceHandle;
+	std::queue<Handle<GPUResource>> delayQueue;
 	while(myCreateQueue.try_pop(aResourceHandle))
 	{
 		if (aResourceHandle.IsLastHandle())
@@ -136,10 +137,23 @@ void Graphics::ProcessGPUQueues()
 			// it will automatically get added to the unload queue
 			continue;
 		}
+		if (aResourceHandle->GetResource().IsValid()
+			&& aResourceHandle->GetResource()->GetState() != Resource::State::Ready)
+		{
+			// we want to guarantee that the source resource has finished
+			// loading up to enable correct setup of gpu resource
+			delayQueue.push(aResourceHandle);
+			continue;
+		}
 		aResourceHandle->TriggerCreate();
 	}
+	// reschedule delayed resources from this frame for next
+	while (!delayQueue.empty())
+	{
+		myCreateQueue.push(delayQueue.front());
+		delayQueue.pop();
+	}
 
-	std::queue<Handle<GPUResource>> delayQueue;
 	while (myUploadQueue.try_pop(aResourceHandle))
 	{
 		if (aResourceHandle.IsLastHandle())

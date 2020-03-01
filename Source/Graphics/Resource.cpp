@@ -4,7 +4,8 @@
 
 Resource::Resource()
 	: myId(InvalidId)
-	, myState(State::Uninitialized)
+	, myState(State::Ready) // dynamic resources should be fully 
+							// initialized before use!
 {
 }
 

@@ -28,12 +28,10 @@ void TerrainRenderPass::PrepareContext(RenderContext& aContext) const
 	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
 
-	aContext.myTexturesToActivate[0] = 0;
+	//aContext.myShouldClearColor = true;
+	//aContext.myShouldClearDepth = true;
 
-	// TESTING TERRAIN TESSELATION
-	aContext.myShouldClearColor = true;
-	aContext.myShouldClearDepth = true;
-	// ===================
+	aContext.myTexturesToActivate[0] = 0;
 
 	aContext.myPolygonMode = Graphics::ourUseWireframe ? 
 		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;

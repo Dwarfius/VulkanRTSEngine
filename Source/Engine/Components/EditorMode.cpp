@@ -21,36 +21,10 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	: myMouseSensitivity(0.1f)
 	, myFlightSpeed(2.f)
 {
-	std::shared_ptr<PhysicsShapeBase> sphereShape = std::make_shared<PhysicsShapeSphere>(1.f);
-	std::shared_ptr<PhysicsShapeBox> boxShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
-
-	// Physics test
-	// a sphere with no visual object (don't have a mesh atm)
-	/*GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0, 5, 0));
-	{
-		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-		physComp->CreatePhysicsEntity(1, sphereShape);
-		physComp->RequestAddToWorld(aWorld);
-	}
-	myBall = go;
-
-	// a cube with a visual object
-	go = Game::GetInstance()->Instantiate(glm::vec3(2, 5, 0));
-	{
-		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-		physComp->CreatePhysicsEntity(1, boxShape);
-		physComp->RequestAddToWorld(aWorld);
-
-		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
-		VisualObject* vo = new VisualObject(*go);
-		vo->SetModel(assetTracker.GetOrCreate<Model>("cube.obj"));
-		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
-		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
-		go->SetVisualObject(vo);
-	}*/
+	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 }
 
-void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld)
+void EditorMode::Update(float aDeltaTime, PhysicsWorld& aWorld)
 {
 	// FPS camera implementation
 	Camera* cam = Game::GetInstance()->GetCamera();
@@ -126,14 +100,20 @@ void EditorMode::Update(float aDeltaTime, const PhysicsWorld& aWorld)
 		}
 	}
 
-	// Because the ball doesn't have a visual object attached,
-	// have to draw out something in order to verify it's where
-	// it should be
-	/*pos = myBall->GetTransform().GetPos();
-	right = myBall->GetTransform().GetRight();
-	up = myBall->GetTransform().GetUp();
-	forward = myBall->GetTransform().GetForward();
-	Game::GetInstance()->GetDebugDrawer().AddLine(pos - right, pos + right, glm::vec3(1, 0, 0));
-	Game::GetInstance()->GetDebugDrawer().AddLine(pos - up, pos + up, glm::vec3(1, 0, 0));
-	Game::GetInstance()->GetDebugDrawer().AddLine(pos - forward, pos + forward, glm::vec3(1, 0, 0));*/
+	if (Input::GetMouseBtnPressed(1))
+	{
+		GameObject* go = Game::GetInstance()->Instantiate(camTransf.GetPos());
+		{
+			/*PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
+			physComp->CreatePhysicsEntity(1, myPhysShape);
+			physComp->RequestAddToWorld(aWorld);*/
+
+			AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
+			VisualObject* vo = new VisualObject(*go);
+			vo->SetModel(assetTracker.GetOrCreate<Model>("cube.obj"));
+			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
+			vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
+			go->SetVisualObject(vo);
+		}
+	}
 }

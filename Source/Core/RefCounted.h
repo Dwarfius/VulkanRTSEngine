@@ -17,6 +17,7 @@ class RefCounted
 {
 public:
 	RefCounted();
+	virtual ~RefCounted() {}
 
 private:
 	// ==========================

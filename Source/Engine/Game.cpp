@@ -294,7 +294,8 @@ void Game::Update()
 		return;
 	}
 
-	// TODO: at the moment all gameobjects don't have cross-synchronization, so will need to fix this up
+	// TODO: get rid of this and switch to ECS style synchronization via task
+	// dependency management
 	for (const std::pair<UID, GameObject*>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
@@ -318,7 +319,7 @@ void Game::Render()
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
 	for (const std::pair<UID, GameObject*>& elem : myGameObjects)
 	{
-		const VisualObject* visObj = elem.second->GetVisualObject();
+		VisualObject* visObj = elem.second->GetVisualObject();
 		if (visObj && visObj->IsValid())
 		{
 			myRenderThread->AddRenderable(visObj);

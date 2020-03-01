@@ -111,18 +111,26 @@ bool ModelGL::OnUpload(Graphics& aGraphics)
 
 	// first need to count how many vertices and indices are there in total
 	// and adjust internal buffers if there aren't enough
-	char vertsPerPrim = 0;
+	char elemPerPrim = 0;
 	switch (model->GetPrimitiveType())
 	{
-	case PrimitiveType::Lines:		vertsPerPrim = 2; break;
-	case PrimitiveType::Triangles:	vertsPerPrim = 3; break;
+	case PrimitiveType::Lines:		elemPerPrim = 2; break;
+	case PrimitiveType::Triangles:	elemPerPrim = 3; break;
 	default: ASSERT(false);
 	}
-	const size_t newPrimCount = model->GetVertexCount() / vertsPerPrim;
 	const size_t vertCount = model->GetVertexCount();
 	const size_t indexCount = model->GetIndexCount();
+	size_t newPrimCount;
+	if (myIsIndexed)
+	{
+		newPrimCount = indexCount;
+	}
+	else
+	{
+		newPrimCount = vertCount / elemPerPrim;
+	}
 
-	ASSERT_STR((indexCount != 0 && myEBO) || (indexCount == 0 && !myEBO), 
+	ASSERT_STR((indexCount && myEBO) || (!indexCount && !myEBO), 
 		"Didn't have indices for an index buffer!");
 
 	// Maybe the model has been dynamically modified - might need to grow.

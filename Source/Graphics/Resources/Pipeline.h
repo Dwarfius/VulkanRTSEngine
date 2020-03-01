@@ -18,20 +18,19 @@ public:
 	Resource::Type GetResType() const override { return Resource::Type::Pipeline; }
 
 	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
-	const Descriptor& GetDescriptor(size_t anIndex) const { return myDescriptors[anIndex]; }
+	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
 
-	// takes ownership of the shader
-	void AddShader(Handle<Shader> aShader);
+	void AddShader(const std::string& aShader);
 
 	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(std::move(aDescriptor)); }
 
 	size_t GetShaderCount() const { return myShaders.size(); }
-	Handle<Shader> GetShader(size_t anInd) const { return myShaders[anInd]; }
+	std::string GetShader(size_t anInd) const { return myShaders[anInd]; }
 
 private:
 	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
 
 	IPipeline::Type myType;
 	std::vector<Descriptor> myDescriptors;
-	std::vector<Handle<Shader>> myShaders;
+	std::vector<std::string> myShaders;
 };

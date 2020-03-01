@@ -16,7 +16,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 
 void main() 
 {
-    gl_Position = mvp * vec4(position, 1.0);
+    gl_Position = MVP * vec4(position, 1.0);
     normalOut = normalize(Model * vec4(normal,0)).xyz;
     uvsOut = uvs;
 }

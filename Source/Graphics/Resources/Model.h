@@ -160,8 +160,12 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 		currDesc != nullptr;
 		currDesc = currDesc->myNextDesc)
 	{
+		if (currDesc->myVertCount == 0)
+		{
+			continue;
+		}
+
 		size_t currVertCount = currDesc->myVertCount;
-		ASSERT_STR(currVertCount > 0, "Missing additional vertices for a model!");
 		std::memcpy(vertBuffer + vertOffset, currDesc->myVertices, currVertCount * sizeof(T));
 		vertOffset += currVertCount;
 
@@ -173,6 +177,4 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 			indOffset += currIndCount;
 		}
 	}
-
-	SetReady();
 }

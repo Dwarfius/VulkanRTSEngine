@@ -1,5 +1,7 @@
 #pragma once
 
+class Descriptor;
+
 class IPipeline
 {
 public:
@@ -10,4 +12,5 @@ public:
 	};
 
 	virtual size_t GetDescriptorCount() const = 0;
+	virtual const Descriptor& GetDescriptor(size_t) const = 0;
 };
