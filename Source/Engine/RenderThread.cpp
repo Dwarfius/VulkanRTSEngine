@@ -63,7 +63,7 @@ void RenderThread::AddRenderable(VisualObject* aVO)
 	// TODO: [[likely]]
 	if (!aVO->IsResolved())
 	{
-		myResolveQueue.push_back(aVO);
+		myResolveQueue.emplace(aVO);
 	}
 	else
 	{
@@ -128,12 +128,27 @@ void RenderThread::SubmitRenderables()
 	// the current render queue has been used up, we can fill it up again
 	myGraphics->BeginGather();
 
-	// try to resolve all the pending VisualObjects
-	for (VisualObject* vo : myResolveQueue)
 	{
-		if (vo->Resolve())
+		std::queue<VisualObject*> delayQueue;
+		// try to resolve all the pending VisualObjects
+		while (!myResolveQueue.empty())
 		{
-			myRenderables.GetWrite().push_back(vo);
+			VisualObject* vo = myResolveQueue.front();
+			myResolveQueue.pop();
+			if (vo->Resolve())
+			{
+				myRenderables.GetWrite().push_back(vo);
+			}
+			else
+			{
+				delayQueue.emplace(vo);
+			}
+		}
+
+		while (!delayQueue.empty())
+		{
+			myResolveQueue.emplace(delayQueue.front());
+			delayQueue.pop();
 		}
 	}
 

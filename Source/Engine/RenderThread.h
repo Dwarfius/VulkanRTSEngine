@@ -33,7 +33,7 @@ private:
 	std::unique_ptr<Graphics> myGraphics;
 	bool myIsUsingVulkan;
 
-	std::vector<VisualObject*> myResolveQueue;
+	std::queue<VisualObject*> myResolveQueue;
 	RWBuffer<std::vector<const VisualObject*>, 2> myRenderables;
 	RWBuffer<std::vector<const DebugDrawer*>, 2> myDebugDrawers;
 
