@@ -75,7 +75,6 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 
 	// first gotta check if we have it in the registry
 	std::string path = TAsset::kDir.CStr() + aPath;
-	bool needsCreating = false;
 	Resource::Id resourceId = Resource::InvalidId;
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
@@ -87,38 +86,35 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 		else
 		{
 			// we don't have one, so register one
-			needsCreating = true;
 			resourceId = ++myCounter;
 			myRegister[path] = resourceId;
 		}
 	}
 
-	if (needsCreating)
-	{
-		TAsset* asset = new TAsset(resourceId, path);
-
-		// safely add it to the tracked assets
-		{
-			tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-			myAssets[resourceId] = asset;
-		}
-
-		// set up the onDestroy callback, so that we can clean up 
-		// the registry and assets containters when it gets removed
-		asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
-
-		// adding it to the queue of loading, since we know that it'll be loaded from file
-		Handle<TAsset> assetHandle = Handle<TAsset>(asset);
-		LoadTask* loadTask = new (tbb::task::allocate_root()) LoadTask(*this, assetHandle);
-		tbb::task::enqueue(*loadTask);
-
-		return assetHandle;
-	}
-	else
+	TAsset* asset;
 	{
 		// now that we have an id, we can find it
 		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
 		AssetIter pair = myAssets.find(resourceId);
-		return Handle<TAsset>(pair->second);
+		if (pair != myAssets.end())
+		{
+			return Handle<TAsset>(pair->second);
+		}
+		else
+		{
+			asset = new TAsset(resourceId, path);
+			myAssets[resourceId] = asset;
+		}
 	}
+
+	// set up the onDestroy callback, so that we can clean up 
+	// the registry and assets containters when it gets removed
+	asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
+
+	// adding it to the queue of loading, since we know that it'll be loaded from file
+	Handle<TAsset> assetHandle = Handle<TAsset>(asset);
+	LoadTask* loadTask = new (tbb::task::allocate_root()) LoadTask(*this, assetHandle);
+	tbb::task::enqueue(*loadTask);
+
+	return assetHandle;
 }

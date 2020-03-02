@@ -27,12 +27,6 @@ void AssetTracker::RemoveResource(const Resource* aRes)
 {
 	const std::string& path = aRes->GetPath();
 
-	if(path.length())
-	{
-		tbb::spin_mutex::scoped_lock registerLock(myRegisterMutex);
-		myRegister.erase(path);
-	}
-
 	{
 		tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
 		myAssets.erase(aRes->GetId());
