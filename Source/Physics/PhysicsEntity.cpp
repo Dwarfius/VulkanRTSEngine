@@ -13,24 +13,31 @@ namespace
 	{
 	private:
 		IPhysControllable* myEntity;
+		glm::vec3 myOrigin;
 
 	public:
-		EntityMotionState(IPhysControllable* anEntity)
+		EntityMotionState(IPhysControllable* anEntity, const glm::vec3& anOrigin)
 			: myEntity(anEntity)
+			, myOrigin(anOrigin)
 		{
 		}
 
 		virtual void setWorldTransform(const btTransform& centerOfMassWorldTrans) override final
 		{
-			myEntity->SetTransform(Utils::ConvertToGLM(centerOfMassWorldTrans));
+			glm::mat4 transf = Utils::ConvertToGLM(centerOfMassWorldTrans);
+			transf = glm::translate(transf, -myOrigin);
+			myEntity->SetTransform(transf);
 		}
 
 		virtual void getWorldTransform(btTransform& centerOfMassWorldTrans) const override final
 		{
 			glm::mat4 transf;
 			myEntity->GetTransform(transf);
+			transf = glm::translate(transf, myOrigin);
 			centerOfMassWorldTrans = Utils::ConvertToBullet(transf);
 		}
+
+
 	};
 }
 
@@ -64,7 +71,7 @@ PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aSha
 	myBody->setUserPointer(this);
 }
 
-PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity)
+PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity, const glm::vec3& anOrigin)
 	: myShape(aShape)
 	, myIsStatic(aMass == 0)
 	, myIsSleeping(false)
@@ -77,7 +84,7 @@ PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aSha
 	btCollisionShape* shape = myShape->GetShape();
 	if (!myIsStatic)
 	{
-		EntityMotionState* motionState = new EntityMotionState(&anEntity);
+		EntityMotionState* motionState = new EntityMotionState(&anEntity, anOrigin);
 		btVector3 localInertia(0, 0, 0);
 		shape->calculateLocalInertia(aMass, localInertia);
 		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, shape, localInertia);
@@ -87,6 +94,7 @@ PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aSha
 	{
 		glm::mat4 transf;
 		anEntity.GetTransform(transf);
+		transf = glm::translate(transf, anOrigin);
 		myBody = new btCollisionObject();
 		myBody->setWorldTransform(Utils::ConvertToBullet(transf));
 		myBody->setCollisionShape(shape);

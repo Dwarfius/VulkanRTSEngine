@@ -43,6 +43,9 @@ public:
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(const std::string& aPath);
 
+	template<class TAsset>
+	Handle<TAsset> GetOrCreate(const std::string& aPath, const Resource::Callback& aCallback);
+
 private:
 	// Utility method to clean-up the resource from registry and asset collections
 	// Doesn't delete the actual resource - it's Handle's responsibility
@@ -106,6 +109,61 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 			myAssets[resourceId] = asset;
 		}
 	}
+
+	// set up the onDestroy callback, so that we can clean up 
+	// the registry and assets containters when it gets removed
+	asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
+
+	// adding it to the queue of loading, since we know that it'll be loaded from file
+	Handle<TAsset> assetHandle = Handle<TAsset>(asset);
+	LoadTask* loadTask = new (tbb::task::allocate_root()) LoadTask(*this, assetHandle);
+	tbb::task::enqueue(*loadTask);
+
+	return assetHandle;
+}
+
+template<class TAsset>
+Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath, const Resource::Callback& aCallback)
+{
+	static_assert(std::is_base_of_v<Resource, TAsset>, "Asset tracker cannot track this type!");
+
+	// first gotta check if we have it in the registry
+	std::string path = TAsset::kDir.CStr() + aPath;
+	Resource::Id resourceId = Resource::InvalidId;
+	{
+		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
+		std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(path);
+		if (pair != myRegister.end())
+		{
+			resourceId = pair->second;
+		}
+		else
+		{
+			// we don't have one, so register one
+			resourceId = ++myCounter;
+			myRegister[path] = resourceId;
+		}
+	}
+
+	TAsset* asset;
+	{
+		// now that we have an id, we can find it
+		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
+		AssetIter pair = myAssets.find(resourceId);
+		if (pair != myAssets.end())
+		{
+			aCallback(pair->second);
+			return Handle<TAsset>(pair->second);
+		}
+		else
+		{
+			asset = new TAsset(resourceId, path);
+			myAssets[resourceId] = asset;
+		}
+	}
+
+	// a onLoad callback has been passed it, so schedule it
+	asset->ExecLambdaOnLoad(aCallback);
 
 	// set up the onDestroy callback, so that we can clean up 
 	// the registry and assets containters when it gets removed

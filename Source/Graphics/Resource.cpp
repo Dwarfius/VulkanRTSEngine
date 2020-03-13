@@ -27,7 +27,7 @@ Resource::~Resource()
 	}
 }
 
-void Resource::ExecLambdaOnLoad(Callback aOnLoadCB)
+void Resource::ExecLambdaOnLoad(const Callback& aOnLoadCB)
 {
 	// we rely on the fact that we lock on state = Status::Ready
 	// before executing the callbacks once OnLoad finishes, so

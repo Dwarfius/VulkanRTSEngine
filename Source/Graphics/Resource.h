@@ -9,10 +9,9 @@ class File;
 // Base class for resources. Disables copying. All resources must be loaded from disk.
 class Resource : public RefCounted
 {
-	using Callback = std::function<void(const Resource*)>;
-
 public:
 	using Id = uint32_t;
+	using Callback = std::function<void(const Resource*)>;
 
 	constexpr static Id InvalidId = 0;
 	constexpr static StaticString AssetsFolder = "../assets/";
@@ -56,9 +55,9 @@ public:
 
 	// TODO: add DebugAsserts for scheduling callbacks during AssetTracker::Process time
 	// Sets the callback to call when the object finishes loading from disk
-	void ExecLambdaOnLoad(Callback aOnLoadCB);
+	void ExecLambdaOnLoad(const Callback& aOnLoadCB);
 	// Sets the callback to call when the object gets destroyed
-	void AddOnDestroyCB(Callback aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
+	void AddOnDestroyCB(const Callback& aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
 protected:
 	void SetReady();

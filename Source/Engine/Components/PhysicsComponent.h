@@ -16,6 +16,8 @@ public:
 	bool IsInitialized() const { return myEntity != nullptr; }
 	PhysicsEntity& GetPhysicsEntity() const { return *myEntity; }
 
+	void SetOrigin(const glm::vec3& anOrigin) { myOrigin = anOrigin; }
+
 	// A mass of 0 denotes a static phys entity!
 	void CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape);
 	void DeletePhysicsEntity();
@@ -26,4 +28,5 @@ public:
 private:
 	// we own a phys entity, until we don't - see dtor
 	PhysicsEntity* myEntity;
+	glm::vec3 myOrigin;
 };

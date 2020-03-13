@@ -38,8 +38,9 @@ public:
 	};
 	// Creates an entity that is not linked to any game object, and has it's own transform
 	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
-	// Creates an entity that is linked to a game object, and synchronises the transform with it
-	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity);
+	// Creates an entity that is linked to a game object, 
+	// and synchronises the transform with it, with respect to the origin point
+	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity, const glm::vec3& anOrigin);
 	~PhysicsEntity();
 
 	PhysicsEntity& operator=(const PhysicsEntity&) = delete;

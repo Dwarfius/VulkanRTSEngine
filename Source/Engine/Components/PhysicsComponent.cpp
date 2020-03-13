@@ -9,6 +9,7 @@
 
 PhysicsComponent::PhysicsComponent()
 	: myEntity(nullptr)
+	, myOrigin(0, 0, 0)
 {
 }
 
@@ -23,7 +24,7 @@ PhysicsComponent::~PhysicsComponent()
 void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape)
 {
 	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
-	myEntity = new PhysicsEntity(aMass, aShape, *myOwner);
+	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, myOrigin);
 }
 
 void PhysicsComponent::DeletePhysicsEntity()

@@ -66,8 +66,8 @@ Game::Game(ReportError aReporterFunc)
 	UniformAdapterRegister::GetInstance();
 
 	{
-		constexpr float kTerrSize = 18000;
-		constexpr float kResolution = 928;
+		constexpr float kTerrSize = 18000; // meters
+		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		constexpr StaticString kFullPath = Texture::kDir + kHeightmapName;
 		terr->Load(myAssetTracker, kFullPath.CStr(), kTerrSize / kResolution, 1000.f, 1.f);
@@ -133,7 +133,10 @@ void Game::Init()
 
 	PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 	physComp->CreatePhysicsEntity(0, myTerrains[0]->CreatePhysicsShape());
-	physComp->GetPhysicsEntity().SetCollisionFlags(physComp->GetPhysicsEntity().GetCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+	physComp->GetPhysicsEntity().SetCollisionFlags(
+		physComp->GetPhysicsEntity().GetCollisionFlags() 
+		| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
+	);
 	physComp->RequestAddToWorld(*myPhysWorld);
 
 	myEditorMode = new EditorMode(*myPhysWorld);
