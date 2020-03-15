@@ -17,7 +17,7 @@ public:
 	}
 
 private:
-	static std::mt19937 ourRandomGen;
+	static thread_local std::mt19937 ourRandomGen;
 	static size_t ourThisPCMac;
 	static bool ourIsInitialized;
 

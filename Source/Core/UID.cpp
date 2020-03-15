@@ -6,15 +6,21 @@
 #include <iphlpapi.h>
 #endif
 
-std::mt19937 UID::ourRandomGen;
+thread_local std::mt19937 UID::ourRandomGen = []() { 
+	// initialize with new thread's id hash
+	std::hash<std::thread::id> hasher;
+	size_t thisThreadHash = hasher(std::this_thread::get_id());
+	// because mersene twister uses 32bit seed, 
+	// we need to compress/collapse the hash
+	uint32_t seed = static_cast<uint32_t>(thisThreadHash);
+	seed ^= static_cast<uint32_t>(thisThreadHash >> 32);
+	return std::mt19937(seed);
+}();
 size_t UID::ourThisPCMac = 0;
 bool UID::ourIsInitialized = false;
 
 void UID::Init()
 {
-	std::random_device rd;
-	ourRandomGen = std::mt19937(rd());
-
 	// thanks https://oroboro.com/unique-machine-fingerprint/!
 #ifdef _WIN32
 	IP_ADAPTER_INFO adapterInfo[32];
@@ -43,7 +49,6 @@ UID UID::Create()
 	UID newUID;
 	newUID.myMac = ourThisPCMac;
 	newUID.myTime = static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count());
-	// TODO: need to check whether it's thread safe or not
 	newUID.myRndNum = ourRandomGen();
 	return newUID;
 }
