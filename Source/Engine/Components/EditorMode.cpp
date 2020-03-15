@@ -102,22 +102,23 @@ void EditorMode::Update(float aDeltaTime, PhysicsWorld& aWorld)
 
 	if (Input::GetMouseBtnPressed(1))
 	{
-		GameObject* go = Game::GetInstance()->Instantiate(glm::vec3(0));
-		{
-			PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
+		GameObject* go = Game::GetInstance()->Instantiate(pos);
+		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 			
-			AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
-			VisualObject* vo = new VisualObject(*go);
-			Handle<Model> cubeModel = assetTracker.GetOrCreate<Model>("cube.obj", [physComp, this, &aWorld](const Resource* aRes) {
-				const Model* model = static_cast<const Model*>(aRes);
-				physComp->SetOrigin(model->GetCenter());
-				physComp->CreatePhysicsEntity(0, myPhysShape);
-				physComp->RequestAddToWorld(aWorld);
-			});
-			vo->SetModel(cubeModel);
-			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
-			vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
-			go->SetVisualObject(vo);
-		}
+		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
+		VisualObject* vo = new VisualObject(*go);
+
+		Handle<Model> cubeModel = assetTracker.GetOrCreate<Model>("cube.obj");
+		cubeModel->ExecLambdaOnLoad([physComp, this, &aWorld](const Resource* aRes) {
+			const Model* model = static_cast<const Model*>(aRes);
+			physComp->SetOrigin(model->GetCenter());
+			physComp->CreatePhysicsEntity(0, myPhysShape);
+			physComp->RequestAddToWorld(aWorld);
+		});
+
+		vo->SetModel(cubeModel);
+		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
+		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
+		go->SetVisualObject(vo);
 	}
 }

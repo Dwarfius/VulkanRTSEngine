@@ -27,7 +27,6 @@ void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShoul
 	if (myResHandle.IsValid())
 	{
 		myResId = myResHandle->GetId();
-		// TODO: this isn't truly safe, there's a small window of time where a race can happen
 		myResHandle->ExecLambdaOnLoad([=](const Resource* aRes) { UpdateDependencies(aRes); });
 	}
 
