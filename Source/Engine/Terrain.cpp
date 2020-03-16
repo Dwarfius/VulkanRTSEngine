@@ -1,10 +1,11 @@
 #include "Precomp.h"
 #include "Terrain.h"
 
+#include <Core/Algos/DiamondSquareAlgo.h>
+
 #include <Physics/PhysicsShapes.h>
 
 #include <Graphics/Resources/Texture.h>
-#include <Graphics/AssetTracker.h>
 
 Terrain::Terrain()
 	: myModel()
@@ -15,100 +16,92 @@ Terrain::Terrain()
 {
 }
 
-void Terrain::Load(AssetTracker& anAssetTracker, const std::string& aName, float aStep, float anYScale, float anUvScale)
+void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 {
 	myYScale = anYScale;
 	myStep = aStep;
+	myTexture = aTexture;
 
-	using PixelType = unsigned char;
-	PixelType* pixels = Texture::LoadFromDisk(aName, Texture::Format::UNorm_R, myWidth, myHeight);
-	ASSERT_STR(pixels, "Failed to load image data!");
-	constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
+	bool hasLoaded = false;
+	myTexture->ExecLambdaOnLoad([=, &hasLoaded](const Resource* aRes) {
+		const Texture* texture = static_cast<const Texture*>(aRes);
+		ASSERT_STR(texture->GetFormat() == Texture::Format::UNorm_R, "Texture must have single channel format!");
+		
+		using PixelType = unsigned char;
+		const PixelType* pixels = texture->GetPixels();
+		constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
+
+		myWidth = texture->GetWidth();
+		myHeight = texture->GetHeight();
+
+		// variables for calculating extents
+		float minHeight;
+		float maxHeight;
+		// setting up the vertices
+		const size_t vertCount = myHeight * myWidth;
+		Vertex* vertices = GenerateVerticesFromData(glm::ivec2(myWidth, myHeight), myStep,
+			[=](size_t anIndex) {
+				return pixels[anIndex] / kMaxPixelVal * myYScale;
+			}, minHeight, maxHeight
+		);
+
+		//now creating indices
+		const size_t indexCount = (myHeight - 1) * (myWidth - 1) * 6;
+		Model::IndexType* indices = GenerateIndices(glm::ivec2(myWidth, myHeight));
+
+		Normalize(vertices, vertCount, indices, indexCount);
+
+		myModel = CreateModel(glm::vec2(GetWidth(), GetDepth()), minHeight, maxHeight,
+			vertices, vertCount,
+			indices, indexCount);
+		hasLoaded = true;
+	});
+	// TODO: this is a hack due to how rendering pipeline relies
+	// on myModel's existence. In reality, there's no need for a model,
+	// so I need refactor it a bit to selectively check what renderables are ready
+	while (!hasLoaded && myTexture->GetState() != Resource::State::Error)
+	{
+		std::this_thread::yield();
+	}
+	ASSERT_STR(myTexture->GetState() != Resource::State::Error, "Failed to load terrain!");
+}
+
+void Terrain::Generate(glm::ivec2 aSize, float aStep, float anYScale)
+{
+	ASSERT_STR(false, "NYI");
+	ASSERT_STR(Utils::CountSetBits(aSize.x) == 1
+		&& Utils::CountSetBits(aSize.y) == 1, "Size must be power of 2!");
+	myWidth = aSize.x;
+	myHeight = aSize.y;
+
+	myYScale = anYScale;
+	myStep = aStep;
+
+	const size_t gridSize = std::max(myWidth, myHeight) + 1;
+	DiamondSquareAlgo dsAlgo(0, gridSize, 0.f, myYScale);
+	float* heights = new float[gridSize*gridSize];
+	dsAlgo.Generate(heights);
 
 	// variables for calculating extents
-	float minHeight = std::numeric_limits<float>::max();
-	float maxHeight = std::numeric_limits<float>::min();
-
-	// first, creating the vertices
+	float minHeight;
+	float maxHeight;
+	// setting up the vertices
 	const size_t vertCount = myHeight * myWidth;
-	Vertex* vertices = new Vertex[vertCount];
-	const float startX = 0.f;
-	const float startY = 0.f;
-	for (int y = 0; y < myHeight; y++)
-	{
-		for (int x = 0; x < myWidth; x++)
-		{
-			size_t index = y * myWidth + x;
-			// TODO: there's no longer any need to store actual vertices.
-			// should replace with heightfields
-			Vertex v;
-			v.myPos.x = startX + x * myStep;
-			v.myPos.z = startY + y * myStep;
-			
-			v.myPos.y = pixels[index] / kMaxPixelVal * myYScale;
-			v.myUv.x = Wrap(static_cast<float>(x), anUvScale);
-			v.myUv.y = Wrap(static_cast<float>(y), anUvScale);
-			vertices[index] = v;
-
-			// tracking min/max heights for AABB
-			minHeight = std::min(minHeight, v.myPos.y);
-			maxHeight = std::max(maxHeight, v.myPos.y);
-		}
-	}
-	Texture::FreePixels(pixels);
+	ASSERT_STR(vertCount < gridSize * gridSize, "Terrain Mesh will have missing vertices!");
+	Vertex* vertices = GenerateVerticesFromData(glm::ivec2(myWidth, myHeight), myStep, [heights](size_t anIndex) {
+		return heights[anIndex];
+	}, minHeight, maxHeight);
+	delete[] heights;
 
 	//now creating indices
 	const size_t indexCount = (myHeight - 1) * (myWidth - 1) * 6;
-	Model::IndexType* indices = new Model::IndexType[indexCount];
-	for (int y = 0; y < myHeight - 1; y++)
-	{
-		for (int x = 0; x < myWidth - 1; x++)
-		{
-			// defining 2 triangles - using bottom left as the anchor corner
-			size_t triangle = (y * (myWidth - 1) + x) * 6;
-			Model::IndexType bl = y * myWidth + x;
-			Model::IndexType br = bl + 1;
-			Model::IndexType tl = bl + myWidth;
-			Model::IndexType tr = tl + 1;
-
-			ASSERT(bl < vertCount);
-			ASSERT(br < vertCount);
-			ASSERT(tl < vertCount);
-			ASSERT(tr < vertCount);
-
-			indices[triangle + 0] = bl;
-			indices[triangle + 1] = tl;
-			indices[triangle + 2] = tr;
-			indices[triangle + 3] = bl;
-			indices[triangle + 4] = tr;
-			indices[triangle + 5] = br;
-		}
-	}
+	Model::IndexType* indices = GenerateIndices(glm::ivec2(myWidth, myHeight));
 
 	Normalize(vertices, vertCount, indices, indexCount);
 
-	myModel = new Model(PrimitiveType::Triangles, Vertex::Type);
-
-	const float fullWidth = GetWidth();
-	const float fullDepth = GetDepth();
-	{
-		const glm::vec3 aabbMin(startX, minHeight, startY);
-		const glm::vec3 aabbMax(startX + fullWidth, maxHeight, startY + fullDepth);
-		myModel->SetAABB(aabbMin, aabbMax);
-	}
-	{
-		// the largest dimension is the bounding sphere radius
-		const float sphereRadius = std::max(std::max(maxHeight - minHeight, fullDepth), fullWidth);
-		myModel->SetSphereRadius(sphereRadius);
-	}
-	
-	Model::UploadDescriptor<Vertex> uploadDesc;
-	uploadDesc.myVertices = vertices;
-	uploadDesc.myVertCount = vertCount;
-	uploadDesc.myIndices = indices;
-	uploadDesc.myIndCount = indexCount;
-	uploadDesc.myNextDesc = nullptr;
-	myModel->Update(uploadDesc);
+	myModel = CreateModel(glm::vec2(GetWidth(), GetDepth()), minHeight, maxHeight,
+		vertices, vertCount,
+		indices, indexCount);
 }
 
 float Terrain::GetHeight(glm::vec3 pos) const
@@ -204,6 +197,95 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	return myShape;
 }
 
+Vertex* Terrain::GenerateVerticesFromData(const glm::ivec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
+											float& aMinHeight, float& aMaxHeight)
+{
+	aMinHeight = std::numeric_limits<float>::max();
+	aMaxHeight = std::numeric_limits<float>::min();
+
+	// first, creating the vertices
+	const size_t vertCount = aSize.x * aSize.y;
+	Vertex* vertices = new Vertex[vertCount];
+	for (int y = 0; y < aSize.y; y++)
+	{
+		for (int x = 0; x < aSize.x; x++)
+		{
+			size_t index = y * aSize.x + x;
+			// TODO: there's no longer any need to store actual vertices.
+			// should replace with heightfield
+			Vertex v;
+			v.myPos.x = x * aStep;
+			v.myPos.z = y * aStep;
+
+			v.myPos.y = aReadCB(index);
+			v.myUv.x = 0;
+			v.myUv.y = 0;
+			vertices[index] = v;
+
+			// tracking min/max heights for AABB
+			aMinHeight = std::min(aMinHeight, v.myPos.y);
+			aMaxHeight = std::max(aMaxHeight, v.myPos.y);
+		}
+	}
+	return vertices;
+}
+
+Model::IndexType* Terrain::GenerateIndices(const glm::ivec2& aSize)
+{
+	const size_t vertCount = aSize.x * aSize.y;
+	const size_t indexCount = (aSize.y - 1) * (aSize.x - 1) * 6;
+	Model::IndexType* indices = new Model::IndexType[indexCount];
+	for (int y = 0; y < aSize.y - 1; y++)
+	{
+		for (int x = 0; x < aSize.x - 1; x++)
+		{
+			// defining 2 triangles - using bottom left as the anchor corner
+			size_t triangle = (y * (aSize.x - 1) + x) * 6;
+			Model::IndexType bl = y * aSize.x + x;
+			Model::IndexType br = bl + 1;
+			Model::IndexType tl = bl + aSize.x;
+			Model::IndexType tr = tl + 1;
+
+			ASSERT(bl < vertCount);
+			ASSERT(br < vertCount);
+			ASSERT(tl < vertCount);
+			ASSERT(tr < vertCount);
+
+			indices[triangle + 0] = bl;
+			indices[triangle + 1] = tl;
+			indices[triangle + 2] = tr;
+			indices[triangle + 3] = bl;
+			indices[triangle + 4] = tr;
+			indices[triangle + 5] = br;
+		}
+	}
+	return indices;
+}
+
+Handle<Model> Terrain::CreateModel(const glm::vec2& aFullSize, float aMinHeight, float aMaxHeight,
+	const Vertex* aVertices, size_t aVertCount,
+	const Model::IndexType* aIndices, size_t aIndCount)
+{
+	Handle<Model> model = new Model(PrimitiveType::Triangles, Vertex::Type);
+
+	const glm::vec3 aabbMin(0, aMinHeight, 0);
+	const glm::vec3 aabbMax(aFullSize.x, aMaxHeight, aFullSize.y);
+	model->SetAABB(aabbMin, aabbMax);
+
+	// the largest dimension is the bounding sphere radius
+	const float sphereRadius = std::max(std::max(aMaxHeight - aMinHeight, aFullSize.y), aFullSize.x);
+	model->SetSphereRadius(sphereRadius);
+
+	Model::UploadDescriptor<Vertex> uploadDesc;
+	uploadDesc.myVertices = aVertices;
+	uploadDesc.myVertCount = aVertCount;
+	uploadDesc.myIndices = aIndices;
+	uploadDesc.myIndCount = aIndCount;
+	uploadDesc.myNextDesc = nullptr;
+	model->Update(uploadDesc);
+	return model;
+}
+
 void Terrain::Normalize(Vertex* aVertices, size_t aVertCount,
 	Model::IndexType* aIndices, size_t aIndCount)
 {
@@ -237,11 +319,4 @@ void Terrain::Normalize(Vertex* aVertices, size_t aVertCount,
 	{
 		aVertices[vertInd].myNormal = normalize(surfNormals[vertInd]);
 	}
-}
-
-float Terrain::Wrap(float aVal, float aRange) const
-{
-	float cosA = cos((aVal / aRange) * glm::pi<float>() / 2);
-	float normalized = (cosA + 1) / 2;
-	return normalized;
 }

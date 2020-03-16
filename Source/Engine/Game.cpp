@@ -32,7 +32,7 @@ bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
 
-// Heightmaps generated via https://tangrams.github.io/heightmapper/
+
 constexpr StaticString kHeightmapName("Tynemouth-tangrams.png");
 
 Game::Game(ReportError aReporterFunc)
@@ -69,8 +69,11 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kTerrSize = 18000; // meters
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
-		constexpr StaticString kFullPath = Texture::kDir + kHeightmapName;
-		terr->Load(myAssetTracker, kFullPath.CStr(), kTerrSize / kResolution, 1000.f, 1.f);
+		// Heightmaps generated via https://tangrams.github.io/heightmapper/
+		Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
+		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
+		constexpr uint32_t kTerrCells = 8;
+		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
 		myTerrains.push_back(terr);
 	}
 
@@ -103,7 +106,6 @@ void Game::Init()
 	// ==========================
 	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
 	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
-	Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>(kHeightmapName.CStr());
 	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 
@@ -126,7 +128,7 @@ void Game::Init()
 		vo = new VisualObject(*go);
 		vo->SetModel(myTerrains[0]->GetModelHandle());
 		vo->SetPipeline(terrainPipeline);
-		vo->SetTexture(terrainText);
+		vo->SetTexture(myTerrains[0]->GetTextureHandle());
 		vo->SetCategory(VisualObject::Category::Terrain);
 		go->SetVisualObject(vo);
 	}

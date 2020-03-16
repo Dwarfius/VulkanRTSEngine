@@ -53,8 +53,8 @@ public:
 
 	const std::vector<Handle<Resource>>& GetDependencies() const { return myDependencies; }
 
-	// TODO: add DebugAsserts for scheduling callbacks during AssetTracker::Process time
 	// Sets the callback to call when the object finishes loading from disk
+	// or executes it immediately if object is loaded
 	void ExecLambdaOnLoad(const Callback& aOnLoadCB);
 	// Sets the callback to call when the object gets destroyed
 	void AddOnDestroyCB(const Callback& aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }

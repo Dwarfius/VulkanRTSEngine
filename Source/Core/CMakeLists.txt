@@ -87,7 +87,10 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"StaticString.h"
 	"Utils.cpp" "Utils.h"
 	"Vertex.h"
-) 
+)
+
+set(SRC_ALGOS "Algos/DiamondSquareAlgo.h"
+)
 
 set(SRC_THREADING "Threading/AssertMutex.cpp" "Threading/AssertMutex.h"
 	"Threading/AssertRWMutex.cpp" "Threading/AssertRWMutex.h"
@@ -97,7 +100,7 @@ set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl"
 	"Debug/DebugDrawer.cpp" "Debug/DebugDrawer.h"
 )
 
-add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_GRAPHICS})
+add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_GRAPHICS} ${SRC_ALGOS})
 if (MSVC)
    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
    set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
@@ -106,6 +109,7 @@ endif(MSVC)
 
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
+source_group(Algos FILES ${SRC_ALGOS})
 source_group(Threading FILES ${SRC_THREADING})
 source_group(Debug FILES ${SRC_DEBUG})
 source_group(Graphics FILES ${SRC_GRAPHICS})

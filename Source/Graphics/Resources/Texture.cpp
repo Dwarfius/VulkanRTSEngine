@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "Texture.h"
 
+#include <nlohmann/json.hpp>
 #include <Core/File.h>
 #include <stb_image.h>
 
@@ -107,6 +108,70 @@ void Texture::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 
 bool Texture::LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath)
 {
-	// TODO: finish this for different texture support
+	ASSERT_STR(aPath.length() >= 4, "Invalid name passed!");
+	using json = nlohmann::json;
+
+	std::string ext = aPath.substr(aPath.length() - 4);
+	const bool isDescriptor = ext.compare("desc") == 0;
+	if (isDescriptor)
+	{
+		File descFile(aPath);
+		if (!descFile.Read())
+		{
+			SetErrMsg("Failed to read descriptor!");
+			return false;
+		}
+		
+		const json jsonObj = json::parse(descFile.GetBuffer(), nullptr, false);
+		{
+			const json& formatHandle = jsonObj["format"];
+			if (!formatHandle.is_null())
+			{
+				myFormat = formatHandle.get<Format>();
+			}
+		}
+
+		{
+			const json& wrapModeHandle = jsonObj["wrapMode"];
+			if (!wrapModeHandle.is_null())
+			{
+				myWrapMode = wrapModeHandle.get<WrapMode>();
+			}
+		}
+
+		{
+			const json& minFilterHandle = jsonObj["minFilter"];
+			if (!minFilterHandle.is_null())
+			{
+				myMinFilter = minFilterHandle.get<Filter>();
+			}
+		}
+
+		{
+			const json& magFilterHandle = jsonObj["magFilter"];
+			if (!magFilterHandle.is_null())
+			{
+				myMagFilter = magFilterHandle.get<Filter>();
+			}
+		}
+
+		{
+			const json& enableMipMapsHandle = jsonObj["enableMipMaps"];
+			if (!enableMipMapsHandle.is_null())
+			{
+				myEnableMipmaps = enableMipMapsHandle.get<bool>();
+			}
+		}
+
+		{
+			const json& pathHandle = jsonObj["path"];
+			if (pathHandle.is_null())
+			{
+				SetErrMsg("Texture missing 'path'!");
+				return false;
+			}
+			aPath = pathHandle.get<std::string>();
+		}
+	}
 	return true;
 }

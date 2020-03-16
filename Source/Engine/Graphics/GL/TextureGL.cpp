@@ -34,17 +34,28 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 	const Texture* texture = myResHandle.Get<const Texture>();
 	UpdateTexParams(texture);
 
-	uint32_t format;
+	GLenum format;
 	switch (texture->GetFormat())
 	{
-	case Texture::Format::UNorm_R: format = GL_R; break;
-	case Texture::Format::UNorm_RG: format = GL_RG; break; // not sure about this one, need to check stbi
+	case Texture::Format::UNorm_R:		format = GL_RED; break;
+	case Texture::Format::UNorm_RG:		format = GL_RG; break; // not sure about this one, need to check stbi
 	case Texture::Format::UNorm_RGB:	format = GL_RGB; break;
-	case Texture::Format::UNorm_RGBA: // fallthrough
-	case Texture::Format::UNorm_BGRA: format = GL_RGBA; break;
+	case Texture::Format::UNorm_RGBA:	//[[fallthrough]]
+	case Texture::Format::UNorm_BGRA:	format = GL_RGBA; break;
 	default: ASSERT(false);
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 
+
+	GLint internFormat;
+	switch (format)
+	{
+	case GL_RED:	internFormat = GL_R8; break;
+	case GL_RG:		internFormat = GL_RG8; break;
+	case GL_RGB:	internFormat = GL_RGB8; break;
+	case GL_RGBA:	internFormat = GL_RGBA8; break;
+	default: ASSERT(false);
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, internFormat,
 		texture->GetWidth(), texture->GetHeight(), 
 		0, format, GL_UNSIGNED_BYTE, texture->GetPixels());
 

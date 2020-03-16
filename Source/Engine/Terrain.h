@@ -3,13 +3,15 @@
 #include <Graphics/Resources/Model.h>
 
 class PhysicsShapeHeightfield;
+class Texture;
 
 class Terrain
 {
 public:
 	Terrain();
 
-	void Load(AssetTracker& anAssetTracker, const std::string& aName, float aStep, float anYScale, float anUvScale);
+	void Load(Handle<Texture> aTexture, float aStep, float anYScale);
+	void Generate(glm::ivec2 aSize, float aStep, float anYScale);
 	
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
@@ -17,6 +19,7 @@ public:
 	std::shared_ptr<PhysicsShapeHeightfield> CreatePhysicsShape();
 
 	Handle<Model> GetModelHandle() const { return myModel; }
+	Handle<Texture> GetTextureHandle() const { return myTexture; }
 
 	float GetTileSize() const { return myStep * 64.f; /* 64 is the max tesselation level */ }
 	float GetWidth() const { return myWidth * myStep; }
@@ -24,7 +27,18 @@ public:
 	float GetYScale() const { return myYScale; }
 
 private:
+	static Vertex* GenerateVerticesFromData(const glm::ivec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
+										float& aMinHeight, float& aMaxHeight);
+	static Model::IndexType* GenerateIndices(const glm::ivec2& aSize);
+	static Handle<Model> CreateModel(const glm::vec2& aFullSize, float aMinHeight, float aMaxHeight,
+		const Vertex* aVertices, size_t aVertCount,
+		const Model::IndexType* aIndices, size_t aIndCount);
+
+	void Normalize(Vertex* aVertices, size_t aVertCount,
+		Model::IndexType* aIndices, size_t aIndCount);
+
 	Handle<Model> myModel;
+	Handle<Texture> myTexture;
 
 	// dimensions of the heightmap texture used
 	int myWidth, myHeight;
@@ -33,11 +47,7 @@ private:
 	// controls how much texture should be scaled "vertically"
 	float myYScale;
 
-	void Normalize(Vertex* aVertices, size_t aVertCount, 
-		Model::IndexType* aIndices, size_t aIndCount);
-
-	// wraps the val value around [0;range] range
-	float Wrap(float aVal, float aRange) const;
+	
 
 	// Preserve the heights so that physics can still reference to it
 	std::vector<float> myHeightsCache;

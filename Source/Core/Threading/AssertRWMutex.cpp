@@ -34,7 +34,7 @@ void AssertRWMutex::LockWrite()
 void AssertRWMutex::UnlockWrite()
 {
 	// check whether we just unlocked an write-unlocked mutex
-	// (double unlock)
+	// (double unlock) or it unlocked during a read
 	constexpr unsigned char writeVal = 1 << 7;
 	unsigned char currVal = myLock.fetch_xor(writeVal);
 	if (currVal != writeVal)
@@ -45,6 +45,10 @@ void AssertRWMutex::UnlockWrite()
 		stream << " tried to unlock mutex for write (W: ";
 		stream << myWriteThreadId << ", R: ";
 		stream << myLastReadThreadId << ")";
+		if (currVal > writeVal)
+		{
+			stream << " it was previously read locked!";
+		}
 		ASSERT_STR(false, stream.str().c_str());
 	}
 	myWriteThreadId = std::thread::id();

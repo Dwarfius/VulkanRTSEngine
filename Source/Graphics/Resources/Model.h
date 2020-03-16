@@ -16,7 +16,7 @@ public:
 		size_t myPrimitiveCount;
 		const T* myVertices;
 		size_t myVertCount;
-		IndexType* myIndices; // optional
+		const IndexType* myIndices; // optional
 		size_t myIndCount; // optional
 		UploadDescriptor<T>* myNextDesc; // optional, used to chain multiple uploads together
 	};
