@@ -37,9 +37,13 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 	GLenum format;
 	switch (texture->GetFormat())
 	{
+	case Texture::Format::SNorm_R:		//[[fallthrough]]
 	case Texture::Format::UNorm_R:		format = GL_RED; break;
-	case Texture::Format::UNorm_RG:		format = GL_RG; break; // not sure about this one, need to check stbi
+	case Texture::Format::SNorm_RG:		//[[fallthrough]]
+	case Texture::Format::UNorm_RG:		format = GL_RG; break;
+	case Texture::Format::SNorm_RGB:	//[[fallthrough]]
 	case Texture::Format::UNorm_RGB:	format = GL_RGB; break;
+	case Texture::Format::SNorm_RGBA:	//[[fallthrough]]
 	case Texture::Format::UNorm_RGBA:	//[[fallthrough]]
 	case Texture::Format::UNorm_BGRA:	format = GL_RGBA; break;
 	default: ASSERT(false);
@@ -55,9 +59,12 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 	default: ASSERT(false);
 	}
 
+	bool isSignedPixelType = texture->GetFormat() <= Texture::Format::kLastSignedFormat;
+	const GLenum pixelType = isSignedPixelType ? GL_BYTE : GL_UNSIGNED_BYTE;
+
 	glTexImage2D(GL_TEXTURE_2D, 0, internFormat,
 		texture->GetWidth(), texture->GetHeight(), 
-		0, format, GL_UNSIGNED_BYTE, texture->GetPixels());
+		0, format, pixelType, texture->GetPixels());
 
 	if (texture->IsUsingMipMaps())
 	{

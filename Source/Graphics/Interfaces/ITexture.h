@@ -8,6 +8,12 @@ public:
 	{
 		// Generic
 		// 8 byte per component
+		SNorm_R,
+		SNorm_RG,
+		SNorm_RGB,
+		SNorm_RGBA,
+		kLastSignedFormat = SNorm_RGBA,
+
 		UNorm_R,
 		UNorm_RG,
 		UNorm_RGB,

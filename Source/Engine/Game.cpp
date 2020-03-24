@@ -70,10 +70,10 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
-		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
-		constexpr uint32_t kTerrCells = 8;
-		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
+		//Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
+		//terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
+		constexpr uint32_t kTerrCells = 128;
+		terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 20);
 		myTerrains.push_back(terr);
 	}
 

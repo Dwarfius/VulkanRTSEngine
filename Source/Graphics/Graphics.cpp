@@ -65,7 +65,12 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<Resource> aRes, bool aShouldKee
 {
 	GPUResource* newGPURes;
 	const Resource::Id resId = aRes->GetId();
-	
+	if (resId == Resource::InvalidId)
+	{
+		// invalid id -> dynamic resource, so no need to track it 
+		newGPURes = Create(aRes->GetResType());
+	}
+	else
 	{
 		tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 		ResourceMap::iterator foundResIter = myResources.find(resId);

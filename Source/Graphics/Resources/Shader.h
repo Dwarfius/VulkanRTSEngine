@@ -12,7 +12,7 @@ public:
 	Shader();
 	Shader(Resource::Id anId, const std::string& aPath);
 
-	Resource::Type GetResType() const { return Resource::Type::Shader; }
+	Resource::Type GetResType() const override final{ return Resource::Type::Shader; }
 
 	IShader::Type GetType() const { return myType; }
 	const std::string& GetBuffer() const { return myFileContents; }

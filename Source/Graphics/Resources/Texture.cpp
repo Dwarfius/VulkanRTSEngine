@@ -75,10 +75,35 @@ Texture::Texture(Resource::Id anId, const std::string& aPath)
 {
 }
 
-void Texture::FreeTextMem()
+Texture::~Texture()
 {
-	ASSERT_STR(myPixels, "Attempted to double-free pixels");
-	FreePixels(myPixels);
+	if (myPixels)
+	{
+		FreePixels();
+	}
+}
+
+void Texture::SetPixels(unsigned char* aPixels)
+{
+	ASSERT_STR(GetId() == Resource::InvalidId, "NYI. Textures from disk are currently static due to FreePixels implementation.");
+	if (myPixels)
+	{
+		FreePixels();
+	}
+	myPixels = aPixels;
+}
+
+void Texture::FreePixels()
+{
+	ASSERT_STR(myPixels, "Double free of texture!");
+	if (GetId() == Resource::InvalidId)
+	{
+		delete[] myPixels;
+	}
+	else
+	{
+		stbi_image_free(myPixels);
+	}
 	myPixels = nullptr;
 }
 
@@ -93,12 +118,13 @@ void Texture::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
 	case Format::UNorm_RGBA: // fallthrough
 	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	default: ASSERT_STR(false, "STBI doesn't support this format!");
 	}
 
 	int actualChannels = 0;
 	myPixels = stbi_load_from_memory(buffer, static_cast<int>(aFile.GetSize()), 
-										&myWidth, &myHeight, 
-										&actualChannels, desiredChannels);
+						reinterpret_cast<int*>(&myWidth), reinterpret_cast<int*>(&myHeight),
+						&actualChannels, desiredChannels);
 	if (!myPixels)
 	{
 		SetErrMsg("Failed to load texture");

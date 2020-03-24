@@ -39,7 +39,7 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 		float maxHeight;
 		// setting up the vertices
 		const size_t vertCount = myHeight * myWidth;
-		Vertex* vertices = GenerateVerticesFromData(glm::ivec2(myWidth, myHeight), myStep,
+		Vertex* vertices = GenerateVerticesFromData(glm::uvec2(myWidth, myHeight), myStep,
 			[=](size_t anIndex) {
 				return pixels[anIndex] / kMaxPixelVal * myYScale;
 			}, minHeight, maxHeight
@@ -47,7 +47,7 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 
 		//now creating indices
 		const size_t indexCount = (myHeight - 1) * (myWidth - 1) * 6;
-		Model::IndexType* indices = GenerateIndices(glm::ivec2(myWidth, myHeight));
+		Model::IndexType* indices = GenerateIndices(glm::uvec2(myWidth, myHeight));
 
 		Normalize(vertices, vertCount, indices, indexCount);
 
@@ -66,9 +66,8 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 	ASSERT_STR(myTexture->GetState() != Resource::State::Error, "Failed to load terrain!");
 }
 
-void Terrain::Generate(glm::ivec2 aSize, float aStep, float anYScale)
+void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 {
-	ASSERT_STR(false, "NYI");
 	ASSERT_STR(Utils::CountSetBits(aSize.x) == 1
 		&& Utils::CountSetBits(aSize.y) == 1, "Size must be power of 2!");
 	myWidth = aSize.x;
@@ -77,10 +76,35 @@ void Terrain::Generate(glm::ivec2 aSize, float aStep, float anYScale)
 	myYScale = anYScale;
 	myStep = aStep;
 
-	const size_t gridSize = std::max(myWidth, myHeight) + 1;
+	const size_t gridSize = std::max<size_t>(myWidth, myHeight) + 1;
 	DiamondSquareAlgo dsAlgo(0, gridSize, 0.f, myYScale);
 	float* heights = new float[gridSize*gridSize];
-	dsAlgo.Generate(heights);
+   	dsAlgo.Generate(heights);
+
+	{
+		myTexture = new Texture();
+		myTexture->SetWidth(myWidth);
+		myTexture->SetHeight(myHeight);
+		// TODO: this isn't the most efficient, but ah well
+		// because we store single bytes, we need to 
+		// downscale/quantize floats to chars
+		myTexture->SetFormat(Texture::Format::UNorm_R);
+		using PixelType = unsigned char;
+		constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
+		PixelType* pixels = new PixelType[myWidth * myHeight];
+		for (uint32_t y = 0; y < myHeight; y++)
+		{
+			for (uint32_t x = 0; x < myWidth; x++)
+			{
+				const float floatHeight = heights[y * gridSize + x];
+				const PixelType charHeight = static_cast<PixelType>(
+					floatHeight / myYScale * kMaxPixelVal
+				);
+				pixels[y * myWidth + x] = charHeight;
+			}
+		}
+		myTexture->SetPixels(pixels);
+	}
 
 	// variables for calculating extents
 	float minHeight;
@@ -88,14 +112,14 @@ void Terrain::Generate(glm::ivec2 aSize, float aStep, float anYScale)
 	// setting up the vertices
 	const size_t vertCount = myHeight * myWidth;
 	ASSERT_STR(vertCount < gridSize * gridSize, "Terrain Mesh will have missing vertices!");
-	Vertex* vertices = GenerateVerticesFromData(glm::ivec2(myWidth, myHeight), myStep, [heights](size_t anIndex) {
+	Vertex* vertices = GenerateVerticesFromData(glm::uvec2(myWidth, myHeight), myStep, [heights](size_t anIndex) {
 		return heights[anIndex];
 	}, minHeight, maxHeight);
 	delete[] heights;
 
 	//now creating indices
 	const size_t indexCount = (myHeight - 1) * (myWidth - 1) * 6;
-	Model::IndexType* indices = GenerateIndices(glm::ivec2(myWidth, myHeight));
+	Model::IndexType* indices = GenerateIndices(glm::uvec2(myWidth, myHeight));
 
 	Normalize(vertices, vertCount, indices, indexCount);
 
@@ -197,7 +221,7 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	return myShape;
 }
 
-Vertex* Terrain::GenerateVerticesFromData(const glm::ivec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
+Vertex* Terrain::GenerateVerticesFromData(const glm::uvec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
 											float& aMinHeight, float& aMaxHeight)
 {
 	aMinHeight = std::numeric_limits<float>::max();
@@ -230,7 +254,7 @@ Vertex* Terrain::GenerateVerticesFromData(const glm::ivec2& aSize, float aStep, 
 	return vertices;
 }
 
-Model::IndexType* Terrain::GenerateIndices(const glm::ivec2& aSize)
+Model::IndexType* Terrain::GenerateIndices(const glm::uvec2& aSize)
 {
 	const size_t vertCount = aSize.x * aSize.y;
 	const size_t indexCount = (aSize.y - 1) * (aSize.x - 1) * 6;
@@ -240,7 +264,7 @@ Model::IndexType* Terrain::GenerateIndices(const glm::ivec2& aSize)
 		for (int x = 0; x < aSize.x - 1; x++)
 		{
 			// defining 2 triangles - using bottom left as the anchor corner
-			size_t triangle = (y * (aSize.x - 1) + x) * 6;
+			const size_t triangle = (y * (aSize.x - 1) + x) * 6;
 			Model::IndexType bl = y * aSize.x + x;
 			Model::IndexType br = bl + 1;
 			Model::IndexType tl = bl + aSize.x;

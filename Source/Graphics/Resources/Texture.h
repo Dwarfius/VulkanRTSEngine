@@ -17,31 +17,46 @@ public:
 public:
 	Texture();
 	Texture(Resource::Id anId, const std::string& aPath);
+	~Texture();
 
-	Resource::Type GetResType() const override { return Resource::Type::Texture; }
+	Resource::Type GetResType() const override final { return Resource::Type::Texture; }
 
 	Format GetFormat() const { return myFormat; }
-	int GetWidth() const { return myWidth; }
-	int GetHeight() const { return myHeight; }
+	void SetFormat(Format aFormat) { myFormat = aFormat; }
+
+	uint32_t GetWidth() const { return myWidth; }
+	void SetWidth(uint32_t aWidth) { myWidth = aWidth; }
+	uint32_t GetHeight() const { return myHeight; }
+	void SetHeight(uint32_t aHeight) { myHeight = aHeight; }
+
 	WrapMode GetWrapMode() const { return myWrapMode; }
+	void SetWrapMode(WrapMode aWrapMode) { myWrapMode = aWrapMode; }
+
 	Filter GetMinFilter() const { return myMinFilter; }
+	void SetMinFilter(Filter aMinFilter) { myMinFilter = aMinFilter; }
+
 	Filter GetMagFilter() const { return myMagFilter; }
+	void SetMagFilter(Filter aMAgFilter) { myMagFilter = aMAgFilter; }
+
 	bool IsUsingMipMaps() const { return myEnableMipmaps; }
+	void EnableMipMaps(bool aEnabled) { myEnableMipmaps = aEnabled; }
+
 	unsigned char* GetPixels() const { return myPixels; }
+	void SetPixels(unsigned char* aPixels);
 
 protected:
 	unsigned char* myPixels;
+	uint32_t myWidth;
+	uint32_t myHeight;
 	Format myFormat;
 	WrapMode myWrapMode;
 	Filter myMinFilter;
 	Filter myMagFilter;
-	int myWidth;
-	int myHeight;
 	bool myEnableMipmaps;
 
-	void FreeTextMem();
-
 private:
+	void FreePixels();
+
 	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
 	bool LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath) override final;
 };

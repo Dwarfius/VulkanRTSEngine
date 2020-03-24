@@ -27,7 +27,7 @@ private:
 
 	uint32_t GetCoord(uint32_t aX, uint32_t aY) const { return aY * mySize + aX; }
 	void Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, const TDistr& aDistr, TElem* aData);
-	void Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aSize, const TDistr& aDistr, TElem* aData);
+	void Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, const TDistr& aDistr, TElem* aData);
 
 	std::mt19937 myEngine;
 	const uint32_t mySize;
@@ -38,6 +38,7 @@ private:
 template<class TElem>
 void DiamondSquareAlgo<TElem>::Generate(TElem* aData)
 {
+	// using min-max range for seeding initially
 	TDistr distribution(myMin, myMax);
 
 	// seed the first 4 corners
@@ -49,20 +50,48 @@ void DiamondSquareAlgo<TElem>::Generate(TElem* aData)
 	// start iterating
 	// Note: this implementation will apply Diamond to some points twice,
 	// but it's okay, because first pass will have partial data,
-	// while the second pass over the same point will have full data
+	// while the second pass will overwrite with full data
 	// Drawback is that it's not as efficient
-	for (uint32_t currSize = mySize-1; currSize > 2; currSize >>= 1)
+	TElem distrRange = (myMax - myMin);
+	for (uint32_t currSize = mySize - 1; currSize > 1; currSize >>= 1)
 	{
+		// we use relative range, since we're adding 
+		// to heights that were seeded initially via Min-Max
+		const TElem currMin = -distrRange;
+		const TElem currMax = +distrRange;
+		distribution = TDistr(currMin, currMax);
+		distrRange /= 2;
+
 		const uint32_t halfSize = currSize >> 1;
-		for (uint32_t y = 0; y < mySize - 1; y += currSize)
+		for (uint32_t y = 0; y < mySize; y += currSize)
 		{
-			for (uint32_t x = 0; x < mySize - 1; x += currSize)
+			for (uint32_t x = 0; x < mySize; x += currSize)
 			{
-				Square(x, y, currSize, distribution, aData);
-				Diamond(x + halfSize, y, currSize, distribution, aData);
-				Diamond(x, y + halfSize, currSize, distribution, aData);
-				Diamond(x + halfSize, y + currSize, currSize, distribution, aData);
-				Diamond(x + currSize, y + halfSize, currSize, distribution, aData);
+				// top left corner
+				if (x < mySize - 1 && y < mySize - 1)
+				{
+					Square(x, y, currSize, distribution, aData);
+				}
+				// top
+				if (x + halfSize < mySize)
+				{
+					Diamond(x + halfSize, y, halfSize, distribution, aData);
+				}
+				// left
+				if (y + halfSize < mySize)
+				{
+					Diamond(x, y + halfSize, halfSize, distribution, aData);
+				}
+				// bottom
+				if (x + halfSize < mySize && y + currSize < mySize)
+				{
+					Diamond(x + halfSize, y + currSize, halfSize, distribution, aData);
+				}
+				// right
+				if (x + currSize < mySize && y + halfSize < mySize)
+				{
+					Diamond(x + currSize, y + halfSize, halfSize, distribution, aData);
+				}
 			}
 		}
 	}
@@ -72,43 +101,44 @@ template<class TElem>
 void DiamondSquareAlgo<TElem>::Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, const TDistr& aDistr, TElem* aData)
 {
 	TElem sum = aData[GetCoord(aTopLeftX, aTopLeftY)];
-	sum += aData[GetCoord(aTopLeftX + aSize - 1, aTopLeftY)];
-	sum += aData[GetCoord(aTopLeftX, aTopLeftY + aSize - 1)];
-	sum += aData[GetCoord(aTopLeftX + aSize - 1, aTopLeftY + aSize - 1)];
+	sum += aData[GetCoord(aTopLeftX + aSize, aTopLeftY)];
+	sum += aData[GetCoord(aTopLeftX, aTopLeftY + aSize)];
+	sum += aData[GetCoord(aTopLeftX + aSize, aTopLeftY + aSize)];
 	const uint32_t halfSize = aSize >> 1;
 	const uint32_t center = GetCoord(aTopLeftX + halfSize, aTopLeftY + halfSize);
 	ASSERT(center < mySize * mySize);
-	aData[center] = sum / 4 + aDistr(myEngine);
+	TElem newVal = sum / 4 + aDistr(myEngine);
+	aData[center] = glm::clamp(newVal, myMin, myMax);
 }
 
 template<class TElem>
-void DiamondSquareAlgo<TElem>::Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aSize, const TDistr& aDistr, TElem* aData)
+void DiamondSquareAlgo<TElem>::Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, const TDistr& aDistr, TElem* aData)
 {
-	const uint32_t halfSize = aSize >> 1;
+	ASSERT(aCenterX < mySize && aCenterY < mySize);
 	uint8_t count = 0;
 	TElem sum = 0;
-	if (aCenterX >= halfSize)
+	if (aCenterX >= aHalfSize)
 	{
-		sum += aData[GetCoord(aCenterX - halfSize, aCenterY)];
+		sum += aData[GetCoord(aCenterX - aHalfSize, aCenterY)];
 		count++;
 	}
-	if (aCenterY >= halfSize)
+	if (aCenterY >= aHalfSize)
 	{
-		sum += aData[GetCoord(aCenterX, aCenterY - halfSize)];
+		sum += aData[GetCoord(aCenterX, aCenterY - aHalfSize)];
 		count++;
 	}
-	if (aCenterX < mySize - halfSize)
+	if (aCenterX < mySize - aHalfSize)
 	{
-		sum += aData[GetCoord(aCenterX + halfSize, aCenterY)];
+		sum += aData[GetCoord(aCenterX + aHalfSize, aCenterY)];
 		count++;
 	}
-	if (aCenterY < mySize - halfSize)
+	if (aCenterY < mySize - aHalfSize)
 	{
-		sum += aData[GetCoord(aCenterX, aCenterY + halfSize)];
+		sum += aData[GetCoord(aCenterX, aCenterY + aHalfSize)];
 		count++;
 	}
 	ASSERT(count >= 3);
 	const uint32_t center = GetCoord(aCenterX, aCenterY);
-	ASSERT(center < mySize * mySize);
-	aData[center] = sum / count + aDistr(myEngine);
+	TElem newVal = sum / count + aDistr(myEngine);
+	aData[center] = glm::clamp(newVal, myMin, myMax);
 }

@@ -67,7 +67,7 @@ public:
 	Model(PrimitiveType aPrimitiveType, int aVertexType);
 	Model(Resource::Id anId, const std::string& aPath);
 
-	Resource::Type GetResType() const override { return Resource::Type::Model; }
+	Resource::Type GetResType() const override final { return Resource::Type::Model; }
 
 	// Full access to typed vertex storage of a model
 	template<class T>

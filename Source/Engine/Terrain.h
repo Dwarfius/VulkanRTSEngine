@@ -11,7 +11,7 @@ public:
 	Terrain();
 
 	void Load(Handle<Texture> aTexture, float aStep, float anYScale);
-	void Generate(glm::ivec2 aSize, float aStep, float anYScale);
+	void Generate(glm::uvec2 aSize, float aStep, float anYScale);
 	
 	float GetHeight(glm::vec3 pos) const;
 	glm::vec3 GetNormal(glm::vec3 pos) const;
@@ -27,9 +27,9 @@ public:
 	float GetYScale() const { return myYScale; }
 
 private:
-	static Vertex* GenerateVerticesFromData(const glm::ivec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
+	static Vertex* GenerateVerticesFromData(const glm::uvec2& aSize, float aStep, const std::function<float(size_t)>& aReadCB,
 										float& aMinHeight, float& aMaxHeight);
-	static Model::IndexType* GenerateIndices(const glm::ivec2& aSize);
+	static Model::IndexType* GenerateIndices(const glm::uvec2& aSize);
 	static Handle<Model> CreateModel(const glm::vec2& aFullSize, float aMinHeight, float aMaxHeight,
 		const Vertex* aVertices, size_t aVertCount,
 		const Model::IndexType* aIndices, size_t aIndCount);
@@ -41,7 +41,7 @@ private:
 	Handle<Texture> myTexture;
 
 	// dimensions of the heightmap texture used
-	int myWidth, myHeight;
+	uint32_t myWidth, myHeight;
 	// distance between neighbouring terrain vertices
 	float myStep;
 	// controls how much texture should be scaled "vertically"

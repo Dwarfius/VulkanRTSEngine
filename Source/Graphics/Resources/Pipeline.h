@@ -15,7 +15,7 @@ public:
 	Pipeline();
 	Pipeline(Resource::Id anId, const std::string& aPath);
 
-	Resource::Type GetResType() const override { return Resource::Type::Pipeline; }
+	Resource::Type GetResType() const override final { return Resource::Type::Pipeline; }
 
 	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
 	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
