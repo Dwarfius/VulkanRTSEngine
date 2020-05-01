@@ -70,6 +70,7 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 {
 	ASSERT_STR(Utils::CountSetBits(aSize.x) == 1
 		&& Utils::CountSetBits(aSize.y) == 1, "Size must be power of 2!");
+	ASSERT_STR(aSize.x > 2 && aSize.y > 2, "Small sizes aren't supported by the texture!");
 	myWidth = aSize.x;
 	myHeight = aSize.y;
 
@@ -89,6 +90,7 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		// because we store single bytes, we need to 
 		// downscale/quantize floats to chars
 		myTexture->SetFormat(Texture::Format::UNorm_R);
+		
 		using PixelType = unsigned char;
 		constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
 		PixelType* pixels = new PixelType[myWidth * myHeight];
@@ -112,8 +114,12 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 	// setting up the vertices
 	const size_t vertCount = myHeight * myWidth;
 	ASSERT_STR(vertCount < gridSize * gridSize, "Terrain Mesh will have missing vertices!");
-	Vertex* vertices = GenerateVerticesFromData(glm::uvec2(myWidth, myHeight), myStep, [heights](size_t anIndex) {
-		return heights[anIndex];
+	Vertex* vertices = GenerateVerticesFromData(glm::uvec2(myWidth, myHeight), myStep, [heights, this, gridSize](size_t anIndex) {
+		// decompose the index and recalculate it based on the heighfield dimensions
+		uint32_t x = anIndex % myWidth;
+		uint32_t y = anIndex / myWidth;
+		uint32_t newIndex = y * gridSize + x;
+		return heights[newIndex];
 	}, minHeight, maxHeight);
 	delete[] heights;
 
@@ -205,17 +211,18 @@ std::shared_ptr<PhysicsShapeHeightfield> Terrain::CreatePhysicsShape()
 	const Model& model = *myModel.Get();
 
 	// need to recollect the vertices in WS, and cache them
-	const size_t count = myWidth * myHeight;
-	myHeightsCache.reserve(count);
-	float minHeight = model.GetAABBMin().y;
-	float maxHeight = model.GetAABBMax().y;
+	const uint32_t count = myWidth * myHeight;
+	myHeightsCache.resize(count);
+	
 	const Vertex* vertBuffer = model.GetVertexStorage<Vertex>()->GetData();
-	for (size_t i=0; i<count; i++)
+	for (uint32_t index = 0; index < count; index++)
 	{
-		const Vertex& vert = vertBuffer[i];
-		myHeightsCache.push_back(vert.myPos.y);
+		const Vertex& vert = vertBuffer[index];
+		myHeightsCache[index] = vert.myPos.y;
 	}
 
+	const float minHeight = model.GetAABBMin().y;
+	const float maxHeight = model.GetAABBMax().y;
 	std::shared_ptr<PhysicsShapeHeightfield> myShape = std::make_shared<PhysicsShapeHeightfield>(myWidth, myHeight, myHeightsCache, minHeight, maxHeight);
 	myShape->SetScale(glm::vec3(myStep, 1.f, myStep));
 	return myShape;

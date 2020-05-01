@@ -21,9 +21,8 @@ public:
 	Handle<Model> GetModelHandle() const { return myModel; }
 	Handle<Texture> GetTextureHandle() const { return myTexture; }
 
-	float GetTileSize() const { return myStep * 64.f; /* 64 is the max tesselation level */ }
-	float GetWidth() const { return myWidth * myStep; }
-	float GetDepth() const { return myHeight * myStep; }
+	float GetWidth() const { return (myWidth - 1) * myStep; }
+	float GetDepth() const { return (myHeight - 1) * myStep; }
 	float GetYScale() const { return myYScale; }
 
 private:

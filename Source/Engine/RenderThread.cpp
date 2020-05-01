@@ -7,6 +7,7 @@
 #include "Game.h"
 #include "VisualObject.h"
 #include "Graphics/Adapters/UniformAdapter.h"
+#include "Graphics/Adapters/TerrainAdapter.h"
 #include "Terrain.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 
@@ -194,13 +195,10 @@ void RenderThread::SubmitRenderables()
 			case VisualObject::Category::Terrain:
 			{
 				const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
-				glm::vec3 scale = aVO->GetTransform().GetScale();
 				TerrainRenderParams params;
 				params.myDistance = 0;
-				glm::vec3 terrainSize = scale * glm::vec3(terrain->GetWidth(), 0, terrain->GetDepth());
-				glm::vec3 terrainTiles = glm::ceil(terrainSize / terrain->GetTileSize());
-				float tileCount = glm::max(terrainTiles.x, 1.f) * glm::max(terrainTiles.z, 1.f);
-				params.myTileCount = static_cast<int>(tileCount);
+				const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+				params.myTileCount = gridTiles.x * gridTiles.y;
 				myGraphics->Render(IRenderPass::Category::Terrain, cam, renderJob, params);
 			}
 				break;

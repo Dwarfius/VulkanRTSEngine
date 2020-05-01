@@ -47,7 +47,13 @@ float terrain(vec2 uv)
 	float h = (sin(piCycles.x) + sin(piCycles.y)) / 2.f;
 	return h * YScale * 0.5f; // div by 2 because h is [-1, 1] and not [0, 1]
 #else
-	return texture2D(TexHeightmap, uv).x * YScale;
+	// need to remap the current [0, Size-1] scale to [0.5, Size-1.5],
+	// to avoid the texture being sampled at the borders producing
+	// incorrect interpolation results
+	vec2 texSize = vec2(textureSize(TexHeightmap, 0));
+	vec2 denormalizedUV = 0.5f + uv * (texSize-1.f);
+	vec2 remappedUV = denormalizedUV / texSize;
+	return texture(TexHeightmap, remappedUV).x * YScale;
 #endif
 }
 
@@ -63,5 +69,5 @@ void main()
     gl_Position = MVP * vec4(pos, 1);
 
     Out.Height = pos.y;
-    Out.TexCoords.xy = uv;
+    Out.TexCoords = uv;
 }

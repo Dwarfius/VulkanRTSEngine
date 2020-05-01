@@ -31,8 +31,6 @@ Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
-
-
 constexpr StaticString kHeightmapName("Tynemouth-tangrams.png");
 
 Game::Game(ReportError aReporterFunc)
@@ -72,8 +70,8 @@ Game::Game(ReportError aReporterFunc)
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
 		//Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
 		//terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
-		constexpr uint32_t kTerrCells = 128;
-		terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 20);
+		constexpr uint32_t kTerrCells = 64;
+		terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
 		myTerrains.push_back(terr);
 	}
 
@@ -134,7 +132,11 @@ void Game::Init()
 	}
 
 	PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-	physComp->CreatePhysicsEntity(0, myTerrains[0]->CreatePhysicsShape());
+	std::shared_ptr<PhysicsShapeHeightfield> terrShape = myTerrains[0]->CreatePhysicsShape();
+	glm::vec3 pos(0.f);
+	pos = terrShape->AdjustPositionForRecenter(pos);
+	physComp->SetOrigin(pos);
+	physComp->CreatePhysicsEntity(0, terrShape);
 	physComp->GetPhysicsEntity().SetCollisionFlags(
 		physComp->GetPhysicsEntity().GetCollisionFlags() 
 		| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
@@ -332,10 +334,14 @@ void Game::Render()
 	}
 
 	// adding axis for world navigation
-	constexpr float kLength = 1000;
-	myDebugDrawer.AddLine(glm::vec3(-kLength, 0.f, 0.f), glm::vec3(kLength, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, -kLength, 0.f), glm::vec3(0.f, kLength, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -kLength), glm::vec3(0.f, 0.f, kLength), glm::vec3(0.f, 0.f, 1.f));
+	const Terrain* terrain = myTerrains[0];
+	const float halfW = terrain->GetWidth() / 2.f;
+	const float halfH = 2;
+	const float halfD = terrain->GetDepth() / 2.f;
+	
+	myDebugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 
 	myRenderThread->AddDebugRenderable(&myDebugDrawer);
 	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());
