@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
 	nlohmann_json
 	GIT_REPOSITORY	https://github.com/nlohmann/json
-	GIT_TAG			v3.4.0
+	GIT_TAG			v3.7.3
 )
 
 FetchContent_GetProperties(nlohmann_json)

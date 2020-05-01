@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
 	tbb
 	GIT_REPOSITORY	https://github.com/01org/tbb
-	GIT_TAG			2019_U3	
+	GIT_TAG			v2020.2	
 )
 
 FetchContent_GetProperties(tbb)
