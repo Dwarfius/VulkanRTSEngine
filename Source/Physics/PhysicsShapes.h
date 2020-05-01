@@ -85,4 +85,13 @@ public:
 	// Constructs a heightfield of aWidth x aLength of heights from aHeightBuffer
 	// aMinHeight and aMaxHeight are used for fast calculating AABB
 	PhysicsShapeHeightfield(int aWidth, int aLength, const std::vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight);
+
+	// Moves aPos vertically to adjust for Bullet's
+	// heightfield recentering of this terrain shape
+	glm::vec3 AdjustPositionForRecenter(const glm::vec3& aPos) const;
+
+private:
+	// we store minHeight in order to be able to adjust the vertical
+	// offset of the heightfield
+	float myMinHeight;
 };

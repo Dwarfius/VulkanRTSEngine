@@ -88,7 +88,25 @@ PhysicsShapeConvexHull::PhysicsShapeConvexHull(const std::vector<float>& aVertBu
 // ====================================================
 PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const std::vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight)
 	: PhysicsShapeBase()
+	, myMinHeight(aMinHeight)
 {
-	myShape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer.data(), 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
+	btHeightfieldTerrainShape* shape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer.data(), 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
+	shape->buildAccelerator();
+	myShape = shape;
 	myType = Type::Heightfield;
+}
+
+glm::vec3 PhysicsShapeHeightfield::AdjustPositionForRecenter(const glm::vec3& aPos) const
+{
+	// bullet recenters the heightfield to the AABB center, meaning
+	// the actual heightfield will be offset. To mitigate this,
+	// we need to reposition the heightfield
+	const btHeightfieldTerrainShape* heightfield = static_cast<const btHeightfieldTerrainShape*>(myShape);
+	btTransform transf;
+	transf.setIdentity();
+	btVector3 min, max;
+	heightfield->getAabb(transf, min, max);
+	glm::vec3 adjustedPos = aPos;
+	adjustedPos.y += myMinHeight - min.y();
+	return adjustedPos;
 }
