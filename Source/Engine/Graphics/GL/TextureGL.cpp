@@ -59,12 +59,12 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 	default: ASSERT(false);
 	}
 
-	bool isSignedPixelType = texture->GetFormat() <= Texture::Format::kLastSignedFormat;
-	const GLenum pixelType = isSignedPixelType ? GL_BYTE : GL_UNSIGNED_BYTE;
+	// TODO: hook into internal format preferences
+	// glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format)
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internFormat,
 		texture->GetWidth(), texture->GetHeight(), 
-		0, format, pixelType, texture->GetPixels());
+		0, format, GL_UNSIGNED_BYTE, texture->GetPixels());
 
 	if (texture->IsUsingMipMaps())
 	{
@@ -94,12 +94,12 @@ void TextureGL::UpdateTexParams(const Texture* aTexture)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			break;
 		case Texture::WrapMode::Clamp:
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			break;
 		case Texture::WrapMode::MirroredRepeat:
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 			break;
 		}
 	}
