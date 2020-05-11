@@ -33,9 +33,6 @@ public:
 	void SetTexture(Handle<Texture> aTexture);
 	Handle<GPUResource> GetTexture() const { return myTexture; }
 
-	// Returns true if object can be used for rendering 
-	// (all resources have finished loading)
-	bool IsValid() const;
 	// Returns true if some dependencies need to be resolved
 	bool IsResolved() const { return myIsResolved; }
 

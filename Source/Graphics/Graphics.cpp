@@ -28,21 +28,17 @@ void Graphics::BeginGather()
 	}
 }
 
-void Graphics::Render(IRenderPass::Category aCategory, const Camera& aCam, const RenderJob& aJob, const IRenderPass::IParams& aParams)
+bool Graphics::CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const
 {
-	// TODO: find a better way to match it
-	// find the renderpass fitting the category
-	IRenderPass* renderPassToUse = nullptr;
-	for (IRenderPass* pass : myRenderPasses)
-	{
-		if (pass->GetCategory() == aCategory)
-		{
-			renderPassToUse = pass;
-			break;
-		}
-	}
+	IRenderPass* passToUse = GetRenderPass(aCategory);
+	return passToUse->HasResources(aJob);
+}
 
-	renderPassToUse->AddRenderable(aJob, aParams);
+void Graphics::Render(IRenderPass::Category aCategory, const RenderJob& aJob, const IRenderPass::IParams& aParams)
+{
+	IRenderPass* passToUse = GetRenderPass(aCategory);
+
+	passToUse->AddRenderable(aJob, aParams);
 
 	myRenderCalls++;
 }
@@ -194,4 +190,21 @@ void Graphics::ProcessGPUQueues()
 		}
 		delete aResource;
 	}
+}
+
+IRenderPass* Graphics::GetRenderPass(IRenderPass::Category aCategory) const
+{
+	// TODO: find a better way to match it - through enum ind
+	// find the renderpass fitting the category
+	IRenderPass* renderPassToUse = nullptr;
+	for (IRenderPass* pass : myRenderPasses)
+	{
+		if (pass->GetCategory() == aCategory)
+		{
+			renderPassToUse = pass;
+			break;
+		}
+	}
+	ASSERT_STR(renderPassToUse, "Failed to find a render pass for id %d!", static_cast<uint32_t>(aCategory));
+	return renderPassToUse;
 }

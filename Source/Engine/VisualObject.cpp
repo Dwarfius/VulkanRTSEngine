@@ -36,13 +36,6 @@ void VisualObject::SetTexture(Handle<Texture> aTexture)
 	myTexture = Game::GetInstance()->GetGraphics()->GetOrCreate(aTexture);
 }
 
-bool VisualObject::IsValid() const
-{
-	return myPipeline->GetState() == GPUResource::State::Valid
-		&& myModel->GetState() == GPUResource::State::Valid
-		&& myTexture->GetState() == GPUResource::State::Valid;
-}
-
 glm::vec3 VisualObject::GetCenter() const
 {
 	return myModel.Get<const GPUModel>()->GetCenter();

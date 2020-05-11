@@ -38,28 +38,30 @@ public:
 	RenderJob() = default;
 	RenderJob(Handle<GPUResource> aPipeline,
 		Handle<GPUResource> aModel,
-		TextureSet aTextures,
-		UniformSet aUniforms)
+		const TextureSet& aTextures)
 		: myPipeline(aPipeline)
 		, myModel(aModel)
 		, myTextures(aTextures)
-		, myUniforms(aUniforms)
 		, myPriority(0)
 		, myDrawMode(DrawMode::Indexed)
 		, myDrawParams()
 	{
 	}
 
+	void SetUniformSet(const UniformSet& aUniformSet)
+	{
+		myUniforms = aUniformSet;
+	}
+
 	bool HasLastHandles() const
 	{
-		bool lastTexture = false;
-		for (const Handle<GPUResource>& texture : myTextures)
-		{
-			lastTexture |= texture.IsLastHandle();
-		}
-		return myPipeline.IsLastHandle()
-			|| myModel.IsLastHandle()
-			|| lastTexture;
+		constexpr auto CheckLastHandle = [](const Handle<GPUResource>& aRes) {
+			return aRes.IsValid() && aRes.IsLastHandle();
+		};
+		
+		return CheckLastHandle(myPipeline)
+			|| CheckLastHandle(myModel)
+			|| std::any_of(myTextures.begin(), myTextures.end(), CheckLastHandle);
 	}
 
 	void SetPriority(uint32_t aPriority) { myPriority = aPriority; }

@@ -163,46 +163,70 @@ void RenderThread::SubmitRenderables()
 	const Camera& cam = *Game::GetInstance()->GetCamera();
 	/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
 		[&](const VisualObject* aVO)*/
-	for(const VisualObject* aVO : currRenderables)
+	for (const VisualObject* aVO : currRenderables)
 	{
-		if (cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
-		{
-			// updating the uniforms - grabbing game state!
-			const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
-			for (size_t i = 0; i < uboCount; i++)
-			{
-				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
-				const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
-				adapter.FillUniformBlock(cam, uniformBlock);
-			}
-
-			// building a render job
-			RenderJob renderJob(
-				aVO->GetPipeline(), 
-				aVO->GetModel(), 
-				{ aVO->GetTexture() }, 
-				aVO->GetUniforms() 
-			);
+		// building a render job
+		RenderJob renderJob(
+			aVO->GetPipeline(),
+			aVO->GetModel(),
+			{ aVO->GetTexture() }
+		);
+		IRenderPass::Category jobCategory = [aVO] {
+			// TODO: get rid of this double category.
+			// The VO has a category only to support rendering at the
+			// moment, and there's no need for duplicating the enum!
 			switch (aVO->GetCategory())
 			{
 			case VisualObject::Category::GameObject:
-			{
-				IRenderPass::IParams params;
-				params.myDistance = 0; // TODO: implement it
-				myGraphics->Render(IRenderPass::Category::Renderables, cam, renderJob, params);
-			}
-				break;
+				return IRenderPass::Category::Renderables;
 			case VisualObject::Category::Terrain:
-			{
-				const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
-				TerrainRenderParams params;
-				params.myDistance = 0;
-				const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-				params.myTileCount = gridTiles.x * gridTiles.y;
-				myGraphics->Render(IRenderPass::Category::Terrain, cam, renderJob, params);
+				return IRenderPass::Category::Terrain;
+			default:
+				ASSERT(false);
 			}
-				break;
-			}
+		}();
+
+		if (!myGraphics->CanRender(jobCategory, renderJob))
+		{
+			continue;
+		}
+
+		if (renderJob.myModel.IsValid() 
+			&& !cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
+		{
+			continue;
+		}
+
+		// TODO: refactor away to Graphics!
+		// updating the uniforms - grabbing game state!
+		const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
+			const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
+			adapter.FillUniformBlock(cam, uniformBlock);
+		}
+		renderJob.SetUniformSet(aVO->GetUniforms());
+			
+		switch (jobCategory)
+		{
+		case IRenderPass::Category::Renderables:
+		{
+			IRenderPass::IParams params;
+			params.myDistance = 0; // TODO: implement it
+			myGraphics->Render(jobCategory, renderJob, params);
+		}
+			break;
+		case IRenderPass::Category::Terrain:
+		{
+			const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
+			TerrainRenderParams params;
+			params.myDistance = 0;
+			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+			params.myTileCount = gridTiles.x * gridTiles.y;
+			myGraphics->Render(jobCategory, renderJob, params);
+		}
+			break;
 		}
 	}//);
 

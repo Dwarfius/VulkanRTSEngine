@@ -18,7 +18,6 @@ public:
 
 	std::shared_ptr<PhysicsShapeHeightfield> CreatePhysicsShape();
 
-	Handle<Model> GetModelHandle() const { return myModel; }
 	Handle<Texture> GetTextureHandle() const { return myTexture; }
 
 	float GetWidth() const { return (myWidth - 1) * myStep; }
@@ -36,6 +35,7 @@ private:
 	void Normalize(Vertex* aVertices, size_t aVertCount,
 		Model::IndexType* aIndices, size_t aIndCount);
 
+	// TODO: get rid of model!
 	Handle<Model> myModel;
 	Handle<Texture> myTexture;
 
@@ -45,8 +45,6 @@ private:
 	float myStep;
 	// controls how much texture should be scaled "vertically"
 	float myYScale;
-
-	
 
 	// Preserve the heights so that physics can still reference to it
 	std::vector<float> myHeightsCache;

@@ -2,7 +2,19 @@
 #include "GenericRenderPasses.h"
 
 #include <Graphics/Graphics.h>
+#include <Graphics/GPUResource.h>
+
 #include "../../Terrain.h"
+
+bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
+{
+	constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+		return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
+	};
+	return CheckResource(aJob.myModel)
+		&& CheckResource(aJob.myPipeline)
+		&& std::all_of(aJob.myTextures.begin(), aJob.myTextures.end(), CheckResource);
+}
 
 void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
 {
@@ -21,6 +33,15 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
 void DefaultRenderPass::Process(RenderJob& aJob, const IParams& /*aParams*/) const
 {
 	aJob.SetDrawMode(RenderJob::DrawMode::Indexed);
+}
+
+bool TerrainRenderPass::HasResources(const RenderJob& aJob) const
+{
+	constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+		return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
+	};
+	return CheckResource(aJob.myPipeline)
+		&& std::all_of(aJob.myTextures.begin(), aJob.myTextures.end(), CheckResource);
 }
 
 void TerrainRenderPass::PrepareContext(RenderContext& aContext) const

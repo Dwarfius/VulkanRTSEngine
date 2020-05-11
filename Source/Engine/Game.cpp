@@ -124,7 +124,6 @@ void Game::Init()
 	go = Instantiate();
 	{
 		vo = new VisualObject(*go);
-		vo->SetModel(myTerrains[0]->GetModelHandle());
 		vo->SetPipeline(terrainPipeline);
 		vo->SetTexture(myTerrains[0]->GetTextureHandle());
 		vo->SetCategory(VisualObject::Category::Terrain);
@@ -327,7 +326,7 @@ void Game::Render()
 	for (const std::pair<UID, GameObject*>& elem : myGameObjects)
 	{
 		VisualObject* visObj = elem.second->GetVisualObject();
-		if (visObj && visObj->IsValid())
+		if (visObj)
 		{
 			myRenderThread->AddRenderable(visObj);
 		}

@@ -25,7 +25,8 @@ public:
 
 	virtual void Init() = 0;
 	virtual void BeginGather();
-	void Render(IRenderPass::Category aCategory, const Camera& aCam, const RenderJob& aJob, const IRenderPass::IParams& aParams);
+	bool CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const;
+	void Render(IRenderPass::Category aCategory, const RenderJob& aJob, const IRenderPass::IParams& aParams);
 	virtual void Display();
 	virtual void CleanUp() = 0;
 	
@@ -88,5 +89,7 @@ private:
 	void ProcessGPUQueues();
 
 	virtual GPUResource* Create(Resource::Type aType) const = 0;
+
+	IRenderPass* GetRenderPass(IRenderPass::Category aCategory) const;
 };
 

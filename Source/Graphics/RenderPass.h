@@ -36,6 +36,7 @@ public:
 public:
 	IRenderPass();
 
+	virtual bool HasResources(const RenderJob& aJob) const = 0;
 	virtual void AddRenderable(const RenderJob& aJob, const IParams& aParams) = 0;
 	virtual void BeginPass(Graphics& anInterface);
 	virtual void SubmitJobs(Graphics& anInterface) = 0;
