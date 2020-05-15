@@ -29,14 +29,10 @@ Resource::~Resource()
 
 void Resource::ExecLambdaOnLoad(const Callback& aOnLoadCB)
 {
-	// we rely on the fact that we lock on state = Status::Ready
-	// before executing the callbacks once OnLoad finishes, so
-	// we can rely on status to be up-to-date
-	tbb::spin_rw_mutex::scoped_lock lockState(myStateMutex, false);
+	tbb::queuing_mutex::scoped_lock lockState(myStateMutex);
 	if (myState != State::Ready)
 	{
 		// we have to delay it till OnLoad runs
-		tbb::spin_mutex::scoped_lock lockCB(myLoadCBMutex);
 		myOnLoadCBs.push_back(aOnLoadCB);
 	}
 	else
@@ -44,17 +40,7 @@ void Resource::ExecLambdaOnLoad(const Callback& aOnLoadCB)
 		// scheduled callbacks already ran,
 		// we can just execute new one right now
 		aOnLoadCB(this);
-		// Note: it's okay if above call prolongs mutex read-lock 
-		// since nothing should rely on it at this point
 	}
-}
-
-void Resource::SetReady()
-{
-	// we only care about synchronizing Ready state to guarantee
-	// that the OnLoad callbacks will be executed
-	tbb::spin_rw_mutex::scoped_lock lock(myStateMutex);
-	myState = State::Ready;
 }
 
 void Resource::SetErrMsg(std::string&& anErrString)
@@ -88,21 +74,17 @@ void Resource::Load(AssetTracker& anAssetTracker)
 		return;
 	}
 
-	// The order of the following locks/execution is important:
-	// we do the status change first to ensure we can reliably
-	// execute both the scheduled callbacks as well as the ones
-	// that are about to be scheduled
-	SetReady();
+	// Either execute the callbacks now, or get in queue for when the
+	// callback schedulign finishes
+	tbb::queuing_mutex::scoped_lock lockState(myStateMutex);
+	myState = State::Ready;
+	if (myOnLoadCBs.size())
 	{
-		tbb::spin_mutex::scoped_lock lock(myLoadCBMutex);
-		if (myOnLoadCBs.size())
+		for (const Callback& loadCB : myOnLoadCBs)
 		{
-			for (const Callback& loadCB : myOnLoadCBs)
-			{
-				loadCB(this);
-			}
-			myOnLoadCBs.clear();
-			myOnLoadCBs.shrink_to_fit();
+			loadCB(this);
 		}
+		myOnLoadCBs.clear();
+		myOnLoadCBs.shrink_to_fit();
 	}
 }

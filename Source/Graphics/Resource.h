@@ -54,13 +54,13 @@ public:
 	const std::vector<Handle<Resource>>& GetDependencies() const { return myDependencies; }
 
 	// Sets the callback to call when the object finishes loading from disk
-	// or executes it immediately if object is loaded
+	// or executes it immediately if object is loaded. Guarantees queued
+	// order of execution.
 	void ExecLambdaOnLoad(const Callback& aOnLoadCB);
 	// Sets the callback to call when the object gets destroyed
 	void AddOnDestroyCB(const Callback& aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
 protected:
-	void SetReady();
 	// A convinience wrapper to set the error message in debug builds.
 	// Sets the state to Error
 	void SetErrMsg(std::string&& anErrString);
@@ -91,6 +91,5 @@ private:
 	Id myId;
 	State myState;
 
-	tbb::spin_rw_mutex myStateMutex;
-	tbb::spin_mutex myLoadCBMutex;
+	tbb::queuing_mutex myStateMutex;
 };
