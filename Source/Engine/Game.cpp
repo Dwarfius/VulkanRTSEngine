@@ -24,9 +24,6 @@
 #include "Components/EditorMode.h"
 #include "Components/PhysicsComponent.h"
 
-// TODO: write own header for collision object flags
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
@@ -68,10 +65,10 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		//Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
-		//terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
+		Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
+		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
 		constexpr uint32_t kTerrCells = 64;
-		terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
+		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
 		myTerrains.push_back(terr);
 	}
 
@@ -129,18 +126,7 @@ void Game::Init()
 		vo->SetCategory(VisualObject::Category::Terrain);
 		go->SetVisualObject(vo);
 	}
-
-	PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-	std::shared_ptr<PhysicsShapeHeightfield> terrShape = myTerrains[0]->CreatePhysicsShape();
-	glm::vec3 pos(0.f);
-	pos = terrShape->AdjustPositionForRecenter(pos);
-	physComp->SetOrigin(pos);
-	physComp->CreatePhysicsEntity(0, terrShape);
-	physComp->GetPhysicsEntity().SetCollisionFlags(
-		physComp->GetPhysicsEntity().GetCollisionFlags() 
-		| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
-	);
-	physComp->RequestAddToWorld(*myPhysWorld);
+	myTerrains[0]->AddPhysicsEntity(*go, *myPhysWorld);
 
 	myEditorMode = new EditorMode(*myPhysWorld);
 

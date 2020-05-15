@@ -86,11 +86,11 @@ PhysicsShapeConvexHull::PhysicsShapeConvexHull(const std::vector<float>& aVertBu
 }
 
 // ====================================================
-PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const std::vector<float>& aHeightBuffer, float aMinHeight, float aMaxHeight)
+PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const float* aHeightBuffer, float aMinHeight, float aMaxHeight)
 	: PhysicsShapeBase()
 	, myMinHeight(aMinHeight)
 {
-	btHeightfieldTerrainShape* shape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer.data(), 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
+	btHeightfieldTerrainShape* shape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer, 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
 	shape->buildAccelerator();
 	myShape = shape;
 	myType = Type::Heightfield;
