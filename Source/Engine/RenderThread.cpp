@@ -183,6 +183,7 @@ void RenderThread::SubmitRenderables()
 				return IRenderPass::Category::Terrain;
 			default:
 				ASSERT(false);
+				return static_cast<IRenderPass::Category>(0);
 			}
 		}();
 
