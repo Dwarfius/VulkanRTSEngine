@@ -1,6 +1,7 @@
 #include <unordered_set>
 #include <cstdarg>
 #include <iostream>
+#include <tbb/mutex.h>
 
 namespace DebugImpl
 {
