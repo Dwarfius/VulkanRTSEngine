@@ -11,6 +11,7 @@ Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fe
 	* [Intel's TBB](https://github.com/01org/tbb)
 	* [GLFW](https://www.glfw.org/)
 	* [Bullet3](https://github.com/bulletphysics/bullet3)
+	* [Google's Benchmark](https://github.com/google/benchmark)
 * Optional:
 	* [freealut](https://github.com/vancegroup/freealut) - Requires [OpenAL](https://www.openal.org/)
 		* Controlled by VENGINE_BUILD_WITH_AUDIO
@@ -54,6 +55,7 @@ License
 * This project relies on [LunarG's VulkanSDK](https://www.lunarg.com/vulkan-sdk/) which is licensed under the Apache License 2.0(see [Licenses](Copying.md)). 
 	* Copyright © 2015-2017 LunarG, Inc.
 	* Copyright © 2015-2017 Valve Corporation
+* This project uses [Google's Benchmark](https://github.com/google/benchmark) which is licensed under the Apache License 2.0(see [Licenses](Copying.md)). Copyright © [Google](https://github.com/google/benchmark/blob/master/LICENSE)
 
 [MIT License](http://opensource.org/licenses/MIT): 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:

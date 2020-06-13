@@ -1,4 +1,4 @@
-Intel's TBB, LunarG's VulkanSDK
+Intel's TBB, LunarG's VulkanSDK, Google's Benchmark
 ===========
 
                                  Apache License
