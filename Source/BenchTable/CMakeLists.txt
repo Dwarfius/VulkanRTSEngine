@@ -29,11 +29,24 @@ set(CMAKE_FOLDER "")
 file(GLOB SRC "*.cpp" "*.h")
 source_group("" FILES ${SRC})
 
-add_executable(${PROJECT_NAME} ${SRC})
-#if (MSVC)
-#   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
-#   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
-#endif(MSVC)
+set(SRC_SERIALIZATION "Serialization/CommonTypes.h"
+	"Serialization/VariadicStorage.cpp"
+	"Serialization/VirtualOrdered.cpp"
+	"Serialization/VirtualUnordered.cpp"
+)
+source_group("Serialization" FILES ${SRC_SERIALIZATION})
+
+add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION})
+if (MSVC)
+   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
+   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
+endif(MSVC)
+
+target_include_directories(${PROJECT_NAME}
+	PRIVATE 
+		. 
+		Extra
+)
 
 target_link_libraries(${PROJECT_NAME} Engine benchmark::benchmark)
 
