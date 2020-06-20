@@ -13,6 +13,10 @@ class DebugDrawer;
 class RenderPassJob;
 class RenderContext;
 class GPUResource;
+class Texture;
+class Pipeline;
+class Model;
+class Shader;
 
 class Graphics
 {
@@ -54,7 +58,8 @@ public:
 	// takes ownership of the renderpass
 	void AddRenderPass(IRenderPass* aRenderPass);
 
-	Handle<GPUResource> GetOrCreate(Handle<Resource> aRes, bool aShouldKeepRes = false);
+	template<class T>
+	Handle<GPUResource> GetOrCreate(Handle<T> aRes, bool aShouldKeepRes = false);
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
@@ -88,7 +93,10 @@ private:
 
 	void ProcessGPUQueues();
 
-	virtual GPUResource* Create(Resource::Type aType) const = 0;
+	virtual GPUResource* Create(Model*) const = 0;
+	virtual GPUResource* Create(Pipeline*) const = 0;
+	virtual GPUResource* Create(Shader*) const = 0;
+	virtual GPUResource* Create(Texture*) const = 0;
 
 	IRenderPass* GetRenderPass(IRenderPass::Category aCategory) const;
 };

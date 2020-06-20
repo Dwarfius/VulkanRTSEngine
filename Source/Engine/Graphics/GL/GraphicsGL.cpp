@@ -185,17 +185,24 @@ void GraphicsGL::CleanUp()
 	ourActiveGraphics = nullptr;
 }
 
-GPUResource* GraphicsGL::Create(Resource::Type aType) const
+GPUResource* GraphicsGL::Create(Model*) const
 {
-	switch (aType)
-	{
-	case Resource::Type::Model:		return new ModelGL();
-	case Resource::Type::Pipeline:	return new PipelineGL();
-	case Resource::Type::Shader:	return new ShaderGL();
-	case Resource::Type::Texture:	return new TextureGL();
-	default:	ASSERT_STR(false, "Unrecognized GPU resource requested!");
-	}
-	return nullptr;
+	return new ModelGL();
+}
+
+GPUResource* GraphicsGL::Create(Pipeline*) const
+{
+	return new PipelineGL();
+}
+
+GPUResource* GraphicsGL::Create(Shader*) const
+{
+	return new ShaderGL();
+}
+
+GPUResource* GraphicsGL::Create(Texture*) const
+{
+	return new TextureGL();
 }
 
 void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer)

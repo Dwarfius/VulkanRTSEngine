@@ -4,7 +4,6 @@
 #include <Core/RWBuffer.h>
 #include <Graphics/Resources/Model.h>
 
-class ShaderGL;
 class PipelineGL;
 class ModelGL;
 
@@ -55,5 +54,8 @@ private:
 	uint32_t myGPUQuery;
 	// ======
 
-	GPUResource* Create(Resource::Type aType) const override final;
+	GPUResource* Create(Model*) const override final;
+	GPUResource* Create(Pipeline*) const override final;
+	GPUResource* Create(Texture*) const override final;
+	GPUResource* Create(Shader*) const override final;
 };

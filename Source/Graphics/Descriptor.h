@@ -46,8 +46,6 @@ public:
 	// Name of the adapter that is related to the Uniform Buffer Object
 	const std::string& GetUniformAdapter() const { return myUniformAdapter; }
 
-	Type GetResType() const override final { return Type::Descriptor; };
-
 private:
 	void Serialize(Serializer& aSerializer) override final;
 

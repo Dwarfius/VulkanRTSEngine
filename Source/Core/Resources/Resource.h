@@ -24,17 +24,6 @@ public:
 		Ready
 	};
 
-	// TODO: get rid of this
-	enum class Type
-	{
-		Model,
-		Texture,
-		Pipeline,
-		Shader,
-		Descriptor
-	};
-	virtual Type GetResType() const = 0;
-
 public:
 	// creates a dynamic resource
 	Resource();

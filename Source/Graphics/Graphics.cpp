@@ -3,6 +3,10 @@
 
 #include "Camera.h"
 #include "GPUResource.h"
+#include "Resources/Model.h"
+#include "Resources/Pipeline.h"
+#include "Resources/Shader.h"
+#include "Resources/Texture.h"
 
 Graphics* Graphics::ourActiveGraphics = NULL;
 bool Graphics::ourUseWireframe = false;
@@ -57,14 +61,15 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 	myRenderPasses.push_back(aRenderPass);
 }
 
-Handle<GPUResource> Graphics::GetOrCreate(Handle<Resource> aRes, bool aShouldKeepRes /*= false*/)
+template<class T>
+Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes, bool aShouldKeepRes /*= false*/)
 {
 	GPUResource* newGPURes;
 	const Resource::Id resId = aRes->GetId();
 	if (resId == Resource::InvalidId)
 	{
 		// invalid id -> dynamic resource, so no need to track it 
-		newGPURes = Create(aRes->GetResType());
+		newGPURes = Create(aRes.Get());
 	}
 	else
 	{
@@ -76,7 +81,7 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<Resource> aRes, bool aShouldKee
 		}
 		else
 		{
-			newGPURes = Create(aRes->GetResType());
+			newGPURes = Create(aRes.Get());
 			myResources[resId] = newGPURes;
 		}
 	}
@@ -84,6 +89,11 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<Resource> aRes, bool aShouldKee
 	newGPURes->Create(*this, aRes, aShouldKeepRes);
 	return newGPURes;
 }
+
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Model>, bool);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Pipeline>, bool);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Shader>, bool);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Texture>, bool);
 
 void Graphics::ScheduleCreate(Handle<GPUResource> aGPUResource)
 {

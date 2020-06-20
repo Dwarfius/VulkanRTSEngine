@@ -19,8 +19,6 @@ public:
 	Texture(Resource::Id anId, const std::string& aPath);
 	~Texture();
 
-	Resource::Type GetResType() const override final { return Resource::Type::Texture; }
-
 	Format GetFormat() const { return myFormat; }
 	void SetFormat(Format aFormat) { myFormat = aFormat; }
 
