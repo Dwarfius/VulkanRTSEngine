@@ -17,9 +17,7 @@ Pipeline::Pipeline(Resource::Id anId, const std::string& aPath)
 
 void Pipeline::Serialize(Serializer& aSerializer)
 {
-	uint32_t enumTemp = 0;
-	aSerializer.Serialize("type", enumTemp);
-	myType = static_cast<IPipeline::Type>(enumTemp);
+	aSerializer.Serialize("type", myType);
 	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline type not supported!");
 
 	aSerializer.Serialize("shaders", myShaders);

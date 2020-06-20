@@ -22,7 +22,7 @@ void Serializer::SerializeVersion(int& aVersion)
 	Serialize("version", aVersion);
 }
 
-template<class T>
+template<class T, std::enable_if_t<Serializer::SupportedTypes::Contains<T>, bool> SFINAE>
 void Serializer::Serialize(const std::string_view& aName, T& aValue)
 {
 	if (myIsReading)

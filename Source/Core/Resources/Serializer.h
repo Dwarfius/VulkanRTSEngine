@@ -14,14 +14,30 @@ class Serializer
 	{
 		using VariantType = std::variant<Types...>;
 		using VecVariantType = std::variant<std::vector<Types>...>;
+		template<class T>
+		constexpr static bool Contains = (std::is_same_v<T, Types> || ...);
 	};
+
+protected:
+	struct ResourceProxy { std::string myPath; };
+	using SupportedTypes = VariantUtil<bool, uint32_t, int, float, std::string, ResourceProxy>;
 	
 public:
 	Serializer(AssetTracker& anAssetTracker, bool aIsReading);
 	virtual ~Serializer() = default;
 
-	template<class T>
+	template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> SFINAE = true>
 	void Serialize(const std::string_view& aName, T& aValue);
+
+	template<class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
+	void Serialize(const std::string_view& aName, T& aValue)
+	{
+		// if reading, it'll update enumVal with correct value
+		// if writing, it'll read from enumVal
+		uint32_t enumVal = static_cast<uint32_t>(aValue);
+		Serialize(aName, enumVal);
+		aValue = static_cast<T>(enumVal);
+	}
 
 	template<class T>
 	void Serialize(const std::string_view& aName, std::vector<T>& aValue);
@@ -35,8 +51,6 @@ public:
 	void SerializeVersion(int& aVersion);
 
 protected:
-	struct ResourceProxy { std::string myPath; };
-	using SupportedTypes = VariantUtil<bool, uint32_t, int, float, std::string, ResourceProxy>;
 	using VariantType = SupportedTypes::VariantType;
 	using VecVariantType = SupportedTypes::VecVariantType;
 	bool myIsReading;

@@ -143,15 +143,10 @@ void Texture::OnLoad(const File& aFile)
 
 void Texture::Serialize(Serializer& aSerializer)
 {
-	uint32_t enumTemp = 0;
-	aSerializer.Serialize("format", enumTemp);
-	myFormat = static_cast<Format>(enumTemp);
-	aSerializer.Serialize("wrapMode", enumTemp);
-	myWrapMode = static_cast<WrapMode>(enumTemp);
-	aSerializer.Serialize("minFilter", enumTemp);
-	myMinFilter = static_cast<Filter>(enumTemp);
-	aSerializer.Serialize("magFilter", enumTemp);
-	myMagFilter = static_cast<Filter>(enumTemp);
+	aSerializer.Serialize("format", myFormat);
+	aSerializer.Serialize("wrapMode", myWrapMode);
+	aSerializer.Serialize("minFilter", myMinFilter);
+	aSerializer.Serialize("magFilter", myMagFilter);
 	aSerializer.Serialize("enableMipMaps", myEnableMipmaps);
 
 	std::string texturePath;
