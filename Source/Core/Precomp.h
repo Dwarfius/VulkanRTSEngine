@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <fstream>
 #include <algorithm>
@@ -15,6 +16,7 @@
 #include <random>
 #include <chrono>
 #include <memory>
+#include <variant>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

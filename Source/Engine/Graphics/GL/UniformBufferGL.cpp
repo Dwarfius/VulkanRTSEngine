@@ -1,10 +1,13 @@
 #include "Precomp.h"
 #include "UniformBufferGL.h"
 
-UniformBufferGL::UniformBufferGL(size_t aBufferSize)
-	: myBuffer(0)
-	, myBufferSize(aBufferSize)
+#include <Graphics/Descriptor.h>
+
+UniformBufferGL::UniformBufferGL(Handle<Descriptor> aDescriptor)
+	: myDescriptor(aDescriptor)
+	, myBuffer(0)
 {
+	ASSERT_STR(myDescriptor.IsValid(), "Got an invalid handle!");
 	myUploadDesc.mySize = 0;
 	myUploadDesc.myData = nullptr;
 }
@@ -14,22 +17,35 @@ void UniformBufferGL::Bind(uint32_t aBindPoint)
 	glBindBufferBase(GL_UNIFORM_BUFFER, aBindPoint, myBuffer);
 }
 
+bool UniformBufferGL::AreDependenciesValid() const
+{
+	if (!GPUResource::AreDependenciesValid())
+	{
+		return false;
+	}
+	if (myDescriptor->GetState() != Resource::State::Ready)
+	{
+		return false;
+	}
+	return true;
+}
+
 void UniformBufferGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myBuffer, "Double initialization of uniform buffer!");
 
 	glGenBuffers(1, &myBuffer);
-
-	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
-	glBufferData(GL_UNIFORM_BUFFER, myBufferSize, NULL, GL_DYNAMIC_DRAW);
 }
 
 bool UniformBufferGL::OnUpload(Graphics& aGraphics)
 {
-	if (myUploadDesc.mySize > 0)
-	{
-		UploadData(myUploadDesc);
-	}
+	// Despite the name, we don't upload, we just allocate, 
+	// since we don't have anything to upload yet
+	ASSERT_STR(myDescriptor->GetState() == Resource::State::Ready,
+		"Descriptor hasn't finished loading!");
+	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, myDescriptor->GetBlockSize(), NULL, GL_DYNAMIC_DRAW);
+
 	return true;
 }
 
@@ -44,6 +60,7 @@ void UniformBufferGL::UploadData(const UploadDescriptor& anUploadDesc)
 {
 	ASSERT_STR(myBuffer, "Uninitialized uniform buffer!");
 	ASSERT_STR(anUploadDesc.mySize > 0 && anUploadDesc.myData, "Missing upload descriptor!");
+	ASSERT_STR(anUploadDesc.mySize == myDescriptor->GetBlockSize(), "Missmatching upload desc!");
 	myUploadDesc = anUploadDesc;
 
 	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);

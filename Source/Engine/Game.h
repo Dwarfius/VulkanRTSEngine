@@ -4,7 +4,7 @@
 #include "RenderThread.h"
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
-#include <Graphics/AssetTracker.h>
+#include <Core/Resources/AssetTracker.h>
 
 class Camera;
 class EditorMode;

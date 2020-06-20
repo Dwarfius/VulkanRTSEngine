@@ -73,7 +73,7 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 }
 
-void Model::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
+void Model::OnLoad(const File& aFile)
 {
 	// TODO: extend Model to support more than 1 Vertex type loading
 	tinyobj::attrib_t attrib;

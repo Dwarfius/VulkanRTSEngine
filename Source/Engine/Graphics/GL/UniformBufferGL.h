@@ -2,6 +2,8 @@
 
 #include <Graphics/GPUResource.h>
 
+class Descriptor;
+
 class UniformBufferGL : public GPUResource
 {
 public:
@@ -12,19 +14,21 @@ public:
 	};
 
 public:
-	UniformBufferGL(size_t aBufferSize);
+	UniformBufferGL(Handle<Descriptor> aDescriptor);
 
 	// Binds the UniformBuffer to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
 	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
+	bool AreDependenciesValid() const override final;
+
 private:
 	void OnCreate(Graphics& aGraphics) override final;
 	bool OnUpload(Graphics& aGraphics) override final;
 	void OnUnload(Graphics& aGraphics) override final;
 
-	size_t myBufferSize;
+	Handle<Descriptor> myDescriptor;
 	uint32_t myBuffer;
 	UploadDescriptor myUploadDesc;
 

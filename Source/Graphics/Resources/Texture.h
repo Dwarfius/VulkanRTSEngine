@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Resource.h"
+#include <Core/Resources/Resource.h>
 #include "../Interfaces/ITexture.h"
 
 // Base class for creating specialized Textures
@@ -57,6 +57,7 @@ protected:
 private:
 	void FreePixels();
 
-	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
-	bool LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath) override final;
+	bool UsesDescriptor() const override final;
+	void OnLoad(const File& aFile) override;
+	void Serialize(Serializer& aSerializer) override final;
 };

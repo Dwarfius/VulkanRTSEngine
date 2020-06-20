@@ -100,7 +100,14 @@ set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl"
 	"Debug/DebugDrawer.cpp" "Debug/DebugDrawer.h"
 )
 
-add_library(${PROJECT_NAME} STATIC ${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_GRAPHICS} ${SRC_ALGOS})
+set(SRC_RESOURCES "Resources/AssetTracker.cpp" "Resources/AssetTracker.h"
+	"Resources/JsonSerializer.cpp" "Resources/JsonSerializer.h"
+	"Resources/Resource.cpp" "Resources/Resource.h"
+	"Resources/Serializer.cpp" "Resources/Serializer.h"
+)
+
+add_library(${PROJECT_NAME} STATIC 
+	${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_ALGOS} ${SRC_RESOURCES})
 if (MSVC)
    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
    set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
@@ -112,7 +119,7 @@ source_group("" FILES ${SRC})
 source_group(Algos FILES ${SRC_ALGOS})
 source_group(Threading FILES ${SRC_THREADING})
 source_group(Debug FILES ${SRC_DEBUG})
-source_group(Graphics FILES ${SRC_GRAPHICS})
+source_group(Resources FILES ${SRC_RESOURCES})
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 

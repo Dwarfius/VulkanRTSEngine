@@ -2,6 +2,9 @@
 
 #include "Resource.h"
 
+//class Serializer;
+#include "Serializer.h"
+
 // Class for handling different resource types using the same interface. 
 // Threadsafe
 class AssetTracker
@@ -42,6 +45,8 @@ public:
 	// Threadsafe
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(const std::string& aPath);
+
+	std::unique_ptr<Serializer> GetReadSerializer(const std::string& aPath);
 
 private:
 	// Utility method to clean-up the resource from registry and asset collections

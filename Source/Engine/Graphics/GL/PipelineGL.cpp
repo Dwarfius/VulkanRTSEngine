@@ -3,7 +3,7 @@
 
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Graphics.h>
-#include <Graphics/AssetTracker.h>
+#include <Core/Resources/AssetTracker.h>
 
 #include "ShaderGL.h"
 #include "UniformBufferGL.h"
@@ -47,9 +47,10 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	myDescriptors.reserve(descCount);
 	for(size_t i=0; i<descCount; i++)
 	{
-		const Descriptor& descriptor = pipeline->GetDescriptor(i);
+		Handle<Descriptor> descriptor = pipeline->GetDescriptor(i);
 		myDescriptors.push_back(descriptor);
-		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor.GetBlockSize());
+
+		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor);
 		ubo->Create(aGraphics, nullptr);
 		myBuffers.push_back(ubo);
 	}
@@ -100,10 +101,10 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		const size_t descCount = pipeline->GetDescriptorCount();
 		for (size_t i = 0; i < descCount; i++)
 		{
-			const Descriptor& descriptor = pipeline->GetDescriptor(i);
+			const Handle<Descriptor>& descriptor = pipeline->GetDescriptor(i);
 
 			// TODO: get rid of this name hack, have a proper name string!
-			const std::string& uboName = descriptor.GetUniformAdapter();
+			const std::string& uboName = descriptor->GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
 			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}
@@ -160,6 +161,16 @@ bool PipelineGL::AreDependenciesValid() const
 	for (Handle<UniformBufferGL> buffer : myBuffers)
 	{
 		if (buffer->GetState() != State::Valid)
+		{
+			return false;
+		}
+	}
+	// Although UniformBufferGL has a direct dependency on Descriptor,
+	// we add another here because these descriptors can be queried
+	// by other systems via IPipeline
+	for (const Handle<Descriptor>& descriptor : myDescriptors)
+	{
+		if (descriptor->GetState() != Resource::State::Ready)
 		{
 			return false;
 		}

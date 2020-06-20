@@ -3,7 +3,7 @@
 #include <Core/Vertex.h>
 #include "UniformBlock.h"
 #include "RenderPass.h"
-#include "Resource.h" // needed for Resource::Id
+#include <Core/Resources/Resource.h> // needed for Resource::Id
 
 struct GLFWwindow;
 class Camera;

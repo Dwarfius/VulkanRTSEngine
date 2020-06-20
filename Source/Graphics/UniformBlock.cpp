@@ -20,13 +20,13 @@ size_t UniformBlock::GetSize() const
 	return myDescriptor.GetBlockSize();
 }
 
-UniformBlockPoolTraits::UniformBlockPoolTraits(const Descriptor& aDescriptor)
+UniformBlockPoolTraits::UniformBlockPoolTraits(Handle<Descriptor> aDescriptor)
 	: myDescriptor(aDescriptor)
 {
 }
 
 size_t UniformBlockPoolTraits::GetSize() const
 {
-	return myDescriptor.GetBlockSize();
+	return myDescriptor->GetBlockSize();
 }
 

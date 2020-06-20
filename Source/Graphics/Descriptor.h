@@ -1,8 +1,7 @@
 #pragma once
 
 #include "GraphicsTypes.h"
-
-#include <nlohmann/json_fwd.hpp>
+#include <Core/Resources/Resource.h>
 
 // TODO: might be a good idea to use unpack-CRTP to write a fully static-compiled descriptors
 // might help save on the memory access logic, and let compiler optimize the access better
@@ -15,14 +14,14 @@
 // ...
 // d.RecomputeSize();
 // UniformBlock b(2, d);
-class Descriptor
+class Descriptor : public Resource
 {
 public:
-	static bool FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc);
+	static constexpr StaticString kDir = Resource::AssetsFolder + "pipelineAdapters/";
 
 public:
 	Descriptor();
-	Descriptor(const std::string& anAdapterName);
+	Descriptor(Resource::Id anId, const std::string& aPath);
 
 	// Marks the slot to be used storing a uniform of specific type
 	void SetUniformType(uint32_t aSlot, UniformType aType);
@@ -47,7 +46,11 @@ public:
 	// Name of the adapter that is related to the Uniform Buffer Object
 	const std::string& GetUniformAdapter() const { return myUniformAdapter; }
 
+	Type GetResType() const override final { return Type::Descriptor; };
+
 private:
+	void Serialize(Serializer& aSerializer) override final;
+
 	std::vector<uint32_t> myOffsets;
 	std::vector<UniformType> myTypes;
 	size_t myTotalSize;

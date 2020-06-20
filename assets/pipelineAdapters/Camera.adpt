@@ -1,0 +1,15 @@
+{
+	"adapter":"CameraAdapter",
+	"members":[
+		"Mat4",
+		"Mat4",
+		"Vec4",
+		"Vec4",
+		"Vec4",
+		"Vec4",
+		"Vec4",
+		"Vec4",
+		"Vec3",
+		"Vec2"
+	]
+}

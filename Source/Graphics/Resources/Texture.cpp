@@ -1,8 +1,8 @@
 #include "Precomp.h"
 #include "Texture.h"
 
-#include <nlohmann/json.hpp>
 #include <Core/File.h>
+#include <Core/Resources/Serializer.h>
 #include <stb_image.h>
 
 unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
@@ -107,7 +107,16 @@ void Texture::FreePixels()
 	myPixels = nullptr;
 }
 
-void Texture::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
+bool Texture::UsesDescriptor() const
+{
+	const std::string& path = GetPath();
+	ASSERT_STR(path.length() >= 4, "Invalid name passed!");
+	std::string_view pathExt(path);
+	pathExt = pathExt.substr(path.length() - 4);
+	return pathExt.compare("desc") == 0;
+}
+
+void Texture::OnLoad(const File& aFile)
 {
 	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aFile.GetCBuffer());
 	int desiredChannels = STBI_default;
@@ -132,72 +141,31 @@ void Texture::OnLoad(AssetTracker& anAssetTracker, const File& aFile)
 	}
 }
 
-bool Texture::LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath)
+void Texture::Serialize(Serializer& aSerializer)
 {
-	ASSERT_STR(aPath.length() >= 4, "Invalid name passed!");
-	using json = nlohmann::json;
+	uint32_t enumTemp = 0;
+	aSerializer.Serialize("format", enumTemp);
+	myFormat = static_cast<Format>(enumTemp);
+	aSerializer.Serialize("wrapMode", enumTemp);
+	myWrapMode = static_cast<WrapMode>(enumTemp);
+	aSerializer.Serialize("minFilter", enumTemp);
+	myMinFilter = static_cast<Filter>(enumTemp);
+	aSerializer.Serialize("magFilter", enumTemp);
+	myMagFilter = static_cast<Filter>(enumTemp);
+	aSerializer.Serialize("enableMipMaps", myEnableMipmaps);
 
-	std::string ext = aPath.substr(aPath.length() - 4);
-	const bool isDescriptor = ext.compare("desc") == 0;
-	if (isDescriptor)
+	std::string texturePath;
+	aSerializer.Serialize("path", texturePath);
+	if (!texturePath.length())
 	{
-		File descFile(aPath);
-		if (!descFile.Read())
-		{
-			SetErrMsg("Failed to read descriptor!");
-			return false;
-		}
-		
-		const json jsonObj = json::parse(descFile.GetBuffer(), nullptr, false);
-		{
-			const json& formatHandle = jsonObj["format"];
-			if (!formatHandle.is_null())
-			{
-				myFormat = formatHandle.get<Format>();
-			}
-		}
-
-		{
-			const json& wrapModeHandle = jsonObj["wrapMode"];
-			if (!wrapModeHandle.is_null())
-			{
-				myWrapMode = wrapModeHandle.get<WrapMode>();
-			}
-		}
-
-		{
-			const json& minFilterHandle = jsonObj["minFilter"];
-			if (!minFilterHandle.is_null())
-			{
-				myMinFilter = minFilterHandle.get<Filter>();
-			}
-		}
-
-		{
-			const json& magFilterHandle = jsonObj["magFilter"];
-			if (!magFilterHandle.is_null())
-			{
-				myMagFilter = magFilterHandle.get<Filter>();
-			}
-		}
-
-		{
-			const json& enableMipMapsHandle = jsonObj["enableMipMaps"];
-			if (!enableMipMapsHandle.is_null())
-			{
-				myEnableMipmaps = enableMipMapsHandle.get<bool>();
-			}
-		}
-
-		{
-			const json& pathHandle = jsonObj["path"];
-			if (pathHandle.is_null())
-			{
-				SetErrMsg("Texture missing 'path'!");
-				return false;
-			}
-			aPath = pathHandle.get<std::string>();
-		}
+		SetErrMsg("Texture missing 'path'!");
+		return;
 	}
-	return true;
+	File file(texturePath);
+	if (!file.Read())
+	{
+		SetErrMsg("Failed to find texture file!");
+		return;
+	}
+	OnLoad(file);
 }

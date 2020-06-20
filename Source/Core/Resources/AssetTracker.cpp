@@ -1,6 +1,9 @@
 #include "Precomp.h"
 #include "AssetTracker.h"
 
+#include "JsonSerializer.h"
+#include "File.h"
+
 tbb::task* AssetTracker::LoadTask::execute()
 {
 	// if we're holding the last handle, means noone needs this anymore,
@@ -21,6 +24,20 @@ tbb::task* AssetTracker::LoadTask::execute()
 AssetTracker::AssetTracker()
 	: myCounter(Resource::InvalidId)
 {
+}
+
+std::unique_ptr<Serializer> AssetTracker::GetReadSerializer(const std::string& aPath)
+{
+	File file(aPath);
+	if (!file.Read())
+	{
+		return std::unique_ptr<Serializer>();
+	}
+	// TODO: need to find a way to return it on the stack, 
+	// instead of heap allocating all the time. Maybe a thread-local and return-by-ref?
+	std::unique_ptr<Serializer> serializer = std::make_unique<JsonSerializer>(*this, true);
+	serializer->ReadFrom(file);
+	return serializer;
 }
 
 void AssetTracker::RemoveResource(const Resource* aRes)

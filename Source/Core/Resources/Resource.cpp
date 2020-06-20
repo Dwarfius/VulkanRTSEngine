@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "Resource.h"
-#include <Core/File.h>
+
+#include "AssetTracker.h"
+#include "../File.h"
 
 Resource::Resource()
 	: myId(InvalidId)
@@ -57,8 +59,18 @@ void Resource::Load(AssetTracker& anAssetTracker)
 	ASSERT_STR(myPath.size(), "Empty path during resource load!");
 	ASSERT_STR(myState == State::Uninitialized, "Double load detected!");
 	
-	const bool needsRawRes = LoadResDescriptor(anAssetTracker, myPath);
-	if (needsRawRes)
+	if (UsesDescriptor())
+	{
+		std::unique_ptr<Serializer> serializerPtr = anAssetTracker.GetReadSerializer(myPath);
+		Serializer* serializer = serializerPtr.get();
+		if (!serializer)
+		{
+			SetErrMsg("Failed to read descriptor file!");
+			return;
+		}
+		Serialize(*serializer);
+	}
+	else
 	{
 		File file(myPath);
 		if (!file.Read())
@@ -66,7 +78,7 @@ void Resource::Load(AssetTracker& anAssetTracker)
 			SetErrMsg("Failed to read file!");
 			return;
 		}
-		OnLoad(anAssetTracker, file);
+		OnLoad(file);
 	}
 
 	if (myState == State::Error)

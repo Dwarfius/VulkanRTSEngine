@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Resource.h"
+#include <Core/Resources/Resource.h>
 #include "../Interfaces/IShader.h"
 
 // A base class for shaders
@@ -24,5 +24,6 @@ protected:
 	static IShader::Type DetermineType(const std::string& aPath);
 
 private:
-	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
+	bool UsesDescriptor() const override final { return false; }
+	void OnLoad(const File& aFile) override;
 };

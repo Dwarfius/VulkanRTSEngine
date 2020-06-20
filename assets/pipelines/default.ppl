@@ -5,13 +5,6 @@
 		"base.frag"
 	],
 	"descriptors":[  
-		{  
-			"adapter":"ObjectMatricesAdapter",
-			"members":[  
-				"Mat4",
-				"Mat4",
-				"Mat4"
-			]
-		}
+		{ "Res": "ObjectMatrices.adpt" }
 	]
 }

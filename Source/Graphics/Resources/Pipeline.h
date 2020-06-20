@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Resource.h"
+#include <Core/Resources/Resource.h>
 #include "../Interfaces/IPipeline.h"
 #include "../Descriptor.h"
 #include "../Resources/Shader.h"
@@ -18,19 +18,19 @@ public:
 	Resource::Type GetResType() const override final { return Resource::Type::Pipeline; }
 
 	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
-	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
+	Handle<Descriptor> GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
 
-	void AddShader(const std::string& aShader);
+	void AddShader(const std::string& aShader) { myShaders.push_back(aShader); }
 
-	void AddDescriptor(Descriptor&& aDescriptor) { myDescriptors.push_back(std::move(aDescriptor)); }
+	void AddDescriptor(Handle<Descriptor> aDescriptor) { myDescriptors.push_back(aDescriptor); }
 
 	size_t GetShaderCount() const { return myShaders.size(); }
-	std::string GetShader(size_t anInd) const { return myShaders[anInd]; }
+	const std::string& GetShader(size_t anInd) const { return myShaders[anInd]; }
 
 private:
-	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
+	void Serialize(Serializer& aSerializer) override;
 
 	IPipeline::Type myType;
-	std::vector<Descriptor> myDescriptors;
+	std::vector<Handle<Descriptor>> myDescriptors;
 	std::vector<std::string> myShaders;
 };

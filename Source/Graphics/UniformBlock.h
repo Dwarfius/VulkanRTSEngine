@@ -41,7 +41,7 @@ void UniformBlock::SetUniform(uint32_t aSlot, const T& aValue)
 class UniformBlockPoolTraits
 {
 public:
-	UniformBlockPoolTraits(const Descriptor& aDescriptor);
+	UniformBlockPoolTraits(Handle<Descriptor> aDescriptor);
 
 	// ===============================
 	// Traits type conformance
@@ -55,5 +55,5 @@ public:
 	// ===============================
 
 private:
-	Descriptor myDescriptor;
+	Handle<Descriptor> myDescriptor;
 };

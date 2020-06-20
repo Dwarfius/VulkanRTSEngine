@@ -7,38 +7,8 @@
 		"tess-eval.tevl"
 	],
 	"descriptors":[  
-		{  
-			"adapter":"ObjectMatricesAdapter",
-			"members":[  
-				"Mat4",
-				"Mat4",
-				"Mat4"
-			]
-		},
-		{  
-			"adapter":"TerrainAdapter",
-			"members":[  
-				"Vec3",
-				"Float",
-				"Int",
-				"Int",
-				"Float"
-			]
-		},
-		{
-			"adapter":"CameraAdapter",
-			"members":[
-				"Mat4",
-				"Mat4",
-				"Vec4",
-				"Vec4",
-				"Vec4",
-				"Vec4",
-				"Vec4",
-				"Vec4",
-				"Vec3",
-				"Vec2"
-			]
-		}
+		{ "Res": "ObjectMatrices.adpt" },
+		{ "Res": "Terrain.adpt" },
+		{ "Res": "Camera.adpt" }
 	]
 }

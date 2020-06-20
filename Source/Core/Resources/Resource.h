@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Core/RefCounted.h>
-#include <Core/StaticString.h>
+#include "../RefCounted.h"
+#include "../StaticString.h"
 
-class AssetTracker;
 class File;
+class Serializer;
 
 // Base class for resources. Disables copying. All resources must be loaded from disk.
 class Resource : public RefCounted
@@ -24,14 +24,15 @@ public:
 		Ready
 	};
 
+	// TODO: get rid of this
 	enum class Type
 	{
 		Model,
 		Texture,
 		Pipeline,
-		Shader
+		Shader,
+		Descriptor
 	};
-
 	virtual Type GetResType() const = 0;
 
 public:
@@ -74,11 +75,13 @@ private:
 	void Load(AssetTracker& anAssetTracker);
 	// ============================
 
+	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
+	virtual bool UsesDescriptor() const { return true; };
 	// Loads a raw resource (png, obj, etc)
-	virtual void OnLoad(AssetTracker& assetTracker, const File& aFile) = 0;
+	virtual void OnLoad(const File& aFile) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this shoudl be implemented!"); };
 	// Loads a resource descriptor. Returns true if an actual resource 
 	// load is needed, false otherwise.
-	virtual bool LoadResDescriptor(AssetTracker& anAssetTracker, std::string& aPath) { return true; }
+	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this shoudl be implemented!"); };
 
 #ifdef _DEBUG
 	// used for tracking what went wrong

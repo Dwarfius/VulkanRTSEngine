@@ -65,10 +65,10 @@ bool VisualObject::Resolve()
 	size_t descriptorCount = pipeline->GetDescriptorCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{
-		const Descriptor& descriptor = pipeline->GetDescriptor(i);
+		const Handle<Descriptor>& descriptor = pipeline->GetDescriptor(i);
 
-		myUniforms.push_back(std::make_shared<UniformBlock>(descriptor));
-		const std::string& adapterName = descriptor.GetUniformAdapter();
+		myUniforms.push_back(std::make_shared<UniformBlock>(*descriptor.Get()));
+		const std::string& adapterName = descriptor->GetUniformAdapter();
 		myAdapters.push_back(
 			UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
 		);

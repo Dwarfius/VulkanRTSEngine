@@ -210,11 +210,11 @@ void RenderPassJobGL::RunJobs()
 		{
 			// grabbing the descriptor because it has the locations
 			// of uniform values to be uploaded to
-			const Descriptor& aDesc = pipeline->GetDescriptor(i);
+			const Handle<Descriptor>& aDesc = pipeline->GetDescriptor(i);
 			// there's a UBO for every descriptor of the pipeline
 			UniformBufferGL& ubo = pipeline->GetUBO(i);
 			UniformBufferGL::UploadDescriptor uploadDesc;
-			uploadDesc.mySize = aDesc.GetBlockSize();
+			uploadDesc.mySize = aDesc->GetBlockSize();
 			uploadDesc.myData = r.myUniforms[i]->GetData();
 			ubo.UploadData(uploadDesc);
 		}

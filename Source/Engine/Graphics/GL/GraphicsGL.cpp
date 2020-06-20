@@ -14,9 +14,9 @@
 #include <sstream>
 
 #include <Core/Debug/DebugDrawer.h>
+#include <Core/Resources/AssetTracker.h>
 
 #include <Graphics/Camera.h>
-#include <Graphics/AssetTracker.h>
 #include <Graphics/Resources/Shader.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Texture.h>

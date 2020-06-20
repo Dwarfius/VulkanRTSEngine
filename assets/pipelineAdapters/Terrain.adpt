@@ -1,0 +1,10 @@
+{  
+	"adapter":"TerrainAdapter",
+	"members":[  
+		"Vec3",
+		"Float",
+		"Int",
+		"Int",
+		"Float"
+	]
+}

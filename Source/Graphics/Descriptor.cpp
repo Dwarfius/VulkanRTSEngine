@@ -1,78 +1,18 @@
 #include "Precomp.h"
 #include "Descriptor.h"
 
-#include <nlohmann/json.hpp>
-
-bool Descriptor::FromJSON(const nlohmann::json& jsonHandle, Descriptor& aDesc)
-{
-	using json = nlohmann::json;
-
-	const json& adapterHandle = jsonHandle["adapter"];
-	if (!adapterHandle.is_string())
-	{
-		return false;
-	}
-
-	std::string adapterName = adapterHandle.get<std::string>();
-
-	const json& uniformArrayHandle = jsonHandle["members"];
-	if (!uniformArrayHandle.is_array())
-	{
-		return false;
-	}
-	size_t uniformCount = uniformArrayHandle.size();
-	ASSERT_STR(uniformCount < std::numeric_limits<uint32_t>::max(), "Uniform index doesn't fit - will overlap!");
-
-	aDesc = Descriptor(adapterName);
-	
-	for (size_t i = 0; i < uniformCount; i++)
-	{
-		// TODO: once uniform types stabilize, need to remove string parsing
-		std::string uniformTypeName = uniformArrayHandle.at(i);
-		if (uniformTypeName == "Mat4")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Mat4);
-		}
-		else if (uniformTypeName == "Vec4")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Vec4);
-		}
-		else if (uniformTypeName == "Vec3")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Vec3);
-		}
-		else if (uniformTypeName == "Vec2")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Vec2);
-		}
-		else if (uniformTypeName == "Int")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Int);
-		}
-		else if (uniformTypeName == "Float")
-		{
-			aDesc.SetUniformType(static_cast<uint32_t>(i), UniformType::Float);
-		}
-		else
-		{
-			ASSERT_STR(false, "Not supported!");
-			return false;
-		}
-	}
-	aDesc.RecomputeSize();
-
-	return true;
-}
+#include <Core/Resources/Serializer.h>
 
 Descriptor::Descriptor()
-	: Descriptor("")
+	: myTotalSize(0)
 {
 }
 
-Descriptor::Descriptor(const std::string& anAdapterName)
-	: myTotalSize(0)
-	, myUniformAdapter(anAdapterName)
+Descriptor::Descriptor(Resource::Id anId, const std::string& aPath)
+	: Resource(anId, aPath)
+	, myTotalSize(0)
 {
+
 }
 
 void Descriptor::SetUniformType(uint32_t aSlot, UniformType aType)
@@ -185,4 +125,49 @@ size_t Descriptor::GetSlotSize(uint32_t aSlot) const
 		ASSERT_STR(false, "Unrecognized Uniform Type found!");
 		return 0;
 	}
+}
+
+void Descriptor::Serialize(Serializer& aSerializer)
+{
+	aSerializer.Serialize("adapter", myUniformAdapter);
+
+	// TODO: Yeah, this is bad and dirty, but sadly until
+	// Serializer can support generic enums, will have to do it
+	// this way :/
+	std::vector<std::string> members;
+	aSerializer.Serialize("members", members);
+
+	for (const std::string& member : members)
+	{
+		if (member == "Mat4")
+		{
+			myTypes.push_back(UniformType::Mat4);
+		}
+		else if (member == "Vec4")
+		{
+			myTypes.push_back(UniformType::Vec4);
+		}
+		else if (member == "Vec3")
+		{
+			myTypes.push_back(UniformType::Vec3);
+		}
+		else if (member == "Vec2")
+		{
+			myTypes.push_back(UniformType::Vec2);
+		}
+		else if (member == "Int")
+		{
+			myTypes.push_back(UniformType::Int);
+		}
+		else if (member == "Float")
+		{
+			myTypes.push_back(UniformType::Float);
+		}
+		else
+		{
+			ASSERT_STR(false, "Not supported!");
+			return;
+		}
+	}
+	RecomputeSize();
 }

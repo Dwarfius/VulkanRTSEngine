@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
 	nlohmann_json
 	GIT_REPOSITORY	https://github.com/nlohmann/json
-	GIT_TAG			v3.7.3
+	GIT_TAG			v3.8.0
 )
 
 FetchContent_GetProperties(nlohmann_json)
@@ -31,7 +31,6 @@ if(NOT nlohmann_json_POPULATED)
 endif()
 
 set(SRC "Precomp.cpp" "Precomp.h"
-	"AssetTracker.cpp" "AssetTracker.h"
 	"Camera.cpp" "Camera.h"
 	"Descriptor.cpp" "Descriptor.h"
 	"GPUResource.cpp" "GPUResource.h"
@@ -40,7 +39,6 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"RenderContext.h"
 	"RenderPass.cpp" "RenderPass.h"
 	"RenderPassJob.cpp" "RenderPassJob.h"
-	"Resource.cpp" "Resource.h"
 	"UniformBlock.cpp" "UniformBlock.h"
 )
 

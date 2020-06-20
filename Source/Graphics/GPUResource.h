@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/RefCounted.h>
-#include "Resource.h"
+#include <Core/Resources/Resource.h>
 
 class Graphics;
 

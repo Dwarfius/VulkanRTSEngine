@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Resource.h"
+#include <Core/Resources/Resource.h>
 #include "../Interfaces/IModel.h"
 
 class File;
@@ -103,8 +103,9 @@ public:
 	void Update(const UploadDescriptor<T>& aDescChain);
 
 private:
+	bool UsesDescriptor() const override final { return false; };
 	// Processes an .obj file in folder "../assets/objects/".
-	void OnLoad(AssetTracker& anAssetTracker, const File& aFile) override;
+	void OnLoad(const File& aFile) override;
 
 	BaseStorage* myVertices;
 	std::vector<IndexType> myIndices;
