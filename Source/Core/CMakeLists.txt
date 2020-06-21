@@ -1,5 +1,5 @@
 # by Daniel Prihodko
-cmake_minimum_required (VERSION 3.11)
+cmake_minimum_required (VERSION 3.16)
 project (Core LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
@@ -75,7 +75,7 @@ endif()
 
 set(CMAKE_FOLDER "")
 
-set(SRC "Precomp.cpp" "Precomp.h"
+set(SRC "Precomp.h"
 	"CRC32.h"
 	"File.cpp" "File.h"
 	"LazyVector.h"
@@ -109,8 +109,6 @@ set(SRC_RESOURCES "Resources/AssetTracker.cpp" "Resources/AssetTracker.h"
 add_library(${PROJECT_NAME} STATIC 
 	${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_ALGOS} ${SRC_RESOURCES})
 if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
-   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
    set(EXTRA_LIBS "IPHLPAPI.lib") # for UID class
 endif(MSVC)
 
@@ -120,6 +118,8 @@ source_group(Algos FILES ${SRC_ALGOS})
 source_group(Threading FILES ${SRC_THREADING})
 source_group(Debug FILES ${SRC_DEBUG})
 source_group(Resources FILES ${SRC_RESOURCES})
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 
@@ -146,3 +146,5 @@ target_link_libraries(${PROJECT_NAME}
 	tbb_static # TODO: will need to generalize it
 	glfw
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

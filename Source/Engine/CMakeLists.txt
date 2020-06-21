@@ -1,5 +1,5 @@
 # by Daniel Prihodko
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.16)
 project (Engine LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
@@ -58,7 +58,7 @@ endif()
 
 set(CMAKE_FOLDER "")
 
-set(SRC "Precomp.cpp" "Precomp.h"
+set(SRC "Precomp.h"
 	"Audio.cpp" "Audio.h"
 	"Game.cpp" "Game.h"
 	"GameObject.cpp" "GameObject.h"
@@ -113,11 +113,6 @@ add_library(${PROJECT_NAME} STATIC
 			${SRC_GRAPHICS_ADAPTERS}
 )
 
-if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
-   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
-endif(MSVC)
-
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
 source_group(Components FILES ${SRC_COMP})
@@ -128,6 +123,8 @@ source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
 if(VENGINE_BUILD_WITH_VULKAN)
 	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 endif()
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
 target_compile_definitions(${PROJECT_NAME} 
 	PUBLIC 
@@ -155,3 +152,5 @@ target_link_libraries(${PROJECT_NAME}
 	${OPENGL_LIBRARY} 
 	$<$<BOOL:${VENGINE_BUILD_WITH_VULKAN}>:${Vulkan_LIBRARY}>
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

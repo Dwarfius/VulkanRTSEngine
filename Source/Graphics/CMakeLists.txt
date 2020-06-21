@@ -1,5 +1,5 @@
 # by Daniel Prihodko
-cmake_minimum_required (VERSION 3.11)
+cmake_minimum_required (VERSION 3.16)
 project (Graphics LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
@@ -64,15 +64,12 @@ add_library(${PROJECT_NAME} STATIC
 		${SRC_RESOURCES}
 )
 
-if (MSVC)
-   set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/YuPrecomp.h")
-   set_source_files_properties("Precomp.cpp" PROPERTIES COMPILE_FLAGS "/YcPrecomp.h")
-endif(MSVC)
-
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
 source_group(Interfaces FILES ${SRC_INTERFACES})
 source_group(Resources FILES ${SRC_RESOURCES})
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
 target_include_directories(${PROJECT_NAME}
 	PRIVATE 
@@ -86,3 +83,5 @@ target_link_libraries(${PROJECT_NAME}
 	Core
 	nlohmann_json::nlohmann_json
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
