@@ -11,7 +11,7 @@ FetchContent_Declare(
 	GIT_TAG        v1.5.1
 )
 FetchContent_GetProperties(googleBench)
-if(NOT googleBench_POPULATED)
+if(NOT googlebench_POPULATED)
 	FetchContent_Populate(googleBench)
 
 	# enable our configuration
