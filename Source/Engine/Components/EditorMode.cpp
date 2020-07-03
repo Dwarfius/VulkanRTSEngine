@@ -34,43 +34,43 @@ void EditorMode::Update(float aDeltaTime, PhysicsWorld& aWorld)
 	glm::vec3 forward = camTransf.GetForward();
 	glm::vec3 right = camTransf.GetRight();
 	glm::vec3 up = camTransf.GetUp();
-	if (Input::GetKey('W'))
+	if (Input::GetKey(Input::Keys::W))
 	{
 		pos += forward * myFlightSpeed * aDeltaTime;
 	}
-	if (Input::GetKey('S'))
+	if (Input::GetKey(Input::Keys::S))
 	{
 		pos -= forward * myFlightSpeed * aDeltaTime;
 	}
-	if (Input::GetKey('D'))
+	if (Input::GetKey(Input::Keys::D))
 	{
 		pos += right * myFlightSpeed * aDeltaTime;
 	}
-	if (Input::GetKey('A'))
+	if (Input::GetKey(Input::Keys::A))
 	{
 		pos -= right * myFlightSpeed * aDeltaTime;
 	}
-	if (Input::GetKey('R'))
+	if (Input::GetKey(Input::Keys::R))
 	{
 		pos += up * myFlightSpeed * aDeltaTime;
 	}
-	if (Input::GetKey('F'))
+	if (Input::GetKey(Input::Keys::F))
 	{
 		pos -= up * myFlightSpeed * aDeltaTime;
 	}
 	camTransf.SetPos(pos);
 
 	// General controls
-	if (Input::GetKeyPressed('K'))
+	if (Input::GetKeyPressed(Input::Keys::K))
 	{
 		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
 	}
-
-	if (Input::GetKeyPressed('U'))
+	const float mouseWheelDelta = Input::GetMouseWheelDelta();
+	if (Input::GetKeyPressed(Input::Keys::U) || mouseWheelDelta > 0.f)
 	{
 		myFlightSpeed *= 2;
 	}
-	if (Input::GetKeyPressed('J'))
+	if (Input::GetKeyPressed(Input::Keys::J) || mouseWheelDelta < 0.f)
 	{
 		myFlightSpeed /= 2;
 	}

@@ -265,18 +265,18 @@ void Game::UpdateInput()
 
 void Game::Update()
 {
-	if (Input::GetKey(27) || myShouldEnd)
+	if (Input::GetKey(Input::Keys::Escape) || myShouldEnd)
 	{
 		myIsPaused = myIsRunning = false;
 		return;
 	}
 
-	if (Input::GetKeyPressed('B'))
+	if (Input::GetKeyPressed(Input::Keys::B))
 	{
 		myIsPaused = !myIsPaused;
 	}
 
-	if (Input::GetKeyPressed('G'))
+	if (Input::GetKeyPressed(Input::Keys::G))
 	{
 		myRenderThread->RequestSwitch();
 	}
