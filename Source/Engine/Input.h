@@ -21,6 +21,10 @@ public:
 	static glm::vec2 GetMouseDelta();
 	static float GetMouseWheelDelta();
 
+	// returns a pointer to a buffer of input characters, 
+	// value of 0 means end of valid range
+	static const uint32_t* GetInputChars() { return ourInputChars; }
+
 	// is the btn down
 	static bool GetMouseBtn(char aBtn);
 	// was the btn just pressed this frame
@@ -42,9 +46,19 @@ private:
 	static glm::vec2 ourOldPos, ourPos;
 	static float ourMWheel;
 
+	constexpr static uint8_t kMaxInputChars = 8;
+	// where we recieve from GLFW
+	static uint32_t ourInputCharsBuffer[kMaxInputChars]; 
+	// where frame-stable input chars are, 0 marking end of valid chars
+	static uint32_t ourInputChars[kMaxInputChars]; 
+	// current length of the input buffer
+	static uint8_t ourInputCharsLength; 
+	static tbb::spin_mutex ourInputCharsMutex;
+
 	static void KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods);
 	static void MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods);
 	static void ScrollCallback(GLFWwindow* aWindow, double aXDelta, double aYDelta);
+	static void InputKeyCallback(GLFWwindow* aWindow, uint32_t aChar);
 	static Keys RemapKey(int aKey);
 
 public:

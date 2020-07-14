@@ -1,12 +1,17 @@
 #include "Precomp.h"
 #include "Input.h"
 
+// TODO: get rid of all the statics
 GLFWwindow* Input::ourWindow = nullptr;
 tbb::concurrent_queue<Input::InputMsg> Input::ourPendingMsgs;
 char Input::ourKbState[kKeyCount];
 char Input::ourMState[kMButtonCount];
 glm::vec2 Input::ourOldPos, Input::ourPos;
 float Input::ourMWheel = 0.f;
+uint32_t Input::ourInputCharsBuffer[Input::kMaxInputChars];
+uint32_t Input::ourInputChars[Input::kMaxInputChars];
+uint8_t Input::ourInputCharsLength = 0;
+tbb::spin_mutex Input::ourInputCharsMutex;
 
 void Input::SetWindow(GLFWwindow *aWindow)
 {
@@ -20,6 +25,7 @@ void Input::SetWindow(GLFWwindow *aWindow)
 	ourWindow = aWindow;
 	glfwSetKeyCallback(ourWindow, Input::KeyCallback);
 	glfwSetMouseButtonCallback(ourWindow, Input::MouseCallback);
+	glfwSetCharCallback(ourWindow, Input::InputKeyCallback);
 	glfwSetScrollCallback(ourWindow, Input::ScrollCallback);
 
 	std::memset(ourKbState, 0, sizeof(ourKbState));
@@ -53,6 +59,13 @@ void Input::Update()
 				ourMState[msg.myButton] = msg.myNewState;
 			}
 		}
+	}
+
+	{
+		tbb::spin_mutex::scoped_lock lock(ourInputCharsMutex);
+		std::memcpy(ourInputChars, ourInputCharsBuffer, ourInputCharsLength * sizeof(uint32_t));
+		ourInputChars[ourInputCharsLength] = 0;
+		ourInputCharsLength = 0;
 	}
 }
 
@@ -118,6 +131,8 @@ bool Input::GetMouseBtnPressed(char btn)
 
 void Input::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int aMods)
 {
+	static_cast<void>(aWindow);
+
 	if (aKey == GLFW_KEY_WORLD_1 
 		|| aKey == GLFW_KEY_WORLD_2 
 		|| aKey == GLFW_KEY_UNKNOWN)
@@ -131,16 +146,28 @@ void Input::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anActi
 
 void Input::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aMods)
 {
+	static_cast<void>(aWindow);
+
 	ASSERT_STR(aButton >= 0 && aButton < kMButtonCount, "Unsupported button: %d", aButton);
 	uint8_t button = static_cast<uint8_t>(aButton);
 	ourPendingMsgs.push(InputMsg{ button, static_cast<uint8_t>(anAction), false });
 }
 
-void Input::ScrollCallback(GLFWwindow* aWidnow, double aXDelta, double aYDelta)
+void Input::ScrollCallback(GLFWwindow* aWindow, double aXDelta, double aYDelta)
 {
+	static_cast<void>(aWindow);
 	static_cast<void>(aXDelta);
 
-	ourMWheel = aYDelta;
+	ourMWheel = static_cast<float>(aYDelta);
+}
+
+void Input::InputKeyCallback(GLFWwindow* aWindow, uint32_t aChar)
+{
+	static_cast<void>(aWindow);
+
+	tbb::spin_mutex::scoped_lock lock(ourInputCharsMutex);
+	ASSERT_STR(ourInputCharsLength < kMaxInputChars - 1, "Too small of a buffer for input characters!");
+	ourInputCharsBuffer[ourInputCharsLength++] = aChar;
 }
 
 Input::Keys Input::RemapKey(int aKey)
