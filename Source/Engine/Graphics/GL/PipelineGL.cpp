@@ -106,6 +106,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 			// TODO: get rid of this name hack, have a proper name string!
 			const std::string& uboName = descriptor->GetUniformAdapter();
 			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.c_str());
+			ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for %s", uboName.c_str());
 			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}
 

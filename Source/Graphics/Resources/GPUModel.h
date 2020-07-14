@@ -8,8 +8,10 @@ class GPUModel : public GPUResource, public IModel
 public:
 	glm::vec3 GetCenter() const override final { return myCenter; }
 	float GetSphereRadius() const override final { return myRadius; }
+	uint32_t GetPrimitiveCount() const { return myPrimitiveCount; }
 
 protected:
 	glm::vec3 myCenter;
 	float myRadius;
+	uint32_t myPrimitiveCount;
 };

@@ -20,7 +20,6 @@
 #include <AL/alut.h>
 #endif
 
-#define GLEW_STATIC
 #include <GL/glew.h>
 
 #ifdef USE_VULKAN
@@ -38,6 +37,12 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/norm.hpp>
 
+#ifdef WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#endif
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 #include <Core/Debug/Assert.h>
+
+#include <imgui.h>

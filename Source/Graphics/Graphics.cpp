@@ -22,14 +22,16 @@ Graphics::Graphics(AssetTracker& anAssetTracker)
 
 void Graphics::BeginGather()
 {
-	ProcessGPUQueues();
-
 	myRenderCalls = 0;
 
 	for (IRenderPass* pass : myRenderPasses)
 	{
 		pass->BeginPass(*this);
 	}
+
+	// Doing it after BeginPass because they can generate new
+	// asset updates
+	ProcessGPUQueues();
 }
 
 bool Graphics::CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const
@@ -38,7 +40,7 @@ bool Graphics::CanRender(IRenderPass::Category aCategory, const RenderJob& aJob)
 	return passToUse->HasResources(aJob);
 }
 
-void Graphics::Render(IRenderPass::Category aCategory, const RenderJob& aJob, const IRenderPass::IParams& aParams)
+void Graphics::Render(IRenderPass::Category aCategory, RenderJob& aJob, const IRenderPass::IParams& aParams)
 {
 	IRenderPass* passToUse = GetRenderPass(aCategory);
 
@@ -58,6 +60,7 @@ void Graphics::Display()
 
 void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 {
+	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
 }
 

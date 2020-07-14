@@ -32,6 +32,7 @@ option(VENGINE_GENERATE_BENCHTABLE "Generate BenchTable project - turn off to sp
 # Enables UNity builds of our projects
 option(VENGINE_ENABLE_UNITYBUILDS "Enable Unity builds for VEngine projects" ON)
 
+add_subdirectory(Source/ImGUI)
 add_subdirectory(Source/Core)
 add_subdirectory(Source/Physics)
 add_subdirectory(Source/Graphics)

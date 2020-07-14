@@ -28,7 +28,7 @@
 #endif
 
 #ifdef DEBUG_GL_CALLS
-void APIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
+void GLAPIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 	GLsizei, const GLchar*, const void*);
 #endif
 
@@ -52,7 +52,7 @@ void GraphicsGL::Init()
 #endif
 
 	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - GL", nullptr, nullptr);
-	glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetWindowSizeCallback(myWindow, GraphicsGL::OnWindowResized);
 	
 	glfwMakeContextCurrent(myWindow);
@@ -126,6 +126,7 @@ void GraphicsGL::Display()
 	//std::printf("Triangles: %u\n", triNum);
 	// ======
 
+	// TODO: replace with a DebugRenderPass
 	// lastly going to process the debug lines
 	if(myDebugPipeline->GetState() == GPUResource::State::Valid
 		&& myLineCache.myUploadDesc.myPrimitiveCount > 0)
@@ -270,12 +271,13 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 void GraphicsGL::CreateLineCache()
 {
 	myLineCache.myBuffer = new ModelGL(PrimitiveType::Lines, GPUResource::UsageType::Dynamic, PosColorVertex::Type, false);
-	Handle<Model> cpuBuffer = new Model(PrimitiveType::Lines, PosColorVertex::Type);
+	Model::VertStorage<PosColorVertex>* buffer = new Model::VertStorage<PosColorVertex>(0);
+	Handle<Model> cpuBuffer = new Model(PrimitiveType::Lines, buffer, false);
 	myLineCache.myBuffer->Create(*this, cpuBuffer, true);
 }
 
 #ifdef DEBUG_GL_CALLS
-void APIENTRY glDebugOutput(GLenum aSource,
+void GLAPIENTRY glDebugOutput(GLenum aSource,
 	GLenum aType,
 	GLuint aId,
 	GLenum aSeverity,

@@ -26,7 +26,8 @@ private:
 	// called last to submit render jobs
 	void RunJobs() override final;
 
-	static uint32_t ConvertBlendMode(RenderContext::Blending blendMode);
+	constexpr static uint32_t ConvertBlendMode(RenderContext::Blending aBlendMode);
+	constexpr static uint32_t ConvertBlendEquation(RenderContext::BlendingEq aBlendEq);
 
 	std::vector<RenderJob> myJobs;
 	PipelineGL* myCurrentPipeline;

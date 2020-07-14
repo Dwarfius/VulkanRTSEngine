@@ -22,7 +22,6 @@ public:
 	size_t GetSize() const;
 
 private:
-	// TODO: need to add double buffering
 	char* myData;
 	const Descriptor& myDescriptor;
 };

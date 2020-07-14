@@ -1,0 +1,1 @@
+This location is only here to enable CMake for ImGUI - specifically, we define CMake target that can be included in the usual project hierarchy. This allows us to isolate and easily configure this external project.

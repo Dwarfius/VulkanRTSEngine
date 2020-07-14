@@ -37,7 +37,9 @@ Game::Game(ReportError aReporterFunc)
 	, myIsRunning(true)
 	, myShouldEnd(false)
 	, myIsPaused(false)
+	, myIsInFocus(false)
 	, myEditorMode(nullptr)
+	, myImGUISystem(*this)
 {
 	ourInstance = this;
 	UID::Init();
@@ -93,6 +95,9 @@ void Game::Init()
 	myGameObjects.reserve(maxObjects);
 
 	myRenderThread->Init(BootWithVK, myAssetTracker);
+
+	// TODO: has implicit dependency on window initialized - make explicit!
+	myImGUISystem.Init();
 
 	GameObject* go; 
 	VisualObject* vo;
@@ -184,6 +189,7 @@ void Game::RunMainThread()
 		const float newTime = static_cast<float>(glfwGetTime());
 		myDeltaTime = newTime - myFrameStart;
 		myFrameStart = newTime;
+		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
 
 		myRenderThread->SubmitRenderables();
 
@@ -204,6 +210,8 @@ void Game::CleanUp()
 	{
 		myRenderThread->SubmitRenderables();
 	}
+
+	myImGUISystem.Shutdown();
 
 	// now that it's done, we can clean up everything
 	if (myFile.is_open())
@@ -261,6 +269,7 @@ void Game::AddGameObjects()
 void Game::UpdateInput()
 {
 	Input::Update();
+	myImGUISystem.NewFrame(myDeltaTime);
 }
 
 void Game::Update()
@@ -297,7 +306,7 @@ void Game::Update()
 void Game::EditorUpdate()
 {
 	ASSERT(myEditorMode);
-	myEditorMode->Update(myDeltaTime, *myPhysWorld);
+	myEditorMode->Update(*this, myDeltaTime, *myPhysWorld);
 }
 
 void Game::PhysicsUpdate()

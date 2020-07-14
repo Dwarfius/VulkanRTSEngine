@@ -192,7 +192,7 @@ void RenderThread::SubmitRenderables()
 			continue;
 		}
 
-		if (renderJob.myModel.IsValid() 
+		if (aVO->GetModel().IsValid()
 			&& !cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
 		{
 			continue;

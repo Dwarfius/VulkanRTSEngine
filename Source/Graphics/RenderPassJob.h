@@ -3,19 +3,26 @@
 #include "RenderContext.h"
 
 #include <Core/RefCounted.h>
-#include <Graphics/UniformBlock.h>
 
 class GPUResource;
+class UniformBlock;
 
 struct RenderJob
 {
 	using TextureSet = std::vector<Handle<GPUResource>>;
-	using UniformSet = std::vector<std::shared_ptr<UniformBlock>>;
+	// TODO: replace with std::vector<std::span<char>> that's backed by a pool or per frame allocator
+	using UniformSet = std::vector<std::vector<char>>;
 
 	enum class DrawMode : char
 	{
 		Indexed,
 		Tesselated // currently implemented as instanced tesselation
+	};
+
+	struct IndexedDrawParams
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
 	};
 
 	struct TesselationDrawParams
@@ -26,53 +33,54 @@ struct RenderJob
 	union DrawParams
 	{
 		TesselationDrawParams myTessParams;
+		IndexedDrawParams myIndexedParams;
 	};
 
 public:
-	Handle<GPUResource> myPipeline;
-	Handle<GPUResource> myModel;
-
-	TextureSet myTextures;
-	UniformSet myUniforms;
-
 	RenderJob() = default;
-	RenderJob(Handle<GPUResource> aPipeline,
-		Handle<GPUResource> aModel,
-		const TextureSet& aTextures)
-		: myPipeline(aPipeline)
-		, myModel(aModel)
-		, myTextures(aTextures)
-		, myPriority(0)
-		, myDrawMode(DrawMode::Indexed)
-		, myDrawParams()
-	{
-	}
+	RenderJob(Handle<GPUResource> aPipeline, Handle<GPUResource> aModel,
+		const TextureSet& aTextures);
 
-	void SetUniformSet(const UniformSet& aUniformSet)
-	{
-		myUniforms = aUniformSet;
-	}
+	// Copies a set of uniform blocks for a frame
+	void SetUniformSet(const std::vector<std::shared_ptr<UniformBlock>>& aUniformSet);
 
-	bool HasLastHandles() const
-	{
-		constexpr auto CheckLastHandle = [](const Handle<GPUResource>& aRes) {
-			return aRes.IsValid() && aRes.IsLastHandle();
-		};
-		
-		return CheckLastHandle(myPipeline)
-			|| CheckLastHandle(myModel)
-			|| std::any_of(myTextures.begin(), myTextures.end(), CheckLastHandle);
-	}
+	// Copies a single uniform block for a frame
+	// Note: It's on the caller to ensure the order matches the order of descriptors/uniform
+	// buffers for a pipeline
+	void AddUniformBlock(const UniformBlock& aBlock);
+
+	// Check if this job has any resources which are last handles
+	bool HasLastHandles() const;
 
 	void SetPriority(uint32_t aPriority) { myPriority = aPriority; }
 	uint32_t GetPriority() const { return myPriority; }
 	void SetDrawMode(DrawMode aDrawMode) { myDrawMode = aDrawMode; }
 	DrawMode GetDrawMode() const { return myDrawMode; }
 
-	void SetTesselationInstanceCount(int aCount) { myDrawParams.myTessParams.myInstanceCount = aCount; }
+	void SetDrawParams(const IndexedDrawParams& aParams) { myDrawParams.myIndexedParams = aParams; }
+	void SetDrawParams(const TesselationDrawParams& aParams) { myDrawParams.myTessParams = aParams; }
 	const DrawParams& GetDrawParams() const { return myDrawParams; }
 
+	Handle<GPUResource>& GetPipeline() { return myPipeline; }
+	const Handle<GPUResource>& GetPipeline() const { return myPipeline; }
+	Handle<GPUResource>& GetModel() { return myModel; }
+	const Handle<GPUResource>& GetModel() const { return myModel; }
+	TextureSet& GetTextures() { return myTextures; }
+	const TextureSet& GetTextures() const { return myTextures; }
+	UniformSet& GetUniformSet() { return myUniforms; }
+	const UniformSet& GetUniformSet() const { return myUniforms; }
+
+	glm::ivec4 GetScissorRect() const { return  { myScissorRect[0], myScissorRect[1], myScissorRect[2], myScissorRect[3] }; }
+	void SetScissorRect(int aIndex, int aValue) { myScissorRect[aIndex] = aValue; }
+
 private:
+	Handle<GPUResource> myPipeline;
+	Handle<GPUResource> myModel;
+
+	TextureSet myTextures;
+	UniformSet myUniforms;
+
+	int myScissorRect[4];
 	// higher value means it'll be rendered sooner
 	uint32_t myPriority;
 	DrawMode myDrawMode;
@@ -98,6 +106,9 @@ public:
 
 	void Initialize(const RenderContext& aContext);
 
+protected:
+	const RenderContext& GetRenderContext() const { return myContext; }
+
 private:
 	// returns whether there's any work in this job
 	virtual bool HasWork() const = 0;
@@ -110,6 +121,5 @@ private:
 	// called last to submit render jobs
 	virtual void RunJobs() = 0;
 
-private:
 	RenderContext myContext;
 };

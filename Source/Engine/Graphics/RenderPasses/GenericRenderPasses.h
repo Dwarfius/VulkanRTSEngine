@@ -19,7 +19,7 @@ protected:
 
 struct TerrainRenderParams : public IRenderPass::IParams
 {
-	int myTileCount;
+	int myTileCount = 0;
 };
 
 class TerrainRenderPass : public RenderPass

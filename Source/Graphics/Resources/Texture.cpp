@@ -59,6 +59,7 @@ Texture::Texture()
 	, myWidth(0)
 	, myHeight(0)
 	, myEnableMipmaps(false)
+	, myOwnsBuffer(false)
 {
 }
 
@@ -72,6 +73,7 @@ Texture::Texture(Resource::Id anId, const std::string& aPath)
 	, myWidth(0)
 	, myHeight(0)
 	, myEnableMipmaps(false)
+	, myOwnsBuffer(false)
 {
 }
 
@@ -83,7 +85,7 @@ Texture::~Texture()
 	}
 }
 
-void Texture::SetPixels(unsigned char* aPixels)
+void Texture::SetPixels(unsigned char* aPixels, bool aShouldOwn /* = true */)
 {
 	ASSERT_STR(GetId() == Resource::InvalidId, "NYI. Textures from disk are currently static due to FreePixels implementation.");
 	if (myPixels)
@@ -91,6 +93,7 @@ void Texture::SetPixels(unsigned char* aPixels)
 		FreePixels();
 	}
 	myPixels = aPixels;
+	myOwnsBuffer = aShouldOwn;
 }
 
 void Texture::FreePixels()
@@ -98,7 +101,10 @@ void Texture::FreePixels()
 	ASSERT_STR(myPixels, "Double free of texture!");
 	if (GetId() == Resource::InvalidId)
 	{
-		delete[] myPixels;
+		if (myOwnsBuffer)
+		{
+			delete[] myPixels;
+		}
 	}
 	else
 	{
@@ -139,6 +145,8 @@ void Texture::OnLoad(const File& aFile)
 		SetErrMsg("Failed to load texture");
 		return;
 	}
+
+	myOwnsBuffer = true;
 }
 
 void Texture::Serialize(Serializer& aSerializer)

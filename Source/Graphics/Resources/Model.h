@@ -19,6 +19,8 @@ public:
 		const IndexType* myIndices; // optional
 		size_t myIndCount; // optional
 		UploadDescriptor<T>* myNextDesc; // optional, used to chain multiple uploads together
+		bool myVertsOwned : 4; // indicates whether myVertices in this descriptor need cleaning up
+		bool myIndOwned : 4; // indicates whether myIndices in this descriptor need cleaning up
 	};
 
 	class BaseStorage
@@ -26,12 +28,12 @@ public:
 	public:
 		const void* GetRawData() const { return myData; }
 		size_t GetCount() const { return myCount; }
-		int GetType() const { return myType; }
+		uint32_t GetType() const { return myType; }
 
 	protected:
 		void* myData;
 		size_t myCount;
-		int myType;
+		uint32_t myType;
 	};
 	template<class T>
 	class VertStorage : public BaseStorage
@@ -61,10 +63,9 @@ public:
 		T* GetData() { return static_cast<T*>(myData); }
 	};
 
-	static size_t GetVertexSize(int aVertexType);
-
 public:
-	Model(PrimitiveType aPrimitiveType, int aVertexType);
+	// TODO: instead of baseStorage pointer, use template<class VertexT>
+	Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices);
 	Model(Resource::Id anId, const std::string& aPath);
 
 	// Full access to typed vertex storage of a model
@@ -82,6 +83,7 @@ public:
 
 	const IndexType* GetIndices() const { return myIndices.data(); }
 	size_t GetIndexCount() const { return myIndices.size(); }
+	bool HasIndices() const { return myHasIndices; }
 
 	// Returns model center point
 	glm::vec3 GetCenter() const override final { return myCenter; }
@@ -112,6 +114,7 @@ private:
 	glm::vec3 myCenter;
 	float mySphereRadius;
 	PrimitiveType myPrimitiveType;
+	bool myHasIndices;
 };
 
 template<class T>
@@ -168,12 +171,22 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 		std::memcpy(vertBuffer + vertOffset, currDesc->myVertices, currVertCount * sizeof(T));
 		vertOffset += currVertCount;
 
+		if (currDesc->myVertsOwned)
+		{
+			delete[] currDesc->myVertices;
+		}
+
 		if (indexCount > 0)
 		{
 			size_t currIndCount = currDesc->myIndCount;
 			ASSERT_STR(currIndCount > 0, "Missing additional indices for a model!");
 			std::memcpy(myIndices.data() + indOffset, currDesc->myIndices, currIndCount * sizeof(IndexType));
 			indOffset += currIndCount;
+
+			if (currDesc->myIndOwned)
+			{
+				delete[] currDesc->myIndices;
+			}
 		}
 	}
 }

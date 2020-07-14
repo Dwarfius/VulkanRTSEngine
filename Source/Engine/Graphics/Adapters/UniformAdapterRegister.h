@@ -14,12 +14,6 @@ public:
 
 	std::shared_ptr<UniformAdapter> GetAdapter
 		(const std::string& aName, const GameObject& aGO, const VisualObject& aVO) const;
-	
-private:
-	static UniformAdapterRegister* myInstance;
-	std::unordered_map<std::string, CreationMethod> myCreationMethods;
-
-	void RegisterTypes();
 
 	// Utility method that simplifies registering of adapters
 	template<class Type>
@@ -30,4 +24,10 @@ private:
 		std::pair<std::string, CreationMethod> newPair = std::make_pair(name, creationMethod);
 		myCreationMethods.insert(newPair);
 	}
+	
+private:
+	static UniformAdapterRegister* myInstance;
+	std::unordered_map<std::string, CreationMethod> myCreationMethods;
+
+	void RegisterTypes();
 };

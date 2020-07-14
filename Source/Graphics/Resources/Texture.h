@@ -40,7 +40,7 @@ public:
 	void EnableMipMaps(bool aEnabled) { myEnableMipmaps = aEnabled; }
 
 	unsigned char* GetPixels() const { return myPixels; }
-	void SetPixels(unsigned char* aPixels);
+	void SetPixels(unsigned char* aPixels, bool aShouldOwn = true);
 
 protected:
 	unsigned char* myPixels;
@@ -58,4 +58,6 @@ private:
 	bool UsesDescriptor() const override final;
 	void OnLoad(const File& aFile) override;
 	void Serialize(Serializer& aSerializer) override final;
+
+	bool myOwnsBuffer;
 };

@@ -43,11 +43,27 @@ public:
 		OneMinusConstantAlpha
 	};
 
+	enum class BlendingEq : char
+	{
+		Add,
+		Substract,
+		ReverseSubstract,
+		Min,
+		Max
+	};
+
 	enum class PolygonMode : char
 	{
 		Point,
 		Line,
 		Fill
+	};
+
+	enum class ScissorMode : char
+	{
+		None,
+		PerPass,
+		PerObject
 	};
 public:
 	// Taking defaults from OpenGL
@@ -55,6 +71,9 @@ public:
 	float myBlendColor[4] = { 0, 0, 0, 0 };
 	// Constant clear color, RGBA
 	float myClearColor[4] = { 0, 0, 0, 0 };
+	// Scissor rectangle, in window coords with origin of bottom left
+	// in X, Y, Width, Height
+	int myScissorRect[4] = { 0, 0, 0, 0 };
 
 	// every pass is alloved an arbitrary limit of
 	// active texture inputs
@@ -74,9 +93,11 @@ public:
 
 	DepthTest myDepthTest = DepthTest::Less;
 	Culling myCulling = Culling::Back;
+	BlendingEq myBlendingEq = BlendingEq::Add;
 	Blending mySourceBlending = Blending::One;
 	Blending myDestinationBlending = Blending::Zero;
 	PolygonMode myPolygonMode = PolygonMode::Fill;
+	ScissorMode myScissorMode = ScissorMode::None;
 
 	bool myEnableDepthTest = false;
 	bool myEnableCulling = false;

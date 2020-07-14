@@ -98,6 +98,14 @@ set(SRC_GRAPHICS_ADAPTERS
 	"Graphics/Adapters/UniformAdapterRegister.cpp" "Graphics/Adapters/UniformAdapterRegister.h"
 )
 
+set(SRC_SYSTEMS
+)
+
+set(SRC_SYSTEMS_IMGUI
+	"Systems/ImGUI/ImGUISystem.cpp" "Systems/ImGUI/ImGUISystem.h"
+	"Systems/ImGUI/ImGUIGLFWImpl.cpp" "Systems/ImGUI/ImGUIGLFWImpl.h"
+)
+
 if(VENGINE_BUILD_WITH_VULKAN)
 	set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
 	)
@@ -111,6 +119,8 @@ add_library(${PROJECT_NAME} STATIC
 			${SRC_GRAPHICS_GL} 
 			${SRC_GRAPHICS_VK}
 			${SRC_GRAPHICS_ADAPTERS}
+		${SRC_SYSTEMS}
+			${SRC_SYSTEMS_IMGUI}
 )
 
 # just to make our life a little bit more organized, group files
@@ -123,6 +133,8 @@ source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
 if(VENGINE_BUILD_WITH_VULKAN)
 	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 endif()
+source_group(Systems FILES ${SRC_SYSTEMS})
+source_group(Systems\\ImGUI FILES ${SRC_SYSTEMS_IMGUI})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
@@ -146,6 +158,7 @@ target_link_libraries(${PROJECT_NAME}
 	Core 
 	Graphics
 	Physics 
+	ImGUI
 	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:OpenAL>
 	libglew_static # TODO: generalize this
 	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:alut_static>

@@ -7,13 +7,12 @@ class ModelGL : public GPUModel
 {
 public:
 	ModelGL();
-	ModelGL(PrimitiveType aPrimType, UsageType aUsage, int aVertType, bool aIsIndexed);
+	ModelGL(PrimitiveType aPrimType, UsageType aUsage, uint32_t aVertType, bool aIsIndexed);
 
 	// Bind the current GL resources for model drawing
 	void Bind();
 
 	uint32_t GetDrawMode() const { return myDrawMode; }
-	size_t GetPrimitiveCount() const { return myPrimitiveCount; }
 	size_t GetVertexCount() const { return myVertCount; }
 
 private:
@@ -36,10 +35,9 @@ private:
 	uint32_t myEBO; // index buffer, optional
 
 	uint32_t myDrawMode;
-	size_t myPrimitiveCount;
 	size_t myVertCount;
 	size_t myIndexCount;
 	UsageType myUsage;
-	int myVertType;
+	uint32_t myVertType;
 	bool myIsIndexed;
 };

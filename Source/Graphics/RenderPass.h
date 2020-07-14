@@ -25,19 +25,22 @@ public:
 	{
 		Renderables, // a pass for rendering objects
 		Terrain, // a pass for rendering terrain
-		PostProcessing // a pass for performing post processing
+		ImGUI
 		// TODO: add more (shadows, particle, compute?)
 	};
 
 	struct IParams
 	{
-		float myDistance;
+		uint32_t myOffset = 0; // rendering param, offset into rendering buffer
+		uint32_t myCount = -1; // rendering param, how many elements to render from a buffer, all by default
+		// Distance from a camera
+		float myDistance = 0;
 	};
 public:
 	IRenderPass();
 
 	virtual bool HasResources(const RenderJob& aJob) const = 0;
-	virtual void AddRenderable(const RenderJob& aJob, const IParams& aParams) = 0;
+	virtual void AddRenderable(RenderJob& aJob, const IParams& aParams) = 0;
 	virtual void BeginPass(Graphics& anInterface);
 	virtual void SubmitJobs(Graphics& anInterface) = 0;
 	virtual Category GetCategory() const = 0;
@@ -64,7 +67,7 @@ class RenderPass : public IRenderPass
 public:
 	RenderPass();
 
-	void AddRenderable(const RenderJob& aJob, const IParams& aParams) override final;
+	void AddRenderable(RenderJob& aJob, const IParams& aParams) override final;
 	void BeginPass(Graphics& anInterface) override final;
 	void SubmitJobs(Graphics& anInterface) override final;
 
@@ -83,7 +86,7 @@ class SortingRenderPass : public IRenderPass
 public:
 	SortingRenderPass();
 
-	void AddRenderable(const RenderJob& aJob, const IParams& aParams) override final;
+	void AddRenderable(RenderJob& aJob, const IParams& aParams) override final;
 	void BeginPass(Graphics& anInterface) override final;
 	void SubmitJobs(Graphics& anInterface) override final;
 

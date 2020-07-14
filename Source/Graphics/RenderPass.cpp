@@ -25,11 +25,10 @@ RenderPass::RenderPass()
 {
 }
 
-void RenderPass::AddRenderable(const RenderJob& aJob, const IParams& aParams)
+void RenderPass::AddRenderable(RenderJob& aJob, const IParams& aParams)
 {
-	RenderJob jobCopy = aJob;
-	Process(jobCopy, aParams);
-	myCurrentJob->Add(jobCopy);
+	Process(aJob, aParams);
+	myCurrentJob->Add(aJob);
 }
 
 void RenderPass::BeginPass(Graphics& anInterface)
@@ -53,13 +52,12 @@ SortingRenderPass::SortingRenderPass()
 {
 }
 
-void SortingRenderPass::AddRenderable(const RenderJob& aJob, const IParams& aParams)
+void SortingRenderPass::AddRenderable(RenderJob& aJob, const IParams& aParams)
 {
-	RenderJob jobCopy = aJob;
-	jobCopy.SetPriority(GetPriority(aParams));
-	Process(jobCopy, aParams);
+	aJob.SetPriority(GetPriority(aParams));
+	Process(aJob, aParams);
 
-	myJobs.PushBack(std::move(jobCopy));
+	myJobs.PushBack(std::move(aJob));
 }
 
 void SortingRenderPass::BeginPass(Graphics& anInterface)

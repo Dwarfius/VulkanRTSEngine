@@ -1,0 +1,10 @@
+{  
+	"type":0,
+	"shaders":[
+		"imgui.vert",
+		"imgui.frag"
+	],
+	"descriptors":[  
+		{ "Res": "ImGUI.adpt" }
+	]
+}

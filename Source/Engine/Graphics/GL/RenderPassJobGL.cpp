@@ -34,6 +34,25 @@ void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 
 void RenderPassJobGL::Clear(const RenderContext& aContext)
 {
+	if (aContext.myScissorMode == RenderContext::ScissorMode::PerPass
+		|| aContext.myScissorMode == RenderContext::ScissorMode::PerObject)
+	{
+		glEnable(GL_SCISSOR_TEST);
+		if (aContext.myScissorMode == RenderContext::ScissorMode::PerPass)
+		{
+			// using bottom left
+			glScissor(aContext.myScissorRect[0],
+				aContext.myScissorRect[1],
+				aContext.myScissorRect[2],
+				aContext.myScissorRect[3]
+			);
+		}
+	}
+	else
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
+
 	uint32_t clearMask = 0;
 	if (aContext.myShouldClearColor)
 	{
@@ -114,9 +133,15 @@ void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 	if (aContext.myEnableBlending)
 	{
 		glEnable(GL_BLEND);
-		uint32_t srcBlend = ConvertBlendMode(aContext.mySourceBlending);
-		uint32_t dstBlend = ConvertBlendMode(aContext.myDestinationBlending);
-		bool hasConstColor = aContext.mySourceBlending == RenderContext::Blending::ConstantColor
+
+		const uint32_t blendEq = ConvertBlendEquation(aContext.myBlendingEq);
+		glBlendEquation(blendEq);
+
+		const uint32_t srcBlend = ConvertBlendMode(aContext.mySourceBlending);
+		const uint32_t dstBlend = ConvertBlendMode(aContext.myDestinationBlending);
+		glBlendFunc(srcBlend, dstBlend);
+
+		const bool hasConstColor = aContext.mySourceBlending == RenderContext::Blending::ConstantColor
 			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantColor
 			|| aContext.mySourceBlending == RenderContext::Blending::ConstantAlpha
 			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantAlpha
@@ -124,8 +149,6 @@ void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantColor
 			|| aContext.myDestinationBlending == RenderContext::Blending::ConstantAlpha
 			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantAlpha;
-
-		glBlendFunc(srcBlend, dstBlend);
 		if (hasConstColor)
 		{
 			glBlendColor(aContext.myBlendColor[0], 
@@ -159,8 +182,19 @@ void RenderPassJobGL::RunJobs()
 			continue;
 		}
 
-		PipelineGL* pipeline = r.myPipeline.Get<PipelineGL>();
-		ModelGL* model = r.myModel.Get<ModelGL>();
+		// TODO: unlikely
+		if (GetRenderContext().myScissorMode == RenderContext::ScissorMode::PerObject)
+		{
+			glm::vec4 scissorRect = r.GetScissorRect();
+			glScissor(static_cast<GLsizei>(scissorRect.x),
+				static_cast<GLsizei>(scissorRect.y),
+				static_cast<GLsizei>(scissorRect.z),
+				static_cast<GLsizei>(scissorRect.w)
+			);
+		}
+
+		PipelineGL* pipeline = r.GetPipeline().Get<PipelineGL>();
+		ModelGL* model = r.GetModel().Get<ModelGL>();
 
 		if (pipeline != myCurrentPipeline)
 		{
@@ -180,8 +214,8 @@ void RenderPassJobGL::RunJobs()
 			}
 		}
 
-		//if (texture != myCurrentTexture)
-		for (size_t textureInd = 0; textureInd < r.myTextures.size(); textureInd++)
+		RenderJob::TextureSet& textures = r.GetTextures();
+		for (size_t textureInd = 0; textureInd < textures.size(); textureInd++)
 		{
 			int slotToUse = myTextureSlotsToUse[textureInd];
 			if (slotToUse == -1)
@@ -189,7 +223,7 @@ void RenderPassJobGL::RunJobs()
 				continue;
 			}
 
-			TextureGL* texture = r.myTextures[textureInd].Get<TextureGL>();
+			TextureGL* texture = textures[textureInd].Get<TextureGL>();
 			if (myCurrentTextures[slotToUse] != texture)
 			{
 				glActiveTexture(GL_TEXTURE0 + slotToUse);
@@ -206,6 +240,7 @@ void RenderPassJobGL::RunJobs()
 
 		// Now we can update the uniform blocks
 		size_t descriptorCount = pipeline->GetDescriptorCount();
+		RenderJob::UniformSet& uniforms = r.GetUniformSet();
 		for (size_t i = 0; i < descriptorCount; i++)
 		{
 			// grabbing the descriptor because it has the locations
@@ -215,7 +250,7 @@ void RenderPassJobGL::RunJobs()
 			UniformBufferGL& ubo = pipeline->GetUBO(i);
 			UniformBufferGL::UploadDescriptor uploadDesc;
 			uploadDesc.mySize = aDesc->GetBlockSize();
-			uploadDesc.myData = r.myUniforms[i]->GetData();
+			uploadDesc.myData = uniforms[i].data();
 			ubo.UploadData(uploadDesc);
 		}
 
@@ -223,10 +258,17 @@ void RenderPassJobGL::RunJobs()
 		{
 		case RenderJob::DrawMode::Indexed:
 		{
-			uint32_t drawMode = model->GetDrawMode();
-			size_t primitiveCount = model->GetPrimitiveCount();
-			ASSERT_STR(primitiveCount < std::numeric_limits<GLsizei>::max(), "Exceeded the limit of primitives!");
-			glDrawElements(drawMode, static_cast<GLsizei>(primitiveCount), GL_UNSIGNED_INT, 0);
+			const uint32_t drawMode = model->GetDrawMode();
+			const RenderJob::IndexedDrawParams& params = r.GetDrawParams().myIndexedParams;
+			const uint32_t primitiveCount = params.myCount;
+			ASSERT_STR(primitiveCount < static_cast<uint32_t>(std::numeric_limits<GLsizei>::max()), 
+				"Exceeded the limit of primitives!");
+			const size_t indexOffset = params.myOffset * sizeof(IModel::IndexType);
+			glDrawElements(drawMode, 
+				static_cast<GLsizei>(primitiveCount), 
+				GL_UNSIGNED_INT, 
+				reinterpret_cast<void*>(indexOffset)
+			);
 			break;
 		}
 		case RenderJob::DrawMode::Tesselated:
@@ -235,7 +277,7 @@ void RenderPassJobGL::RunJobs()
 			// Terrain uses 1 CP to expand it into a quad
 			glPatchParameteri(GL_PATCH_VERTICES, 1);
 
-			int instances = r.GetDrawParams().myTessParams.myInstanceCount;
+			const int instances = r.GetDrawParams().myTessParams.myInstanceCount;
 			glDrawArraysInstanced(GL_PATCHES, 0, 1, instances);
 			break;
 		}
@@ -243,7 +285,7 @@ void RenderPassJobGL::RunJobs()
 	}
 }
 
-uint32_t RenderPassJobGL::ConvertBlendMode(RenderContext::Blending blendMode)
+constexpr uint32_t RenderPassJobGL::ConvertBlendMode(RenderContext::Blending blendMode)
 {
 	switch (blendMode)
 	{
@@ -262,5 +304,18 @@ uint32_t RenderPassJobGL::ConvertBlendMode(RenderContext::Blending blendMode)
 	case RenderContext::Blending::ConstantAlpha: return GL_CONSTANT_ALPHA;
 	case RenderContext::Blending::OneMinusConstantAlpha: return GL_ONE_MINUS_CONSTANT_ALPHA;
 	default: ASSERT_STR(false, "Unrecognized blend mode!"); return 0;
+	}
+}
+
+constexpr uint32_t RenderPassJobGL::ConvertBlendEquation(RenderContext::BlendingEq aBlendEq)
+{
+	switch (aBlendEq)
+	{
+	case RenderContext::BlendingEq::Add: return GL_FUNC_ADD;
+	case RenderContext::BlendingEq::Substract: return GL_FUNC_SUBTRACT;
+	case RenderContext::BlendingEq::ReverseSubstract: return GL_FUNC_REVERSE_SUBTRACT;
+	case RenderContext::BlendingEq::Min: return GL_MIN;
+	case RenderContext::BlendingEq::Max: return GL_MAX;
+	default: ASSERT_STR(false, "Unrecognized blend equation!"); return 0;
 	}
 }

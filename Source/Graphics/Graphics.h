@@ -30,7 +30,7 @@ public:
 	virtual void Init() = 0;
 	virtual void BeginGather();
 	bool CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const;
-	void Render(IRenderPass::Category aCategory, const RenderJob& aJob, const IRenderPass::IParams& aParams);
+	void Render(IRenderPass::Category aCategory, RenderJob& aJob, const IRenderPass::IParams& aParams);
 	virtual void Display();
 	virtual void CleanUp() = 0;
 	

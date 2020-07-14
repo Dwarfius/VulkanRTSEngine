@@ -5,6 +5,7 @@
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
+#include "Systems/ImGUI/ImGUISystem.h"
 
 class Camera;
 class EditorMode;
@@ -28,6 +29,7 @@ public:
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
+	ImGUISystem& GetImGUISystem() { return myImGUISystem; }
 
 	void Init();
 	void RunMainThread();
@@ -37,6 +39,10 @@ public:
 	bool IsRunning() const;
 	void EndGame() { myShouldEnd = true; }
 	bool IsPaused() const { return myIsPaused; }
+	// Returns whether the window is in focus thread safe way
+	bool IsWindowInFocus() const { return myIsInFocus; }
+	// Returns the pointer to the window. Querying things from the window
+	// might not be threadsafe!
 	GLFWwindow* GetWindow() const;
 
 	const std::unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
@@ -90,10 +96,12 @@ private:
 	PhysicsWorld* myPhysWorld;
 	AssetTracker myAssetTracker;
 	DebugDrawer myDebugDrawer;
+	ImGUISystem myImGUISystem;
 
 	bool myIsRunning;
 	bool myShouldEnd;
 	bool myIsPaused;
+	bool myIsInFocus;
 
 	// logging
 	void LogToFile(const std::string& aLine);

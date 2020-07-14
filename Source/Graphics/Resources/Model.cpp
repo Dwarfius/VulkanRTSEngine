@@ -6,29 +6,15 @@
 
 #include <sstream>
 
-size_t Model::GetVertexSize(int aVertexType)
-{
-	switch (aVertexType)
-	{
-	case Vertex::Type: return sizeof(Vertex);
-	case PosColorVertex::Type: return sizeof(PosColorVertex);
-	default: ASSERT(false); return 0;
-	}
-}
-
-Model::Model(PrimitiveType aPrimitiveType, int aVertexType)
+Model::Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices)
 	: myAABBMin(std::numeric_limits<float>::max())
 	, myAABBMax(std::numeric_limits<float>::min())
 	, myCenter(0.f)
 	, mySphereRadius(0.f)
 	, myPrimitiveType(aPrimitiveType)
+	, myVertices(aStorage)
+	, myHasIndices(aHasIndices)
 {
-	switch (aVertexType)
-	{
-	case Vertex::Type: myVertices = new VertStorage<Vertex>(0); break;
-	case PosColorVertex::Type: myVertices = new VertStorage<PosColorVertex>(0); break;
-	default: ASSERT(false);
-	}
 }
 
 Model::Model(Resource::Id anId, const std::string& aPath)
@@ -39,6 +25,7 @@ Model::Model(Resource::Id anId, const std::string& aPath)
 	, mySphereRadius(0.f)
 	, myPrimitiveType(PrimitiveType::Triangles)
 	, myVertices(nullptr)
+	, myHasIndices(false)
 {
 }
 
@@ -105,12 +92,18 @@ void Model::OnLoad(const File& aFile)
 		indexCount += shape.mesh.indices.size();
 	}
 	myIndices.resize(indexCount);
+	myHasIndices = indexCount > 0;
 
 	VertStorage<Vertex>* vertStorage = new VertStorage<Vertex>(attrib.vertices.size());
 	myVertices = vertStorage;
 	
-	using VertMap = std::unordered_map<Vertex, IndexType>;
-	VertMap uniqueVerts;
+	auto vertEq = [](const Vertex& aLeft, const Vertex& aRight) {
+		return aLeft.myPos == aRight.myPos
+			&& aLeft.myUv == aRight.myUv
+			&& aLeft.myNormal == aRight.myNormal;
+	};
+	using VertMap = std::unordered_map<Vertex, IndexType, std::hash<Vertex>, decltype(vertEq)>;
+	VertMap uniqueVerts(0, std::hash<Vertex>(), vertEq);
 	size_t vertsFound = 0;
 	indexCount = 0;
 	Vertex* vertexBuffer = vertStorage->GetData();
