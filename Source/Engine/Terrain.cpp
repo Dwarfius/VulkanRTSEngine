@@ -68,7 +68,7 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 	const size_t gridSize = std::max<size_t>(myWidth, myHeight) + 1;
 	myHeightCache.resize(gridSize * gridSize);
 	
-	DiamondSquareAlgo dsAlgo(0, gridSize, 0.f, myYScale);
+	DiamondSquareAlgo dsAlgo(0, static_cast<uint32_t>(gridSize), 0.f, myYScale);
    	dsAlgo.Generate(myHeightCache.data());
 
 	{
