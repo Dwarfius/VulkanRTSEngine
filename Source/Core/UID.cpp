@@ -62,6 +62,5 @@ UID::UID()
 
 void UID::GetString(char* string) const
 {
-	sprintf(string, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
-	string[32] = '\0';
+	std::snprintf(string, 32, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
 }
