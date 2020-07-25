@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/gtx/hash.hpp>
+#include "CRC32.h"
 
 struct Vertex
 {
