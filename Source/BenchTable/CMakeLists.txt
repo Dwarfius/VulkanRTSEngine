@@ -5,6 +5,9 @@ set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
+SET(BENCHTABLE_GenSerialization FALSE CACHE BOOL "Should BenchTable include Serialization tests")
+SET(BENCHTABLE_GenProfiling FALSE CACHE BOOL "Should BenchTable include Profiling tests")
+
 FetchContent_Declare(
 	googleBench
 	GIT_REPOSITORY https://github.com/google/benchmark
@@ -29,14 +32,22 @@ set(CMAKE_FOLDER "")
 file(GLOB SRC "*.cpp" "*.h")
 source_group("" FILES ${SRC})
 
-set(SRC_SERIALIZATION "Serialization/CommonTypes.h"
-	"Serialization/VariadicStorage.cpp"
-	"Serialization/VirtualOrdered.cpp"
-	"Serialization/VirtualUnordered.cpp"
-)
-source_group("Serialization" FILES ${SRC_SERIALIZATION})
+if(BENCHTABLE_GenSerialization)
+	set(SRC_SERIALIZATION "Serialization/CommonTypes.h"
+		"Serialization/VariadicStorage.cpp"
+		"Serialization/VirtualOrdered.cpp"
+		"Serialization/VirtualUnordered.cpp"
+	)
+	source_group("Serialization" FILES ${SRC_SERIALIZATION})
+endif()
 
-add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION})
+if(BENCHTABLE_GenProfiling)
+	set(SRC_PROFILING "Profiling/BaseProfiler.cpp"
+	)
+	source_group("Profiling" FILES ${SRC_PROFILING})
+endif()
+
+add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION} ${SRC_PROFILING})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
