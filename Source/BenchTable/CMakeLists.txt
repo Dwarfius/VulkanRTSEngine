@@ -42,8 +42,12 @@ if(BENCHTABLE_GenSerialization)
 endif()
 
 if(BENCHTABLE_GenProfiling)
-	set(SRC_PROFILING "Profiling/BaseProfiler.cpp"
+	set(SRC_PROFILING "Profiling/ChronoProfiler.cpp"	
+		"Profiling/CommonTypes.h"
 	)
+	if(WIN32)
+		list(APPEND SRC_PROFILING "Profiling/QPCProfiler.cpp")
+	endif()
 	source_group("Profiling" FILES ${SRC_PROFILING})
 endif()
 

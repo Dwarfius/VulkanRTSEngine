@@ -1,22 +1,15 @@
-#include "Precomp.h"
-#include <thread>
-#include <mutex>
-#include <chrono>
-#include <cstring>
-#include <atomic>
+#pragma once
 
+template<class Clock>
 class ProfileManager
 {
-    // TODO: try QPC wrapper
-    using Clock = std::chrono::high_resolution_clock;
-    using Stamp = Clock::time_point;
     friend class ScopedMark;
 public:
     // TLS storage type for a single profiling event
     struct Mark
     {
-        Stamp myBeginStamp;
-        Stamp myEndStamp;
+        typename Clock::Stamp myBeginStamp;
+        typename Clock::Stamp myEndStamp;
         char myName[64];
         int myId;
         int myParentId;
@@ -94,7 +87,8 @@ private:
     std::mutex myStorageMutex;
 };
 
-void ProfileManager::Storage::BeginMark(const std::string_view& aName)
+template<class Clock>
+void ProfileManager<Clock>::Storage::BeginMark(const std::string_view& aName)
 {
     Mark newMark;
     newMark.myBeginStamp = Clock::now();
@@ -110,23 +104,26 @@ void ProfileManager::Storage::BeginMark(const std::string_view& aName)
     myActiveMarkInd = myMarks.size() - 1;
 }
 
-void ProfileManager::Storage::EndMark()
+template<class Clock>
+void ProfileManager<Clock>::Storage::EndMark()
 {
     Mark& lastMark = myMarks[myActiveMarkInd];
     // close up the mark
     lastMark.myEndStamp = Clock::now();
-    lastMark.myParentId = (myActiveMarkInd != -1) ? myMarks[myActiveMarkInd].myId : -1;
     // point at parent for active mark scope
     myActiveMarkInd = lastMark.myParentId;
+    lastMark.myParentId = (myActiveMarkInd != -1) ? myMarks[myActiveMarkInd].myId : -1;
 }
 
-void ProfileManager::Storage::AppendMarks(std::vector<Mark>& aBuffer) const
+template<class Clock>
+void ProfileManager<Clock>::Storage::AppendMarks(std::vector<Mark>& aBuffer) const
 {
     aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
 }
 
 // need to quick-flush the TLS - reset all counters
-void ProfileManager::BeginFrame()
+template<class Clock>
+void ProfileManager<Clock>::BeginFrame()
 {
     myIdCounter = 0;
     for (Storage* storage : myTLSStorages)
@@ -135,7 +132,8 @@ void ProfileManager::BeginFrame()
     }
 }
 // need to accumulate all TLS into a single buffer
-void ProfileManager::EndFrame()
+template<class Clock>
+void ProfileManager<Clock>::EndFrame()
 {
     std::vector<Mark> allMarks;
     for (Storage* storage : myTLSStorages)
@@ -148,63 +146,5 @@ void ProfileManager::EndFrame()
     std::cout << "\tName: " << lastMark.myName << std::endl;
     std::cout << "\tId: " << lastMark.myId << std::endl;
     std::cout << "\tParentId: " << lastMark.myParentId << std::endl;
-    std::cout << "\tDuration: " << (lastMark.myEndStamp - lastMark.myBeginStamp).count() << std::endl;
+    std::cout << "\tDuration: " << Clock::diff(lastMark.myBeginStamp, lastMark.myEndStamp) << std::endl;
 }
-
-void Mark(benchmark::State& state)
-{
-    ProfileManager::GetInstance().BeginFrame();
-    for (auto _ : state)
-    {
-        ProfileManager::ScopedMark mark(__func__);
-    }
-    ProfileManager::GetInstance().EndFrame();
-}
-
-void Add(benchmark::State& state)
-{
-    ProfileManager::GetInstance().BeginFrame();
-    int i = 0;
-    for (auto _ : state)
-    {
-        ProfileManager::ScopedMark mark(__func__);
-        benchmark::DoNotOptimize(i++);
-    }
-    ProfileManager::GetInstance().EndFrame();
-}
-
-void Strings(benchmark::State& state)
-{
-    ProfileManager::GetInstance().BeginFrame();
-    for (auto _ : state)
-    {
-        ProfileManager::ScopedMark mark(__func__);
-        std::string var("");
-        benchmark::DoNotOptimize(var.data());
-        var = "123456789";
-        benchmark::ClobberMemory();
-    }
-    ProfileManager::GetInstance().EndFrame();
-}
-
-void ForLoop(benchmark::State& state)
-{
-    ProfileManager::GetInstance().BeginFrame();
-    for (auto _ : state)
-    {
-        ProfileManager::ScopedMark mark(__func__);
-        for (int i = 0; i < 100; i++)
-        {
-            std::string var("");
-            benchmark::DoNotOptimize(var.data());
-            var = "123456789";
-            benchmark::ClobberMemory();
-        }
-    }
-    ProfileManager::GetInstance().EndFrame();
-}
-
-BENCHMARK(Mark);
-BENCHMARK(Add);
-BENCHMARK(Strings);
-BENCHMARK(ForLoop);
