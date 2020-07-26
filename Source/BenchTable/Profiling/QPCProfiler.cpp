@@ -9,6 +9,11 @@
 
 namespace QPC
 {
+    // I wrote this before checking the internals of std::chrono::high_resolution_clock
+    // because the notes of cppreference mentioned that high_res_clock is usually an alias of
+    // steady or system clocks, so I assumed it wouldn't have the pricision. Well, I was wrong,
+    // and this bellow was a small waste of time :D So on windows there's no point to using QPC
+    // directly, so for now I chose to use std::chrono::high_resolution_clock
     class QPCClock
     {
     public:
