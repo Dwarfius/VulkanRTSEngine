@@ -2,6 +2,8 @@
 #include "ProfilerUI.h"
 
 #include "../Input.h"
+#include <Core/Utils.h>
+
 #include <sstream>
 
 void ProfilerUI::Draw()
@@ -44,7 +46,9 @@ void ProfilerUI::Draw()
 			ImGui::BeginChild(nodeName, { 0,0 }, false, ImGuiWindowFlags_HorizontalScrollbar);
 			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
 			DrawHeader(frameProfile);
-			ThreadMarkMap threadMarksMap = GroupBy(frameProfile.myFrameMarks);
+			ThreadMarkMap threadMarksMap = Utils::GroupBy<ThreadMarkMap>(frameProfile.myFrameMarks, 
+				[](const Profiler::Mark& aMark) { return aMark.myThreadId; }
+			);
 			for (const auto& threadMarksPair : threadMarksMap)
 			{
 				DrawThreadRow(threadMarksPair.first, threadMarksPair.second, frameProfile);
@@ -60,26 +64,6 @@ void ProfilerUI::Draw()
 	}
 
 	ImGui::End();
-}
-
-// TODO: generalise and move this to Utils
-ProfilerUI::ThreadMarkMap ProfilerUI::GroupBy(const std::vector<Profiler::Mark>& aMarks) const
-{
-	ThreadMarkMap map;
-	for (const Profiler::Mark& mark : aMarks)
-	{
-		auto iter = map.find(mark.myThreadId);
-		if (iter == map.end())
-		{
-			std::vector newBuffer{ mark };
-			map[mark.myThreadId] = std::move(newBuffer);
-		}
-		else
-		{
-			iter->second.push_back(mark);
-		}
-	}
-	return map;
 }
 
 void ProfilerUI::DrawHeader(const Profiler::FrameProfile& aProfile)

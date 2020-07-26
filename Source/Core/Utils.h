@@ -7,6 +7,9 @@ namespace Utils
 
 	bool IsNan(glm::vec3 aVec);
 	bool IsNan(glm::vec4 aVec);
+
+	template<class TAssocColl, class TColl, class TPred>
+	TAssocColl GroupBy(const TColl& aColl, TPred aPred);
 }
 
 template<class T>
@@ -20,4 +23,18 @@ uint8_t Utils::CountSetBits(T aVal)
 		aVal >>= 1;
 	}
 	return bitCount;
+}
+
+template<class TAssocColl, class TColl, class TPred>
+TAssocColl Utils::GroupBy(const TColl& aColl, TPred aPred)
+{
+	TAssocColl assocCollection;
+	for (const auto& item : aColl)
+	{
+		auto key = aPred(item);
+		// TODO: generalize the inserter, probably via splitting TAssocColl
+		// and using if constexpr(std::is_same_v)
+		assocCollection[key].push_back(item);
+	}
+	return assocCollection;
 }
