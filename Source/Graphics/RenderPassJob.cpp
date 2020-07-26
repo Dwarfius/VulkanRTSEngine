@@ -48,10 +48,7 @@ bool RenderJob::HasLastHandles() const
 
 void RenderPassJob::Execute()
 {
-	if (myContext.myShouldClearColor || myContext.myShouldClearDepth)
-	{
-		Clear(myContext);
-	}
+	Clear(myContext);
 
 	if (HasWork())
 	{
