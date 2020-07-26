@@ -99,6 +99,7 @@ set(SRC_GRAPHICS_ADAPTERS
 )
 
 set(SRC_SYSTEMS
+	"Systems/ProfilerUI.cpp" "Systems/ProfilerUI.h"
 )
 
 set(SRC_SYSTEMS_IMGUI

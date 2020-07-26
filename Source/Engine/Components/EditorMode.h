@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Systems/ProfilerUI.h"
+
 class PhysicsWorld;
 class GameObject;
 class PhysicsShapeBase;
@@ -22,4 +24,5 @@ private:
 	bool myDemoWindowVisible;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
+	ProfilerUI myProfilerUI;
 };

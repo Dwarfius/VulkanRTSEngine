@@ -94,6 +94,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
 		go->SetVisualObject(vo);
 	}
+
+	myProfilerUI.Draw();
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)

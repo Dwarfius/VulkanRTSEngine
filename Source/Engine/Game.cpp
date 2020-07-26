@@ -9,6 +9,7 @@
 #include "Terrain.h"
 
 #include <Core/StaticString.h>
+#include <Core/Profiler.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Graphics.h>
@@ -41,6 +42,7 @@ Game::Game(ReportError aReporterFunc)
 	, myEditorMode(nullptr)
 	, myImGUISystem(*this)
 {
+	Profiler::ScopedMark profile("Game::Ctor");
 	ourInstance = this;
 	UID::Init();
 
@@ -92,6 +94,7 @@ Game::~Game()
 
 void Game::Init()
 {
+	Profiler::ScopedMark profile("Game::Init");
 	myGameObjects.reserve(maxObjects);
 
 	myRenderThread->Init(BootWithVK, myAssetTracker);
@@ -182,6 +185,8 @@ void Game::Init()
 
 void Game::RunMainThread()
 {
+	Profiler::GetInstance().NewFrame();
+	Profiler::ScopedMark mainProfile(__func__);
 	glfwPollEvents();
 
 	if (myRenderThread->HasWork())
@@ -191,7 +196,10 @@ void Game::RunMainThread()
 		myFrameStart = newTime;
 		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
 
-		myRenderThread->SubmitRenderables();
+		{
+			Profiler::ScopedMark renderablesProfile("Game::SubmitRenderables");
+			myRenderThread->SubmitRenderables();
+		}
 
 		// TODO: need a semaphore for this, to disconnect from the render thread
 		RunTaskGraph();
@@ -268,12 +276,14 @@ void Game::AddGameObjects()
 
 void Game::UpdateInput()
 {
+	Profiler::ScopedMark profile(__func__);
 	Input::Update();
 	myImGUISystem.NewFrame(myDeltaTime);
 }
 
 void Game::Update()
 {
+	Profiler::ScopedMark profile(__func__);
 	if (Input::GetKey(Input::Keys::Escape) || myShouldEnd)
 	{
 		myIsPaused = myIsRunning = false;
@@ -305,17 +315,20 @@ void Game::Update()
 
 void Game::EditorUpdate()
 {
+	Profiler::ScopedMark profile(__func__);
 	ASSERT(myEditorMode);
 	myEditorMode->Update(*this, myDeltaTime, *myPhysWorld);
 }
 
 void Game::PhysicsUpdate()
 {
+	Profiler::ScopedMark profile(__func__);
 	myPhysWorld->Simulate(myDeltaTime);
 }
 
 void Game::Render()
 {
+	Profiler::ScopedMark profile(__func__);
 	// TODO: get rid of single map, and use a separate vector for Renderables
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
 	for (const std::pair<UID, GameObject*>& elem : myGameObjects)
@@ -354,6 +367,7 @@ void Game::Render()
 
 void Game::UpdateAudio()
 {
+	Profiler::ScopedMark profile(__func__);
 	// audio controls
 	//if (Input::GetKeyPressed('U'))
 	//Audio::IncreaseVolume();
@@ -366,11 +380,13 @@ void Game::UpdateAudio()
 
 void Game::UpdateEnd()
 {
+	Profiler::ScopedMark profile(__func__);
 	Input::PostUpdate();
 }
 
 void Game::RemoveGameObjects()
 {
+	Profiler::ScopedMark profile(__func__);
 	ourGODeleteEnabled = true;
 	tbb::spin_mutex::scoped_lock spinlock(myRemoveLock);
 	while (myRemoveQueue.size())
@@ -385,6 +401,7 @@ void Game::RemoveGameObjects()
 
 GameObject* Game::Instantiate(glm::vec3 aPos /*=glm::vec3()*/, glm::vec3 aRot /*=glm::vec3()*/, glm::vec3 aScale /*=glm::vec3(1)*/)
 {
+	Profiler::ScopedMark profile(__func__);
 	GameObject* go = nullptr;
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	if (myGameObjects.size() < maxObjects)

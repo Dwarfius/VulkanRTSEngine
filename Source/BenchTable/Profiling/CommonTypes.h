@@ -3,7 +3,6 @@
 template<class Clock>
 class ProfileManager
 {
-    friend class ScopedMark;
 public:
     // TLS storage type for a single profiling event
     struct Mark
