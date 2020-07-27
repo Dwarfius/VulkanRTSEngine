@@ -40,26 +40,21 @@ void ProfilerUI::Draw()
 		sprintf(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
 		if (ImGui::TreeNode(nodeName))
 		{
-			/* TODO: so the current approach is just a prototype test, but it's already
-			 * apparent that I can't continue the same way:
-			 *	- I can't make left name column stick to border without scrolling
-			*/
-
 			// Precalculate the whole height
-			float totalHeight = kMarkHeight + ImGui::GetStyle().ItemSpacing.y;
+			float totalHeight = kMarkHeight;
 			for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
 			{
-				totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight + ImGui::GetStyle().ItemSpacing.y;
+				totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
 			}
 			totalHeight += ImGui::GetStyle().ScrollbarSize;
 
-			ImGui::BeginChild(nodeName, { 0,totalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
+			ImGui::BeginChild(nodeName, { 0,totalHeight });
 			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
-			DrawHeader(frameData.myFrameProfile);
-			for (const auto& threadMarksPair : frameData.myThreadMarkMap)
-			{
-				DrawThreadRow(threadMarksPair.first, frameData);
-			}
+
+			DrawThreadColumn(frameData, totalHeight);
+			ImGui::SameLine();
+			DrawMarksColumn(frameData, totalHeight);
+
 			ImGui::EndChild();
 			ImGui::TreePop();
 		}
@@ -73,68 +68,87 @@ void ProfilerUI::Draw()
 	ImGui::End();
 }
 
-void ProfilerUI::DrawHeader(const Profiler::FrameProfile& aProfile)
+void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const
 {
-	const float windowWidth = ImGui::GetWindowWidth() * myWidthScale;
-	const float plotWidth = windowWidth - kThreadColumnWidth;
+	char name[64];
+	std::sprintf(name, "%llu##ThreadColumn", aFrameData.myFrameProfile.myFrameNum);
+	ImGui::BeginChild(name, { kThreadColumnWidth, aTotalHeight });
 	ImGui::SetCursorPosX(0);
-	ImGui::PushItemWidth(kThreadColumnWidth);
-	ImGui::Text("Thread");
-	ImGui::PopItemWidth();
-	ImGui::SameLine(kThreadColumnWidth);
-	// time to draw custom rects!
-	ImVec2 cursorPos = ImGui::GetCursorPos();
-	int64_t frameDuration = (aProfile.myEndStamp - aProfile.myBeginStamp).count();
-	char nameBuffer[64];
-	std::sprintf(nameBuffer, "Duration: %lldns", frameDuration);
-	ImGui::Button(nameBuffer, { plotWidth, kMarkHeight });
+	ImGui::SetNextItemWidth(kThreadColumnWidth);
+	ImGui::Text("Thread Name");
+	float yOffset = kMarkHeight;
+	for (const auto& threadIdLevelPair : aFrameData.myMaxLevels)
+	{
+		const std::thread::id threadId = threadIdLevelPair.first;
+		const uint32_t maxLevel = threadIdLevelPair.second;
+		const float height = (maxLevel + 1) * kMarkHeight;
+
+		ImGui::SetCursorPos({ 0, yOffset });
+		std::ostringstream stringStream;
+		stringStream << "Thread " << threadId;
+		std::string threadString = stringStream.str();
+		ImGui::Button(threadString.c_str(), { kThreadColumnWidth, height });
+		yOffset += height;
+	}
+	ImGui::EndChild();
 }
 
-void ProfilerUI::DrawThreadRow(std::thread::id aThreadId, const FrameData& aFrameData)
+void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const
 {
-	const float windowWidth = ImGui::GetWindowWidth() * myWidthScale;
-	const float plotWidth = windowWidth - kThreadColumnWidth;
-	std::ostringstream stringStream;
-	stringStream << "Thread " << aThreadId;
-	std::string threadString = stringStream.str();
-	ImGui::SetCursorPosX(0);
-	ImGui::Button(stringStream.str().c_str(), { kThreadColumnWidth, 0 });
-	ImGui::SameLine(kThreadColumnWidth);
-
-	const HierarchyMap& hierarchy = aFrameData.myThreadHierarchyMap.at(aThreadId);
-	const uint32_t maxLevel = aFrameData.myMaxLevels.at(aThreadId);
-	const float plotHeight = (maxLevel + 1) * kMarkHeight;
-	
-	// time to draw out all marks!
-	ImGui::BeginChild(threadString.c_str(), { plotWidth, plotHeight });
+	// Unresizing scrollable parent window
 	char name[64];
+	std::sprintf(name, "%llu##MarksColumn", aFrameData.myFrameProfile.myFrameNum);
+	ImGui::BeginChild(name, { 0, aTotalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
+
+	// Zoomable child window
+	const float fixedWindowWidth = ImGui::GetWindowWidth();
+	float plotWidth = fixedWindowWidth * myWidthScale;
+	plotWidth = std::max(plotWidth, fixedWindowWidth);
+	std::sprintf(name, "%llu##ZoomWindow", aFrameData.myFrameProfile.myFrameNum);
+	ImGui::BeginChild(name, { plotWidth, aTotalHeight - ImGui::GetStyle().ScrollbarSize });
+
+	// top bar for frame
 	const long long frameDuration = (aFrameData.myFrameProfile.myEndStamp - aFrameData.myFrameProfile.myBeginStamp).count();
-	const float widthPerDurationRatio = plotWidth / frameDuration;
+	std::sprintf(name, "Duration: %lld", frameDuration);
+	ImGui::SetCursorPosX(0);
+	ImGui::SetNextItemWidth(kThreadColumnWidth);
+	ImGui::Button(name, { plotWidth, kMarkHeight });
+
 	auto InverseLerpProfile = [
 		min = aFrameData.myFrameProfile.myBeginStamp.time_since_epoch().count(),
 		max = aFrameData.myFrameProfile.myEndStamp.time_since_epoch().count()
-	](auto val) {
-		return (val - min) / static_cast<float>(max - min);
-	};
-	const MarksVec& threadMarks = aFrameData.myThreadMarkMap.at(aThreadId);
-	for (const Profiler::Mark& mark : threadMarks)
-	{
-		const long long markDuration = (mark.myEndStamp - mark.myBeginStamp).count();
-		const long long startTimeOffset = (mark.myBeginStamp - aFrameData.myFrameProfile.myBeginStamp).count();
+	](auto val) { return (val - min) / static_cast<float>(max - min); };
 
-		const float x = plotWidth * InverseLerpProfile(mark.myBeginStamp.time_since_epoch().count());
-		const float y = hierarchy.at(mark.myId) * kMarkHeight;
-		const float width = widthPerDurationRatio * markDuration;
-		ImGui::SetCursorPos({ x, y });
+	float yOffset = kMarkHeight;
+	for (const auto& threadIdLevelPair : aFrameData.myMaxLevels)
+	{
+		const std::thread::id threadId = threadIdLevelPair.first;
+		const uint32_t maxLevel = threadIdLevelPair.second;
+		const float widthPerDurationRatio = plotWidth / frameDuration;
 		
-		std::sprintf(name, "%s - %lldns", mark.myName, markDuration);
-		ImGui::Button(name, { width, kMarkHeight });
-		if (ImGui::IsItemHovered())
+		const MarksVec& threadMarks = aFrameData.myThreadMarkMap.at(threadId);
+		const HierarchyMap& hierarchy = aFrameData.myThreadHierarchyMap.at(threadId);
+		for (const Profiler::Mark& mark : threadMarks)
 		{
-			ImGui::SetTooltip("Name: %s\nDuration: %lldns\nId: %d\nParent Id: %d",
-				mark.myName, markDuration, mark.myId, mark.myParentId);
+			const long long markDuration = (mark.myEndStamp - mark.myBeginStamp).count();
+			const long long startTimeOffset = (mark.myBeginStamp - aFrameData.myFrameProfile.myBeginStamp).count();
+
+			const float x = plotWidth * InverseLerpProfile(mark.myBeginStamp.time_since_epoch().count());
+			const float y = yOffset + hierarchy.at(mark.myId) * kMarkHeight;
+			const float width = widthPerDurationRatio * markDuration;
+			ImGui::SetCursorPos({ x, y });
+
+			std::sprintf(name, "%s - %lldns", mark.myName, markDuration);
+			ImGui::Button(name, { width, kMarkHeight });
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Name: %s\nDuration: %lldns\nId: %d\nParent Id: %d",
+					mark.myName, markDuration, mark.myId, mark.myParentId);
+			}
 		}
+		yOffset += (maxLevel + 1) * kMarkHeight;
 	}
+	ImGui::EndChild();
 	ImGui::EndChild();
 }
 
