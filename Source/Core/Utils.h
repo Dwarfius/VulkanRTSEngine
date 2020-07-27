@@ -8,6 +8,7 @@ namespace Utils
 	bool IsNan(glm::vec3 aVec);
 	bool IsNan(glm::vec4 aVec);
 
+	// Groups copies of elements of TColl by TPred condition
 	template<class TAssocColl, class TColl, class TPred>
 	TAssocColl GroupBy(const TColl& aColl, TPred aPred);
 }
