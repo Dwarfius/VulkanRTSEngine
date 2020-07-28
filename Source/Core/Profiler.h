@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 // A singleton class that manages the collection of profiling data in
 // profiling Marks, which contains timestamps of start-end, name and thread ids
 class Profiler

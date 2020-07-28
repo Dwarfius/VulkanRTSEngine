@@ -15,6 +15,8 @@
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
 
+#include <Core/Profiler.h>
+
 RenderThread::RenderThread()
 	: myIsUsingVulkan(false)
 	, myHasWorkPending(false)
@@ -85,6 +87,7 @@ void RenderThread::AddDebugRenderable(const DebugDrawer* aDebugDrawer)
 
 void RenderThread::SubmitRenderables()
 {
+	Profiler::ScopedMark profile("RenderThread::SubmitRenderables");
 	if (Game::GetInstance()->IsPaused() || !myHasWorkPending)
 	{
 		std::this_thread::yield();
@@ -130,6 +133,7 @@ void RenderThread::SubmitRenderables()
 	myGraphics->BeginGather();
 
 	{
+		Profiler::ScopedMark resolveProfile("RenderThread::ResolveVisualObj");
 		std::queue<VisualObject*> delayQueue;
 		// try to resolve all the pending VisualObjects
 		while (!myResolveQueue.empty())
@@ -158,88 +162,94 @@ void RenderThread::SubmitRenderables()
 	const std::vector<const VisualObject*>& currRenderables = myRenderables.GetRead();
 	myRenderables.GetWrite().clear();
 
-	// TODO: this is most probably overkill considering that Render call is lightweight
-	// need to look into batching those
 	const Camera& cam = *Game::GetInstance()->GetCamera();
-	/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
-		[&](const VisualObject* aVO)*/
-	for (const VisualObject* aVO : currRenderables)
 	{
-		// building a render job
-		RenderJob renderJob(
-			aVO->GetPipeline(),
-			aVO->GetModel(),
-			{ aVO->GetTexture() }
-		);
-		IRenderPass::Category jobCategory = [aVO] {
-			// TODO: get rid of this double category.
-			// The VO has a category only to support rendering at the
-			// moment, and there's no need for duplicating the enum!
-			switch (aVO->GetCategory())
+		Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleVORender");
+		// TODO: this is most probably overkill considering that Render call is lightweight
+		// need to look into batching those
+		/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
+			[&](const VisualObject* aVO)*/
+		for (const VisualObject* aVO : currRenderables)
+		{
+			// building a render job
+			RenderJob renderJob(
+				aVO->GetPipeline(),
+				aVO->GetModel(),
+				{ aVO->GetTexture() }
+			);
+			IRenderPass::Category jobCategory = [aVO] {
+				// TODO: get rid of this double category.
+				// The VO has a category only to support rendering at the
+				// moment, and there's no need for duplicating the enum!
+				switch (aVO->GetCategory())
+				{
+				case VisualObject::Category::GameObject:
+					return IRenderPass::Category::Renderables;
+				case VisualObject::Category::Terrain:
+					return IRenderPass::Category::Terrain;
+				default:
+					ASSERT(false);
+					return static_cast<IRenderPass::Category>(0);
+				}
+			}();
+
+			if (!myGraphics->CanRender(jobCategory, renderJob))
 			{
-			case VisualObject::Category::GameObject:
-				return IRenderPass::Category::Renderables;
-			case VisualObject::Category::Terrain:
-				return IRenderPass::Category::Terrain;
-			default:
-				ASSERT(false);
-				return static_cast<IRenderPass::Category>(0);
+				continue;
 			}
-		}();
 
-		if (!myGraphics->CanRender(jobCategory, renderJob))
-		{
-			continue;
-		}
+			if (aVO->GetModel().IsValid()
+				&& !cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
+			{
+				continue;
+			}
 
-		if (aVO->GetModel().IsValid()
-			&& !cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
-		{
-			continue;
-		}
+			// TODO: refactor away to Graphics!
+			// updating the uniforms - grabbing game state!
+			const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
+			for (size_t i = 0; i < uboCount; i++)
+			{
+				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
+				const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
+				adapter.FillUniformBlock(cam, uniformBlock);
+			}
+			renderJob.SetUniformSet(aVO->GetUniforms());
 
-		// TODO: refactor away to Graphics!
-		// updating the uniforms - grabbing game state!
-		const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
-		for (size_t i = 0; i < uboCount; i++)
-		{
-			UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
-			const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
-			adapter.FillUniformBlock(cam, uniformBlock);
-		}
-		renderJob.SetUniformSet(aVO->GetUniforms());
-			
-		switch (jobCategory)
-		{
-		case IRenderPass::Category::Renderables:
-		{
-			IRenderPass::IParams params;
-			params.myDistance = 0; // TODO: implement it
-			myGraphics->Render(jobCategory, renderJob, params);
-		}
+			switch (jobCategory)
+			{
+			case IRenderPass::Category::Renderables:
+			{
+				IRenderPass::IParams params;
+				params.myDistance = 0; // TODO: implement it
+				myGraphics->Render(jobCategory, renderJob, params);
+			}
 			break;
-		case IRenderPass::Category::Terrain:
-		{
-			const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
-			TerrainRenderParams params;
-			params.myDistance = 0;
-			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-			params.myTileCount = gridTiles.x * gridTiles.y;
-			myGraphics->Render(jobCategory, renderJob, params);
-		}
+			case IRenderPass::Category::Terrain:
+			{
+				const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
+				TerrainRenderParams params;
+				params.myDistance = 0;
+				const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+				params.myTileCount = gridTiles.x * gridTiles.y;
+				myGraphics->Render(jobCategory, renderJob, params);
+			}
 			break;
-		}
-	}//);
+			}
+		}//);
+	}
 
 	// schedule drawing out our debug drawings
 	myDebugDrawers.Advance();
 	const std::vector<const DebugDrawer*>& debugDrawers = myDebugDrawers.GetRead();
 	myDebugDrawers.GetWrite().clear();
 
-	myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
-	for (const DebugDrawer* drawer : debugDrawers)
 	{
-		myGraphics->RenderDebug(cam, *drawer);
+		Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
+		myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
+		for (const DebugDrawer* drawer : debugDrawers)
+		{
+			myGraphics->RenderDebug(cam, *drawer);
+		}
 	}
 
 	myGraphics->Display();

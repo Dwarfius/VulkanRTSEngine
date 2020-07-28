@@ -5,10 +5,12 @@
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/Adapters/UniformAdapter.h"
 #include "Graphics/Adapters/UniformAdapterRegister.h"
+
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Core/Resources/AssetTracker.h>
+#include <Core/Profiler.h>
 #include <Graphics/GPUResource.h>
 
 struct ImGUIRenderParams : public IRenderPass::IParams
@@ -78,7 +80,12 @@ protected:
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
 	void BeginPass(Graphics& aGraphics) override final
 	{
-		ImGui::Render();
+		Profiler::ScopedMark profile("ImGuiSystem::BeginPass");
+
+		{
+			Profiler::ScopedMark imguiProfile("ImGui::Render");
+			ImGui::Render();
+		}
 
 		if (myPipeline->GetState() != GPUResource::State::Valid
 			|| myFontAtlas->GetState() != GPUResource::State::Valid

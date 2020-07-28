@@ -15,6 +15,7 @@
 
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
+#include <Core/Profiler.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Shader.h>
@@ -106,59 +107,59 @@ void GraphicsGL::BeginGather()
 
 void GraphicsGL::Display()
 {
+	Profiler::ScopedMark profile("GraphicsGL::Display");
 	Graphics::Display();
 
 	myRenderPassJobs.Advance();
 
-	// TEST
-	glBeginQuery(GL_PRIMITIVES_GENERATED, myGPUQuery);
-	// ======
-	const RenderPassJobMap& jobs = myRenderPassJobs.GetRead();
-	for (const auto& pair : jobs)
 	{
-		pair.second->Execute();
-	}
-
-	// TEST
-	glEndQuery(GL_PRIMITIVES_GENERATED);
-	uint32_t triNum;
-	glGetQueryObjectuiv(myGPUQuery, GL_QUERY_RESULT, &triNum);
-	//std::printf("Triangles: %u\n", triNum);
-	// ======
-
-	// TODO: replace with a DebugRenderPass
-	// lastly going to process the debug lines
-	if(myDebugPipeline->GetState() == GPUResource::State::Valid
-		&& myLineCache.myUploadDesc.myPrimitiveCount > 0)
-	{
-		// upload the entire chain
-		Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
-		debugModel->Update(myLineCache.myUploadDesc);
-		Graphics::TriggerUpload(myLineCache.myBuffer.Get());
-		
-		// clean up the upload descriptors
-		for (LineCache::UploadDesc* currDesc = &myLineCache.myUploadDesc;
-			currDesc != nullptr;
-			currDesc = currDesc->myNextDesc)
+		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
+		const RenderPassJobMap& jobs = myRenderPassJobs.GetRead();
+		for (const auto& pair : jobs)
 		{
-			currDesc->myVertCount = 0;
+			pair.second->Execute();
 		}
-
-		// shader first
-		myDebugPipeline->Bind();
-
-		const GLfloat* vp = static_cast<const GLfloat*>(glm::value_ptr(myLineCache.myVp));
-		glUniformMatrix4fv(0, 1, false, vp);
-
-		// then VAO
-		myLineCache.myBuffer->Bind();
-
-		// now just draw em out
-		GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetVertexCount());
-		glDrawArrays(myLineCache.myBuffer->GetDrawMode(), 0, count);
 	}
 
-	glfwSwapBuffers(myWindow);
+	{
+		Profiler::ScopedMark debugProfile("GraphicsGL::DebugRender");
+		// TODO: replace with a DebugRenderPass
+		// lastly going to process the debug lines
+		if (myDebugPipeline->GetState() == GPUResource::State::Valid
+			&& myLineCache.myUploadDesc.myPrimitiveCount > 0)
+		{
+			// upload the entire chain
+			Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
+			debugModel->Update(myLineCache.myUploadDesc);
+			Graphics::TriggerUpload(myLineCache.myBuffer.Get());
+
+			// clean up the upload descriptors
+			for (LineCache::UploadDesc* currDesc = &myLineCache.myUploadDesc;
+				currDesc != nullptr;
+				currDesc = currDesc->myNextDesc)
+			{
+				currDesc->myVertCount = 0;
+			}
+
+			// shader first
+			myDebugPipeline->Bind();
+
+			const GLfloat* vp = static_cast<const GLfloat*>(glm::value_ptr(myLineCache.myVp));
+			glUniformMatrix4fv(0, 1, false, vp);
+
+			// then VAO
+			myLineCache.myBuffer->Bind();
+
+			// now just draw em out
+			GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetVertexCount());
+			glDrawArrays(myLineCache.myBuffer->GetDrawMode(), 0, count);
+		}
+	}
+
+	{
+		Profiler::ScopedMark swapProfile("GraphicsGL::SwapBuffers");
+		glfwSwapBuffers(myWindow);
+	}
 }
 
 void GraphicsGL::CleanUp()

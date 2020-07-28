@@ -8,6 +8,8 @@
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
 
+#include <Core/Profiler.h>
+
 Graphics* Graphics::ourActiveGraphics = NULL;
 bool Graphics::ourUseWireframe = false;
 int Graphics::ourWidth = 800;
@@ -22,6 +24,7 @@ Graphics::Graphics(AssetTracker& anAssetTracker)
 
 void Graphics::BeginGather()
 {
+	Profiler::ScopedMark profile("Graphics::BeginGather");
 	myRenderCalls = 0;
 
 	for (IRenderPass* pass : myRenderPasses)
@@ -51,6 +54,7 @@ void Graphics::Render(IRenderPass::Category aCategory, RenderJob& aJob, const IR
 
 void Graphics::Display()
 {
+	Profiler::ScopedMark profile("Graphics::Display");
 	// trigger submission of all the jobs
 	for (IRenderPass* pass : myRenderPasses)
 	{
@@ -143,65 +147,75 @@ void Graphics::ProcessGPUQueues()
 	// generation/processing
 	Handle<GPUResource> aResourceHandle;
 	std::queue<Handle<GPUResource>> delayQueue;
-	while(myCreateQueue.try_pop(aResourceHandle))
+
 	{
-		if (aResourceHandle.IsLastHandle())
+		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Create");
+		while (myCreateQueue.try_pop(aResourceHandle))
 		{
-			// last handle - owner discarded, can skip
-			// it will automatically get added to the unload queue
-			continue;
+			if (aResourceHandle.IsLastHandle())
+			{
+				// last handle - owner discarded, can skip
+				// it will automatically get added to the unload queue
+				continue;
+			}
+			if (aResourceHandle->GetResource().IsValid()
+				&& aResourceHandle->GetResource()->GetState() != Resource::State::Ready)
+			{
+				// we want to guarantee that the source resource has finished
+				// loading up to enable correct setup of gpu resource
+				delayQueue.push(aResourceHandle);
+				continue;
+			}
+			aResourceHandle->TriggerCreate();
 		}
-		if (aResourceHandle->GetResource().IsValid()
-			&& aResourceHandle->GetResource()->GetState() != Resource::State::Ready)
+		// reschedule delayed resources from this frame for next
+		while (!delayQueue.empty())
 		{
-			// we want to guarantee that the source resource has finished
-			// loading up to enable correct setup of gpu resource
-			delayQueue.push(aResourceHandle);
-			continue;
+			myCreateQueue.push(delayQueue.front());
+			delayQueue.pop();
 		}
-		aResourceHandle->TriggerCreate();
-	}
-	// reschedule delayed resources from this frame for next
-	while (!delayQueue.empty())
-	{
-		myCreateQueue.push(delayQueue.front());
-		delayQueue.pop();
 	}
 
-	while (myUploadQueue.try_pop(aResourceHandle))
 	{
-		if (aResourceHandle.IsLastHandle())
+		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Upload");
+		while (myUploadQueue.try_pop(aResourceHandle))
 		{
-			// last handle - owner discarded, can skip
-			// it will automatically get added to the unload queue
-			continue;
+			if (aResourceHandle.IsLastHandle())
+			{
+				// last handle - owner discarded, can skip
+				// it will automatically get added to the unload queue
+				continue;
+			}
+			if (!aResourceHandle->AreDependenciesValid())
+			{
+				// we guarantee that all dependencies will be uploaded
+				// before calling the current resource, so delay it
+				// to next frame
+				delayQueue.push(aResourceHandle);
+				continue;
+			}
+			aResourceHandle->TriggerUpload();
 		}
-		if (!aResourceHandle->AreDependenciesValid())
+		// reschedule delayed resources from this frame for next
+		while (!delayQueue.empty())
 		{
-			// we guarantee that all dependencies will be uploaded
-			// before calling the current resource, so delay it
-			// to next frame
-			delayQueue.push(aResourceHandle);
-			continue;
+			myUploadQueue.push(delayQueue.front());
+			delayQueue.pop();
 		}
-		aResourceHandle->TriggerUpload();
-	}
-	// reschedule delayed resources from this frame for next
-	while (!delayQueue.empty())
-	{
-		myUploadQueue.push(delayQueue.front());
-		delayQueue.pop();
 	}
 
-	GPUResource* aResource;
-	while (myUnloadQueue.try_pop(aResource))
 	{
-		aResource->TriggerUnload();
-		if (aResource->myResId != Resource::InvalidId)
+		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Unload");
+		GPUResource* aResource;
+		while (myUnloadQueue.try_pop(aResource))
 		{
-			myResources.erase(aResource->myResId);
+			aResource->TriggerUnload();
+			if (aResource->myResId != Resource::InvalidId)
+			{
+				myResources.erase(aResource->myResId);
+			}
+			delete aResource;
 		}
-		delete aResource;
 	}
 }
 

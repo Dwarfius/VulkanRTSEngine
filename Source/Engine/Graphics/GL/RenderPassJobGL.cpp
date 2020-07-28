@@ -9,6 +9,8 @@
 #include <Graphics/UniformBlock.h>
 #include <Graphics/Resources/Texture.h>
 
+#include <Core/Profiler.h>
+
 #include "Graphics/GL/UniformBufferGL.h"
 #include "../../Terrain.h"
 
@@ -34,6 +36,7 @@ void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 
 void RenderPassJobGL::Clear(const RenderContext& aContext)
 {
+	Profiler::ScopedMark profile("RenderPassJobGL::Clear");
 	if (aContext.myScissorMode == RenderContext::ScissorMode::PerPass
 		|| aContext.myScissorMode == RenderContext::ScissorMode::PerObject)
 	{
@@ -76,6 +79,7 @@ void RenderPassJobGL::Clear(const RenderContext& aContext)
 
 void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 {
+	Profiler::ScopedMark profile("RenderPassJobGL::SetupContext");
 	myCurrentPipeline = nullptr;
 	myCurrentModel = nullptr;
 	std::memset(myCurrentTextures, -1, sizeof(myCurrentTextures));
@@ -173,8 +177,10 @@ void RenderPassJobGL::SetupContext(const RenderContext& aContext)
 
 void RenderPassJobGL::RunJobs()
 {
+	Profiler::ScopedMark profile("RenderPassJobGL::RunJobs");
 	for (RenderJob& r : myJobs)
 	{
+		Profiler::ScopedMark profile("RenderPassJobGL::RenderJob");
 		if (r.HasLastHandles())
 		{
 			// one of the handles has expired, meaning noone needs it anymore
