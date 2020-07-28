@@ -3,9 +3,12 @@
 
 #include "JsonSerializer.h"
 #include "File.h"
+#include "../Profiler.h"
 
 tbb::task* AssetTracker::LoadTask::execute()
 {
+	Profiler::ScopedMark profile("AssetTracker::LoadTask");
+
 	// if we're holding the last handle, means noone needs this anymore,
 	// so can skip it and destroy it implicitly
 	// TODO: should track how many fail the check, and try to prevent

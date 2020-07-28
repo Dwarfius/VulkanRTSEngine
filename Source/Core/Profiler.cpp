@@ -37,9 +37,16 @@ void Profiler::NewFrame()
     FrameProfile& profile = myFrameProfiles[thisProfileInd];
     profile.myEndStamp = Clock::now();
     profile.myFrameMarks = std::move(allFrameMarks);
-    profile.myFrameNum = myFrameNum++;
+    profile.myFrameNum = myFrameNum;
     myFrameProfiles[nextProfileInd].myBeginStamp = profile.myEndStamp;
     myFrameProfiles[nextProfileInd].myEndStamp = profile.myEndStamp; // current frame, not finished yet
+
+    if (myFrameNum == 1)
+    {
+        // store a copy of init frame for future inspection
+        myInitFrame = profile;
+    }
+    myFrameNum++;
 }
 
 void Profiler::Storage::BeginMark(std::string_view aName)

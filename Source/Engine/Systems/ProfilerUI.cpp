@@ -2,6 +2,9 @@
 #include "ProfilerUI.h"
 
 #include "../Input.h"
+#include "../Game.h"
+#include "ImGUI/ImGUISystem.h"
+
 #include <Core/Utils.h>
 
 #include <sstream>
@@ -18,7 +21,14 @@ void ProfilerUI::Draw()
 		return;
 	}
 
+	tbb::mutex::scoped_lock lock(Game::GetInstance()->GetImGUISystem().GetMutex());
 	ImGui::Begin("Profiler", &myShouldDraw);
+
+	if (ImGui::Button("Buffer Init Frame"))
+	{
+		const Profiler::FrameProfile& frameData = Profiler::GetInstance().GrabInitFrame();
+		myFramesToRender.push_back(std::move(ProcessFrameProfile(frameData)));
+	}
 
 	if (ImGui::Button("Buffer captures"))
 	{
@@ -49,7 +59,7 @@ void ProfilerUI::Draw()
 			totalHeight += ImGui::GetStyle().ScrollbarSize;
 
 			ImGui::BeginChild(nodeName, { 0,totalHeight });
-			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 
 			DrawThreadColumn(frameData, totalHeight);
 			ImGui::SameLine();
@@ -97,6 +107,7 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 {
 	// Unresizing scrollable parent window
 	char name[64];
+	char duration[32];
 	std::sprintf(name, "%llu##MarksColumn", aFrameData.myFrameProfile.myFrameNum);
 	ImGui::BeginChild(name, { 0, aTotalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
 
@@ -109,15 +120,30 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 
 	// top bar for frame
 	const long long frameDuration = (aFrameData.myFrameProfile.myEndStamp - aFrameData.myFrameProfile.myBeginStamp).count();
-	std::sprintf(name, "Duration: %lld", frameDuration);
+	DurationToString(duration, frameDuration);
+	std::sprintf(name, "Duration: %s", duration);
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
 	ImGui::Button(name, { plotWidth, kMarkHeight });
 
-	auto InverseLerpProfile = [
-		min = aFrameData.myFrameProfile.myBeginStamp.time_since_epoch().count(),
-		max = aFrameData.myFrameProfile.myEndStamp.time_since_epoch().count()
-	](auto val) { return (val - min) / static_cast<float>(max - min); };
+	const long long frameStart = aFrameData.myFrameProfile.myBeginStamp.time_since_epoch().count();
+	const long long frameEnd = aFrameData.myFrameProfile.myEndStamp.time_since_epoch().count();
+
+	auto InverseLerpProfile = [min = frameStart, max = frameEnd](auto val) { 
+		return (val - min) / static_cast<float>(max - min); 
+	};
+
+	constexpr ImU32 kColors[] = {
+		IM_COL32(0, 128, 128, 255),
+		IM_COL32(192, 128, 128, 255),
+		IM_COL32(64, 128, 128, 255),
+		IM_COL32(128, 0, 128, 255),
+		IM_COL32(128, 192, 128, 255),
+		IM_COL32(128, 64, 128, 255),
+		IM_COL32(128, 128, 0, 255),
+		IM_COL32(128, 128, 192, 255),
+		IM_COL32(128, 128, 64, 255)
+	};
 
 	float yOffset = kMarkHeight;
 	for (const auto& threadIdLevelPair : aFrameData.myMaxLevels)
@@ -138,13 +164,23 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			const float width = widthPerDurationRatio * markDuration;
 			ImGui::SetCursorPos({ x, y });
 
-			std::sprintf(name, "%s - %lldns", mark.myName, markDuration);
+			const int colorInd = mark.myId % (sizeof(kColors) / sizeof(ImU32));
+			ImGui::PushStyleColor(ImGuiCol_Button, kColors[colorInd]);
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+			ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32_WHITE);
+
+			DurationToString(duration, markDuration);
+			std::sprintf(name, "%s - %s", mark.myName, duration);
 			ImGui::Button(name, { width, kMarkHeight });
+			
 			if (ImGui::IsItemHovered())
 			{
-				ImGui::SetTooltip("Name: %s\nDuration: %lldns\nId: %d\nParent Id: %d",
-					mark.myName, markDuration, mark.myId, mark.myParentId);
+				ImGui::SetTooltip("Name: %s\nDuration: %s\nId: %d\nParent Id: %d",
+					mark.myName, duration, mark.myId, mark.myParentId);
 			}
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor(2);
 		}
 		yOffset += (maxLevel + 1) * kMarkHeight;
 	}
@@ -194,4 +230,26 @@ ProfilerUI::FrameData ProfilerUI::ProcessFrameProfile(const Profiler::FrameProfi
 	}
 	data.myFrameProfile = std::move(aProfile);
 	return data;
+}
+
+void ProfilerUI::DurationToString(char* aBuffer, long long aDuration)
+{
+	uint32_t conversions = 0;
+	long long remainder = 0;
+	while (aDuration >= 1000 || conversions == 3)
+	{
+		remainder = aDuration % 1000;
+		aDuration /= 1000;
+		conversions++;
+	}
+	const char* unitOfTime;
+	switch (conversions)
+	{
+	case 0: unitOfTime = "ns"; break;
+	case 1: unitOfTime = "micros"; break;
+	case 2: unitOfTime = "ms"; break;
+	case 3: unitOfTime = "s"; break;
+	default: ASSERT(false); break;
+	}
+	std::sprintf(aBuffer, "%lld.%lld%s", aDuration, remainder, unitOfTime);
 }

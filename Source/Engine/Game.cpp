@@ -114,17 +114,6 @@ void Game::Init()
 	// TODO: replace heap allocation with using 
 	// a continuous allocated storage of VisualObjects
 
-	// a box for rendering test
-	/*go = Instantiate();
-	{
-		vo = new VisualObject(*go);
-		vo->SetModel(cubeModel);
-		vo->SetPipeline(defPipeline);
-		vo->SetTexture(cubeText);
-		go->SetVisualObject(vo);
-	}
-	go->GetTransform().SetPos(glm::vec3(0, 3, 0));*/
-
 	// terrain
 	go = Instantiate();
 	{

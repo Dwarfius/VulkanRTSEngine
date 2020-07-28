@@ -42,6 +42,7 @@ public:
     void NewFrame();
 
     const std::array<FrameProfile, kMaxFrames>& GetBufferedFrameData() const { return myFrameProfiles;  }
+    const FrameProfile& GrabInitFrame() const { return myInitFrame; };
 
 private:
     class Storage;
@@ -62,6 +63,7 @@ private:
     std::atomic<int> myIdCounter;
     std::vector<Storage*> myTLSStorages;
     std::array<FrameProfile, kMaxFrames> myFrameProfiles;
+    FrameProfile myInitFrame;
     size_t myFrameNum;
     tbb::spin_mutex myStorageMutex;
 };
