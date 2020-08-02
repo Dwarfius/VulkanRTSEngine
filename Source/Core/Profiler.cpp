@@ -51,6 +51,13 @@ void Profiler::NewFrame()
     myFrameNum++;
 }
 
+Profiler::Storage::Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler)
+    : myIdCounter(aGlobalCounter)
+{
+    myMarks.reserve(256);
+    aProfiler.AddStorage(this);
+}
+
 void Profiler::Storage::BeginMark(std::string_view aName)
 {
     // Safety mutex, currently the assumption is that a mark will never begin

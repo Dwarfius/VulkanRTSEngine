@@ -76,12 +76,7 @@ private:
 class Profiler::Storage
 {
 public:
-    Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler)
-        : myIdCounter(aGlobalCounter)
-    {
-        myMarks.reserve(256);
-        aProfiler.AddStorage(this);
-    }
+    Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler);
 
     void BeginMark(std::string_view aName);
     void EndMark();
