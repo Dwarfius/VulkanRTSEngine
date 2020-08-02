@@ -174,6 +174,7 @@ void GraphicsGL::CleanUp()
 		currDesc != nullptr;
 		currDesc = currDesc->myNextDesc)
 	{
+		ASSERT_STR(descInd < kMaxExtraDescriptors, "Descriptor buffer not big enough!");
 		descriptors[descInd++] = currDesc;
 	}
 	while (descInd > 0)

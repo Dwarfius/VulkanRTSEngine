@@ -31,6 +31,7 @@ RenderThread::~RenderThread()
 
 void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 {
+	Profiler::ScopedMark profile("RenderThread::Init");
 	myIsUsingVulkan = anUseVulkan;
 
 #ifdef USE_VULKAN

@@ -129,6 +129,7 @@ void Game::Init()
 
 	// setting up a task tree
 	{
+		Profiler::ScopedMark profile("Game::SetupTaskTree");
 		GameTask task(GameTask::UpdateInput, [this]() { UpdateInput(); });
 		myTaskManager->AddTask(task);
 
@@ -165,7 +166,10 @@ void Game::Init()
 		task = GameTask(GameTask::UpdateAudio, [this]() { UpdateAudio(); });
 		task.AddDependency(GameTask::UpdateEnd);
 		myTaskManager->AddTask(task);
+	}
 
+	{
+		Profiler::ScopedMark profile("Game::ResolveTaskTreeAndRun");
 		// TODO: need to add functionality to draw out the task tree ingame
 		myTaskManager->ResolveDependencies();
 		myTaskManager->Run();
@@ -178,6 +182,8 @@ void Game::RunMainThread()
 	Profiler::ScopedMark mainProfile(__func__);
 	glfwPollEvents();
 
+	// TODO: refactor to get rid of this requirement to avoid triggering
+	// the entire task manager just to get the first frame
 	if (myRenderThread->HasWork())
 	{
 		const float newTime = static_cast<float>(glfwGetTime());

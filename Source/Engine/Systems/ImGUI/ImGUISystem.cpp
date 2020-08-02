@@ -247,6 +247,7 @@ ImGUISystem::ImGUISystem(Game& aGame)
 
 void ImGUISystem::Init()
 {
+	Profiler::ScopedMark profile("ImGUISystem::Init");
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 
