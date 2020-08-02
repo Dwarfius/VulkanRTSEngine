@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <stack>
+#include "Threading/AssertMutex.h"
 
 // A singleton class that manages the collection of profiling data in
 // profiling Marks, which contains timestamps of start-end, name and thread ids
@@ -9,6 +11,7 @@ class Profiler
 	using Clock = std::chrono::high_resolution_clock;
 	using Stamp = Clock::time_point;
     constexpr static uint32_t kMaxFrames = 10;
+    constexpr static uint32_t kInitFrames = 5;
 public:
     class ScopedMark;
 
@@ -44,7 +47,7 @@ public:
     void NewFrame();
 
     const std::array<FrameProfile, kMaxFrames>& GetBufferedFrameData() const { return myFrameProfiles;  }
-    const FrameProfile& GrabInitFrame() const { return myInitFrame; };
+    const std::array<FrameProfile, kInitFrames>& GrabInitFrame() const { return myInitFrames; };
 
 private:
     class Storage;
@@ -65,7 +68,7 @@ private:
     std::atomic<int> myIdCounter;
     std::vector<Storage*> myTLSStorages;
     std::array<FrameProfile, kMaxFrames> myFrameProfiles;
-    FrameProfile myInitFrame;
+    std::array<FrameProfile, kInitFrames> myInitFrames;
     size_t myFrameNum;
     tbb::spin_mutex myStorageMutex;
 };
@@ -73,25 +76,22 @@ private:
 class Profiler::Storage
 {
 public:
-    Storage(std::atomic<int>& aGlobalCounter)
+    Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler)
         : myIdCounter(aGlobalCounter)
     {
         myMarks.reserve(256);
-        NewFrame();
+        aProfiler.AddStorage(this);
     }
 
     void BeginMark(std::string_view aName);
     void EndMark();
-    void NewFrame()
-    {
-        myActiveMarkInd = -1;
-        myMarks.clear();
-    }
-    void AppendMarks(std::vector<Mark>& aBuffer) const;
+    void NewFrame(std::vector<Mark>& aBuffer);
 private:
+    std::stack<Mark> myMarkStack;
     std::vector<Mark> myMarks;
+    AssertMutex myBeginMutex;
+    tbb::mutex myMarksMutex;
     std::atomic<int>& myIdCounter;
-    int myActiveMarkInd;
 };
 
 // RAII style profiling mark - starts a mark on ctor, stops it on dtor

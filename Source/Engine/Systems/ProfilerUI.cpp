@@ -26,8 +26,11 @@ void ProfilerUI::Draw()
 
 	if (ImGui::Button("Buffer Init Frame"))
 	{
-		const Profiler::FrameProfile& frameData = Profiler::GetInstance().GrabInitFrame();
-		myFramesToRender.push_back(std::move(ProcessFrameProfile(frameData)));
+		const auto& frameData = Profiler::GetInstance().GrabInitFrame();
+		for (const Profiler::FrameProfile& frameProfile : frameData)
+		{
+			myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
+		}
 	}
 
 	if (ImGui::Button("Buffer captures"))
@@ -159,9 +162,16 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			const long long markDuration = (mark.myEndStamp - mark.myBeginStamp).count();
 			const long long startTimeOffset = (mark.myBeginStamp - aFrameData.myFrameProfile.myBeginStamp).count();
 
-			const float x = plotWidth * InverseLerpProfile(mark.myBeginStamp.time_since_epoch().count());
 			const float y = yOffset + hierarchy.at(mark.myId) * kMarkHeight;
-			const float width = widthPerDurationRatio * markDuration;
+			float x = plotWidth * InverseLerpProfile(mark.myBeginStamp.time_since_epoch().count());
+			x = std::max(x, 0.f);
+			float width = plotWidth - x; // by default, max possible
+			if (markDuration)
+			{
+				// if we have a closed mark, then we can calculate actual width
+				const float widthRatio = InverseLerpProfile(mark.myEndStamp.time_since_epoch().count());
+				width = widthRatio * plotWidth - x;
+			}
 			ImGui::SetCursorPos({ x, y });
 
 			const int colorInd = mark.myId % (sizeof(kColors) / sizeof(ImU32));
@@ -170,14 +180,29 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
 			ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32_WHITE);
 
-			DurationToString(duration, markDuration);
-			std::sprintf(name, "%s - %s", mark.myName, duration);
+			if (markDuration)
+			{
+				DurationToString(duration, markDuration);
+				std::sprintf(name, "%s - %s", mark.myName, duration);
+			}
+			else
+			{
+				std::sprintf(name, "%s - Ongoing", mark.myName);
+			}
 			ImGui::Button(name, { width, kMarkHeight });
 			
 			if (ImGui::IsItemHovered())
 			{
-				ImGui::SetTooltip("Name: %s\nDuration: %s\nId: %d\nParent Id: %d",
-					mark.myName, duration, mark.myId, mark.myParentId);
+				if (markDuration)
+				{
+					ImGui::SetTooltip("Name: %s\nDuration: %s\nId: %d\nParent Id: %d",
+						mark.myName, duration, mark.myId, mark.myParentId);
+				}
+				else
+				{
+					ImGui::SetTooltip("Name: %s\nDuration: Ongoing\nId: %d\nParent Id: %d",
+						mark.myName, mark.myId, mark.myParentId);
+				}
 			}
 			ImGui::PopStyleVar();
 			ImGui::PopStyleColor(2);
@@ -236,7 +261,7 @@ void ProfilerUI::DurationToString(char* aBuffer, long long aDuration)
 {
 	uint32_t conversions = 0;
 	long long remainder = 0;
-	while (aDuration >= 1000 || conversions == 3)
+	while (aDuration >= 1000 && conversions < 3)
 	{
 		remainder = aDuration % 1000;
 		aDuration /= 1000;
