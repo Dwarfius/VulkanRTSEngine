@@ -121,17 +121,21 @@ void GraphicsGL::Display()
 		}
 	}
 
+	// lastly going to process the debug lines
 	{
 		Profiler::ScopedMark debugProfile("GraphicsGL::DebugRender");
-		// TODO: replace with a DebugRenderPass
-		// lastly going to process the debug lines
-		if (myDebugPipeline->GetState() == GPUResource::State::Valid
-			&& myLineCache.myUploadDesc.myPrimitiveCount > 0)
+
+		const bool isPipelineReady = myDebugPipeline->GetState() == GPUResource::State::Valid;
+		const bool hasDebugData = myLineCache.myUploadDesc.myPrimitiveCount > 0;
+		if (hasDebugData)
 		{
-			// upload the entire chain
-			Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
-			debugModel->Update(myLineCache.myUploadDesc);
-			Graphics::TriggerUpload(myLineCache.myBuffer.Get());
+			if (isPipelineReady)
+			{
+				// upload the entire chain
+				Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
+				debugModel->Update(myLineCache.myUploadDesc);
+				Graphics::TriggerUpload(myLineCache.myBuffer.Get());
+			}
 
 			// clean up the upload descriptors
 			for (LineCache::UploadDesc* currDesc = &myLineCache.myUploadDesc;
@@ -140,7 +144,11 @@ void GraphicsGL::Display()
 			{
 				currDesc->myVertCount = 0;
 			}
+		}
 
+		// TODO: replace with a DebugRenderPass
+		if (isPipelineReady && hasDebugData)
+		{
 			// shader first
 			myDebugPipeline->Bind();
 
