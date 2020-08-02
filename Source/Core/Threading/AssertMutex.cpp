@@ -17,12 +17,12 @@ void AssertMutex::Lock()
 	// might need to change away from the default memory order to improve perf
 	if (!myWriter.compare_exchange_strong(expectedId, currentThreadId))
 	{
-		std::string msg = "Contention! Thread ";
-		std::basic_stringstream<std::string::value_type> stream(msg);
+		std::basic_stringstream<std::string::value_type> stream;
+		stream << "Contention! Thread ";
 		stream << currentThreadId;
 		stream << " tried to lock mutex owned by ";
 		stream << expectedId;
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 }
 
@@ -32,12 +32,12 @@ void AssertMutex::Unlock()
 	std::thread::id invalidId = std::thread::id();
 	if (!myWriter.compare_exchange_strong(expectedId, invalidId))
 	{
-		std::string msg = "Magic! Thread ";
-		std::basic_stringstream<std::string::value_type> stream(msg);
+		std::basic_stringstream<std::string::value_type> stream;
+		stream << "Magic! Thread ";
 		stream << std::this_thread::get_id();
 		stream << " tried to unlock mutex owned by ";
 		stream << expectedId;
-		ASSERT_STR(false, msg.data());
+		ASSERT_STR(false, stream.str().c_str());
 	}
 }
 
