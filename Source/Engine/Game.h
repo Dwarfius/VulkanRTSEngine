@@ -33,7 +33,6 @@ public:
 
 	void Init();
 	void RunMainThread();
-	void RunTaskGraph();
 	void CleanUp();
 
 	bool IsRunning() const;

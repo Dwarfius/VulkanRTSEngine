@@ -173,6 +173,7 @@ void Game::Init()
 		// TODO: need to add functionality to draw out the task tree ingame
 		myTaskManager->ResolveDependencies();
 		myTaskManager->Run();
+		myTaskManager->Wait();
 	}
 }
 
@@ -192,18 +193,14 @@ void Game::RunMainThread()
 		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
 
 		{
+			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(GameTask::Type::Render);
+			myTaskManager->Run();
+
 			Profiler::ScopedMark renderablesProfile("Game::SubmitRenderables");
 			myRenderThread->SubmitRenderables();
 		}
-
-		// TODO: need a semaphore for this, to disconnect from the render thread
-		RunTaskGraph();
+		myTaskManager->Wait();
 	}
-}
-
-void Game::RunTaskGraph()
-{
-	myTaskManager->Run();
 }
 
 void Game::CleanUp()
@@ -348,13 +345,7 @@ void Game::Render()
 	myRenderThread->AddDebugRenderable(&myDebugDrawer);
 	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());
 
-	// TODO: test moving it to the start of Render()
-	// we have to wait until the render thread finishes processing the submitted commands
-	// otherwise we'll screw the command buffers
-	while (myRenderThread->HasWork())
-	{
-		tbb::this_tbb_thread::yield();
-	}
+	myImGUISystem.Render();
 
 	// signal that we have submitted extra work
 	myRenderThread->Work();
