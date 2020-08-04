@@ -232,7 +232,7 @@ ProfilerUI::HierarchyMap ProfilerUI::CalculateHierarchy(const MarksVec& aMarks, 
 		else
 		{
 			// parent exists -> parents level + 1
-			uint32_t newLevel = hierarchyMap[mark.myParentId] + 1;
+			uint32_t newLevel = hierarchyMap.at(mark.myParentId) + 1;
 			hierarchyMap[mark.myId] = newLevel;
 			// update the max level
 			aMaxLevel = std::max(aMaxLevel, newLevel);
@@ -247,10 +247,17 @@ ProfilerUI::FrameData ProfilerUI::ProcessFrameProfile(const Profiler::FrameProfi
 	data.myThreadMarkMap = Utils::GroupBy<ThreadMarkMap>(aProfile.myFrameMarks,
 		[](const Profiler::Mark& aMark) { return aMark.myThreadId; }
 	);
-	for (const auto& threadMarksPair : data.myThreadMarkMap)
+	for (auto& threadMarksPair : data.myThreadMarkMap)
 	{
+		ProfilerUI::MarksVec& threadMarks = threadMarksPair.second;
+		// first, we need to sort the collection in order to be
+		// able to construct a hierarchy map
+		std::sort(threadMarks.begin(), threadMarks.end(), 
+			[](const Profiler::Mark& aLeft, const Profiler::Mark& aRight) {
+			return aLeft.myId < aRight.myId;
+		});
 		uint32_t maxLevel = 0;
-		data.myThreadHierarchyMap[threadMarksPair.first] = std::move(CalculateHierarchy(threadMarksPair.second, maxLevel));
+		data.myThreadHierarchyMap[threadMarksPair.first] = std::move(CalculateHierarchy(threadMarks, maxLevel));
 		data.myMaxLevels[threadMarksPair.first] = maxLevel;
 	}
 	data.myFrameProfile = std::move(aProfile);
