@@ -205,7 +205,8 @@ void Game::RunMainThread()
 
 void Game::CleanUp()
 {
-	// First, wait until render-thread is done
+	// First, wait until last frame is done
+	myTaskManager->Wait();
 	while (myRenderThread->HasWork())
 	{
 		myRenderThread->SubmitRenderables();
