@@ -2,9 +2,12 @@
 #include "Assert.h"
 
 #ifdef ENABLE_ASSERTS
+#	ifdef __linux__
+#	include <signal.h>
+#	endif
+
 namespace DebugImpl
 {
-	// TODO: add more assert support
 #	if defined(_WIN32)
 
 	AssertAction ShowAssertDialog(const char* aTitle, const char* aMsg)
@@ -38,8 +41,6 @@ static_assert(false, "Apple target not supported!");
 	{
 		return AssertAction::Break;
 	}
-
-#include <signal.h>
 
 	void TriggerBreakpoint()
 	{

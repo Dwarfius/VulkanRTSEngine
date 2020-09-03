@@ -63,7 +63,7 @@ set(SRC "Precomp.h"
 	"Game.cpp" "Game.h"
 	"GameObject.cpp" "GameObject.h"
 	"GameTaskManager.cpp" "GameTaskManager.h"
-	"Input.cpp" "Input.h" # TODO: should I move it to Core?
+	"Input.cpp" "Input.h"
 	"RenderThread.cpp" "RenderThread.h"
 	"Terrain.cpp" "Terrain.h"
 	"VisualObject.cpp" "VisualObject.h"

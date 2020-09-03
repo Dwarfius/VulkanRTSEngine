@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-// TODO: add static-runtime asserts for safety
-// TODO: add raw c-string initializer
 // A String with on-stack allocated buffer. Constexpr context usable.
 template<int N>
 class StaticString
@@ -23,6 +21,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aString[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	template<int M, int K>
@@ -39,6 +38,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aBuffer[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	template<int M, int K>
@@ -55,6 +55,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aString2[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	// friend declarations
@@ -79,6 +80,7 @@ public:
 		{
 			myBuffer[i] = aBuffer[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	template<int M, class = std::enable_if_t<M <= N>>
@@ -90,6 +92,7 @@ public:
 		{
 			myBuffer[i] = aBuffer[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	template<int M, class = std::enable_if_t<M <= N>>
@@ -101,11 +104,11 @@ public:
 		{
 			myBuffer[i] = aOther[i];
 		}
+		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
 	}
 
 	constexpr char& operator[](int index)
 	{
-		// TODO: add check to enforce last element to be \0
 		return myBuffer[index];
 	}
 

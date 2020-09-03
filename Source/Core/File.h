@@ -7,10 +7,10 @@
 // until then, this represents an empty file
 class File : public RefCounted
 {
-	// TODO: make threadable using OnReadDone callback
 public:
 	File(const std::string& aPath);
 
+	// Blocking until entire file is read
 	bool Read();
 
 	size_t GetSize() const { return myBuffer.size(); }

@@ -11,8 +11,6 @@ tbb::task* AssetTracker::LoadTask::execute()
 
 	// if we're holding the last handle, means noone needs this anymore,
 	// so can skip it and destroy it implicitly
-	// TODO: should track how many fail the check, and try to prevent
-	// them being scheduled
 	if (!myRes.IsLastHandle())
 	{
 		myRes->Load(myAssetTracker);
@@ -20,27 +18,46 @@ tbb::task* AssetTracker::LoadTask::execute()
 			|| myRes->GetState() == Resource::State::Error,
 			"Found a resource that didn't change it's state after Load!");
 	}
-	// TODO: look into task-recycling
+	
+	// we return nullptr here because there's no continuation (dependent task)
+	// from completion a file load. If this change, will need to adjust
+	// to avoid an extra task allocation
 	return nullptr;
 }
 
 AssetTracker::AssetTracker()
 	: myCounter(Resource::InvalidId)
+	, myReadSerializers([this]() {	return new JsonSerializer(*this, true);	})
+	, myWriteSerializers([this]() {	return new JsonSerializer(*this, false); })
 {
 }
 
-std::unique_ptr<Serializer> AssetTracker::GetReadSerializer(const std::string& aPath)
+AssetTracker::~AssetTracker()
+{
+	// we can't use RAII type like std::unique_ptr because it
+	// requires type to be fully defined, but we only forward
+	// declare it at that point
+	for (Serializer* serializer : myReadSerializers)
+	{
+		delete serializer;
+	}
+	for (Serializer* serializer : myWriteSerializers)
+	{
+		delete serializer;
+	}
+}
+
+std::optional<std::reference_wrapper<Serializer>> AssetTracker::GetReadSerializer(const std::string& aPath)
 {
 	File file(aPath);
 	if (!file.Read())
 	{
-		return std::unique_ptr<Serializer>();
+		return std::nullopt;
 	}
-	// TODO: need to find a way to return it on the stack, 
-	// instead of heap allocating all the time. Maybe a thread-local and return-by-ref?
-	std::unique_ptr<Serializer> serializer = std::make_unique<JsonSerializer>(*this, true);
-	serializer->ReadFrom(file);
-	return serializer;
+
+	Serializer& serializer = *myReadSerializers.local();
+	serializer.ReadFrom(file);
+	return std::ref(serializer);
 }
 
 void AssetTracker::RemoveResource(const Resource* aRes)

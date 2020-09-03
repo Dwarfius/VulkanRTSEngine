@@ -61,14 +61,14 @@ void Resource::Load(AssetTracker& anAssetTracker)
 	
 	if (UsesDescriptor())
 	{
-		std::unique_ptr<Serializer> serializerPtr = anAssetTracker.GetReadSerializer(myPath);
-		Serializer* serializer = serializerPtr.get();
-		if (!serializer)
+		if (std::optional<std::reference_wrapper<Serializer>>& serializer = anAssetTracker.GetReadSerializer(myPath))
+		{
+			Serialize(*serializer);
+		}
+		else
 		{
 			SetErrMsg("Failed to read descriptor file!");
-			return;
 		}
-		Serialize(*serializer);
 	}
 	else
 	{

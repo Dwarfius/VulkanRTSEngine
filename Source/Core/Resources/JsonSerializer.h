@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Serializer.h"
-#include <nlohmann/json.hpp> // TODO: would be nice to Pimpl it without an allocation per construction
+#include <nlohmann/json.hpp>
 
 class JsonSerializer : public Serializer
 {

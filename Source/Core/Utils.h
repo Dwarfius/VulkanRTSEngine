@@ -33,8 +33,6 @@ TAssocColl Utils::GroupBy(const TColl& aColl, TPred aPred)
 	for (const auto& item : aColl)
 	{
 		auto key = aPred(item);
-		// TODO: generalize the inserter, probably via splitting TAssocColl
-		// and using if constexpr(std::is_same_v)
 		assocCollection[key].push_back(item);
 	}
 	return assocCollection;

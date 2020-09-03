@@ -2,8 +2,9 @@
 
 #include "Resource.h"
 
-//class Serializer;
-#include "Serializer.h"
+#include <optional>
+
+class Serializer;
 
 // Class for handling different resource types using the same interface. 
 // Threadsafe
@@ -13,6 +14,7 @@ private:
 	using AssetIter = std::unordered_map<Resource::Id, Resource*>::const_iterator;
 	using AssetPair = std::pair<const Resource::Id, Resource*>;
 	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
+	using TLSSerializers = tbb::enumerable_thread_specific<Serializer*>;
 
 	class LoadTask : public tbb::task
 	{
@@ -32,6 +34,7 @@ private:
 
 public:
 	AssetTracker();
+	~AssetTracker();
 
 	// Saves an asset to the disk. Tracks it for future use
 	// Threadsafe
@@ -46,7 +49,7 @@ public:
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(const std::string& aPath);
 
-	std::unique_ptr<Serializer> GetReadSerializer(const std::string& aPath);
+	std::optional<std::reference_wrapper<Serializer>> GetReadSerializer(const std::string& aPath);
 
 private:
 	// Utility method to clean-up the resource from registry and asset collections
@@ -62,6 +65,9 @@ private:
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
+
+	TLSSerializers myReadSerializers;
+	TLSSerializers myWriteSerializers;
 };
 
 template<class TAsset>

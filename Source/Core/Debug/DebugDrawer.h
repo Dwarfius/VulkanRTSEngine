@@ -4,7 +4,6 @@
 #include "../Vertex.h"
 #include "../LazyVector.h"
 
-// TODO: add line life support
 // A threadsafe debug drawing utility class. 
 // Has capacity for 2 frames - current and past.
 class DebugDrawer
