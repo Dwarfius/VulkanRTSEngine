@@ -5,20 +5,21 @@
 #include <Graphics/UniformBlock.h>
 
 #include "../../VisualObject.h"
+#include "AdapterSourceData.h"
 
-ObjectMatricesAdapter::ObjectMatricesAdapter(const GameObject& aGO, const VisualObject& aVO)
-	: UniformAdapter(aGO, aVO)
+void ObjectMatricesAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
 {
-}
+	const UniformAdapterSource& source = static_cast<const UniformAdapterSource&>(aData);
 
-void ObjectMatricesAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) const
-{
+	const VisualObject& visualObject = source.myVO;
+	const Camera& camera = source.myCam;
+
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	const glm::mat4& model = myVO.GetTransform().GetMatrix();
-	const glm::mat4& view = aCam.GetView();
+	const glm::mat4& model = visualObject.GetTransform().GetMatrix();
+	const glm::mat4& view = camera.GetView();
 	const glm::mat4 modelView = view * model;
-	const glm::mat4& vp = aCam.Get();
+	const glm::mat4& vp = camera.Get();
 
 	aUB.SetUniform(0, model);
 	aUB.SetUniform(1, modelView);

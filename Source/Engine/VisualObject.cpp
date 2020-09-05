@@ -3,8 +3,6 @@
 
 #include "Game.h"
 #include "GameObject.h"
-#include "Graphics/Adapters/UniformAdapter.h"
-#include "Graphics/Adapters/UniformAdapterRegister.h"
 
 #include <Graphics/GPUResource.h>
 #include <Graphics/UniformBlock.h>
@@ -59,19 +57,13 @@ bool VisualObject::Resolve()
 	// Since we got a new pipeline, time to replace
 	// descriptors, UBOs and adapters
 	myUniforms.clear();
-	myAdapters.clear();
 
 	const GPUPipeline* pipeline = myPipeline.Get<const GPUPipeline>();
 	size_t descriptorCount = pipeline->GetDescriptorCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{
 		const Handle<Descriptor>& descriptor = pipeline->GetDescriptor(i);
-
 		myUniforms.push_back(std::make_shared<UniformBlock>(*descriptor.Get()));
-		const std::string& adapterName = descriptor->GetUniformAdapter();
-		myAdapters.push_back(
-			UniformAdapterRegister::GetInstance()->GetAdapter(adapterName, myGameObject, *this)
-		);
 	}
 
 	myIsResolved = true;

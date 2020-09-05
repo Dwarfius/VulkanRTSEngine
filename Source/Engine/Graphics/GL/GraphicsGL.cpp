@@ -3,7 +3,6 @@
 
 #include "Terrain.h"
 #include "VisualObject.h"
-#include "Graphics/Adapters/UniformAdapter.h"
 #include "ShaderGL.h"
 #include "PipelineGL.h"
 #include "ModelGL.h"

@@ -1,12 +1,17 @@
 #include "Precomp.h"
 #include "Game.h"
 
-#include "Graphics/Adapters/UniformAdapterRegister.h"
 #include "Input.h"
 #include "Audio.h"
 #include "Terrain.h"
 #include "GameObject.h"
 #include "Terrain.h"
+#include "VisualObject.h"
+#include "Components/EditorMode.h"
+#include "Components/PhysicsComponent.h"
+#include "Graphics/Adapters/CameraAdapter.h"
+#include "Graphics/Adapters/ObjectMatricesAdapter.h"
+#include "Graphics/Adapters/TerrainAdapter.h"
 
 #include <Core/StaticString.h>
 #include <Core/Profiler.h>
@@ -16,14 +21,11 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/UniformAdapterRegister.h>
 
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsShapes.h>
-
-#include "VisualObject.h"
-#include "Components/EditorMode.h"
-#include "Components/PhysicsComponent.h"
 
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
@@ -51,18 +53,8 @@ Game::Game(ReportError aReporterFunc)
 
 	glfwSetTime(0);
 	
-	// TODO: Need to refactor out logging
-	//myFile.open(BootWithVK ? "logVK.csv" : "logGL.csv");
-	if (!myFile.is_open())
-	{
-		printf("[Warning] Log file didn't open\n");
-	}
-
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
-
-	// Trigger initialization
-	UniformAdapterRegister::GetInstance();
 
 	{
 		constexpr float kTerrSize = 18000; // meters
@@ -95,7 +87,9 @@ Game::~Game()
 void Game::Init()
 {
 	Profiler::ScopedMark profile("Game::Init");
-	myGameObjects.reserve(maxObjects);
+	RegisterUniformAdapters();
+
+	myGameObjects.reserve(kMaxObjects);
 
 	myRenderThread->Init(BootWithVK, myAssetTracker);
 
@@ -214,12 +208,6 @@ void Game::CleanUp()
 
 	myImGUISystem.Shutdown();
 
-	// now that it's done, we can clean up everything
-	if (myFile.is_open())
-	{
-		myFile.close();
-	}
-
 	delete myEditorMode;
 
 	// physics clear
@@ -251,6 +239,35 @@ bool Game::IsRunning() const
 GLFWwindow* Game::GetWindow() const
 {
 	return myRenderThread->GetWindow();
+}
+
+GameObject* Game::Instantiate(glm::vec3 aPos /*=glm::vec3()*/, glm::vec3 aRot /*=glm::vec3()*/, glm::vec3 aScale /*=glm::vec3(1)*/)
+{
+	Profiler::ScopedMark profile(__func__);
+	GameObject* go = nullptr;
+	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
+	if (myGameObjects.size() < kMaxObjects)
+	{
+		go = new GameObject(aPos, aRot, aScale);
+		myAddQueue.emplace(go);
+	}
+	return go;
+}
+
+const Terrain* Game::GetTerrain(glm::vec3 pos) const
+{
+	return myTerrains[0];
+}
+
+float Game::GetTime() const
+{
+	return static_cast<float>(glfwGetTime());
+}
+
+void Game::RemoveGameObject(GameObject* go)
+{
+	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
+	myRemoveQueue.push(go);
 }
 
 void Game::AddGameObjects()
@@ -386,39 +403,10 @@ void Game::RemoveGameObjects()
 	ourGODeleteEnabled = false;
 }
 
-GameObject* Game::Instantiate(glm::vec3 aPos /*=glm::vec3()*/, glm::vec3 aRot /*=glm::vec3()*/, glm::vec3 aScale /*=glm::vec3(1)*/)
+void Game::RegisterUniformAdapters()
 {
-	Profiler::ScopedMark profile(__func__);
-	GameObject* go = nullptr;
-	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
-	if (myGameObjects.size() < maxObjects)
-	{
-		go = new GameObject(aPos, aRot, aScale);
-		myAddQueue.emplace(go);
-	}
-	return go;
-}
-
-const Terrain* Game::GetTerrain(glm::vec3 pos) const
-{
-	return myTerrains[0];
-}
-
-float Game::GetTime() const
-{
-	return static_cast<float>(glfwGetTime());
-}
-
-void Game::RemoveGameObject(GameObject* go)
-{
-	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
-	myRemoveQueue.push(go);
-}
-
-void Game::LogToFile(const std::string& s)
-{
-	if (myFile.is_open())
-	{
-		myFile << s << std::endl;
-	}
+	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
+	adapterRegister.Register<CameraAdapter>();
+	adapterRegister.Register<ObjectMatricesAdapter>();
+	adapterRegister.Register<TerrainAdapter>();
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UniformAdapter.h"
+#include <Graphics/UniformAdapter.h>
 
 class Terrain;
 
@@ -16,8 +16,5 @@ public:
 	// Returns in how many tiles is the terrain grid split
 	static glm::ivec2 GetTileCount(const Terrain* aTerrain);
 
-	// Both aGO and aVO can be used to access information needed to render the object
-	TerrainAdapter(const GameObject& aGO, const VisualObject& aVO);
-
-	void FillUniformBlock(const Camera& aCam, UniformBlock& aUB) const override;
+	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
 };

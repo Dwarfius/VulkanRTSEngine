@@ -5,23 +5,15 @@
 #include <Graphics/UniformBlock.h>
 #include <Graphics/Graphics.h>
 
-
-#include "../../VisualObject.h"
-#include "../../Terrain.h"
-
-CameraAdapter::CameraAdapter(const GameObject& aGO, const VisualObject& aVO)
-	: UniformAdapter(aGO, aVO)
-{
-}
-
-void CameraAdapter::FillUniformBlock(const Camera& aCam, UniformBlock& aUB) const
+void CameraAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
 {
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	const glm::vec3 pos = aCam.GetTransform().GetPos();
-	const glm::mat4 viewMatrix = aCam.GetView();
-	const glm::mat4 projMatrix = aCam.GetProj();
-	const Frustum& frustum = aCam.GetFrustum();
+	const Camera& camera = aData.myCam;
+	const glm::vec3 pos = camera.GetTransform().GetPos();
+	const glm::mat4 viewMatrix = camera.GetView();
+	const glm::mat4 projMatrix = camera.GetProj();
+	const Frustum& frustum = camera.GetFrustum();
 	const glm::vec2 viewport(Graphics::GetWidth(), Graphics::GetHeight());
 
 	aUB.SetUniform(0, viewMatrix);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UniformAdapter.h"
+#include <Graphics/UniformAdapter.h>
 
 // This basic adapter only provides Model and MVP matrices as uniforms.
 // To provide different versions of the adapter, just inherit the adapter
@@ -9,8 +9,5 @@ class ObjectMatricesAdapter : public UniformAdapter
 {
 	DECLARE_REGISTER(ObjectMatricesAdapter);
 public:
-	// Both aGO and aVO can be used to access information needed to render the object
-	ObjectMatricesAdapter(const GameObject& aGO, const VisualObject& aVO);
-
-	void FillUniformBlock(const Camera& aCam, UniformBlock& aUB) const override;
+	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
 };

@@ -44,12 +44,14 @@ public:
 
 	UniformBlock& GetUniformBlock(size_t anIndex) const { return *myUniforms[anIndex]; }
 	const std::vector<std::shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
-	const UniformAdapter& GetUniformAdapter(size_t anIndex) const { return *myAdapters[anIndex]; }
 
 	void SetCategory(Category aCategory) { myCategory = aCategory; }
 	Category GetCategory() const { return myCategory; }
 
 	bool Resolve();
+
+	// TODO: this is temp until I rework how we store gameobjects and visual objects
+	const GameObject& GetLinkedGO() const { return myGameObject; }
 
 private:
 	Transform myTransf;
@@ -60,8 +62,6 @@ private:
 	// TODO: rework this to use a index-based Handle into
 	// a pool of UniformBlocks
 	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
-	// TODO: move this to pipeline itself
-	std::vector<std::shared_ptr<UniformAdapter>> myAdapters;
 	const GameObject& myGameObject;
 	Category myCategory;
 	bool myIsResolved;

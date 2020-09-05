@@ -3,21 +3,40 @@
 
 #include "Game.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
-#include "Graphics/Adapters/UniformAdapter.h"
-#include "Graphics/Adapters/UniformAdapterRegister.h"
 
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
-#include <Core/Resources/AssetTracker.h>
-#include <Core/Profiler.h>
+#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/GPUResource.h>
 
+#include <Core/Resources/AssetTracker.h>
+#include <Core/Profiler.h>
 #include <Core/Threading/AssertMutex.h>
 
 struct ImGUIRenderParams : public IRenderPass::IParams
 {
 	int myScissorRect[4];
+};
+
+// Utility adapter if someone else wants to use it - we set the uniforms directly
+// We have to provide it because UniformAdapters that are referenced
+// in assets must be registered (even if they are not used)
+class ImGUIAdapter : public UniformAdapter
+{
+	DECLARE_REGISTER(ImGUIAdapter);
+public:
+	struct ImGUIData : SourceData
+	{
+		glm::mat4 myOrthoProj;
+	};
+
+	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override final
+	{
+		const ImGUIData& data = static_cast<const ImGUIData&>(aData);
+		aUB.SetUniform(0, data.myOrthoProj);
+	}
 };
 
 class ImGUIRenderPass : public IRenderPass
@@ -164,6 +183,9 @@ ImGUISystem::ImGUISystem(Game& aGame)
 void ImGUISystem::Init()
 {
 	Profiler::ScopedMark profile("ImGUISystem::Init");
+
+	UniformAdapterRegister::GetInstance().Register<ImGUIAdapter>();
+
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 

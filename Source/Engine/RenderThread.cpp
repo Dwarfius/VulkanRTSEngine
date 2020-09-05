@@ -6,14 +6,15 @@
 #include "Input.h"
 #include "Game.h"
 #include "VisualObject.h"
-#include "Graphics/Adapters/UniformAdapter.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
+#include "Graphics/Adapters/AdapterSourceData.h"
 #include "Terrain.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/UniformAdapter.h>
 
 #include <Core/Profiler.h>
 
@@ -205,14 +206,19 @@ void RenderThread::SubmitRenderables()
 				continue;
 			}
 
-			// TODO: refactor away to Graphics!
 			// updating the uniforms - grabbing game state!
-			const size_t uboCount = aVO->GetPipeline().Get<const GPUPipeline>()->GetDescriptorCount();
+			UniformAdapterSource source{
+				cam,
+				aVO->GetLinkedGO(),
+				*aVO
+			};
+			const GPUPipeline* gpuPipeline = aVO->GetPipeline().Get<const GPUPipeline>();
+			const size_t uboCount = gpuPipeline->GetDescriptorCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
-				const UniformAdapter& adapter = aVO->GetUniformAdapter(i);
-				adapter.FillUniformBlock(cam, uniformBlock);
+				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
+				adapter.FillUniformBlock(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(aVO->GetUniforms());
 

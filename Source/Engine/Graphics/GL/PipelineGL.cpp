@@ -45,10 +45,12 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	size_t descCount = pipeline->GetDescriptorCount();
 	myBuffers.reserve(descCount);
 	myDescriptors.reserve(descCount);
+	myAdapters.reserve(descCount);
 	for(size_t i=0; i<descCount; i++)
 	{
 		Handle<Descriptor> descriptor = pipeline->GetDescriptor(i);
 		myDescriptors.push_back(descriptor);
+		myAdapters.push_back(std::cref(pipeline->GetAdapter(i)));
 
 		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor);
 		ubo->Create(aGraphics, nullptr);

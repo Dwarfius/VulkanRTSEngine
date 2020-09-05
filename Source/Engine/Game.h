@@ -1,10 +1,11 @@
 #pragma once
 
-#include "GameTaskManager.h"
-#include "RenderThread.h"
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
+
+#include "GameTaskManager.h"
+#include "RenderThread.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 
 class Camera;
@@ -48,7 +49,7 @@ public:
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
 	GameObject* Instantiate(glm::vec3 aPos = glm::vec3(), glm::vec3 aRot = glm::vec3(), glm::vec3 aScale = glm::vec3(1));
 	// TODO: get rid of this limit by improving VK renderer
-	const static uint32_t maxObjects = 4000;
+	constexpr static uint32_t kMaxObjects = 4000;
 
 	Camera* GetCamera() const { return myCamera; }
 	const Terrain* GetTerrain(glm::vec3 pos) const;
@@ -77,6 +78,8 @@ private:
 	void UpdateEnd();
 	void RemoveGameObjects();
 
+	void RegisterUniformAdapters();
+
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
 	std::unique_ptr<GameTaskManager> myTaskManager;
@@ -101,8 +104,4 @@ private:
 	bool myShouldEnd;
 	bool myIsPaused;
 	bool myIsInFocus;
-
-	// logging
-	void LogToFile(const std::string& aLine);
-	std::ofstream myFile;
 };
