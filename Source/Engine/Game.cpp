@@ -27,6 +27,8 @@
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsShapes.h>
 
+#include <Core/Pool.h>
+
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
@@ -47,6 +49,8 @@ Game::Game(ReportError aReporterFunc)
 	Profiler::ScopedMark profile("Game::Ctor");
 	ourInstance = this;
 	UID::Init();
+
+	TestPool();
 
 	glfwSetErrorCallback(aReporterFunc);
 	glfwInit();
@@ -409,4 +413,65 @@ void Game::RegisterUniformAdapters()
 	adapterRegister.Register<CameraAdapter>();
 	adapterRegister.Register<ObjectMatricesAdapter>();
 	adapterRegister.Register<TerrainAdapter>();
+}
+
+void Game::TestPool()
+{
+	Profiler::ScopedMark profile("Game::TestPool");
+	constexpr static auto kSumTest = [](Pool<uint32_t>& aPool, size_t anExpectedSum) {
+		int sum = 0;
+		aPool.ForEach([&sum](const int& anItem) {
+			sum += anItem;
+		});
+		ASSERT(sum == anExpectedSum);
+	};
+
+	Pool<uint32_t> poolOfInts;
+	std::vector<Pool<uint32_t>::Ptr> intPtrs;
+	// basic test
+	intPtrs.emplace_back(std::move(poolOfInts.Allocate(0)));
+	ASSERT(*intPtrs[0].Get() == 0);
+	ASSERT(poolOfInts.GetSize() == 1);
+	intPtrs.clear();
+	ASSERT(poolOfInts.GetSize() == 0);
+
+	size_t oldCapacity = poolOfInts.GetCapacity();
+	// up to capacity+consistency test 
+	size_t expectedSum = 0;
+	for (uint32_t i = 0; i < poolOfInts.GetCapacity(); i++)
+	{
+		intPtrs.emplace_back(std::move(poolOfInts.Allocate(i)));
+		expectedSum += i;
+	}
+	ASSERT(poolOfInts.GetSize() == poolOfInts.GetCapacity());
+	ASSERT(poolOfInts.GetCapacity() == oldCapacity);
+	kSumTest(poolOfInts, expectedSum);
+
+	// capacity growth test
+	uint32_t newElem = static_cast<uint32_t>(poolOfInts.GetCapacity());
+	intPtrs.emplace_back(std::move(poolOfInts.Allocate(newElem)));
+	expectedSum += newElem;
+	ASSERT(poolOfInts.GetCapacity() > oldCapacity);
+	kSumTest(poolOfInts, expectedSum);
+
+	// partial clear test
+	size_t removedElem = 10;
+	intPtrs.erase(intPtrs.begin() + removedElem);
+	expectedSum -= removedElem;
+	kSumTest(poolOfInts, expectedSum);
+
+	// weak ptr test
+	{
+		Pool<uint32_t>::WeakPtr weakPtr;
+		weakPtr = intPtrs[0];
+		ASSERT(*weakPtr.Get() == 0);
+	}
+	kSumTest(poolOfInts, expectedSum);
+
+	// full clear test
+	oldCapacity = poolOfInts.GetCapacity();
+	intPtrs.clear();
+	ASSERT(poolOfInts.GetSize() == 0);
+	ASSERT(poolOfInts.GetCapacity() == oldCapacity);
+	kSumTest(poolOfInts, 0);
 }

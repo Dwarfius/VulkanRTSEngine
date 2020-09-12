@@ -7,6 +7,7 @@ include(FetchContent)
 
 SET(BENCHTABLE_GenSerialization FALSE CACHE BOOL "Should BenchTable include Serialization tests")
 SET(BENCHTABLE_GenProfiling FALSE CACHE BOOL "Should BenchTable include Profiling tests")
+SET(BENCHTABLE_GenPool FALSE CACHE BOOL "Should BenchTable include Pool tests")
 
 FetchContent_Declare(
 	googleBench
@@ -51,7 +52,15 @@ if(BENCHTABLE_GenProfiling)
 	source_group("Profiling" FILES ${SRC_PROFILING})
 endif()
 
-add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION} ${SRC_PROFILING})
+if(BENCHTABLE_GenPool)
+	set(SRC_POOL "Pool/Pool.cpp"	
+		"Pool/PoolHeaderElem.h"
+		"Pool/PoolFreeList.h"
+	)
+	source_group("Pool" FILES ${SRC_POOL})
+endif()
+
+add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION} ${SRC_PROFILING} ${SRC_POOL})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 

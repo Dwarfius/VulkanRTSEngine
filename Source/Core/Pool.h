@@ -1,269 +1,250 @@
 #pragma once
 
-template<class TTraits>
+// A collection object that has ability to grow like a vector, 
+// while guarantying pointer stability (via proxy type called Ptr).
+// The purpose is to help maintain cache coherence
+// Note: can be adapted as a backing storage for a pooling allocator
+template<class T>
 class Pool
 {
-	constexpr static uint16_t InvalidGen = 0;
-public:
-	template<class TElem, size_t AllocStrategy = 2, size_t InitCount = 32>
-	class StaticTraits
-	{
-	public:
-		using Element = TElem;
-		// Get size, in bytes, of a single element
-		size_t GetSize() const { return sizeof(Element); }
-		// Get new allocation size, in elements, based on previous count
-		size_t GetNextCount(size_t aOldCount) const { return aOldCount * AllocStrategy; }
-		// Gets the initial number of elements
-		size_t GetInitialCount() const { return InitCount; }
-	};
+	using GenerationType = uint8_t;
 
-	// RAII style handle to a pool-allocated object
-	class Handle
+	constexpr static uint8_t kGrowthFactor = 2;
+	constexpr static uint8_t kInitialCapacity = 64;
+	constexpr static int kBitsUsed = std::numeric_limits<GenerationType>::digits - 1; // we save top bit for the flag
+	constexpr static GenerationType kMaxGeneration = (1ull << kBitsUsed) - 1;
+
+	class PtrBase
 	{
 	public:
-		Handle();
-		~Handle();
-		Handle(const Handle&) = delete;
-		Handle& operator=(const Handle&) = delete;
-		Handle(Handle&& aHandle);
-		Handle& operator=(Handle&& aHandle);
+		PtrBase() = default;
+		PtrBase(Pool<T>* aPool, size_t anIndex, GenerationType aGeneration)
+			: myPool(aPool)
+			, myIndex(anIndex)
+			, myGeneration(aGeneration)
+		{
+		}
 
 		bool IsValid() const;
-		typename TTraits::Element* Get();
+		T* Get();
 
+	protected:
+		Pool<T>* myPool = nullptr; // not owned
+		size_t myIndex = 0;
+		GenerationType myGeneration = 0;
+	};
+public:
+	// RAII style Pointer to a pool-allocated object
+	// Destroys the pointed-to object on life end
+	class Ptr : public PtrBase
+	{
+	public:
+		Ptr() = default;
+		Ptr(const Ptr&) = delete;
+		Ptr& operator=(const Ptr&) = delete;
+
+		Ptr(Ptr&& aPtr) noexcept { *this = std::move(aPtr); }
+		Ptr& operator=(Ptr&& aPtr) noexcept;
+
+		~Ptr() noexcept
+		{
+			if (IsValid())
+			{
+				myPool->Free(myIndex);
+			}
+		}
+	
 	private:
-		friend class Pool<TTraits>;
-		Handle(Pool<TTraits>* aPool, size_t aIndex, uint16_t aGeneration);
-
-		Pool<TTraits>* myPool; // not owned
-		size_t myIndex;
-		uint16_t myGeneration;
+		friend class Pool<T>;
+		Ptr(Pool<T>* aPool, size_t anIndex, GenerationType aGeneration)
+			: PtrBase(aPool, anIndex, aGeneration)
+		{
+		}
 	};
 
-	Pool(TTraits aTraits = TTraits());
-	~Pool();
+	// Safe pointer to a pool-allocated object
+	// Doesn't destroy pointed-to object on life end
+	class WeakPtr : public PtrBase
+	{
+	public:
+		WeakPtr() = default;
+		WeakPtr(const Ptr& aPtr) : PtrBase(aPtr) {}
+	};
 
-	// Allocates a new element and returns a Handle for it.
-	// Can cause pool to resize. Handles will remain valid.
-	Handle Allocate();
+	// Allocates a new element and returns a Ptr for it.
+	// Can cause pool to resize. Ptrs will remain valid.
+	template<class... TArgs>
+	Ptr Allocate(TArgs&&... aConstrArgs);
 
-	// Returns whether next allocation will cause the pool to grow
-	bool IsFull() const;
+	template<class TUnaryFunc,
+		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>>
+		void ForEach(TUnaryFunc aFunc);
+
+	template<class TUnaryFunc,
+		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>>
+		void ForEach(TUnaryFunc aFunc) const;
+
+	size_t GetCapacity() const { return myElements.capacity(); }
+	size_t GetSize() const { return mySize; }
 
 private:
-	struct Header
+	struct Element
 	{
-		Header* myNextFreeItem;
-		uint16_t myGeneration;
+		union
+		{
+			size_t myNextFreeSlot;
+			T myValue;
+		};
+		GenerationType myGeneration : kBitsUsed;
+		GenerationType myIsActive : 1;
+
+		Element() noexcept
+			: myNextFreeSlot(0)
+			, myGeneration(0)
+			, myIsActive(false)
+		{
+		}
 	};
 
-	friend class Handle;
-
-	size_t GetIndexOfHeader(Header* aHeader) const;
-	Header* GetHeader(size_t aIndex);
-	const Header* GetHeader(size_t aIndex) const;
-	typename TTraits::Element* GetElement(size_t aIndex);
-
-	void Free(size_t anIndex);
 	void Resize(size_t aNewCount);
+	void Free(size_t anIndex);
+	bool IsValid(size_t anIndex, GenerationType aGeneration) const;
 
-	TTraits myTraits;
-	
-	// Data is organized in 2 halfs - headers first, then actual storage
-	// For purposes of speeding up traversal of headers in search for free spots
-	// as well as potentially speeding up relocations by allowing to avoid
-	// full buffer copy
-	char* myData;
-	size_t myCount;
-	Header* myFirstFreeSlot;
+	std::vector<Element> myElements;
+	size_t myFirstFreeSlot = 0;
+	size_t mySize = 0;
 };
 
 // ======================
-//        HANDLE
+//        PtrBase
 // ======================
 
-template<class TTraits>
-Pool<TTraits>::Handle::Handle()
-	: Handle(nullptr, 0, InvalidGen)
+template<class T>
+bool Pool<T>::PtrBase::IsValid() const
 {
+	return myPool && myPool->IsValid(myIndex, myGeneration);
 }
 
-template<class TTraits>
-Pool<TTraits>::Handle::Handle(Pool<TTraits>* aPool, size_t aIndex, uint16_t aGeneration)
-	: myPool(aPool)
-	, myIndex(aIndex)
-	, myGeneration(aGeneration)
+template<class T>
+T* Pool<T>::PtrBase::Get()
 {
+	ASSERT_STR(IsValid(), "Invalid Ptr!");
+	return &myPool->myElements[myIndex].myValue;
 }
 
-template<class TTraits>
-Pool<TTraits>::Handle::~Handle()
+// ======================
+//          Ptr
+// ======================
+
+template<class T>
+typename Pool<T>::Ptr& Pool<T>::Ptr::operator=(Ptr&& aPtr) noexcept
 {
-	if (myPool && myGeneration != InvalidGen)
+	if (IsValid())
 	{
 		myPool->Free(myIndex);
 	}
-}
-
-template<class TTraits>
-Pool<TTraits>::Handle::Handle(Handle&& aHandle)
-{
-	*this = std::move(aHandle);
-}
-
-template<class TTraits>
-typename Pool<TTraits>::Handle& Pool<TTraits>::Handle::operator=(Handle&& aHandle)
-{
-	myPool = aHandle.myPool;
-	myIndex = aHandle.myIndex;
-	myGeneration = aHandle.myGeneration;
-	aHandle.myGeneration = InvalidGen;
-	aHandle.myPool = nullptr;
+	myPool = aPtr.myPool;
+	myIndex = aPtr.myIndex;
+	myGeneration = aPtr.myGeneration;
+	aPtr.myPool = nullptr;
+	aPtr.myIndex = 0;
+	aPtr.myGeneration = 0;
 	return *this;
 }
 
-template<class TTraits>
-bool Pool<TTraits>::Handle::IsValid() const
-{
-	ASSERT_STR(myGeneration != InvalidGen, "Moved from handle spotted!");
-	return myPool && myGeneration == myPool->GetHeader(myIndex)->myGeneration;
-}
-
-template<class TTraits>
-typename TTraits::Element* Pool<TTraits>::Handle::Get()
-{
-	ASSERT_STR(IsValid(), "Invalid handle!");
-	return myPool->GetElement(myIndex);
-}
-
 // ======================
-//          POOL
+//         Pool
 // ======================
 
-template<class TTraits>
-Pool<TTraits>::Pool(TTraits aTraits /*= TTraits()*/)
-	: myTraits(aTraits)
-	, myCount(0)
-	, myData(nullptr)
-	, myFirstFreeSlot(nullptr)
+template<class T>
+template<class... TArgs>
+typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 {
-	Resize(myTraits.GetInitialCount())
-	myFirstFreeSlot = GetHeader(0);
-}
-
-template<class TTraits>
-Pool<TTraits>::~Pool()
-{
-	delete[] myData;
-}
-
-template<class TTraits>
-typename Pool<TTraits>::Handle Pool<TTraits>::Allocate()
-{
-	// resize if needed
-	if (IsFull())
+	if (mySize == myElements.capacity())
 	{
-		Resize(myTraits.GetNextCount(myCount));
+		const size_t newSize = myElements.capacity() ? myElements.capacity() * kGrowthFactor : kInitialCapacity;
+		Resize(newSize);
 	}
 
 	// find first free spot
-	Header* freeSpot = myFirstFreeSlot;
-	const size_t currIndex = GetIndexOfHeader(freeSpot);
+	const size_t currIndex = myFirstFreeSlot;
+	Element& currFreeSpot = myElements[currIndex];
+	ASSERT_STR(!currFreeSpot.myIsActive, "Weird pool state detected!");
 
 	// move the pointer to next free slot
-	Header* secondFreeSpot = myFirstFreeSlot->myNextFreeItem;
-	myFirstFreeSlot = secondFreeSpot;
-	
+	myFirstFreeSlot = currFreeSpot.myNextFreeSlot;
+
 	// finally construct the new one
-	freeSpot->myNextFreeItem = nullptr;
-	freeSpot->myGeneration++;
-	return Handle(this, myData, freeSpot->myGeneration);
+	new(static_cast<void*>(&currFreeSpot.myValue)) T(std::forward<TArgs...>(aConstrArgs)...);
+	currFreeSpot.myIsActive = true;
+	currFreeSpot.myGeneration = currFreeSpot.myGeneration == kMaxGeneration ? 0 : currFreeSpot.myGeneration++;
+	mySize++;
+
+	return Ptr(this, currIndex, currFreeSpot.myGeneration);
 }
 
-template<class TTraits>
-bool Pool<TTraits>::IsFull() const
+template<class T>
+template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>*/>
+void Pool<T>::ForEach(TUnaryFunc aFunc)
 {
-	return myFirstFreeSlot == nullptr;
-}
-
-template<class TTraits>
-void Pool<TTraits>::Free(size_t anIndex)
-{
-	Header* header = GetHeader(anIndex);
-	if (myFirstFreeSlot)
+	DEBUG_ONLY(size_t foundCount = 0;);
+	for (Element& element : myElements)
 	{
-		// insert the item in the free-chain towards the start
-		Header* secondFreeSlot = myFirstFreeSlot->myNextFreeSlot;
-		myFirstFreeSlot->myNextFreeSlot = header;
-		header->myNextFreeSlot = secondFreeSlot;
+		if (element.myIsActive)
+		{
+			aFunc(element.myValue);
+			DEBUG_ONLY(foundCount++;);
+		}
 	}
-	else
+	ASSERT_STR(foundCount == mySize, "Weird PoolHeaderElem behavior, failed to find all elements!");
+}
+
+template<class T>
+template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>*/>
+void Pool<T>::ForEach(TUnaryFunc aFunc) const
+{
+	DEBUG_ONLY(size_t foundCount = 0);
+	for (const Element& element : myElements)
 	{
-		// start a new chain
-		myFirstFreeSlot = header;
+		if (element.myIsActive)
+		{
+			aFunc(element.myValue);
+			DEBUG_ONLY(foundCount++);
+		}
 	}
+	ASSERT_STR(foundCount == mySize, "Weird PoolHeaderElem behavior, failed to find all elements!");
 }
 
-template<class TTraits>
-void Pool<TTraits>::Resize(size_t aNewCount)
+template<class T>
+void Pool<T>::Resize(size_t aSize)
 {
-	ASSERT_STR(aNewCount, "Invalid size argument!");
-
-	// given a new size, allocate a new space,
-	// copy all existing headers, setting up the new
-	// headers as part of the free chain, 
-	// and discard the data itself
-	size_t oldCount = myCount;
-	char* oldData = myData;
-	
-	myCount = aNewCount;
-	// Undefined Behavior warning! Currently, this implementation
-	// is illegal due to UB of not creating objects in myData buffer.
-	// For this to be fully legal p0593 needs to be acepted/implemented.
-	const size_t newSize = myCount * (sizeof(Header) + myTraits.GetSize());
-	myData = new char[newSize];
-
-	// copy across old headers, if available
-	if (oldCount)
+	const size_t oldSize = myElements.size();
+	myElements.resize(aSize);
+	for (size_t i = oldSize; i < aSize; i++)
 	{
-		std::memcpy(myData, oldData, oldCount * sizeof(Header));
-		GetHeader(oldCount - 1)->myNextFreeSlot = GetHeader(oldCount);
+		myElements[i].myNextFreeSlot = i + 1;
 	}
-	// setup a free-chain within newly allocated headers
-	for (size_t elemInd = oldCount; elemInd < myCount-1; elemInd++)
+}
+
+template<class T>
+void Pool<T>::Free(size_t anIndex)
+{
+	ASSERT_STR(myElements[anIndex].myIsActive, "Tried to double free!");
+
+	if constexpr (!std::is_trivially_destructible_v<T>)
 	{
-		GetHeader(elemInd)->myNextFreeSlot = GetHeader(elemInd+1);
+		&(myElements[anIndex].myElement)->~T();
 	}
-	// last one is occupied
-	GetHeader(myCount - 1)->myNextFreeSlot = nullptr;
+
+	// Insert the free slot at the start of the free-list
+	myElements[anIndex].myNextFreeSlot = myFirstFreeSlot;
+	myElements[anIndex].myIsActive = false;
+	myFirstFreeSlot = anIndex;
+	mySize--;
 }
 
-template<class TTraits>
-size_t Pool<TTraits>::GetIndexOfHeader(Header* aHeader) const
+template<class T>
+bool Pool<T>::IsValid(size_t anIndex, GenerationType aGeneration) const
 {
-	const size_t offset = reinterpret_cast<char*>(freeSpot) - myData;
-	return offset / sizeof(Header);
-}
-
-template<class TTraits>
-typename Pool<TTraits>::Header* Pool<TTraits>::GetHeader(size_t aIndex)
-{
-	const size_t headerOffset = aIndex * sizeof(Header);
-	return reinterpret_cast<Header*>(myData + headerOffset);
-}
-
-template<class TTraits>
-const typename Pool<TTraits>::Header* Pool<TTraits>::GetHeader(size_t aIndex) const
-{
-	const size_t headerOffset = aIndex * sizeof(Header);
-	return reinterpret_cast<const Header*>(myData + headerOffset);
-}
-
-template<class TTraits>
-typename TTraits::Element* Pool<TTraits>::GetElement(size_t aIndex)
-{
-	const size_t headersEndOffset = myCount * sizeof(Header);
-	const size_t elementOffset = headersEndOffset + aIndex * myTraits.GetSize();
-	return reinterpret_cast<typename TTraits::Element*>(myData + elementOffset);
+	return myElements[anIndex].myIsActive && myElements[anIndex].myGeneration == aGeneration;
 }
