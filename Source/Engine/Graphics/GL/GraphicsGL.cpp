@@ -148,6 +148,8 @@ void GraphicsGL::Display()
 		// TODO: replace with a DebugRenderPass
 		if (isPipelineReady && hasDebugData)
 		{
+			glDisable(GL_SCISSOR_TEST);
+
 			// shader first
 			myDebugPipeline->Bind();
 
