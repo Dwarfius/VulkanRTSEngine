@@ -33,7 +33,7 @@ void ImGUIGLFWImpl::Init()
     Remap(ImGuiKey_End, Input::Keys::End);
     Remap(ImGuiKey_Insert, Input::Keys::Insert);
     Remap(ImGuiKey_Delete, Input::Keys::Delete);
-    Remap(ImGuiKey_Backspace, Input::Keys::Tab);
+    Remap(ImGuiKey_Backspace, Input::Keys::Backspace);
     Remap(ImGuiKey_Space, Input::Keys::Space);
     Remap(ImGuiKey_Enter, Input::Keys::Enter);
     Remap(ImGuiKey_Escape, Input::Keys::Escape);
