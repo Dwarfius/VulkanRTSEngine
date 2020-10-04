@@ -21,8 +21,11 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	: myMouseSensitivity(0.1f)
 	, myFlightSpeed(2.f)
 	, myDemoWindowVisible(false)
+	, myTestSkeleton(32) // arbitrary
+	, mySelectedBone(Skeleton::kInvalidIndex)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
+	InitTestSkeleton();
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -95,6 +98,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		go->SetVisualObject(vo);
 	}
 
+	UpdateTestSkeleton(aGame, aDeltaTime);
+
 	myProfilerUI.Draw();
 }
 
@@ -153,4 +158,145 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	const glm::quat yawRot(glm::radians(yawDelta));
 
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
+}
+
+void EditorMode::InitTestSkeleton()
+{
+	myTestSkeleton.AddBone(Skeleton::kInvalidIndex, {});
+	myTestSkeleton.AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
+	myTestSkeleton.AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
+	myTestSkeleton.AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
+}
+
+void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
+{
+	{
+		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
+		if (ImGui::Begin("Skeleton Settings"))
+		{
+			DrawBoneHierarchy();
+			DrawBoneInfo();
+		}
+		ImGui::End();
+	}
+
+	myTestSkeleton.Update();
+	myTestSkeleton.DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
+}
+
+void EditorMode::DrawBoneHierarchy()
+{
+	if (ImGui::TreeNode("Skeleton"))
+	{
+		char formatBuffer[128];
+		for (Skeleton::BoneIndex index = 0;
+			index < myTestSkeleton.GetBoneCount();
+			index++)
+		{
+			glm::vec3 worldPos = myTestSkeleton.GetBoneWorldTransform(index).GetPos();
+			sprintf(formatBuffer, "%u", index);
+
+			const bool isSelectedBone = index == mySelectedBone;
+
+			if (isSelectedBone)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(0, 255, 0, 255));
+			}
+
+			if (ImGui::Button(formatBuffer))
+			{
+				mySelectedBone = index;
+			}
+			ImGui::SameLine();
+			ImGui::Text("parent:(%u) - pos:(%f %f %f)",
+				myTestSkeleton.GetParentIndex(index),
+				worldPos.x, worldPos.y, worldPos.z);
+
+			if (isSelectedBone)
+			{
+				ImGui::PopStyleColor();
+			}
+		}
+
+		if (ImGui::Button("Clear Selection"))
+		{
+			mySelectedBone = Skeleton::kInvalidIndex;
+		}
+
+		ImGui::TreePop();
+	}
+}
+
+void EditorMode::DrawBoneInfo()
+{
+	if (mySelectedBone == Skeleton::kInvalidIndex)
+	{
+		return;
+	}
+
+	if (ImGui::TreeNode("Bone Info"))
+	{
+		if (ImGui::TreeNode("World Transform"))
+		{
+			Transform transform = myTestSkeleton.GetBoneWorldTransform(mySelectedBone);
+			glm::vec3 pos = transform.GetPos();
+			const bool posChanged = ImGui::InputFloat3("Pos", glm::value_ptr(pos));
+			if (posChanged)
+			{
+				transform.SetPos(pos);
+			}
+
+			glm::vec3 rot = transform.GetEuler();
+			const bool rotChanged = ImGui::InputFloat3("Rot", glm::value_ptr(rot));
+			if (rotChanged)
+			{
+				transform.SetRotation(rot);
+			}
+
+			glm::vec3 scale = transform.GetScale();
+			const bool scaleChanged = ImGui::InputFloat3("Scale", glm::value_ptr(scale));
+			if (scaleChanged)
+			{
+				transform.SetScale(scale);
+			}
+
+			if (posChanged || rotChanged || scaleChanged)
+			{
+				myTestSkeleton.SetBoneWorldTransform(mySelectedBone, transform);
+			}
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Local Transform"))
+		{
+			Transform transform = myTestSkeleton.GetBoneLocalTransform(mySelectedBone);
+			glm::vec3 pos = transform.GetPos();
+			const bool posChanged = ImGui::InputFloat3("Pos", glm::value_ptr(pos));
+			if (posChanged)
+			{
+				transform.SetPos(pos);
+			}
+
+			glm::vec3 rot = transform.GetEuler();
+			const bool rotChanged = ImGui::InputFloat3("Rot", glm::value_ptr(rot));
+			if (rotChanged)
+			{
+				transform.SetRotation(rot);
+			}
+
+			glm::vec3 scale = transform.GetScale();
+			const bool scaleChanged = ImGui::InputFloat3("Scale", glm::value_ptr(scale));
+			if (scaleChanged)
+			{
+				transform.SetScale(scale);
+			}
+
+			if (posChanged || rotChanged || scaleChanged)
+			{
+				myTestSkeleton.SetBoneLocalTransform(mySelectedBone, transform);
+			}
+			ImGui::TreePop();
+		}
+
+		ImGui::TreePop();
+	}
 }

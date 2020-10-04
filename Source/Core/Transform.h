@@ -7,8 +7,7 @@ class Transform
 public:
 	// Creates zero-initialized transform (identity matrix)
 	Transform();
-	// Creates a transform from position, rotation (in radians) and scale
-	Transform(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale);
+	Transform(glm::vec3 aPos, glm::quat aRot, glm::vec3 aScale);
 
 	glm::vec3 GetRight() const { return myRotation * glm::vec3(1, 0, 0); }
 	glm::vec3 GetForward() const { return myRotation * glm::vec3(0, 1, 0); }
@@ -33,8 +32,13 @@ public:
 	void SetRotation(glm::vec3 anEuler) { SetRotation(glm::quat(anEuler)); }
 	void SetRotation(glm::quat aRot) { myRotation = aRot; }
 
-	// Returns a global matrix
+	// Converts to a global matrix
 	glm::mat4 GetMatrix() const;
+
+	Transform operator*(const Transform& aOther) const;
+
+	// Generates an Inverted Transform
+	Transform GetInverted() const;
 
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles);

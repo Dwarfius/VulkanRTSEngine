@@ -4,6 +4,8 @@
 #include "../Vertex.h"
 #include "../LazyVector.h"
 
+class Transform;
+
 // A threadsafe debug drawing utility class. 
 // Has capacity for 2 frames - current and past.
 class DebugDrawer
@@ -13,6 +15,9 @@ public:
 	// prepare accumulating debug lines for new frame
 	void BeginFrame();
 	
+	void AddTransform(const Transform& aTransf);
+	void AddTransformWithLife(const Transform&, uint32_t aFramesToLive);
+
 	// Creates a line from aFrom to aTo with a single color
 	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor);
 	// Creates a line from aFrom and color aFromColor to aTo and color aToColor

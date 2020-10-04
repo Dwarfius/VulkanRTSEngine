@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Systems/ProfilerUI.h"
+#include "../Animation/Skeleton.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -25,4 +26,13 @@ private:
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 	ProfilerUI myProfilerUI;
+
+	// Testing
+	void InitTestSkeleton();
+	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
+	void DrawBoneHierarchy();
+	void DrawBoneInfo();
+	Skeleton myTestSkeleton;
+	Skeleton::BoneIndex mySelectedBone;
+	std::vector<std::function<void(Skeleton&)>> mySkeletonAnimators;
 };

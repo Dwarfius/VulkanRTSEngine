@@ -5,7 +5,6 @@ set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
-# we're going to grab a fork of glew which has proper CMakeLists and headers generated
 FetchContent_Declare(
 	ImGUI
 	GIT_REPOSITORY https://github.com/ocornut/imgui
@@ -50,4 +49,6 @@ target_include_directories(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME}
 	PUBLIC
 		IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/imconfig.h"
+	PRIVATE
+		IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 )

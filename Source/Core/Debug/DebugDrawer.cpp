@@ -1,10 +1,31 @@
 #include "Precomp.h"
 #include "DebugDrawer.h"
 
+#include "Transform.h"
+
 void DebugDrawer::BeginFrame()
 {
 	UpdateFrameCache();
 	UpdateTimedCache();
+}
+
+void DebugDrawer::AddTransform(const Transform& aTransform)
+{
+	// TODO: get rid of AddTransformWithLife variant, and use default parameters
+	constexpr float kTransfSize = 0.1f;
+	const glm::vec3 center = aTransform.GetPos();
+	AddLine(center, center + aTransform.GetRight() * kTransfSize, glm::vec3(1, 0, 0));
+	AddLine(center, center + aTransform.GetUp() * kTransfSize, glm::vec3(0, 1, 0));
+	AddLine(center, center + aTransform.GetForward() * kTransfSize, glm::vec3(0, 0, 1));
+}
+
+void DebugDrawer::AddTransformWithLife(const Transform& aTransform, uint32_t aFramesToLive)
+{
+	constexpr float kTransfSize = 0.1f;
+	const glm::vec3 center = aTransform.GetPos();
+	AddLineWithLife(center, center + aTransform.GetRight() * kTransfSize, glm::vec3(1, 0, 0), aFramesToLive);
+	AddLineWithLife(center, center + aTransform.GetUp() * kTransfSize, glm::vec3(0, 1, 0), aFramesToLive);
+	AddLineWithLife(center, center + aTransform.GetForward() * kTransfSize, glm::vec3(0, 0, 1), aFramesToLive);
 }
 
 void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)

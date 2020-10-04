@@ -6,10 +6,10 @@ Transform::Transform()
 {
 }
 
-Transform::Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
-	: myPos(pos)
-	, myScale(scale)
-	, myRotation(rot)
+Transform::Transform(glm::vec3 aPos, glm::quat aRot, glm::vec3 aScale)
+	: myPos(aPos)
+	, myScale(aScale)
+	, myRotation(aRot)
 {
 }
 
@@ -54,6 +54,23 @@ glm::mat4 Transform::GetMatrix() const
 	modelMatrix = modelMatrix * glm::mat4_cast(myRotation);
 	modelMatrix = glm::scale(modelMatrix, myScale);
 	return modelMatrix;
+}
+
+Transform Transform::operator*(const Transform& aOther) const
+{
+	const glm::vec3 totalScale = myScale * aOther.myScale;
+	const glm::quat totalRot = myRotation * aOther.myRotation;
+	const glm::vec3 totalPos = myPos + (myRotation * aOther.myPos) 
+									* myScale;
+	return { totalPos, totalRot, totalScale };
+}
+
+Transform Transform::GetInverted() const
+{
+	const glm::vec3 invertedScale = 1.f / myScale;
+	const glm::quat invertedRot = glm::inverse(myRotation);
+	const glm::vec3 invertedPos = -myPos;
+	return { invertedPos, invertedRot, invertedScale };
 }
 
 glm::vec3 Transform::RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles)

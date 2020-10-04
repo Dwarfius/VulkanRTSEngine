@@ -50,8 +50,6 @@ Game::Game(ReportError aReporterFunc)
 	ourInstance = this;
 	UID::Init();
 
-	TestPool();
-
 	glfwSetErrorCallback(aReporterFunc);
 	glfwInit();
 

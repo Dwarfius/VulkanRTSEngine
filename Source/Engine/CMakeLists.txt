@@ -5,8 +5,6 @@ set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
-# use this for https://github.com/ocornut/imgui and others, potentially
-
 if(VENGINE_BUILD_WITH_VULKAN)
 	find_package(Vulkan REQUIRED)
 endif() 
@@ -69,6 +67,10 @@ set(SRC "Precomp.h"
 	"VisualObject.cpp" "VisualObject.h"
 )
 
+set(SRC_ANIMATION
+	"Animation/Skeleton.cpp" "Animation/Skeleton.h"
+)
+
 set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/EditorMode.cpp" "Components/EditorMode.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
@@ -113,6 +115,7 @@ endif()
 
 add_library(${PROJECT_NAME} STATIC 
 	${SRC} 
+		${SRC_ANIMATION}
 		${SRC_COMP} 
 		${SRC_GRAPHICS} 
 			${SRC_GRAPHICS_RENDERPASSES}
@@ -125,6 +128,7 @@ add_library(${PROJECT_NAME} STATIC
 
 # just to make our life a little bit more organized, group files
 source_group("" FILES ${SRC})
+source_group(Animation FILES ${SRC_ANIMATION})
 source_group(Components FILES ${SRC_COMP})
 source_group(Graphics FILES ${SRC_GRAPHICS})
 source_group(Graphics\\Adapters FILES ${SRC_GRAPHICS_ADAPTERS})

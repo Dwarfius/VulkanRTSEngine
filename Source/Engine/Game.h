@@ -99,6 +99,7 @@ private:
 	std::vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker myAssetTracker;
+	// TODO: explore thread-local drawers!
 	DebugDrawer myDebugDrawer;
 	ImGUISystem myImGUISystem;
 
