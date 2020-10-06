@@ -15,18 +15,12 @@ public:
 	// prepare accumulating debug lines for new frame
 	void BeginFrame();
 	
-	void AddTransform(const Transform& aTransf);
-	void AddTransformWithLife(const Transform&, uint32_t aFramesToLive);
+	void AddTransform(const Transform& aTransf, uint32_t aFramesToLive = 1);
 
 	// Creates a line from aFrom to aTo with a single color
-	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor);
+	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor, uint32_t aFramesToLive = 1);
 	// Creates a line from aFrom and color aFromColor to aTo and color aToColor
-	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor);
-
-	// Creates a line like usual, except it will persist for multiple frames
-	void AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor, uint32_t aFramesToLive);
-	// Creates a line like usual, except it will persist for multiple frames
-	void AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor, uint32_t aFramesToLive);
+	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor, uint32_t aFramesToLive = 1);
 
 	const PosColorVertex* GetCurrentVertices() const;
 	size_t GetCurrentVertexCount() const;

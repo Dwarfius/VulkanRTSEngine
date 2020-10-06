@@ -9,63 +9,50 @@ void DebugDrawer::BeginFrame()
 	UpdateTimedCache();
 }
 
-void DebugDrawer::AddTransform(const Transform& aTransform)
-{
-	// TODO: get rid of AddTransformWithLife variant, and use default parameters
-	constexpr float kTransfSize = 0.1f;
-	const glm::vec3 center = aTransform.GetPos();
-	AddLine(center, center + aTransform.GetRight() * kTransfSize, glm::vec3(1, 0, 0));
-	AddLine(center, center + aTransform.GetUp() * kTransfSize, glm::vec3(0, 1, 0));
-	AddLine(center, center + aTransform.GetForward() * kTransfSize, glm::vec3(0, 0, 1));
-}
-
-void DebugDrawer::AddTransformWithLife(const Transform& aTransform, uint32_t aFramesToLive)
+void DebugDrawer::AddTransform(const Transform& aTransform, uint32_t aFramesToLive /*= 1*/)
 {
 	constexpr float kTransfSize = 0.1f;
 	const glm::vec3 center = aTransform.GetPos();
-	AddLineWithLife(center, center + aTransform.GetRight() * kTransfSize, glm::vec3(1, 0, 0), aFramesToLive);
-	AddLineWithLife(center, center + aTransform.GetUp() * kTransfSize, glm::vec3(0, 1, 0), aFramesToLive);
-	AddLineWithLife(center, center + aTransform.GetForward() * kTransfSize, glm::vec3(0, 0, 1), aFramesToLive);
+	AddLine(center, center + aTransform.GetRight() * kTransfSize, glm::vec3(1, 0, 0), aFramesToLive);
+	AddLine(center, center + aTransform.GetUp() * kTransfSize, glm::vec3(0, 1, 0), aFramesToLive);
+	AddLine(center, center + aTransform.GetForward() * kTransfSize, glm::vec3(0, 0, 1), aFramesToLive);
 }
 
-void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor)
+void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor, uint32_t aFramesToLive /*= 1*/)
 {
-	AddLine(aFrom, aTo, aColor, aColor);
+	AddLine(aFrom, aTo, aColor, aColor, aFramesToLive);
 }
 
-void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor)
+void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor, uint32_t aFramesToLive /*= 1*/)
 {
-	tbb::spin_mutex::scoped_lock lock(myCacheMutex);
-	FrameCache& cache = myFrameCaches.GetWrite();
-
-	if (cache.myVertices.EmplaceBack(aFrom, aFromColor))
+	if (aFramesToLive == 1)
 	{
-		ASSERT_STR(!cache.myVertices.NeedsToGrow(), "Size should be a multiple of 2");
-		cache.myVertices.EmplaceBack(aTo, aToColor);
-	}
-	// For this frame we filled up the cache, so
-	// skip it till we grow it next frame
-}
+		tbb::spin_mutex::scoped_lock lock(myCacheMutex);
+		FrameCache& cache = myFrameCaches.GetWrite();
 
-void DebugDrawer::AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aColor, uint32_t aFramesToLive)
-{
-	AddLineWithLife(aFrom, aTo, aColor, aColor, aFramesToLive);
-}
-
-void DebugDrawer::AddLineWithLife(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor, uint32_t aFramesToLive)
-{
-	tbb::spin_mutex::scoped_lock lock(myTimedCacheMutex);
-	// do we have space this frame?
-	if (myTimedOffsets.PushBack(aFramesToLive))
-	{
-		PosColorVertex a1 = { aFrom, aFromColor };
-		PosColorVertex a2 = { aTo, aToColor };
-		myTimedVertices.EmplaceBack(a1, a2);
+		if (cache.myVertices.EmplaceBack(aFrom, aFromColor))
+		{
+			ASSERT_STR(!cache.myVertices.NeedsToGrow(), "Size should be a multiple of 2");
+			cache.myVertices.EmplaceBack(aTo, aToColor);
+		}
+		// For this frame we filled up the cache, so
+		// skip it till we grow it next frame
 	}
 	else
 	{
-		ASSERT_STR(false, "There wasn't enough storage for debug timed lines, increase size!");
-		return;
+		tbb::spin_mutex::scoped_lock lock(myTimedCacheMutex);
+		// do we have space this frame?
+		if (myTimedOffsets.PushBack(aFramesToLive))
+		{
+			PosColorVertex a1 = { aFrom, aFromColor };
+			PosColorVertex a2 = { aTo, aToColor };
+			myTimedVertices.EmplaceBack(a1, a2);
+		}
+		else
+		{
+			ASSERT_STR(false, "There wasn't enough storage for debug timed lines, increase size!");
+			return;
+		}
 	}
 }
 
