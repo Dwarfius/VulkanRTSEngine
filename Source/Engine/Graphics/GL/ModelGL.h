@@ -7,7 +7,7 @@ class ModelGL : public GPUModel
 {
 public:
 	ModelGL();
-	ModelGL(PrimitiveType aPrimType, UsageType aUsage, uint32_t aVertType, bool aIsIndexed);
+	ModelGL(PrimitiveType aPrimType, UsageType aUsage, const VertexDescriptor& aVertDesc, bool aIsIndexed);
 
 	// Bind the current GL resources for model drawing
 	void Bind();
@@ -30,6 +30,8 @@ private:
 	// Uploads the index data directly to the buffer(avoids allocations)
 	void UploadIndices(const IndexType* aIndices, size_t aIndexCount, size_t anOffset);
 
+	VertexDescriptor myVertDescriptor;
+
 	uint32_t myVAO; // vertex array
 	uint32_t myVBO; // vertex buffer
 	uint32_t myEBO; // index buffer, optional
@@ -38,6 +40,5 @@ private:
 	size_t myVertCount;
 	size_t myIndexCount;
 	UsageType myUsage;
-	uint32_t myVertType;
 	bool myIsIndexed;
 };

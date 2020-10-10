@@ -24,7 +24,6 @@ public:
 
 	const PosColorVertex* GetCurrentVertices() const;
 	size_t GetCurrentVertexCount() const;
-	int GetVertexType() const { return PosColorVertex::Type; }
 
 private:
 	constexpr static size_t SingleFrameCacheSize = 1 << 10;

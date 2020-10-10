@@ -281,7 +281,12 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 
 void GraphicsGL::CreateLineCache()
 {
-	myLineCache.myBuffer = new ModelGL(PrimitiveType::Lines, GPUResource::UsageType::Dynamic, PosColorVertex::Type, false);
+	myLineCache.myBuffer = new ModelGL(
+		PrimitiveType::Lines, 
+		GPUResource::UsageType::Dynamic, 
+		PosColorVertex::GetDescriptor(), 
+		false
+	);
 	Model::VertStorage<PosColorVertex>* buffer = new Model::VertStorage<PosColorVertex>(0);
 	Handle<Model> cpuBuffer = new Model(PrimitiveType::Lines, buffer, false);
 	myLineCache.myBuffer->Create(*this, cpuBuffer, true);

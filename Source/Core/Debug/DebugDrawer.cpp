@@ -46,7 +46,7 @@ void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, 
 		{
 			PosColorVertex a1 = { aFrom, aFromColor };
 			PosColorVertex a2 = { aTo, aToColor };
-			myTimedVertices.EmplaceBack(a1, a2);
+			myTimedVertices.EmplaceBack(std::move(a1), std::move(a2));
 		}
 		else
 		{

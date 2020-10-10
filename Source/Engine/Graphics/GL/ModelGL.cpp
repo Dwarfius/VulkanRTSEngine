@@ -4,18 +4,18 @@
 #include <Graphics/Resources/Model.h>
 
 ModelGL::ModelGL()
-	: ModelGL(PrimitiveType::Lines, UsageType::Static, 0, false)
+	: ModelGL(PrimitiveType::Lines, UsageType::Static, VertexDescriptor::GetEmpty(), false)
 {
 }
 
-ModelGL::ModelGL(PrimitiveType aPrimType, UsageType aUsage, uint32_t aVertType, bool aIsIndexed)
+ModelGL::ModelGL(PrimitiveType aPrimType, UsageType aUsage, const VertexDescriptor& aVertDesc, bool aIsIndexed)
 	: myVAO(0)
 	, myVBO(0)
 	, myEBO(0)
 	, myVertCount(0)
 	, myIndexCount(0)
 	, myUsage(aUsage)
-	, myVertType(aVertType)
+	, myVertDescriptor(aVertDesc)
 	, myIsIndexed(aIsIndexed)
 {
 	switch (aPrimType)
@@ -60,28 +60,43 @@ void ModelGL::OnCreate(Graphics& aGraphics)
 		glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	}
 
-	myVertType = model->GetVertexType();
-	const GLsizei vertSize = static_cast<GLsizei>(VertexHelper::GetVertexSize(myVertType));	uint8_t vertMemberCount = VertexHelper::GetMemberCount(myVertType);
-	GLsizei memberOffset = static_cast<GLsizei>(VertexHelper::GetMemberOffset(myVertType, 0));
+	myVertDescriptor = model->GetVertexDescriptor();
+	const GLsizei vertSize = static_cast<GLsizei>(myVertDescriptor.mySize);	
+	const uint8_t vertMemberCount = myVertDescriptor.myMemberCount;
 	for (uint8_t vertMemberInd = 0; vertMemberInd < vertMemberCount; vertMemberInd++)
 	{
-		const GLsizei nextMemberOffset = (vertMemberInd == vertMemberCount - 1) ?
-			vertSize : static_cast<GLsizei>(VertexHelper::GetMemberOffset(myVertType, vertMemberInd + 1));
+		const VertexDescriptor::MemberDescriptor memberDesc = myVertDescriptor.myMembers[vertMemberInd];
 		glEnableVertexAttribArray(vertMemberInd);
-		const GLsizei memberSizeDiff = nextMemberOffset - memberOffset;
 		
-		const bool isIntegral = VertexHelper::IsMemberIntegral(myVertType, vertMemberInd);
-		const GLint memberCompCount = static_cast<GLint>(memberSizeDiff / sizeof(float));
-		const void* memberOffsetPtr = reinterpret_cast<void*>(static_cast<size_t>(memberOffset));
+		GLenum attribType = 0;
+		switch (memberDesc.myType)
+		{
+			// TODO: use c++20 using-enum decl here
+		case VertexDescriptor::MemberType::Bool: attribType = GL_UNSIGNED_BYTE; break;
+		case VertexDescriptor::MemberType::U8: attribType = GL_UNSIGNED_BYTE; break;
+		case VertexDescriptor::MemberType::S8: attribType = GL_BYTE; break;
+		case VertexDescriptor::MemberType::U16: attribType = GL_UNSIGNED_SHORT; break;
+		case VertexDescriptor::MemberType::S16: attribType = GL_SHORT; break;
+		case VertexDescriptor::MemberType::F16: attribType = GL_HALF_FLOAT; break;
+		case VertexDescriptor::MemberType::U32: attribType = GL_UNSIGNED_INT; break;
+		case VertexDescriptor::MemberType::S32: attribType = GL_INT; break;
+		case VertexDescriptor::MemberType::F32: attribType = GL_FLOAT; break;
+		case VertexDescriptor::MemberType::F64: attribType = GL_DOUBLE; break;
+		default: ASSERT(false);
+		}
+		const bool isIntegral = attribType != GL_FLOAT 
+								&& attribType != GL_HALF_FLOAT 
+								&& attribType != GL_DOUBLE;
+		const GLint memberCompCount = memberDesc.myElemCount;
+		const void* memberOffsetPtr = reinterpret_cast<void*>(memberDesc.myOffset);
 		if (!isIntegral)
 		{
-			glVertexAttribPointer(vertMemberInd, memberCompCount, GL_FLOAT, GL_FALSE, vertSize, memberOffsetPtr);
+			glVertexAttribPointer(vertMemberInd, memberCompCount, attribType, GL_FALSE, vertSize, memberOffsetPtr);
 		}
 		else
 		{
-			glVertexAttribIPointer(vertMemberInd, memberCompCount, GL_UNSIGNED_INT, vertSize, memberOffsetPtr);
+			glVertexAttribIPointer(vertMemberInd, memberCompCount, attribType, vertSize, memberOffsetPtr);
 		}
-		memberOffset = nextMemberOffset;
 	}
 
 	switch (model->GetPrimitiveType())
@@ -178,8 +193,8 @@ void ModelGL::AllocateVertices(size_t aTotalCount)
 {
 	ASSERT_STR(myVBO, "Tried to allocate vertices for missing buffer!");
 
-	uint32_t usage = myUsage == UsageType::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
-	size_t vertSize = VertexHelper::GetVertexSize(myVertType);
+	const uint32_t usage = myUsage == UsageType::Static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
+	const size_t vertSize = myVertDescriptor.mySize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	glBufferData(GL_ARRAY_BUFFER, vertSize * aTotalCount, NULL, usage);
@@ -202,7 +217,7 @@ void ModelGL::UploadVertices(const void* aVertices, size_t aVertexCount, size_t 
 	ASSERT_STR(myVBO, "Tried to upload vertices for missing buffer!");
 	ASSERT_STR(aVertexCount > 0 && aVertices != nullptr, "Missing vertices!");
 
-	size_t vertSize = VertexHelper::GetVertexSize(myVertType);
+	const size_t vertSize = myVertDescriptor.mySize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, myVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, anOffset * vertSize, aVertexCount * vertSize, aVertices);
@@ -214,6 +229,6 @@ void ModelGL::UploadIndices(const Model::IndexType* aIndices, size_t aIndexCount
 	ASSERT_STR(aIndexCount > 0 && aIndices != nullptr, "Missing indices!");
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, myEBO);
-	size_t indSize = sizeof(Model::IndexType);
+	const size_t indSize = sizeof(Model::IndexType);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, anOffset * indSize, aIndexCount * indSize, aIndices);
 }

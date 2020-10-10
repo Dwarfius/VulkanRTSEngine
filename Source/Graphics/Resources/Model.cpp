@@ -47,10 +47,10 @@ size_t Model::GetVertexCount() const
 	return myVertices->GetCount();
 }
 
-int Model::GetVertexType() const
+VertexDescriptor Model::GetVertexDescriptor() const
 {
 	ASSERT_STR(myVertices, "Model missing vertex storage!");
-	return myVertices->GetType();
+	return myVertices->GetVertexDescriptor();
 }
 
 void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)

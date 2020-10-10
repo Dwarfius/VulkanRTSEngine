@@ -28,12 +28,12 @@ public:
 	public:
 		const void* GetRawData() const { return myData; }
 		size_t GetCount() const { return myCount; }
-		uint32_t GetType() const { return myType; }
+		VertexDescriptor GetVertexDescriptor() const { return myVertDesc; }
 
 	protected:
 		void* myData;
 		size_t myCount;
-		uint32_t myType;
+		VertexDescriptor myVertDesc;
 	};
 	template<class T>
 	class VertStorage : public BaseStorage
@@ -41,7 +41,7 @@ public:
 	public:
 		VertStorage(size_t aCount)
 		{
-			myType = T::Type;
+			myVertDesc = T::GetDescriptor();
 			myCount = aCount;
 			if (myCount)
 			{
@@ -78,8 +78,8 @@ public:
 	const void* GetVertices() const;
 	// vertex-count shortcut accessors to generic vertex storage
 	size_t GetVertexCount() const;
-	// vertex-type shortcut accessors to generic vertex storage
-	int GetVertexType() const;
+	// vertex-descriptor shortcut accessors to generic vertex storage
+	VertexDescriptor GetVertexDescriptor() const;
 
 	const IndexType* GetIndices() const { return myIndices.data(); }
 	size_t GetIndexCount() const { return myIndices.size(); }
@@ -121,14 +121,14 @@ template<class T>
 const Model::VertStorage<T>* Model::GetVertexStorage() const
 {
 	ASSERT_STR(myVertices, "Uninitialized Model!");
-	ASSERT_STR(T::Type == myVertices->GetType(), "Wrong Vertex Type!");
+	ASSERT_STR(T::GetDescriptor() == myVertices->GetVertexDescriptor(), "Wrong Vertex Type!");
 	return static_cast<const VertStorage<T>*>(myVertices);
 }
 
 template<class T>
 void Model::Update(const UploadDescriptor<T> & aDescChain)
 {
-	ASSERT_STR(!myVertices || myVertices->GetType() == T::Type, "Incompatible descriptor!");
+	ASSERT_STR(!myVertices || myVertices->GetVertexDescriptor() == T::GetDescriptor(), "Incompatible descriptor!");
 
 	// first need to count how many vertices and indices are there in total
 	size_t vertCount = 0;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <LinearMath/btIDebugDraw.h>
-#include <Core/Vertex.h>
 #include <Core/Debug/DebugDrawer.h>
 
 // TODO: move this to private sources section
