@@ -112,6 +112,7 @@ set(SRC "Precomp.h"
 	"UID.cpp" "UID.h"
 	"Utils.cpp" "Utils.h"
 	"Vertex.h"
+	"VertexDescriptor.h"
 )
 
 set(SRC_ALGOS "Algos/DiamondSquareAlgo.h"

@@ -106,6 +106,7 @@ set(SRC_SYSTEMS
 set(SRC_SYSTEMS_IMGUI
 	"Systems/ImGUI/ImGUISystem.cpp" "Systems/ImGUI/ImGUISystem.h"
 	"Systems/ImGUI/ImGUIGLFWImpl.cpp" "Systems/ImGUI/ImGUIGLFWImpl.h"
+	"Systems/ImGUI/ImGUIRendering.cpp" "Systems/ImGUI/ImGUIRendering.h"
 )
 
 if(VENGINE_BUILD_WITH_VULKAN)
