@@ -69,6 +69,8 @@ set(SRC "Precomp.h"
 
 set(SRC_ANIMATION
 	"Animation/Skeleton.cpp" "Animation/Skeleton.h"
+	"Animation/AnimationClip.cpp" "Animation/AnimationClip.h"
+	"Animation/AnimationController.cpp" "Animation/AnimationController.h"
 )
 
 set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"

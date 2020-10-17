@@ -1,6 +1,8 @@
 #include "../Precomp.h"
 #include "Skeleton.h"
 
+#include "Animation/AnimationController.h"
+
 #include <Core/Debug/DebugDrawer.h>
 #include <memory_resource>
 
@@ -8,6 +10,14 @@ Skeleton::Skeleton(BoneIndex aCapacity)
 {
 	ASSERT_STR(aCapacity < kInvalidIndex, "Too many bones requested!");
 	myBones.reserve(aCapacity);
+}
+
+Skeleton::~Skeleton()
+{
+	if (myController)
+	{
+		delete myController;
+	}
 }
 
 void Skeleton::AddBone(BoneIndex aParentIndex, const Transform& aLocalTransf)
@@ -61,23 +71,34 @@ void Skeleton::SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransf
 {
 	Bone& bone = myBones[anIndex];
 	bone.myLocalTransf = aTransform;
-	bone.myIsLocalDirty = true;
-
-	DirtyHierarchy(anIndex);
+	DirtyHierarchy(anIndex, false);
 }
 
 void Skeleton::SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransform)
 {
 	Bone& bone = myBones[anIndex];
 	bone.myWorldTransf = aTransform;
-	bone.myIsWorldDirty = true;
-
-	DirtyHierarchy(anIndex);
+	DirtyHierarchy(anIndex, true);
 }
 
-void Skeleton::Update()
+void Skeleton::AddController()
 {
-	// This method relies on the fact that bones in breadth-first order
+	myController = new AnimationController();
+}
+
+void Skeleton::Update(float aDeltaTime)
+{
+	if (myController && myController->NeedsUpdate())
+	{
+		myController->Update(*this, aDeltaTime);
+	}
+
+	if (!myNeedsUpdate)
+	{
+		return;
+	}
+
+	// Current method relies on the fact that bones in breadth-first order
 	UpdateBone(0, {});
 	for (BoneIndex boneIndex = 1; boneIndex < myBones.size(); boneIndex++)
 	{
@@ -89,6 +110,7 @@ void Skeleton::Update()
 		const Transform& parentLocal = myBones[myBones[boneIndex].myParentInd].myWorldTransf;
 		UpdateBone(boneIndex, parentLocal);
 	}
+	myNeedsUpdate = false;
 }
 
 void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform) const
@@ -107,36 +129,31 @@ void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform)
 	}
 }
 
-void Skeleton::DirtyHierarchy(BoneIndex indexOfRoot)
+void Skeleton::DirtyHierarchy(BoneIndex indexOfRoot, bool aIsWorldDirty)
 {
+	// TODO: bench adding an early out here, before adding to the queue!
 	constexpr size_t kBonesMemorySize = 48;
 	BoneIndex bonesMemory[kBonesMemorySize];
 	std::pmr::monotonic_buffer_resource stackRes(bonesMemory, sizeof(bonesMemory));
 	std::pmr::deque<BoneIndex> bonesToVisit(&stackRes);
 
-	{
-		// first iteration unroll to skip setting isLocalDirty
-		const Bone& bone = myBones[indexOfRoot];
-		ASSERT_STR(bone.myIsLocalDirty || bone.myIsWorldDirty,
-			"DirtyHierarchy expects that the root of the hierarchy to dirty "
-			"is already marked as dirty!"
-		);
-		for (BoneIndex childOffset = 0;
-			childOffset < bone.myChildCount;
-			childOffset++)
-		{
-			bonesToVisit.push_front(bone.myFirstChildInd + childOffset);
-		}
-	}
-
+	bonesToVisit.push_front(indexOfRoot);
 	while (bonesToVisit.size()) 
 	{
 		const BoneIndex boneIndex = bonesToVisit.back();
 		bonesToVisit.pop_back();
 
 		Bone& bone = myBones[boneIndex];
+		if (bone.myIsLocalDirty)
+		{
+			// the hierarchy bellow has already been dirtied
+			// so skip this one
+			continue;
+		}
+		// dirty current bone
 		bone.myIsLocalDirty = true;
 
+		// and schedule all of the children for dirtying
 		for (BoneIndex childOffset = 0;
 			childOffset < bone.myChildCount;
 			childOffset++)
@@ -146,6 +163,11 @@ void Skeleton::DirtyHierarchy(BoneIndex indexOfRoot)
 		ASSERT_STR(bonesToVisit.size() < kBonesMemorySize, "Not enough space "
 			"allocated on the stack to dirty the hierarchy! Try increasing the size!");
 	}
+
+	Bone& rootOfHierarchy = myBones[indexOfRoot];
+	rootOfHierarchy.myIsWorldDirty |= aIsWorldDirty;
+
+	myNeedsUpdate = true;
 }
 
 void Skeleton::UpdateBone(BoneIndex anIndex, const Transform& aParentWorld)

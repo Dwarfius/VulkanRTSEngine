@@ -2,6 +2,7 @@
 
 #include "../Systems/ProfilerUI.h"
 #include "../Animation/Skeleton.h"
+#include "../Animation/AnimationClip.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -35,4 +36,5 @@ private:
 	Skeleton myTestSkeleton;
 	Skeleton::BoneIndex mySelectedBone;
 	std::vector<std::function<void(Skeleton&)>> mySkeletonAnimators;
+	std::unique_ptr<AnimationClip> myTestClip;
 };

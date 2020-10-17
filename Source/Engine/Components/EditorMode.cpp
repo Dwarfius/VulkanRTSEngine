@@ -3,6 +3,10 @@
 
 #include "../Game.h"
 #include "../Input.h"
+#include "PhysicsComponent.h"
+#include "../GameObject.h"
+#include "../VisualObject.h"
+#include "../Animation/AnimationController.h"
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Model.h>
@@ -12,10 +16,6 @@
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
-
-#include "PhysicsComponent.h"
-#include "GameObject.h"
-#include "VisualObject.h"
 
 EditorMode::EditorMode(PhysicsWorld& aWorld)
 	: myMouseSensitivity(0.1f)
@@ -98,7 +98,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		go->SetVisualObject(vo);
 	}
 
-	UpdateTestSkeleton(aGame, aDeltaTime);
+	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 
 	myProfilerUI.Draw();
 }
@@ -166,6 +166,20 @@ void EditorMode::InitTestSkeleton()
 	myTestSkeleton.AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 	myTestSkeleton.AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
 	myTestSkeleton.AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
+
+	// 4 second animation that forces a diamond movement
+	myTestClip = std::make_unique<AnimationClip>(4, true);
+	std::vector<AnimationClip::Mark> yTrack{ {0, -0.5f}, {2, 0.5f}, {4, -0.5f} };
+	std::vector<AnimationClip::Mark> xTrack{ {0, 0}, {1, -0.5f}, {3, 0.5f}, {4, 0.f} };
+	std::vector<AnimationClip::Mark> zRotTrack{ {0, 0}, {4, 2 * glm::pi<float>()} };
+
+	myTestClip->AddTrack(1, AnimationClip::Property::PosX, AnimationClip::Interpolation::Linear, xTrack);
+	myTestClip->AddTrack(1, AnimationClip::Property::PosY, AnimationClip::Interpolation::Linear, yTrack);
+	myTestClip->AddTrack(1, AnimationClip::Property::RotZ, AnimationClip::Interpolation::Linear, zRotTrack);
+
+	myTestSkeleton.AddController();
+	AnimationController* controller = myTestSkeleton.GetController();
+	controller->PlayClip(myTestClip.get());
 }
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
@@ -180,7 +194,7 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 		ImGui::End();
 	}
 
-	myTestSkeleton.Update();
+	myTestSkeleton.Update(aDeltaTime);
 	myTestSkeleton.DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
 }
 
@@ -222,6 +236,9 @@ void EditorMode::DrawBoneHierarchy()
 		{
 			mySelectedBone = Skeleton::kInvalidIndex;
 		}
+
+		const AnimationController* controller = myTestSkeleton.GetController();
+		ImGui::Text("Animation time: %f", controller->GetTime());
 
 		ImGui::TreePop();
 	}
