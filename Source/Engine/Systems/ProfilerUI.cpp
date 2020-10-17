@@ -1,8 +1,8 @@
 #include "Precomp.h"
 #include "ProfilerUI.h"
 
-#include "../Input.h"
-#include "../Game.h"
+#include "Input.h"
+#include "Game.h"
 #include "ImGUI/ImGUISystem.h"
 
 #include <Core/Utils.h>

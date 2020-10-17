@@ -1,12 +1,15 @@
 #include "Precomp.h"
 #include "EditorMode.h"
 
-#include "../Game.h"
-#include "../Input.h"
-#include "PhysicsComponent.h"
-#include "../GameObject.h"
-#include "../VisualObject.h"
-#include "../Animation/AnimationController.h"
+#include "Game.h"
+#include "Input.h"
+#include "Components/PhysicsComponent.h"
+#include "GameObject.h"
+#include "VisualObject.h"
+#include "Animation/AnimationController.h"
+#include "Systems/ImGUI/ImGUISystem.h"
+
+#include <Core/Resources/AssetTracker.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Model.h>

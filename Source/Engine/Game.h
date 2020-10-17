@@ -2,12 +2,8 @@
 
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
-#include <Core/Resources/AssetTracker.h>
 
 #include "GameTaskManager.h"
-#include "RenderThread.h"
-#include "Systems/ImGUI/ImGUISystem.h"
-#include "Animation/AnimationSystem.h"
 
 class Camera;
 class EditorMode;
@@ -18,6 +14,11 @@ class PhysicsWorld;
 class PhysicsEntity;
 class PhysicsShapeBase;
 class PhysicsComponent;
+class ImGUISystem;
+class AnimationSystem;
+class RenderThread;
+class AssetTracker;
+struct GLFWwindow;
 
 class Game
 {
@@ -29,10 +30,10 @@ public:
 
 	static Game* GetInstance() { return ourInstance; }
 
-	AssetTracker& GetAssetTracker() { return myAssetTracker; }
+	AssetTracker& GetAssetTracker();
 	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
-	ImGUISystem& GetImGUISystem() { return myImGUISystem; }
-	AnimationSystem& GetAnimationSystem() { return myAnimationSystem; }
+	ImGUISystem& GetImGUISystem();
+	AnimationSystem& GetAnimationSystem();
 
 	void Init();
 	void RunMainThread();
@@ -60,9 +61,8 @@ public:
 	// utility method for accessing the time across game
 	float GetTime() const;
 
-	Graphics* GetGraphics() { return myRenderThread->GetGraphics(); }
-	// TODO: figure out a way to force render-thread to return const RenderThread*
-	const Graphics* GetGraphics() const { return myRenderThread->GetGraphics(); }
+	Graphics* GetGraphics();
+	const Graphics* GetGraphics() const;
 
 	void RemoveGameObject(GameObject* aGo);
 
@@ -101,11 +101,11 @@ private:
 	std::queue<GameObject*> myRemoveQueue;
 	std::vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
-	AssetTracker myAssetTracker;
+	AssetTracker* myAssetTracker;
 	// TODO: explore thread-local drawers!
 	DebugDrawer myDebugDrawer;
-	ImGUISystem myImGUISystem;
-	AnimationSystem myAnimationSystem;
+	ImGUISystem* myImGUISystem;
+	AnimationSystem* myAnimationSystem;
 
 	bool myIsRunning;
 	bool myShouldEnd;

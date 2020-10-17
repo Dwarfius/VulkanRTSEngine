@@ -12,9 +12,13 @@
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
+#include "Systems/ImGUI/ImGUISystem.h"
+#include "Animation/AnimationSystem.h"
+#include "RenderThread.h"
 
 #include <Core/StaticString.h>
 #include <Core/Profiler.h>
+#include <Core/Resources/AssetTracker.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Graphics.h>
@@ -44,7 +48,6 @@ Game::Game(ReportError aReporterFunc)
 	, myIsPaused(false)
 	, myIsInFocus(false)
 	, myEditorMode(nullptr)
-	, myImGUISystem(*this)
 {
 	Profiler::ScopedMark profile("Game::Ctor");
 	ourInstance = this;
@@ -58,12 +61,16 @@ Game::Game(ReportError aReporterFunc)
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
 
+	myAssetTracker = new AssetTracker();
+	myImGUISystem = new ImGUISystem(*this);
+	myAnimationSystem = new AnimationSystem();
+
 	{
 		constexpr float kTerrSize = 18000; // meters
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		Handle<Texture> terrainText = myAssetTracker.GetOrCreate<Texture>("Tynemouth-tangrams.desc");
+		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("Tynemouth-tangrams.desc");
 		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
 		constexpr uint32_t kTerrCells = 64;
 		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
@@ -81,9 +88,28 @@ Game::Game(ReportError aReporterFunc)
 
 Game::~Game()
 {
+	delete myAssetTracker;
+	delete myAnimationSystem;
+	delete myImGUISystem;
+
 	// render thread has to go first, since it relies on glfw to be there
 	delete myRenderThread;
 	glfwTerminate();
+}
+
+AssetTracker& Game::GetAssetTracker() 
+{ 
+	return *myAssetTracker; 
+}
+
+ImGUISystem& Game::GetImGUISystem() 
+{ 
+	return *myImGUISystem; 
+}
+
+AnimationSystem& Game::GetAnimationSystem() 
+{ 
+	return *myAnimationSystem; 
 }
 
 void Game::Init()
@@ -93,19 +119,19 @@ void Game::Init()
 
 	myGameObjects.reserve(kMaxObjects);
 
-	myRenderThread->Init(BootWithVK, myAssetTracker);
+	myRenderThread->Init(BootWithVK, *myAssetTracker);
 
 	// TODO: has implicit dependency on window initialized - make explicit!
-	myImGUISystem.Init();
+	myImGUISystem->Init();
 
 	GameObject* go; 
 	VisualObject* vo;
 
-	Handle<Model> cubeModel = myAssetTracker.GetOrCreate<Model>("cube.obj");
+	Handle<Model> cubeModel = myAssetTracker->GetOrCreate<Model>("cube.obj");
 	// ==========================
-	Handle<Pipeline> defPipeline = myAssetTracker.GetOrCreate<Pipeline>("default.ppl");
-	Handle<Texture> cubeText = myAssetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg");
-	Handle<Pipeline> terrainPipeline = myAssetTracker.GetOrCreate<Pipeline>("terrain.ppl");
+	Handle<Pipeline> defPipeline = myAssetTracker->GetOrCreate<Pipeline>("default.ppl");
+	Handle<Texture> cubeText = myAssetTracker->GetOrCreate<Texture>("CubeUnwrap.jpg");
+	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 
 	// a continuous allocated storage of VisualObjects
@@ -213,7 +239,7 @@ void Game::CleanUp()
 		myRenderThread->SubmitRenderables();
 	}
 
-	myImGUISystem.Shutdown();
+	myImGUISystem->Shutdown();
 
 	delete myEditorMode;
 
@@ -271,6 +297,16 @@ float Game::GetTime() const
 	return static_cast<float>(glfwGetTime());
 }
 
+Graphics* Game::GetGraphics() 
+{ 
+	return myRenderThread->GetGraphics(); 
+}
+
+const Graphics* Game::GetGraphics() const
+{
+	return myRenderThread->GetGraphics();
+}
+
 void Game::RemoveGameObject(GameObject* go)
 {
 	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
@@ -295,7 +331,7 @@ void Game::UpdateInput()
 {
 	Profiler::ScopedMark profile(__func__);
 	Input::Update();
-	myImGUISystem.NewFrame(myDeltaTime);
+	myImGUISystem->NewFrame(myDeltaTime);
 }
 
 void Game::Update()
@@ -346,7 +382,7 @@ void Game::PhysicsUpdate()
 void Game::AnimationUpdate()
 {
 	Profiler::ScopedMark profile(__func__);
-	myAnimationSystem.Update(myDeltaTime);
+	myAnimationSystem->Update(myDeltaTime);
 }
 
 void Game::Render()
@@ -376,7 +412,7 @@ void Game::Render()
 	myRenderThread->AddDebugRenderable(&myDebugDrawer);
 	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());
 
-	myImGUISystem.Render();
+	myImGUISystem->Render();
 
 	// signal that we have submitted extra work
 	myRenderThread->Work();

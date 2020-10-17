@@ -5,6 +5,7 @@
 #include "Systems/ImGUI/ImGUIRendering.h"
 
 #include <Graphics/UniformAdapterRegister.h>
+#include <Graphics/Graphics.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Profiler.h>
