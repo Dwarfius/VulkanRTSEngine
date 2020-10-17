@@ -135,9 +135,14 @@ void Game::Init()
 		task = GameTask(GameTask::PhysicsUpdate, [this]() { PhysicsUpdate(); });
 		myTaskManager->AddTask(task);
 
+		task = GameTask(GameTask::AnimationUpdate, [this]() { AnimationUpdate(); });
+		task.AddDependency(GameTask::PhysicsUpdate);
+		myTaskManager->AddTask(task);
+
 		task = GameTask(GameTask::EditorUpdate, [this]() { EditorUpdate(); });
 		task.AddDependency(GameTask::UpdateInput);
 		task.AddDependency(GameTask::PhysicsUpdate);
+		task.AddDependency(GameTask::AnimationUpdate);
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::GameUpdate, [this]() { Update(); });
@@ -336,6 +341,12 @@ void Game::PhysicsUpdate()
 {
 	Profiler::ScopedMark profile(__func__);
 	myPhysWorld->Simulate(myDeltaTime);
+}
+
+void Game::AnimationUpdate()
+{
+	Profiler::ScopedMark profile(__func__);
+	myAnimationSystem.Update(myDeltaTime);
 }
 
 void Game::Render()

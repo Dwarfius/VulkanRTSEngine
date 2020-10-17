@@ -15,6 +15,7 @@ public:
 		GameUpdate,
 		Render,
 		PhysicsUpdate,
+		AnimationUpdate,
 		UpdateAudio,
 		UpdateEnd,
 		RemoveGameObjects

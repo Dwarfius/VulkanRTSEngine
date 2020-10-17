@@ -1,23 +1,27 @@
 #pragma once
 
-#include "Animation/AnimationClip.h"
+#include <Core/Pool.h>
+#include "Animation/Skeleton.h"
 
-class Skeleton;
+class AnimationClip;
 
 class AnimationController
 {
 public:
+	AnimationController(const PoolWeakPtr<Skeleton>& aSkeleton);
+
 	void AddClip(AnimationClip* aClip) { myClips.push_back(aClip); }
 	void PlayClip(AnimationClip* aClip);
 
 	bool NeedsUpdate() const { return myActiveClip != nullptr; }
-	void Update(Skeleton& aSkeleton, float aDeltaTime);
+	void Update(float aDeltaTime);
 
 	float GetTime() const { return myCurrentTime; }
 
 private:
 	void InitMarks();
 
+	PoolWeakPtr<Skeleton> mySkeleton;
 	AnimationClip* myActiveClip = nullptr;
 	std::vector<AnimationClip*> myClips;
 

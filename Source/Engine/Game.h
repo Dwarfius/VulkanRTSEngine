@@ -7,6 +7,7 @@
 #include "GameTaskManager.h"
 #include "RenderThread.h"
 #include "Systems/ImGUI/ImGUISystem.h"
+#include "Animation/AnimationSystem.h"
 
 class Camera;
 class EditorMode;
@@ -31,6 +32,7 @@ public:
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
 	ImGUISystem& GetImGUISystem() { return myImGUISystem; }
+	AnimationSystem& GetAnimationSystem() { return myAnimationSystem; }
 
 	void Init();
 	void RunMainThread();
@@ -73,6 +75,7 @@ private:
 	void Update();
 	void EditorUpdate();
 	void PhysicsUpdate();
+	void AnimationUpdate();
 	void Render();
 	void UpdateAudio();
 	void UpdateEnd();
@@ -102,6 +105,7 @@ private:
 	// TODO: explore thread-local drawers!
 	DebugDrawer myDebugDrawer;
 	ImGUISystem myImGUISystem;
+	AnimationSystem myAnimationSystem;
 
 	bool myIsRunning;
 	bool myShouldEnd;

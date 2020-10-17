@@ -2,6 +2,12 @@
 #include "AnimationController.h"
 
 #include "Animation/Skeleton.h"
+#include "Animation/AnimationClip.h"
+
+AnimationController::AnimationController(const PoolWeakPtr<Skeleton>& aSkeleton)
+	: mySkeleton(aSkeleton)
+{
+}
 
 void AnimationController::PlayClip(AnimationClip* aClip)
 {
@@ -13,11 +19,14 @@ void AnimationController::PlayClip(AnimationClip* aClip)
 	InitMarks();
 }
 
-void AnimationController::Update(Skeleton& aSkeleton, float aDeltaTime)
+void AnimationController::Update(float aDeltaTime)
 {
+	ASSERT_STR(mySkeleton.IsValid(), "Attempt to update skeleton that has been released!");
 	ASSERT_STR(myActiveClip, "Nothing to update!");
 	ASSERT_STR(myCurrentMarks.size() >= myActiveClip->GetTracks().size(),
 		"Missing current marks - did you forget to call InitMarks()?");
+
+	Skeleton* skeleton = mySkeleton.Get();
 
 	myCurrentTime += aDeltaTime;
 	if (myCurrentTime > myActiveClip->GetLength())
@@ -41,7 +50,7 @@ void AnimationController::Update(Skeleton& aSkeleton, float aDeltaTime)
 
 	auto FetchActiveBone = [&](Skeleton::BoneIndex anIndex) {
 		boneIndex = anIndex;
-		Transform boneTransf = aSkeleton.GetBoneLocalTransform(boneIndex);
+		Transform boneTransf = skeleton->GetBoneLocalTransform(boneIndex);
 		bonePos = boneTransf.GetPos();
 		boneScale = boneTransf.GetScale();
 		boneEulerRot = boneTransf.GetEuler();
@@ -55,7 +64,7 @@ void AnimationController::Update(Skeleton& aSkeleton, float aDeltaTime)
 		if (track.myBone != boneIndex)
 		{
 			// update bone
-			aSkeleton.SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
+			skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
 
 			// fetch new bone
 			FetchActiveBone(track.myBone);
@@ -94,7 +103,7 @@ void AnimationController::Update(Skeleton& aSkeleton, float aDeltaTime)
 		}
 		markIndex++;
 	}
-	aSkeleton.SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
+	skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
 }
 
 void AnimationController::InitMarks()

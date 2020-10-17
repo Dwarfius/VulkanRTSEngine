@@ -71,6 +71,7 @@ set(SRC_ANIMATION
 	"Animation/Skeleton.cpp" "Animation/Skeleton.h"
 	"Animation/AnimationClip.cpp" "Animation/AnimationClip.h"
 	"Animation/AnimationController.cpp" "Animation/AnimationController.h"
+	"Animation/AnimationSystem.cpp" "Animation/AnimationSystem.h"
 )
 
 set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"

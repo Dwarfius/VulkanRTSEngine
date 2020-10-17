@@ -3,7 +3,6 @@
 #include <Core/Transform.h>
 
 class DebugDrawer;
-class AnimationController;
 
 class Skeleton
 {
@@ -41,7 +40,6 @@ private:
 
 public:
 	Skeleton(BoneIndex aCapacity);
-	~Skeleton();
 
 	BoneIndex GetBoneCount() const { return static_cast<BoneIndex>(myBones.size()); }
 	void AddBone(BoneIndex aParentIndex, const Transform& aLocalTransf);
@@ -52,11 +50,8 @@ public:
 	void SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransform);
 	void SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransform);
 
-	void AddController();
-	AnimationController* GetController() const { return myController; }
-
 	// Must be called to propagate all the changes to the skeletal bones
-	void Update(float aDeltaTime);
+	void Update();
 
 	// Utility to visualize the skeleton
 	void DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform) const;
@@ -67,7 +62,5 @@ private:
 
 	// Bones hierarchy is stored in breadth-first order
 	std::vector<Bone> myBones;
-	// TODO: rething and separate this out
-	AnimationController* myController = nullptr;
 	bool myNeedsUpdate = false;
 };

@@ -2,13 +2,16 @@
 
 #include "../Systems/ProfilerUI.h"
 #include "../Animation/Skeleton.h"
+#include "../Animation/AnimationController.h"
 #include "../Animation/AnimationClip.h"
+#include <Core/Pool.h>
 
 class PhysicsWorld;
 class GameObject;
 class PhysicsShapeBase;
 class Transform;
 class Game;
+class AnimationSystem;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -29,12 +32,13 @@ private:
 	ProfilerUI myProfilerUI;
 
 	// Testing
-	void InitTestSkeleton();
+	void InitTestSkeleton(AnimationSystem& anAnimSystem);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
 	void DrawBoneHierarchy();
 	void DrawBoneInfo();
-	Skeleton myTestSkeleton;
+	
+	PoolPtr<AnimationController> myAnimController;
+	PoolPtr<Skeleton> myTestSkeleton;
 	Skeleton::BoneIndex mySelectedBone;
-	std::vector<std::function<void(Skeleton&)>> mySkeletonAnimators;
 	std::unique_ptr<AnimationClip> myTestClip;
 };

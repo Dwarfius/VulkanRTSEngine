@@ -21,11 +21,9 @@ EditorMode::EditorMode(PhysicsWorld& aWorld)
 	: myMouseSensitivity(0.1f)
 	, myFlightSpeed(2.f)
 	, myDemoWindowVisible(false)
-	, myTestSkeleton(32) // arbitrary
 	, mySelectedBone(Skeleton::kInvalidIndex)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
-	InitTestSkeleton();
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -98,6 +96,11 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		go->SetVisualObject(vo);
 	}
 
+	if (!myTestSkeleton.IsValid())
+	{
+		InitTestSkeleton(aGame.GetAnimationSystem());
+	}
+
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 
 	myProfilerUI.Draw();
@@ -160,12 +163,15 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
 }
 
-void EditorMode::InitTestSkeleton()
+void EditorMode::InitTestSkeleton(AnimationSystem& anAnimSystem)
 {
-	myTestSkeleton.AddBone(Skeleton::kInvalidIndex, {});
-	myTestSkeleton.AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
-	myTestSkeleton.AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
-	myTestSkeleton.AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
+	myTestSkeleton = anAnimSystem.AllocateSkeleton(4);
+	Skeleton* skeleton = myTestSkeleton.Get();
+
+	skeleton->AddBone(Skeleton::kInvalidIndex, {});
+	skeleton->AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
+	skeleton->AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
+	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
 	// 4 second animation that forces a diamond movement
 	myTestClip = std::make_unique<AnimationClip>(4, true);
@@ -177,9 +183,8 @@ void EditorMode::InitTestSkeleton()
 	myTestClip->AddTrack(1, AnimationClip::Property::PosY, AnimationClip::Interpolation::Linear, yTrack);
 	myTestClip->AddTrack(1, AnimationClip::Property::RotZ, AnimationClip::Interpolation::Linear, zRotTrack);
 
-	myTestSkeleton.AddController();
-	AnimationController* controller = myTestSkeleton.GetController();
-	controller->PlayClip(myTestClip.get());
+	myAnimController = anAnimSystem.AllocateController(myTestSkeleton);
+	myAnimController.Get()->PlayClip(myTestClip.get());
 }
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
@@ -194,20 +199,20 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 		ImGui::End();
 	}
 
-	myTestSkeleton.Update(aDeltaTime);
-	myTestSkeleton.DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
+	myTestSkeleton.Get()->DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
 }
 
 void EditorMode::DrawBoneHierarchy()
 {
+	Skeleton* skeleton = myTestSkeleton.Get();
 	if (ImGui::TreeNode("Skeleton"))
 	{
 		char formatBuffer[128];
 		for (Skeleton::BoneIndex index = 0;
-			index < myTestSkeleton.GetBoneCount();
+			index < skeleton->GetBoneCount();
 			index++)
 		{
-			glm::vec3 worldPos = myTestSkeleton.GetBoneWorldTransform(index).GetPos();
+			glm::vec3 worldPos = skeleton->GetBoneWorldTransform(index).GetPos();
 			sprintf(formatBuffer, "%u", index);
 
 			const bool isSelectedBone = index == mySelectedBone;
@@ -223,7 +228,7 @@ void EditorMode::DrawBoneHierarchy()
 			}
 			ImGui::SameLine();
 			ImGui::Text("parent:(%u) - pos:(%f %f %f)",
-				myTestSkeleton.GetParentIndex(index),
+				skeleton->GetParentIndex(index),
 				worldPos.x, worldPos.y, worldPos.z);
 
 			if (isSelectedBone)
@@ -237,7 +242,7 @@ void EditorMode::DrawBoneHierarchy()
 			mySelectedBone = Skeleton::kInvalidIndex;
 		}
 
-		const AnimationController* controller = myTestSkeleton.GetController();
+		const AnimationController* controller = myAnimController.Get();
 		ImGui::Text("Animation time: %f", controller->GetTime());
 
 		ImGui::TreePop();
@@ -251,11 +256,12 @@ void EditorMode::DrawBoneInfo()
 		return;
 	}
 
+	Skeleton* skeleton = myTestSkeleton.Get();
 	if (ImGui::TreeNode("Bone Info"))
 	{
 		if (ImGui::TreeNode("World Transform"))
 		{
-			Transform transform = myTestSkeleton.GetBoneWorldTransform(mySelectedBone);
+			Transform transform = skeleton->GetBoneWorldTransform(mySelectedBone);
 			glm::vec3 pos = transform.GetPos();
 			const bool posChanged = ImGui::InputFloat3("Pos", glm::value_ptr(pos));
 			if (posChanged)
@@ -279,13 +285,13 @@ void EditorMode::DrawBoneInfo()
 
 			if (posChanged || rotChanged || scaleChanged)
 			{
-				myTestSkeleton.SetBoneWorldTransform(mySelectedBone, transform);
+				skeleton->SetBoneWorldTransform(mySelectedBone, transform);
 			}
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Local Transform"))
 		{
-			Transform transform = myTestSkeleton.GetBoneLocalTransform(mySelectedBone);
+			Transform transform = skeleton->GetBoneLocalTransform(mySelectedBone);
 			glm::vec3 pos = transform.GetPos();
 			const bool posChanged = ImGui::InputFloat3("Pos", glm::value_ptr(pos));
 			if (posChanged)
@@ -309,7 +315,7 @@ void EditorMode::DrawBoneInfo()
 
 			if (posChanged || rotChanged || scaleChanged)
 			{
-				myTestSkeleton.SetBoneLocalTransform(mySelectedBone, transform);
+				skeleton->SetBoneLocalTransform(mySelectedBone, transform);
 			}
 			ImGui::TreePop();
 		}

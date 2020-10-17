@@ -1,8 +1,6 @@
 #include "../Precomp.h"
 #include "Skeleton.h"
 
-#include "Animation/AnimationController.h"
-
 #include <Core/Debug/DebugDrawer.h>
 #include <memory_resource>
 
@@ -10,14 +8,6 @@ Skeleton::Skeleton(BoneIndex aCapacity)
 {
 	ASSERT_STR(aCapacity < kInvalidIndex, "Too many bones requested!");
 	myBones.reserve(aCapacity);
-}
-
-Skeleton::~Skeleton()
-{
-	if (myController)
-	{
-		delete myController;
-	}
 }
 
 void Skeleton::AddBone(BoneIndex aParentIndex, const Transform& aLocalTransf)
@@ -81,18 +71,8 @@ void Skeleton::SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransf
 	DirtyHierarchy(anIndex, true);
 }
 
-void Skeleton::AddController()
+void Skeleton::Update()
 {
-	myController = new AnimationController();
-}
-
-void Skeleton::Update(float aDeltaTime)
-{
-	if (myController && myController->NeedsUpdate())
-	{
-		myController->Update(*this, aDeltaTime);
-	}
-
 	if (!myNeedsUpdate)
 	{
 		return;
