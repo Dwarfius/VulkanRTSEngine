@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef ASSERT_MUTEX
+#include "Threading/AssertRWMutex.h"
+#endif
+
 // A collection object that has ability to grow like a vector, 
 // while guarantying pointer stability (via proxy type called Ptr).
 // The purpose is to help maintain cache coherence
@@ -77,11 +81,13 @@ public:
 	Ptr Allocate(TArgs&&... aConstrArgs);
 
 	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>>
+		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>
+		>
 		void ForEach(TUnaryFunc aFunc);
 
 	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>>
+		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>
+		>
 		void ForEach(TUnaryFunc aFunc) const;
 
 	size_t GetCapacity() const { return myElements.capacity(); }
@@ -104,6 +110,30 @@ private:
 			, myIsActive(false)
 		{
 		}
+
+		// TODO: rewrite both bellow with C++20 concepts!
+		Element(Element&& aOther)
+		{
+			// this move constuctor is only used
+			// for relocation support of non trivial T! 
+			// Meaning, we will always have this object uninitialized
+			// so no need to check if we need to free myValue!
+			myGeneration = aOther.myGeneration;
+			myIsActive = aOther.myIsActive;
+			if (myIsActive)
+			{
+				myValue = std::move(aOther.myValue);
+			}
+			else
+			{
+				myNextFreeSlot = aOther.myNextFreeSlot;
+			}
+		}
+
+		// Have to define a destructor in case
+		// T has a non-trivial constructor
+		// TODO: can c++20 prospective destructor help here?
+		~Element() {}
 	};
 
 	void Resize(size_t aNewCount);
@@ -113,6 +143,9 @@ private:
 	std::vector<Element> myElements;
 	size_t myFirstFreeSlot = 0;
 	size_t mySize = 0;
+#ifdef ASSERT_MUTEX
+	AssertRWMutex myIterationMutex;
+#endif
 };
 
 // ======================
@@ -160,6 +193,11 @@ template<class T>
 template<class... TArgs>
 typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 {
+#ifdef ASSERT_MUTEX
+	// Can't allocate while iterating!
+	AssertReadLock lock(myIterationMutex);
+#endif
+
 	if (mySize == myElements.capacity())
 	{
 		const size_t newSize = myElements.capacity() ? myElements.capacity() * kGrowthFactor : kInitialCapacity;
@@ -187,6 +225,10 @@ template<class T>
 template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>*/>
 void Pool<T>::ForEach(TUnaryFunc aFunc)
 {
+#ifdef ASSERT_MUTEX
+	// iterating prohibits allocating/freeing!
+	AssertWriteLock lock(myIterationMutex);
+#endif
 	DEBUG_ONLY(size_t foundCount = 0;);
 	for (Element& element : myElements)
 	{
@@ -203,6 +245,11 @@ template<class T>
 template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>*/>
 void Pool<T>::ForEach(TUnaryFunc aFunc) const
 {
+#ifdef ASSERT_MUTEX
+	// iterating prohibits allocating/freeing!
+	AssertWriteLock lock(myIterationMutex);
+#endif
+
 	DEBUG_ONLY(size_t foundCount = 0);
 	for (const Element& element : myElements)
 	{
@@ -229,11 +276,16 @@ void Pool<T>::Resize(size_t aSize)
 template<class T>
 void Pool<T>::Free(size_t anIndex)
 {
+#ifdef ASSERT_MUTEX
+	// Can't free while iterating!
+	AssertReadLock lock(myIterationMutex);
+#endif
+
 	ASSERT_STR(myElements[anIndex].myIsActive, "Tried to double free!");
 
 	if constexpr (!std::is_trivially_destructible_v<T>)
 	{
-		&(myElements[anIndex].myElement)->~T();
+		(&(myElements[anIndex].myValue))->~T();
 	}
 
 	// Insert the free slot at the start of the free-list
@@ -248,3 +300,12 @@ bool Pool<T>::IsValid(size_t anIndex, GenerationType aGeneration) const
 {
 	return myElements[anIndex].myIsActive && myElements[anIndex].myGeneration == aGeneration;
 }
+
+// =======================
+// Convenience Ptr Aliases
+// =======================
+template<class T>
+using PoolPtr = typename Pool<T>::Ptr;
+
+template<class T>
+using PoolWeakPtr = typename Pool<T>::WeakPtr;
