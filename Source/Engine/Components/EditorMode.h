@@ -24,21 +24,25 @@ public:
 private:
 	void HandleCamera(Transform& aCamTransf, float aDeltaTime);
 
-	const float myMouseSensitivity;
-	float myFlightSpeed;
-	bool myDemoWindowVisible;
+	const float myMouseSensitivity = 0.1f;
+	float myFlightSpeed = 2.f;
+	bool myDemoWindowVisible = false;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 	ProfilerUI myProfilerUI;
 
 	// Testing
-	void InitTestSkeleton(AnimationSystem& anAnimSystem);
+	void AddTestSkeleton(AnimationSystem& anAnimSystem);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
-	void DrawBoneHierarchy();
-	void DrawBoneInfo();
+	void DrawBoneHierarchy(int aSkeletonIndex);
+	void DrawBoneInfo(int aSkeletonIndex);
 	
-	PoolPtr<AnimationController> myAnimController;
-	PoolPtr<Skeleton> myTestSkeleton;
-	Skeleton::BoneIndex mySelectedBone;
+	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::unique_ptr<AnimationClip> myTestClip;
+	std::vector<PoolPtr<AnimationController>> myControllers;
+	std::vector<PoolPtr<Skeleton>> mySkeletons;
+	int mySelectedSkeleton = -1;
+	int myAddSkeletonCount = 0;
+	bool myShowSkeletonUI = false;
+
 };

@@ -4,7 +4,7 @@
 #include <Core/Threading/AssertRWMutex.h>
 #endif
 
-class UniformAdapter;
+#include "Graphics/UniformAdapter.h"
 
 // A Singleton class used for tracking all the uniform adapters
 // that can be used to bridge the game state and rendering

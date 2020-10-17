@@ -7,6 +7,7 @@
 #include "GameObject.h"
 #include "VisualObject.h"
 #include "Animation/AnimationController.h"
+#include "Animation/AnimationSystem.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 
 #include <Core/Resources/AssetTracker.h>
@@ -21,12 +22,18 @@
 #include <Physics/PhysicsShapes.h>
 
 EditorMode::EditorMode(PhysicsWorld& aWorld)
-	: myMouseSensitivity(0.1f)
-	, myFlightSpeed(2.f)
-	, myDemoWindowVisible(false)
-	, mySelectedBone(Skeleton::kInvalidIndex)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
+
+	// 4 second animation that forces a diamond movement
+	myTestClip = std::make_unique<AnimationClip>(4, true);
+	std::vector<AnimationClip::Mark> yTrack{ {0, -0.5f}, {2, 0.5f}, {4, -0.5f} };
+	std::vector<AnimationClip::Mark> xTrack{ {0, 0}, {1, -0.5f}, {3, 0.5f}, {4, 0.f} };
+	std::vector<AnimationClip::Mark> zRotTrack{ {0, 0}, {4, 2 * glm::pi<float>()} };
+
+	myTestClip->AddTrack(1, AnimationClip::Property::PosX, AnimationClip::Interpolation::Linear, xTrack);
+	myTestClip->AddTrack(1, AnimationClip::Property::PosY, AnimationClip::Interpolation::Linear, yTrack);
+	myTestClip->AddTrack(1, AnimationClip::Property::RotZ, AnimationClip::Interpolation::Linear, zRotTrack);
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -99,11 +106,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		go->SetVisualObject(vo);
 	}
 
-	if (!myTestSkeleton.IsValid())
-	{
-		InitTestSkeleton(aGame.GetAnimationSystem());
-	}
-
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 
 	myProfilerUI.Draw();
@@ -166,50 +168,66 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
 }
 
-void EditorMode::InitTestSkeleton(AnimationSystem& anAnimSystem)
+void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 {
-	myTestSkeleton = anAnimSystem.AllocateSkeleton(4);
-	Skeleton* skeleton = myTestSkeleton.Get();
+	PoolPtr<Skeleton> testSkeleton = anAnimSystem.AllocateSkeleton(4);
+	Skeleton* skeleton = testSkeleton.Get();
 
 	skeleton->AddBone(Skeleton::kInvalidIndex, {});
 	skeleton->AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
-	// 4 second animation that forces a diamond movement
-	myTestClip = std::make_unique<AnimationClip>(4, true);
-	std::vector<AnimationClip::Mark> yTrack{ {0, -0.5f}, {2, 0.5f}, {4, -0.5f} };
-	std::vector<AnimationClip::Mark> xTrack{ {0, 0}, {1, -0.5f}, {3, 0.5f}, {4, 0.f} };
-	std::vector<AnimationClip::Mark> zRotTrack{ {0, 0}, {4, 2 * glm::pi<float>()} };
+	PoolPtr<AnimationController> animController = anAnimSystem.AllocateController(testSkeleton);
+	animController.Get()->PlayClip(myTestClip.get());
 
-	myTestClip->AddTrack(1, AnimationClip::Property::PosX, AnimationClip::Interpolation::Linear, xTrack);
-	myTestClip->AddTrack(1, AnimationClip::Property::PosY, AnimationClip::Interpolation::Linear, yTrack);
-	myTestClip->AddTrack(1, AnimationClip::Property::RotZ, AnimationClip::Interpolation::Linear, zRotTrack);
-
-	myAnimController = anAnimSystem.AllocateController(myTestSkeleton);
-	myAnimController.Get()->PlayClip(myTestClip.get());
+	myControllers.push_back(std::move(animController));
+	mySkeletons.push_back(std::move(testSkeleton));
 }
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 {
+	if (Input::GetKeyPressed(Input::Keys::F3))
+	{
+		myShowSkeletonUI = !myShowSkeletonUI;
+	}
+
+	if(myShowSkeletonUI)
 	{
 		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Skeleton Settings"))
 		{
-			DrawBoneHierarchy();
-			DrawBoneInfo();
+			ImGui::InputInt("Skeleton Add Count", &myAddSkeletonCount);
+			if (ImGui::Button("Add"))
+			{
+				for (int i = 0; i < myAddSkeletonCount; i++)
+				{
+					AddTestSkeleton(aGame.GetAnimationSystem());
+				}
+			}
+
+			ImGui::InputInt("Skeleton Index", &mySelectedSkeleton);
+
+			DrawBoneHierarchy(mySelectedSkeleton);
+			DrawBoneInfo(mySelectedSkeleton);
 		}
 		ImGui::End();
 	}
 
-	myTestSkeleton.Get()->DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
+	for (const PoolPtr<Skeleton>& skeleton : mySkeletons)
+	{
+		skeleton.Get()->DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
+	}
 }
 
-void EditorMode::DrawBoneHierarchy()
+void EditorMode::DrawBoneHierarchy(int aSkeletonIndex)
 {
-	Skeleton* skeleton = myTestSkeleton.Get();
-	if (ImGui::TreeNode("Skeleton"))
+	if (aSkeletonIndex >= 0 
+		&& aSkeletonIndex < mySkeletons.size() 
+		&& ImGui::TreeNode("SkeletonTreeNode", "Skeleton %d", aSkeletonIndex))
 	{
+		Skeleton* skeleton = mySkeletons[aSkeletonIndex].Get();
+
 		char formatBuffer[128];
 		for (Skeleton::BoneIndex index = 0;
 			index < skeleton->GetBoneCount();
@@ -240,28 +258,30 @@ void EditorMode::DrawBoneHierarchy()
 			}
 		}
 
-		if (ImGui::Button("Clear Selection"))
+		if (ImGui::Button("Clear Selected Bone"))
 		{
 			mySelectedBone = Skeleton::kInvalidIndex;
 		}
 
-		const AnimationController* controller = myAnimController.Get();
+		const AnimationController* controller = myControllers[aSkeletonIndex].Get();
 		ImGui::Text("Animation time: %f", controller->GetTime());
 
 		ImGui::TreePop();
 	}
 }
 
-void EditorMode::DrawBoneInfo()
+void EditorMode::DrawBoneInfo(int aSkeletonIndex)
 {
-	if (mySelectedBone == Skeleton::kInvalidIndex)
+	if (mySelectedBone == Skeleton::kInvalidIndex
+		|| aSkeletonIndex == -1
+		|| aSkeletonIndex >= mySkeletons.size())
 	{
 		return;
 	}
 
-	Skeleton* skeleton = myTestSkeleton.Get();
 	if (ImGui::TreeNode("Bone Info"))
 	{
+		Skeleton* skeleton = mySkeletons[aSkeletonIndex].Get();
 		if (ImGui::TreeNode("World Transform"))
 		{
 			Transform transform = skeleton->GetBoneWorldTransform(mySelectedBone);

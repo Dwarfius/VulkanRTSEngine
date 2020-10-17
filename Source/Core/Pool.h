@@ -3,6 +3,7 @@
 #ifdef ASSERT_MUTEX
 #include "Threading/AssertRWMutex.h"
 #endif
+#include <variant>
 
 // A collection object that has ability to grow like a vector, 
 // while guarantying pointer stability (via proxy type called Ptr).
@@ -15,8 +16,6 @@ class Pool
 
 	constexpr static uint8_t kGrowthFactor = 2;
 	constexpr static uint8_t kInitialCapacity = 64;
-	constexpr static int kBitsUsed = std::numeric_limits<GenerationType>::digits - 1; // we save top bit for the flag
-	constexpr static GenerationType kMaxGeneration = (1ull << kBitsUsed) - 1;
 
 	class PtrBase
 	{
@@ -31,6 +30,7 @@ class Pool
 
 		bool IsValid() const;
 		T* Get();
+		const T* Get() const;
 
 	protected:
 		Pool<T>* myPool = nullptr; // not owned
@@ -96,44 +96,14 @@ public:
 private:
 	struct Element
 	{
-		union
-		{
-			size_t myNextFreeSlot;
-			T myValue;
-		};
-		GenerationType myGeneration : kBitsUsed;
-		GenerationType myIsActive : 1;
+		std::variant<size_t, T> myDataVariant;
+		GenerationType myGeneration;
 
 		Element() noexcept
-			: myNextFreeSlot(0)
+			: myDataVariant(0ull)
 			, myGeneration(0)
-			, myIsActive(false)
 		{
 		}
-
-		// TODO: rewrite both bellow with C++20 concepts!
-		Element(Element&& aOther)
-		{
-			// this move constuctor is only used
-			// for relocation support of non trivial T! 
-			// Meaning, we will always have this object uninitialized
-			// so no need to check if we need to free myValue!
-			myGeneration = aOther.myGeneration;
-			myIsActive = aOther.myIsActive;
-			if (myIsActive)
-			{
-				myValue = std::move(aOther.myValue);
-			}
-			else
-			{
-				myNextFreeSlot = aOther.myNextFreeSlot;
-			}
-		}
-
-		// Have to define a destructor in case
-		// T has a non-trivial constructor
-		// TODO: can c++20 prospective destructor help here?
-		~Element() {}
 	};
 
 	void Resize(size_t aNewCount);
@@ -162,7 +132,14 @@ template<class T>
 T* Pool<T>::PtrBase::Get()
 {
 	ASSERT_STR(IsValid(), "Invalid Ptr!");
-	return &myPool->myElements[myIndex].myValue;
+	return &std::get<1>(myPool->myElements[myIndex].myDataVariant);
+}
+
+template<class T>
+const T* Pool<T>::PtrBase::Get() const
+{
+	ASSERT_STR(IsValid(), "Invalid Ptr!");
+	return &std::get<1>(myPool->myElements[myIndex].myDataVariant);
 }
 
 // ======================
@@ -207,15 +184,14 @@ typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 	// find first free spot
 	const size_t currIndex = myFirstFreeSlot;
 	Element& currFreeSpot = myElements[currIndex];
-	ASSERT_STR(!currFreeSpot.myIsActive, "Weird pool state detected!");
+	ASSERT_STR(currFreeSpot.myDataVariant.index() == 0, "Weird pool state detected!");
 
 	// move the pointer to next free slot
-	myFirstFreeSlot = currFreeSpot.myNextFreeSlot;
+	myFirstFreeSlot = std::get<0>(currFreeSpot.myDataVariant);
 
 	// finally construct the new one
-	new(static_cast<void*>(&currFreeSpot.myValue)) T(std::forward<TArgs...>(aConstrArgs)...);
-	currFreeSpot.myIsActive = true;
-	currFreeSpot.myGeneration = currFreeSpot.myGeneration == kMaxGeneration ? 0 : currFreeSpot.myGeneration++;
+	currFreeSpot.myDataVariant = T(std::forward<TArgs...>(aConstrArgs)...);
+	currFreeSpot.myGeneration = currFreeSpot.myGeneration++;
 	mySize++;
 
 	return Ptr(this, currIndex, currFreeSpot.myGeneration);
@@ -232,9 +208,9 @@ void Pool<T>::ForEach(TUnaryFunc aFunc)
 	DEBUG_ONLY(size_t foundCount = 0;);
 	for (Element& element : myElements)
 	{
-		if (element.myIsActive)
+		if (T* value = std::get_if<1>(&element.myDataVariant))
 		{
-			aFunc(element.myValue);
+			aFunc(*value);
 			DEBUG_ONLY(foundCount++;);
 		}
 	}
@@ -253,10 +229,10 @@ void Pool<T>::ForEach(TUnaryFunc aFunc) const
 	DEBUG_ONLY(size_t foundCount = 0);
 	for (const Element& element : myElements)
 	{
-		if (element.myIsActive)
+		if (const T* value = std::get_if<1>(&element.myDataVariant))
 		{
-			aFunc(element.myValue);
-			DEBUG_ONLY(foundCount++);
+			aFunc(*value);
+			DEBUG_ONLY(foundCount++;);
 		}
 	}
 	ASSERT_STR(foundCount == mySize, "Weird PoolHeaderElem behavior, failed to find all elements!");
@@ -269,7 +245,7 @@ void Pool<T>::Resize(size_t aSize)
 	myElements.resize(aSize);
 	for (size_t i = oldSize; i < aSize; i++)
 	{
-		myElements[i].myNextFreeSlot = i + 1;
+		myElements[i].myDataVariant = i + 1;
 	}
 }
 
@@ -281,16 +257,10 @@ void Pool<T>::Free(size_t anIndex)
 	AssertReadLock lock(myIterationMutex);
 #endif
 
-	ASSERT_STR(myElements[anIndex].myIsActive, "Tried to double free!");
-
-	if constexpr (!std::is_trivially_destructible_v<T>)
-	{
-		(&(myElements[anIndex].myValue))->~T();
-	}
+	ASSERT_STR(myElements[anIndex].myDataVariant.index() == 1, "Tried to double free!");
 
 	// Insert the free slot at the start of the free-list
-	myElements[anIndex].myNextFreeSlot = myFirstFreeSlot;
-	myElements[anIndex].myIsActive = false;
+	myElements[anIndex].myDataVariant = myFirstFreeSlot;
 	myFirstFreeSlot = anIndex;
 	mySize--;
 }
@@ -298,7 +268,7 @@ void Pool<T>::Free(size_t anIndex)
 template<class T>
 bool Pool<T>::IsValid(size_t anIndex, GenerationType aGeneration) const
 {
-	return myElements[anIndex].myIsActive && myElements[anIndex].myGeneration == aGeneration;
+	return myElements[anIndex].myDataVariant.index() == 1 && myElements[anIndex].myGeneration == aGeneration;
 }
 
 // =======================
