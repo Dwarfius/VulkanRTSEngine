@@ -3,11 +3,20 @@
 
 #include "Animation/Skeleton.h"
 
+#include <Core/Resources/Serializer.h>
+
 static_assert(std::is_same_v<AnimationClip::BoneIndex, Skeleton::BoneIndex>, "Bone Indices must match!");
 
 AnimationClip::AnimationClip(float aLength, bool aIsLooping)
 	: myLength(aLength)
 	, myIsLooping(aIsLooping)
+{
+}
+
+AnimationClip::AnimationClip(Id anId, const std::string& aPath)
+	: Resource(anId, aPath)
+	, myLength(0.f)
+	, myIsLooping(false)
 {
 }
 
@@ -66,4 +75,64 @@ float AnimationClip::CalculateValue(size_t aMarkInd, float aTime, const BoneTrac
 		ASSERT(false);
 	}
 	return result;
+}
+
+void AnimationClip::Serialize(Serializer& aSerializer)
+{
+	if (aSerializer.IsReading())
+	{
+		std::vector<VariantMap> variantMaps;
+		{
+			aSerializer.Serialize("myTracks", variantMaps);
+			for (const VariantMap& trackMap : variantMaps)
+			{
+				BoneTrack track;
+				trackMap.Get("myTrackStart", track.myTrackStart);
+				trackMap.Get("myMarkCount", track.myMarkCount);
+				trackMap.Get("myBone", track.myBone);
+				trackMap.Get("myAffectedProperty", track.myAffectedProperty);
+				trackMap.Get("myInterpolation", track.myInterpolation);
+				myTracks.push_back(track);
+			}
+		}
+
+		{
+			aSerializer.Serialize("myMarks", variantMaps);
+			for (const VariantMap& markMap : variantMaps)
+			{
+				Mark mark;
+				markMap.Get("myTimeStamp", mark.myTimeStamp);
+				markMap.Get("myValue", mark.myValue);
+				myMarks.push_back(mark);
+			}
+		}
+	}
+	else
+	{
+		std::vector<VariantMap> variantMaps;
+		for (const BoneTrack& track : myTracks)
+		{
+			VariantMap trackMap;
+			trackMap.Set("myTrackStart", track.myTrackStart);
+			trackMap.Set("myMarkCount", track.myMarkCount);
+			trackMap.Set("myBone", track.myBone);
+			trackMap.Set("myAffectedProperty", track.myAffectedProperty);
+			trackMap.Set("myInterpolation", track.myInterpolation);
+			variantMaps.push_back(trackMap);
+		}
+		aSerializer.Serialize("myTracks", variantMaps);
+
+		variantMaps.clear();
+		for (const Mark& mark : myMarks)
+		{
+			VariantMap markMap;
+			markMap.Set("myTimeStamp", mark.myTimeStamp);
+			markMap.Set("myValue", mark.myValue);
+			variantMaps.push_back(markMap);
+		}
+		aSerializer.Serialize("myMarks", variantMaps);
+	}
+
+	aSerializer.Serialize("myLength", myLength);
+	aSerializer.Serialize("myIsLooping", myIsLooping);
 }

@@ -24,16 +24,6 @@
 EditorMode::EditorMode(PhysicsWorld& aWorld)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
-
-	// 4 second animation that forces a diamond movement
-	myTestClip = std::make_unique<AnimationClip>(4, true);
-	std::vector<AnimationClip::Mark> yTrack{ {0, -0.5f}, {2, 0.5f}, {4, -0.5f} };
-	std::vector<AnimationClip::Mark> xTrack{ {0, 0}, {1, -0.5f}, {3, 0.5f}, {4, 0.f} };
-	std::vector<AnimationClip::Mark> zRotTrack{ {0, 0}, {4, 2 * glm::pi<float>()} };
-
-	myTestClip->AddTrack(1, AnimationClip::Property::PosX, AnimationClip::Interpolation::Linear, xTrack);
-	myTestClip->AddTrack(1, AnimationClip::Property::PosY, AnimationClip::Interpolation::Linear, yTrack);
-	myTestClip->AddTrack(1, AnimationClip::Property::RotZ, AnimationClip::Interpolation::Linear, zRotTrack);
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -179,7 +169,7 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
 	PoolPtr<AnimationController> animController = anAnimSystem.AllocateController(testSkeleton);
-	animController.Get()->PlayClip(myTestClip.get());
+	animController.Get()->PlayClip(myResClip.Get());
 
 	myControllers.push_back(std::move(animController));
 	mySkeletons.push_back(std::move(testSkeleton));
@@ -187,12 +177,17 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 {
+	if (!myResClip.IsValid())
+	{
+		myResClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
+	}
+
 	if (Input::GetKeyPressed(Input::Keys::F3))
 	{
 		myShowSkeletonUI = !myShowSkeletonUI;
 	}
 
-	if(myShowSkeletonUI)
+	if(myShowSkeletonUI && myResClip.IsValid())
 	{
 		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Skeleton Settings"))

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <Core/Resources/Resource.h>
+
 // TODO: make inherit from RefCounted
-class AnimationClip
+class AnimationClip : public Resource
 {
 public:
+	static constexpr StaticString kDir = Resource::AssetsFolder + "anims/";
 	using BoneIndex = uint16_t; // must be in sync with Skeleton::BoneIndex!
 
 	enum class Property : uint8_t
@@ -43,6 +46,7 @@ public:
 
 public:
 	AnimationClip(float aLength, bool myIsLooping);
+	AnimationClip(Id anId, const std::string& aPath);
 
 	bool IsLooping() const { return myIsLooping; }
 	void SetLooping(bool aIsLooping) { myIsLooping = aIsLooping; }
@@ -57,6 +61,8 @@ public:
 	Mark GetMark(size_t anIndex) const { return myMarks[anIndex]; }
 
 private:
+	void Serialize(Serializer& aSerializer) final;
+
 	// TODO: bench merging as a single allocation
 	std::vector<BoneTrack> myTracks;
 	std::vector<Mark> myMarks;

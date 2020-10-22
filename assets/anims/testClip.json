@@ -1,0 +1,65 @@
+{
+	"myTracks" : [
+		{
+			"myTrackStart" : 0,
+			"myMarkCount": 4,
+			"myBone": 1,
+			"myAffectedProperty" : 0,
+			"myInterpolation" : 0
+		},
+		{
+			"myTrackStart" : 4,
+			"myMarkCount": 3,
+			"myBone": 1,
+			"myAffectedProperty" : 1,
+			"myInterpolation" : 0	
+		},
+		{
+			"myTrackStart" : 7,
+			"myMarkCount": 2,
+			"myBone": 1,
+			"myAffectedProperty" : 8,
+			"myInterpolation" : 0
+		}
+	],
+	"myMarks" : [
+		{
+			"myTimeStamp" : 0.0,
+			"myValue" : 0.0
+		},
+		{
+			"myTimeStamp" : 1.0,
+			"myValue" : -0.5
+		},
+		{
+			"myTimeStamp" : 3.0,
+			"myValue" : 0.5
+		},
+		{
+			"myTimeStamp" : 4.0,
+			"myValue" : 0.0
+		},
+		{
+			"myTimeStamp" : 0.0,
+			"myValue" : -0.5
+		},
+		{
+			"myTimeStamp" : 2.0,
+			"myValue" : 0.5
+		},
+		{
+			"myTimeStamp" : 4.0,
+			"myValue" : -0.5
+		},
+		{
+			"myTimeStamp" : 0.0,
+			"myValue" : 0.0
+		},
+		{
+			"myTimeStamp" : 4.0,
+			"myValue" : 6.28318530718
+		}
+	],
+	"myLength" : 4.0,
+	"myIsLooping" : true
+}

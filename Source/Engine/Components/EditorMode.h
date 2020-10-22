@@ -38,11 +38,10 @@ private:
 	void DrawBoneInfo(int aSkeletonIndex);
 	
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
-	std::unique_ptr<AnimationClip> myTestClip;
 	std::vector<PoolPtr<AnimationController>> myControllers;
 	std::vector<PoolPtr<Skeleton>> mySkeletons;
+	Handle<AnimationClip> myResClip;
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;
-
 };
