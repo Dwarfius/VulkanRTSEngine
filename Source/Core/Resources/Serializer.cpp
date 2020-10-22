@@ -10,7 +10,7 @@ Serializer::Serializer(AssetTracker& anAssetTracker, bool aIsReading)
 {
 }
 
-void Serializer::SerializeVersion(int& aVersion)
+void Serializer::SerializeVersion(int64_t& aVersion)
 {
 	if (myIsReading)
 	{
@@ -23,7 +23,7 @@ void Serializer::SerializeVersion(int& aVersion)
 }
 
 template<class T, std::enable_if_t<Serializer::SupportedTypes::Contains<T>, bool> SFINAE>
-void Serializer::Serialize(const std::string_view& aName, T& aValue)
+void Serializer::Serialize(std::string_view aName, T& aValue)
 {
 	if (myIsReading)
 	{
@@ -39,7 +39,7 @@ void Serializer::Serialize(const std::string_view& aName, T& aValue)
 }
 
 template<class T>
-void Serializer::Serialize(const std::string_view& aName, std::vector<T>& aValue)
+void Serializer::Serialize(std::string_view aName, std::vector<T>& aValue)
 {
 	if (myIsReading)
 	{
@@ -55,14 +55,16 @@ void Serializer::Serialize(const std::string_view& aName, std::vector<T>& aValue
 	}
 }
 
-template void Serializer::Serialize(const std::string_view&, bool&);
-template void Serializer::Serialize(const std::string_view&, uint32_t&);
-template void Serializer::Serialize(const std::string_view&, int&);
-template void Serializer::Serialize(const std::string_view&, float&);
-template void Serializer::Serialize(const std::string_view&, std::string&);
+template void Serializer::Serialize(std::string_view, bool&);
+template void Serializer::Serialize(std::string_view, uint64_t&);
+template void Serializer::Serialize(std::string_view, int64_t&);
+template void Serializer::Serialize(std::string_view, float&);
+template void Serializer::Serialize(std::string_view, std::string&);
+template void Serializer::Serialize(std::string_view, VariantMap&);
 
-template void Serializer::Serialize(const std::string_view&, std::vector<bool>&);
-template void Serializer::Serialize(const std::string_view&, std::vector<uint32_t>&);
-template void Serializer::Serialize(const std::string_view&, std::vector<int>&);
-template void Serializer::Serialize(const std::string_view&, std::vector<float>&);
-template void Serializer::Serialize(const std::string_view&, std::vector<std::string>&);
+template void Serializer::Serialize(std::string_view, std::vector<bool>&);
+template void Serializer::Serialize(std::string_view, std::vector<uint64_t>&);
+template void Serializer::Serialize(std::string_view, std::vector<int64_t>&);
+template void Serializer::Serialize(std::string_view, std::vector<float>&);
+template void Serializer::Serialize(std::string_view, std::vector<std::string>&);
+template void Serializer::Serialize(std::string_view, std::vector<VariantMap>&);
