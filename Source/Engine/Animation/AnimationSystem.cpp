@@ -2,6 +2,7 @@
 #include "AnimationSystem.h"
 
 #include <Core/Debug/DebugDrawer.h>
+#include <Core/Profiler.h>
 
 AnimationSystem::Ptr<Skeleton> AnimationSystem::AllocateSkeleton(Skeleton::BoneIndex aCapacity /*= 0*/)
 {
@@ -31,14 +32,16 @@ void AnimationSystem::Update(float aDeltaTime)
 	AssertLock updateLock(myUpdateMutex);
 #endif
 
-	myControllerPool.ForEach([aDeltaTime](AnimationController& aController) {
+	myControllerPool.ParallelForEach([aDeltaTime](AnimationController& aController) {
+		Profiler::ScopedMark controllerUpdate("ControllerUpdate");
 		if (aController.NeedsUpdate())
 		{
 			aController.Update(aDeltaTime);
 		}
 	});
 
-	mySkeletonPool.ForEach([](Skeleton& aSkeleton) {
+	mySkeletonPool.ParallelForEach([](Skeleton& aSkeleton) {
+		Profiler::ScopedMark skeletonUpdate("SkeletonUpdate");
 		aSkeleton.Update();
 	});
 }
