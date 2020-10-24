@@ -85,16 +85,17 @@ void Profiler::Storage::BeginMark(std::string_view aName)
 
 void Profiler::Storage::EndMark()
 {
+    const Stamp timeStampBeforeLock = Clock::now();
     // Because some tasks can be cross-frame, it's possible that
     // a thread will end the mark in the middle of us preparing for
     // a new frame
-    tbb::mutex::scoped_lock lock(myMarksMutex);
+    tbb::mutex::scoped_lock lock(myNewFrameMutex);
 
     Mark lastMark = myMarkStack.top();
     myMarkStack.pop();
     
     // close up the mark
-    lastMark.myEndStamp = Clock::now();
+    lastMark.myEndStamp = timeStampBeforeLock;
 
     myMarks.push_back(lastMark);
 }
@@ -108,7 +109,7 @@ void Profiler::Storage::NewFrame(std::vector<Mark>& aBuffer)
     // Because some tasks can be cross-frame, it's possible that
     // a thread will end the mark in the middle of us preparing for
     // a new frame
-    tbb::mutex::scoped_lock marksLock(myMarksMutex);
+    tbb::mutex::scoped_lock marksLock(myNewFrameMutex);
 
     aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
     myMarks.clear();
