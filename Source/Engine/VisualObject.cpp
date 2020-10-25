@@ -62,8 +62,8 @@ bool VisualObject::Resolve()
 	size_t descriptorCount = pipeline->GetDescriptorCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{
-		const Handle<Descriptor>& descriptor = pipeline->GetDescriptor(i);
-		myUniforms.push_back(std::make_shared<UniformBlock>(*descriptor.Get()));
+		const Descriptor& descriptor = pipeline->GetDescriptor(i);
+		myUniforms.push_back(std::make_shared<UniformBlock>(descriptor));
 	}
 
 	myIsResolved = true;

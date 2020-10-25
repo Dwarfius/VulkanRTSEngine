@@ -7,8 +7,38 @@
 		"tess-eval.tevl"
 	],
 	"descriptors":[  
-		{ "Res": "ObjectMatrices.adpt" },
-		{ "Res": "Terrain.adpt" },
-		{ "Res": "Camera.adpt" }
+		{  
+			"adapter":"ObjectMatricesAdapter",
+			"members":[  
+				5,
+				5,
+				5
+			]
+		},
+		{  
+			"adapter":"TerrainAdapter",
+			"members":[  
+				3,
+				1,
+				0,
+				0,
+				1
+			]
+		},
+		{
+			"adapter":"CameraAdapter",
+			"members":[
+				5,
+				5,
+				4,
+				4,
+				4,
+				4,
+				4,
+				4,
+				3,
+				2
+			]
+		}
 	]
 }

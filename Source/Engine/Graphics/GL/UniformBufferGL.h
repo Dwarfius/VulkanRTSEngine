@@ -14,7 +14,7 @@ public:
 	};
 
 public:
-	UniformBufferGL(Handle<Descriptor> aDescriptor);
+	UniformBufferGL(const Descriptor& aDescriptor);
 
 	// Binds the UniformBuffer to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
@@ -28,7 +28,7 @@ private:
 	bool OnUpload(Graphics& aGraphics) override final;
 	void OnUnload(Graphics& aGraphics) override final;
 
-	Handle<Descriptor> myDescriptor;
+	Descriptor myDescriptor;
 	uint32_t myBuffer;
 	UploadDescriptor myUploadDesc;
 

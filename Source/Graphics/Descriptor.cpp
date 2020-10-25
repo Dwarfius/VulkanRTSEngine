@@ -8,13 +8,6 @@ Descriptor::Descriptor()
 {
 }
 
-Descriptor::Descriptor(Resource::Id anId, const std::string& aPath)
-	: Resource(anId, aPath)
-	, myTotalSize(0)
-{
-
-}
-
 void Descriptor::SetUniformType(uint32_t aSlot, UniformType aType)
 {
 	if (aSlot >= myTypes.size())

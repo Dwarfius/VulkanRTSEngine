@@ -5,6 +5,11 @@
 		"imgui.frag"
 	],
 	"descriptors":[  
-		{ "Res": "ImGUI.adpt" }
+		{
+			"adapter":"ImGUIAdapter",
+			"members":[
+				5
+			]
+		}
 	]
 }
