@@ -112,6 +112,7 @@ set(SRC "Precomp.h"
 	"UID.cpp" "UID.h"
 	"Utils.cpp" "Utils.h"
 	"VariantMap.cpp" "VariantMap.h"
+	"VariantUtils.h"
 	"Vertex.h"
 	"VertexDescriptor.h"
 )
