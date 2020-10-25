@@ -4,6 +4,7 @@
 #include "Threading/AssertRWMutex.h"
 #endif
 #include <variant>
+#include "Profiler.h"
 
 // A collection object that has ability to grow like a vector, 
 // while guarantying pointer stability (via proxy type called Ptr).
@@ -236,6 +237,8 @@ void Pool<T>::ForEach(TUnaryFunc aFunc) const
 	AssertWriteLock lock(myIterationMutex);
 #endif
 
+	Profiler::ScopedMark mark("Pool::ForEach");
+
 	DEBUG_ONLY(size_t foundCount = 0;);
 	for (const Element& element : myElements)
 	{
@@ -252,14 +255,27 @@ template<class T>
 template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>*/>
 void Pool<T>::ParallelForEach(TUnaryFunc aFunc)
 {
+#ifdef ASSERT_MUTEX
+	// iterating prohibits allocating/freeing!
+	AssertWriteLock lock(myIterationMutex);
+#endif
+
 	DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
-	tbb::parallel_for_each(myElements.begin(), myElements.end(),
-		[&](Element& element)
+	// Attempt to have 2 batches per thread, so that it's easier to schedule around
+	const size_t batchSize = std::max(myElements.size() / std::thread::hardware_concurrency() / 2, 1ull);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, myElements.size(), batchSize),
+		[&](tbb::blocked_range<size_t> aRange)
 	{
-		if (T* value = std::get_if<1>(&element.myDataVariant))
+		Profiler::ScopedMark mark("Pool::ForEachBatch");
+
+		for (size_t i = aRange.begin(); i < aRange.end(); i++)
 		{
-			aFunc(*value);
-			DEBUG_ONLY(foundCount++;);
+			Element& element = myElements[i];
+			if (T* value = std::get_if<1>(&element.myDataVariant))
+			{
+				aFunc(*value);
+				DEBUG_ONLY(foundCount++;);
+			}
 		}
 	});
 	ASSERT_STR(foundCount == mySize, "Weird PoolHeaderElem behavior, failed to find all elements!");
@@ -269,14 +285,27 @@ template<class T>
 template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>*/>
 void Pool<T>::ParallelForEach(TUnaryFunc aFunc) const
 {
+#ifdef ASSERT_MUTEX
+	// iterating prohibits allocating/freeing!
+	AssertWriteLock lock(myIterationMutex);
+#endif
+
 	DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
-	tbb::parallel_for_each(myElements.begin(), myElements.end(),
-		[&](const Element& element)
+	// Attempt to have 2 batches per thread, so that it's easier to schedule around
+	const size_t batchSize = std::max(myElements.size() / std::thread::hardware_concurrency() / 2, 1ull);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, myElements.size(), batchSize),
+		[&](tbb::blocked_range<size_t> aRange)
 	{
-		if (const T* value = std::get_if<1>(&element.myDataVariant))
+		Profiler::ScopedMark mark("Pool::ForEachBatch");
+
+		for (size_t i = aRange.begin(); i < aRange.end(); i++)
 		{
-			aFunc(*value);
-			DEBUG_ONLY(foundCount++;);
+			const Element& element = myElements[i];
+			if (const T* value = std::get_if<1>(&element.myDataVariant))
+			{
+				aFunc(*value);
+				DEBUG_ONLY(foundCount++;);
+			}
 		}
 	});
 	ASSERT_STR(foundCount == mySize, "Weird PoolHeaderElem behavior, failed to find all elements!");
