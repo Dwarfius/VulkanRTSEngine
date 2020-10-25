@@ -1,45 +1,40 @@
 #pragma once
 
-#include <variant>
+#include "VariantUtils.h"
 #include <map>
 
 class VariantMap
 {
 public:
-    template<class... TArgs>
-    struct VariantTypes
-    {
-        using Variant = std::variant<
-            TArgs...,
-            std::vector<TArgs>...
-        >;
-        template<class T>
-        constexpr static bool Contains = 
-            (std::is_same_v<T, TArgs> || ...)
-            || (std::is_convertible_v<T, TArgs> || ...);
-    };
-    using SupportedTypes = VariantTypes<bool,
+    using SupportedTypes = VariantUtil<
+        bool,
         uint64_t, 
         int64_t,
         float,
+        VariantMap,
         std::string,
-        VariantMap
+        std::vector<bool>,
+        std::vector<uint64_t>,
+        std::vector<int64_t>,
+        std::vector<float>,
+        std::vector<std::string>,
+        std::vector<VariantMap>
     >;
-    using Variant = typename SupportedTypes::Variant;
+    using Variant = typename SupportedTypes::VariantType;
 
-    template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>
+    template<class T, std::enable_if_t<SupportedTypes::Matches<T, std::is_convertible>, bool> = true>
     void Get(const std::string& aKey, T& aValue) const;
 
-    /* json serializer doesn't support ordering, for now
-    template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>
-    void Get(size_t anIndex, T& aValue) const;*/
+    // Be warned, JSON serializer doesn't support ordering for now!
+    template<class T, std::enable_if_t<SupportedTypes::Matches<T, std::is_convertible>, bool> = true>
+    void Get(size_t anIndex, T& aValue) const;
 
     template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>
     void Get(const std::string& aKey, std::vector<T>& aValue) const;
 
-    /* json serializer doesn't support ordering, for now
+    // Be warned, JSON serializer doesn't support ordering for now!
     template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>
-    void Get(size_t anIndex, std::vector<T>& aValue) const;*/
+    void Get(size_t anIndex, std::vector<T>& aValue) const;
 
     template<class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
     void Get(const std::string& aKey, T& aValue) const
@@ -49,7 +44,7 @@ public:
         aValue = static_cast<T>(enumVal);
     }
 
-    template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>
+    template<class T, std::enable_if_t<SupportedTypes::Matches<T, std::is_convertible>, bool> = true>
     void Set(const std::string& aKey, const T& aValue, bool aCanOverride = false);
 
     template<class T, std::enable_if_t<SupportedTypes::Contains<T>, bool> = true>

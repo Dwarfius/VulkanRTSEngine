@@ -25,10 +25,24 @@ void Pipeline::AddDescriptor(Handle<Descriptor> aDescriptor)
 void Pipeline::Serialize(Serializer& aSerializer)
 {
 	aSerializer.Serialize("type", myType);
-	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline type not supported!");
+	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline needs implementing!");
 
-	aSerializer.Serialize("shaders", myShaders);
-	aSerializer.Serialize("descriptors", myDescriptors);
+	if (Serializer::Scope shadersScope = aSerializer.SerializeArray("shaders", myShaders))
+	{
+		for (size_t i = 0; i < myShaders.size(); i++)
+		{
+			aSerializer.Serialize(i, myShaders[i]);
+		}
+	}
+
+	if (Serializer::Scope descriptorsScope = aSerializer.SerializeArray("descriptors", myDescriptors))
+	{
+		for (size_t i = 0; i < myDescriptors.size(); i++)
+		{
+			aSerializer.Serialize(i, myDescriptors[i]);
+		}
+	}
+
 	myAdapters.reserve(myDescriptors.size());
 	for (Handle<Descriptor>& descriptor : myDescriptors)
 	{

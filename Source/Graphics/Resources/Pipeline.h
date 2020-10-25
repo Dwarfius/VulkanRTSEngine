@@ -35,6 +35,7 @@ private:
 	void AssignAdapters();
 
 	IPipeline::Type myType;
+	// TODO: replace with embedded struct instead of separate Resource!
 	std::vector<Handle<Descriptor>> myDescriptors;
 	std::vector<std::reference_wrapper<const UniformAdapter>> myAdapters;
 	std::vector<std::string> myShaders;

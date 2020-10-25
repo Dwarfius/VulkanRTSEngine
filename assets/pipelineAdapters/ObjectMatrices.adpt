@@ -1,8 +1,8 @@
 {  
 	"adapter":"ObjectMatricesAdapter",
 	"members":[  
-		"Mat4",
-		"Mat4",
-		"Mat4"
+		5,
+		5,
+		5
 	]
 }

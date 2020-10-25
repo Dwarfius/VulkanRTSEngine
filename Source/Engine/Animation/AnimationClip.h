@@ -2,7 +2,6 @@
 
 #include <Core/Resources/Resource.h>
 
-// TODO: make inherit from RefCounted
 class AnimationClip : public Resource
 {
 public:
@@ -26,7 +25,7 @@ public:
 	enum class Interpolation : uint8_t
 	{
 		Linear
-		//Cubic
+		//Cubic TODO: implement this
 	};
 
 	struct Mark

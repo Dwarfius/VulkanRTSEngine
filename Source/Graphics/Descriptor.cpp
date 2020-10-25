@@ -131,42 +131,11 @@ void Descriptor::Serialize(Serializer& aSerializer)
 {
 	aSerializer.Serialize("adapter", myUniformAdapter);
 
-	// TODO: Yeah, this is bad and dirty, but sadly until
-	// Serializer can support generic enums, will have to do it
-	// this way :/
-	std::vector<std::string> members;
-	aSerializer.Serialize("members", members);
-
-	for (const std::string& member : members)
+	if (Serializer::Scope membersScope = aSerializer.SerializeArray("members", myTypes))
 	{
-		if (member == "Mat4")
+		for (size_t i = 0; i < myTypes.size(); i++)
 		{
-			myTypes.push_back(UniformType::Mat4);
-		}
-		else if (member == "Vec4")
-		{
-			myTypes.push_back(UniformType::Vec4);
-		}
-		else if (member == "Vec3")
-		{
-			myTypes.push_back(UniformType::Vec3);
-		}
-		else if (member == "Vec2")
-		{
-			myTypes.push_back(UniformType::Vec2);
-		}
-		else if (member == "Int")
-		{
-			myTypes.push_back(UniformType::Int);
-		}
-		else if (member == "Float")
-		{
-			myTypes.push_back(UniformType::Float);
-		}
-		else
-		{
-			ASSERT_STR(false, "Not supported!");
-			return;
+			aSerializer.Serialize(i, myTypes[i]);
 		}
 	}
 	RecomputeSize();

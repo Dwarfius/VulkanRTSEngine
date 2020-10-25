@@ -79,58 +79,33 @@ float AnimationClip::CalculateValue(size_t aMarkInd, float aTime, const BoneTrac
 
 void AnimationClip::Serialize(Serializer& aSerializer)
 {
-	if (aSerializer.IsReading())
+	if (Serializer::Scope tracksScope = aSerializer.SerializeArray("myTracks", myTracks))
 	{
-		std::vector<VariantMap> variantMaps;
+		for (size_t i = 0; i < myTracks.size(); i++)
 		{
-			aSerializer.Serialize("myTracks", variantMaps);
-			for (const VariantMap& trackMap : variantMaps)
+			if (Serializer::Scope trackScope = aSerializer.SerializeObject(i))
 			{
-				BoneTrack track;
-				trackMap.Get("myTrackStart", track.myTrackStart);
-				trackMap.Get("myMarkCount", track.myMarkCount);
-				trackMap.Get("myBone", track.myBone);
-				trackMap.Get("myAffectedProperty", track.myAffectedProperty);
-				trackMap.Get("myInterpolation", track.myInterpolation);
-				myTracks.push_back(track);
-			}
-		}
-
-		{
-			aSerializer.Serialize("myMarks", variantMaps);
-			for (const VariantMap& markMap : variantMaps)
-			{
-				Mark mark;
-				markMap.Get("myTimeStamp", mark.myTimeStamp);
-				markMap.Get("myValue", mark.myValue);
-				myMarks.push_back(mark);
+				AnimationClip::BoneTrack& track = myTracks[i];
+				aSerializer.Serialize("myTrackStart", track.myTrackStart);
+				aSerializer.Serialize("myMarkCount", track.myMarkCount);
+				aSerializer.Serialize("myBone", track.myBone);
+				aSerializer.Serialize("myAffectedProperty", track.myAffectedProperty);
+				aSerializer.Serialize("myInterpolation", track.myInterpolation);
 			}
 		}
 	}
-	else
-	{
-		std::vector<VariantMap> variantMaps;
-		for (const BoneTrack& track : myTracks)
-		{
-			VariantMap trackMap;
-			trackMap.Set("myTrackStart", track.myTrackStart);
-			trackMap.Set("myMarkCount", track.myMarkCount);
-			trackMap.Set("myBone", track.myBone);
-			trackMap.Set("myAffectedProperty", track.myAffectedProperty);
-			trackMap.Set("myInterpolation", track.myInterpolation);
-			variantMaps.push_back(trackMap);
-		}
-		aSerializer.Serialize("myTracks", variantMaps);
 
-		variantMaps.clear();
-		for (const Mark& mark : myMarks)
+	if (Serializer::Scope marksScope = aSerializer.SerializeArray("myMarks", myMarks))
+	{
+		for (size_t i = 0; i < myMarks.size(); i++)
 		{
-			VariantMap markMap;
-			markMap.Set("myTimeStamp", mark.myTimeStamp);
-			markMap.Set("myValue", mark.myValue);
-			variantMaps.push_back(markMap);
+			if (Serializer::Scope markkScope = aSerializer.SerializeObject(i))
+			{
+				AnimationClip::Mark& mark = myMarks[i];
+				aSerializer.Serialize("myTimeStamp", mark.myTimeStamp);
+				aSerializer.Serialize("myValue", mark.myValue);
+			}
 		}
-		aSerializer.Serialize("myMarks", variantMaps);
 	}
 
 	aSerializer.Serialize("myLength", myLength);

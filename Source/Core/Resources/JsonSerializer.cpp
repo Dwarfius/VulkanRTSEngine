@@ -5,40 +5,35 @@
 
 void JsonSerializer::ReadFrom(const File& aFile)
 {
-	myJsonObj = nlohmann::json::parse(aFile.GetCBuffer(), nullptr, false);
+    myCurrObj = nlohmann::json::parse(aFile.GetCBuffer(), nullptr, false);
 }
 
 void JsonSerializer::WriteTo(std::string& aBuffer) const
 {
-	aBuffer = myJsonObj.dump();
+    ASSERT_STR(myObjStack.empty(), "Tried to write to buffer before unrolling the entire obj stack!");
+	aBuffer = myCurrObj.dump();
 }
 
 void JsonSerializer::SerializeImpl(std::string_view aName, const VariantType& aValue)
 {
 	std::visit([&](auto&& aVarValue) {
-		myJsonObj[std::string(aName)] = aVarValue;
+		myCurrObj[std::string(aName)] = aVarValue;
 	}, aValue);
 }
 
-void JsonSerializer::SerializeImpl(std::string_view aName, const VecVariantType& aValue, const VariantType& aHint)
-{
-    std::visit([&](auto&& aHintValue) {
-        using Type = std::decay_t<decltype(aHintValue)>;
-        nlohmann::json valueArray;
-        const std::vector<Type>& valueSet = std::get<std::vector<Type>>(aValue);
-        for (const Type& value : valueSet)
-        {
-            valueArray.push_back(value);
-        }
-        myJsonObj[std::string(aName)] = valueArray;
-    }, aHint);
-}
-
-void JsonSerializer::DeserializeImpl(std::string_view aName, VariantType& aValue)
+void JsonSerializer::SerializeImpl(size_t anIndex, const VariantType& aValue)
 {
     std::visit([&](auto&& aVarValue) {
+        myCurrObj[anIndex] = aVarValue;
+    }, aValue);
+}
+
+void JsonSerializer::DeserializeImpl(std::string_view aName, VariantType& aValue) const
+{
+    std::visit([&](auto&& aVarValue) {
+        ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
         using Type = std::decay_t<decltype(aVarValue)>;
-        const nlohmann::json& jsonElem = myJsonObj[std::string(aName)];
+        const nlohmann::json& jsonElem = myCurrObj[std::string(aName)];
         if (!jsonElem.is_null())
         {
             aVarValue = std::move(jsonElem.get<Type>());
@@ -46,21 +41,169 @@ void JsonSerializer::DeserializeImpl(std::string_view aName, VariantType& aValue
     }, aValue);
 }
 
-void JsonSerializer::DeserializeImpl(std::string_view aName, VecVariantType& aValue, const VariantType& aHint)
+void JsonSerializer::DeserializeImpl(size_t anIndex, VariantType& aValue) const
 {
-    nlohmann::json valueArray = myJsonObj[std::string(aName)];
-    if (valueArray.is_array())
+    std::visit([&](auto&& aVarValue) {
+        ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+        using Type = std::decay_t<decltype(aVarValue)>;
+        const nlohmann::json& jsonElem = myCurrObj[anIndex];
+        if (!jsonElem.is_null())
+        {
+            aVarValue = std::move(jsonElem.get<Type>());
+        }
+    }, aValue);
+}
+
+void JsonSerializer::BeginSerializeObjectImpl(std::string_view /*aName*/)
+{
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = nlohmann::json::object();
+}
+
+void JsonSerializer::BeginSerializeObjectImpl(size_t /*anIndex*/)
+{
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = nlohmann::json::object();
+}
+
+void JsonSerializer::EndSerializeObjectImpl(std::string_view aName)
+{
+    nlohmann::json parent = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(parent.is_object(), "Current object is not an object!");
+    parent[std::string(aName)] = std::move(myCurrObj);
+    myCurrObj = std::move(parent);
+}
+
+void JsonSerializer::EndSerializeObjectImpl(size_t anIndex)
+{
+    nlohmann::json parent = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(parent.is_array(), "Current object is not an array!");
+    parent[anIndex] = std::move(myCurrObj);
+    myCurrObj = std::move(parent);
+}
+
+bool JsonSerializer::BeginDeserializeObjectImpl(std::string_view aName) const
+{
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+    auto iter = myCurrObj.find(std::string(aName));
+    if (iter == myCurrObj.end()) // TODO: [[unlikely]]
     {
-        std::visit([&](auto&& aHintValue) {
-            using Type = std::decay_t<decltype(aHintValue)>;
-            std::vector<Type>& valueSet = std::get<std::vector<Type>>(aValue);
-            valueSet.resize(valueArray.size());
-            for (size_t i = 0; i < valueSet.size(); i++)
-            {
-                valueSet[i] = std::move(valueArray[i].get<Type>());
-            }
-        }, aHint);
+        return false;
     }
+    nlohmann::json childObj = std::move(iter.value());
+    ASSERT_STR(childObj.is_object(), "Current object is not an object!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = std::move(childObj);
+    return true;
+}
+
+bool JsonSerializer::BeginDeserializeObjectImpl(size_t anIndex) const
+{
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+    if (anIndex >= myCurrObj.size()) // TODO: [[unlikely]]
+    {
+        return false;
+    }
+    nlohmann::json childObj = myCurrObj.at(anIndex);
+    ASSERT_STR(childObj.is_object(), "Current object is not an object!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = std::move(childObj);
+    return true;
+}
+
+void JsonSerializer::EndDeserializeObjectImpl(std::string_view /*aName*/) const
+{
+    myCurrObj = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+}
+
+void JsonSerializer::EndDeserializeObjectImpl(size_t /*anIndex*/) const
+{
+    myCurrObj = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+}
+
+void JsonSerializer::BeginSerializeArrayImpl(std::string_view aName, size_t /*aCount*/)
+{
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = nlohmann::json::array();
+}
+
+void JsonSerializer::BeginSerializeArrayImpl(size_t anIndex, size_t /*aCount*/)
+{
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = nlohmann::json::array();
+}
+
+void JsonSerializer::EndSerializeArrayImpl(std::string_view aName)
+{
+    nlohmann::json parent = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(parent.is_object(), "Current object is not an object!");
+    parent[std::string(aName)] = std::move(myCurrObj);
+    myCurrObj = std::move(parent);
+}
+
+void JsonSerializer::EndSerializeArrayImpl(size_t anIndex)
+{
+    nlohmann::json parent = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(parent.is_array(), "Current object is not an array!");
+    parent[anIndex] = std::move(myCurrObj);
+    myCurrObj = std::move(parent);
+}
+
+bool JsonSerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const
+{
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+    auto iter = myCurrObj.find(std::string(aName));
+    if (iter == myCurrObj.end()) // TODO: [[unlikely]]
+    {
+        return false;
+    }
+    nlohmann::json childObj = std::move(iter.value());
+    ASSERT_STR(childObj.is_array(), "Current object is not an array!");
+    aCount = childObj.size();
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = std::move(childObj);
+    return true;
+}
+
+bool JsonSerializer::BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const
+{
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
+    if (anIndex >= myCurrObj.size()) // TODO: [[unlikely]]
+    {
+        return false;
+    }
+    nlohmann::json childObj = myCurrObj.at(anIndex);
+    ASSERT_STR(childObj.is_array(), "Current object is not an array!");
+    aCount = childObj.size();
+    myObjStack.push(std::move(myCurrObj));
+    myCurrObj = std::move(childObj);
+    return true;
+}
+
+void JsonSerializer::EndDeserializeArrayImpl(std::string_view /*aName*/) const
+{
+    myCurrObj = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(myCurrObj.is_object(), "Current object is not an object!");
+}
+
+void JsonSerializer::EndDeserializeArrayImpl(size_t /*anIndex*/) const
+{
+    myCurrObj = std::move(myObjStack.top());
+    myObjStack.pop();
+    ASSERT_STR(myCurrObj.is_array(), "Current object is not an array!");
 }
 
 namespace nlohmann
