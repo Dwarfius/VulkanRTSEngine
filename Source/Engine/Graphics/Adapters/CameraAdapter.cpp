@@ -16,14 +16,14 @@ void CameraAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB)
 	const Frustum& frustum = camera.GetFrustum();
 	const glm::vec2 viewport(Graphics::GetWidth(), Graphics::GetHeight());
 
-	aUB.SetUniform(0, viewMatrix);
-	aUB.SetUniform(1, projMatrix);
-	aUB.SetUniform(2, frustum.myPlanes[0]);
-	aUB.SetUniform(3, frustum.myPlanes[1]);
-	aUB.SetUniform(4, frustum.myPlanes[2]);
-	aUB.SetUniform(5, frustum.myPlanes[3]);
-	aUB.SetUniform(6, frustum.myPlanes[4]);
-	aUB.SetUniform(7, frustum.myPlanes[5]);
-	aUB.SetUniform(8, pos);
-	aUB.SetUniform(9, viewport);
+	aUB.SetUniform(0, 0, viewMatrix);
+	aUB.SetUniform(1, 0, projMatrix);
+	aUB.SetUniform(2, 0, frustum.myPlanes[0]);
+	aUB.SetUniform(3, 0, frustum.myPlanes[1]);
+	aUB.SetUniform(4, 0, frustum.myPlanes[2]);
+	aUB.SetUniform(5, 0, frustum.myPlanes[3]);
+	aUB.SetUniform(6, 0, frustum.myPlanes[4]);
+	aUB.SetUniform(7, 0, frustum.myPlanes[5]);
+	aUB.SetUniform(8, 0, pos);
+	aUB.SetUniform(9, 0, viewport);
 }

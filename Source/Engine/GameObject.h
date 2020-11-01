@@ -4,9 +4,11 @@
 #include <Core/Transform.h>
 #include <Core/UID.h>
 #include <Physics/PhysicsEntity.h>
+#include <Core/Pool.h>
 
 class VisualObject;
 class ComponentBase;
+class Skeleton;
 
 class GameObject : public IPhysControllable
 {
@@ -35,6 +37,9 @@ public:
 	bool IsDead() const { return myIsDead; }
 	void Die();
 
+	const PoolPtr<Skeleton>& GetSkeleton() const { return mySkeleton; }
+	void SetSkeleton(PoolPtr<Skeleton>&& aSkeleton) { mySkeleton = std::move(aSkeleton); }
+
 	// IPhysControllable impl
 private:
 	virtual void SetTransformImpl(const glm::mat4& aTransf) override final;
@@ -50,6 +55,7 @@ private:
 
 	std::vector<ComponentBase*> myComponents;
 	VisualObject* myVisualObject;
+	PoolPtr<Skeleton> mySkeleton;
 };
 
 template<class TComp, class... TArgs>

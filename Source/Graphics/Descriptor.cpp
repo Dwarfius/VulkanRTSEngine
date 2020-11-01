@@ -3,71 +3,26 @@
 
 #include <Core/Resources/Serializer.h>
 
-Descriptor::Descriptor()
-	: myTotalSize(0)
+void Descriptor::SetUniformType(uint32_t aSlot, UniformType aType, uint32_t anArraySize)
 {
-}
-
-void Descriptor::SetUniformType(uint32_t aSlot, UniformType aType)
-{
-	if (aSlot >= myTypes.size())
+	if (aSlot >= myEntries.size())
 	{
-		myTypes.resize(aSlot + 1);
+		myEntries.resize(aSlot + 1llu);
 	}
-	myTypes[aSlot] = aType;
+	myEntries[aSlot] = { 0, anArraySize, aType };
 }
 
 void Descriptor::RecomputeSize()
 {
-	const size_t size = myTypes.size();
-	myOffsets.resize(size);
+	const size_t size = myEntries.size();
 
 	myTotalSize = 0;
 	for (size_t i = 0; i < size; i++)
 	{
-		size_t basicAlignment;
-		size_t elemSize;
-		switch (myTypes[i])
-		{
-		case UniformType::Float:
-		case UniformType::Int:
-			basicAlignment = sizeof(int);
-			elemSize = sizeof(int);
-			break;
-		case UniformType::Vec2:
-			basicAlignment = sizeof(glm::vec2);
-			elemSize = sizeof(glm::vec2);
-			break;
-		case UniformType::Vec3:
-			// std140 - https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
-			// If the member is a three-component vector with components consuming N
-			// basic machine units, the base alignment is 4N
-			// Despite that, glsl compiler can merge the next single unit
-			// to this 3, to avoid wasting MUs.
-			if (i + 1 < size
-				&& (myTypes[i + 1] == UniformType::Float
-					|| myTypes[i + 1] == UniformType::Int))
-			{
-				basicAlignment = sizeof(glm::vec4);
-				elemSize = sizeof(glm::vec3);
-			}
-			else
-			{
-				basicAlignment = sizeof(glm::vec4);
-				elemSize = sizeof(glm::vec4);
-			}
-			break;
-		case UniformType::Vec4:
-			basicAlignment = sizeof(glm::vec4);
-			elemSize = sizeof(glm::vec4);
-			break;
-		case UniformType::Mat4:
-			basicAlignment = sizeof(glm::vec4);
-			elemSize = sizeof(glm::mat4);
-			break;
-		default:
-			ASSERT_STR(false, "Unrecognized Uniform Type found!");
-		}
+		size_t basicAlignment = 0;
+		size_t elemSize = 0;
+		GetSizeAndAlignment(i, elemSize, basicAlignment);
+		
 		// myTotalSize has the aligned offset from the previous iter
 		// plus the size of the new element.
 		// calculate the adjusted size (with padding), so that we can
@@ -75,13 +30,12 @@ void Descriptor::RecomputeSize()
 		size_t remainder = myTotalSize % basicAlignment;
 		if (remainder)
 		{
-			myTotalSize -= remainder;
-			myTotalSize += basicAlignment;
+			myTotalSize += basicAlignment - remainder;
 		}
 		
-		ASSERT_STR(myTotalSize < std::numeric_limits<uint32_t>::max(), "Descriptor size exceeding allowed!");
-		myOffsets[i] = static_cast<uint32_t>(myTotalSize);
-		myTotalSize += elemSize;
+		Entry& entry = myEntries[i];
+		entry.myByteOffset = myTotalSize;
+		myTotalSize += elemSize * entry.myArraySize;
 	}
 
 	// since it's a struct, per std140 rules it has to be 16-aligned
@@ -89,47 +43,92 @@ void Descriptor::RecomputeSize()
 	size_t remainder = myTotalSize % kStructAlignment;
 	if (remainder)
 	{
-		myTotalSize -= remainder;
-		myTotalSize += kStructAlignment;
+		myTotalSize += kStructAlignment - remainder;
 	}
+}
+
+char* Descriptor::GetPtr(uint32_t aSlot, size_t anArrayIndex, char* aBasePtr) const
+{ 
+	const Entry& entry = myEntries[aSlot];
+	size_t slotSize = 0;
+	size_t ignored;
+	GetSizeAndAlignment(aSlot, slotSize, ignored);
+	return aBasePtr + entry.myByteOffset + anArrayIndex * slotSize;
 }
 
 size_t Descriptor::GetSlotSize(uint32_t aSlot) const
 {
-	switch (myTypes[aSlot])
-	{
-	case UniformType::Float:
-	case UniformType::Int:
-		return sizeof(int);
-		break;
-	case UniformType::Vec2:
-		return sizeof(glm::vec2);
-		break;
-	case UniformType::Vec3:
-		return sizeof(glm::vec3);
-		break;
-	case UniformType::Vec4:
-		return sizeof(glm::vec4);
-		break;
-	case UniformType::Mat4:
-		return sizeof(glm::mat4);
-		break;
-	default:
-		ASSERT_STR(false, "Unrecognized Uniform Type found!");
-		return 0;
-	}
+	size_t slotSize = 0;
+	size_t ignored;
+	GetSizeAndAlignment(aSlot, slotSize, ignored);
+	return slotSize * myEntries[aSlot].myArraySize;
 }
 
 void Descriptor::Serialize(Serializer& aSerializer)
 {
-	aSerializer.Serialize("adapter", myUniformAdapter);
+	aSerializer.Serialize("myUniformAdapter", myUniformAdapter);
 
-	if (Serializer::Scope membersScope = aSerializer.SerializeArray("members", myTypes))
+	if (Serializer::Scope membersScope = aSerializer.SerializeArray("myEntries", myEntries))
 	{
-		for (size_t i = 0; i < myTypes.size(); i++)
+		for (size_t i = 0; i < myEntries.size(); i++)
 		{
-			aSerializer.Serialize(i, myTypes[i]);
+			if (Serializer::Scope entryScope = aSerializer.SerializeObject(i))
+			{
+				aSerializer.Serialize("myUniformType", myEntries[i].myUniformType);
+				aSerializer.Serialize("myArraySize", myEntries[i].myArraySize);
+			}
 		}
 	}
 	RecomputeSize();
+}
+
+void Descriptor::GetSizeAndAlignment(uint32_t aSlot, size_t& aSize, size_t& anAlignment) const
+{
+	const Entry& entry = myEntries[aSlot];
+	switch (entry.myUniformType)
+	{
+	case UniformType::Float:
+	case UniformType::Int:
+		anAlignment = sizeof(int);
+		aSize = sizeof(int);
+		break;
+	case UniformType::Vec2:
+		anAlignment = sizeof(glm::vec2);
+		aSize = sizeof(glm::vec2);
+		break;
+	case UniformType::Vec3:
+	{
+		// std140 - https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
+		// If the member is a three-component vector with components consuming N
+		// basic machine units, the base alignment is 4N
+		// Despite that, glsl compiler can merge the next single unit
+		// to this 3, to avoid wasting MUs.
+		bool canMerge = entry.myArraySize == 1
+			&& aSlot + 1llu < myEntries.size()
+			&& (myEntries[aSlot + 1llu].myUniformType == UniformType::Float
+				|| myEntries[aSlot + 1llu].myUniformType == UniformType::Int)
+			&& myEntries[aSlot + 1llu].myArraySize == 1;
+		if (canMerge)
+		{
+			anAlignment = sizeof(glm::vec4);
+			aSize = sizeof(glm::vec3);
+		}
+		else
+		{
+			anAlignment = sizeof(glm::vec4);
+			aSize = sizeof(glm::vec4);
+		}
+		break;
+	}
+	case UniformType::Vec4:
+		anAlignment = sizeof(glm::vec4);
+		aSize = sizeof(glm::vec4);
+		break;
+	case UniformType::Mat4:
+		anAlignment = sizeof(glm::vec4);
+		aSize = sizeof(glm::mat4);
+		break;
+	default:
+		ASSERT_STR(false, "Unrecognized Uniform Type found!");
+	}
 }

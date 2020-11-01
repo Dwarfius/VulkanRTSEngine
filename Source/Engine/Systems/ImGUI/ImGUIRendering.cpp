@@ -7,7 +7,7 @@
 void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
 {
 	const ImGUIData& data = static_cast<const ImGUIData&>(aData);
-	aUB.SetUniform(0, data.myOrthoProj);
+	aUB.SetUniform(0, 0, data.myOrthoProj);
 }
 
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
@@ -30,7 +30,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 
 void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
 {
-	myUniformBlock->SetUniform(0, aMatrix);
+	myUniformBlock->SetUniform(0, 0, aMatrix);
 }
 
 void ImGUIRenderPass::UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor)

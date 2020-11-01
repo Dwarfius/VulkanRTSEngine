@@ -6,9 +6,9 @@
 	],
 	"descriptors":[  
 		{
-			"adapter":"ImGUIAdapter",
-			"members":[
-				5
+			"myUniformAdapter":"ImGUIAdapter",
+			"myEntries":[  
+				{ "myUniformType":5, "myArraySize":1 }
 			]
 		}
 	]

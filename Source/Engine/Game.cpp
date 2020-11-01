@@ -133,6 +133,8 @@ void Game::Init()
 	Handle<Texture> cubeText = myAssetTracker->GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("terrain.ppl");
 
+	//Handle<Pipeline> skinnedPipeline = myAssetTracker->GetOrCreate<Pipeline>("skinned.ppl");
+
 	// TODO: replace heap allocation with using 
 	// a continuous allocated storage of VisualObjects
 

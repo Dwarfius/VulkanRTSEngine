@@ -1,6 +1,5 @@
 #pragma once
 
-#include "GraphicsTypes.h"
 #include "Descriptor.h"
 
 // A class representing a single block of uniforms for submitting to the GPU.
@@ -13,8 +12,8 @@ public:
 	UniformBlock(const Descriptor& aDescriptor);
 	~UniformBlock();
 
-	template<typename T>
-	void SetUniform(uint32_t aSlot, const T& aValue);
+	template<class T>
+	void SetUniform(uint32_t aSlot, size_t anArrayIndex, const T& aValue);
 
 	const char* GetData() const { return myData; }
 
@@ -26,11 +25,12 @@ private:
 	Descriptor myDescriptor;
 };
 
-template<typename T>
-void UniformBlock::SetUniform(uint32_t aSlot, const T& aValue)
+template<class T>
+void UniformBlock::SetUniform(uint32_t aSlot, size_t anArrayIndex, const T& aValue)
 {
 	ASSERT_STR(aSlot < myDescriptor.GetUniformCount(), "Either invalid slot was provided, or block wasn't resolved!");
-	ASSERT_STR(sizeof(T) == myDescriptor.GetSlotSize(aSlot), "Size mismatch of passed data and slot requested!");
-	T* slotPointer = (T*)(myData + myDescriptor.GetOffset(aSlot));
+	ASSERT_STR(sizeof(T) <= myDescriptor.GetSlotSize(aSlot), "Size mismatch of passed data and slot requested!");
+	ASSERT_STR(anArrayIndex < myDescriptor.GetArraySize(aSlot), "Inufficient buffer size, did you forget to call Resize?");
+	T* slotPointer = reinterpret_cast<T*>(myDescriptor.GetPtr(aSlot, anArrayIndex, myData));
 	*slotPointer = aValue;
 }
