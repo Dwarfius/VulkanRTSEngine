@@ -125,7 +125,7 @@ void GraphicsGL::Display()
 		Profiler::ScopedMark debugProfile("GraphicsGL::DebugRender");
 
 		const bool isPipelineReady = myDebugPipeline->GetState() == GPUResource::State::Valid;
-		const bool hasDebugData = myLineCache.myUploadDesc.myPrimitiveCount > 0;
+		const bool hasDebugData = myLineCache.myUploadDesc.myVertCount > 0;
 		if (hasDebugData)
 		{
 			if (isPipelineReady)
@@ -235,7 +235,6 @@ void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer
 	}
 	
 	// we've found a free one - fill it up
-	currDesc->myPrimitiveCount = aDebugDrawer.GetCurrentVertexCount();
 	currDesc->myVertices = aDebugDrawer.GetCurrentVertices();
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 	currDesc->myIndices = nullptr;

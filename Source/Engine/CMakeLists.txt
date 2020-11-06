@@ -74,7 +74,9 @@ set(SRC_ANIMATION
 	"Animation/AnimationSystem.cpp" "Animation/AnimationSystem.h"
 )
 
-set(SRC_COMP "Components/ComponentBase.cpp" "Components/ComponentBase.h"
+set(SRC_COMP 
+	"Components/AnimationTest.cpp" "Components/AnimationTest.h"
+	"Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/EditorMode.cpp" "Components/EditorMode.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
 )

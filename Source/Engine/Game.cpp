@@ -7,11 +7,13 @@
 #include "GameObject.h"
 #include "Terrain.h"
 #include "VisualObject.h"
+#include "Components/AnimationTest.h"
 #include "Components/EditorMode.h"
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
+#include "Graphics/Adapters/SkeletonAdapter.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Animation/AnimationSystem.h"
 #include "RenderThread.h"
@@ -133,8 +135,6 @@ void Game::Init()
 	Handle<Texture> cubeText = myAssetTracker->GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("terrain.ppl");
 
-	//Handle<Pipeline> skinnedPipeline = myAssetTracker->GetOrCreate<Pipeline>("skinned.ppl");
-
 	// TODO: replace heap allocation with using 
 	// a continuous allocated storage of VisualObjects
 
@@ -150,6 +150,7 @@ void Game::Init()
 	myTerrains[0]->AddPhysicsEntity(*go, *myPhysWorld);
 
 	myEditorMode = new EditorMode(*myPhysWorld);
+	myAnimTest = new AnimationTest(*this);
 
 	// setting up a task tree
 	{
@@ -244,6 +245,7 @@ void Game::CleanUp()
 	myImGUISystem->Shutdown();
 
 	delete myEditorMode;
+	delete myAnimTest;
 
 	// physics clear
 	delete myPhysWorld;
@@ -373,18 +375,25 @@ void Game::EditorUpdate()
 	Profiler::ScopedMark profile(__func__);
 	ASSERT(myEditorMode);
 	myEditorMode->Update(*this, myDeltaTime, *myPhysWorld);
+	myAnimTest->Update(myDeltaTime);
 }
 
 void Game::PhysicsUpdate()
 {
-	Profiler::ScopedMark profile(__func__);
-	myPhysWorld->Simulate(myDeltaTime);
+	if (!myIsPaused)
+	{
+		Profiler::ScopedMark profile(__func__);
+		myPhysWorld->Simulate(myDeltaTime);
+	}
 }
 
 void Game::AnimationUpdate()
 {
-	Profiler::ScopedMark profile(__func__);
-	myAnimationSystem->Update(myDeltaTime);
+	if (!myIsPaused)
+	{
+		Profiler::ScopedMark profile(__func__);
+		myAnimationSystem->Update(myDeltaTime);
+	}
 }
 
 void Game::Render()
@@ -460,6 +469,7 @@ void Game::RegisterUniformAdapters()
 	adapterRegister.Register<CameraAdapter>();
 	adapterRegister.Register<ObjectMatricesAdapter>();
 	adapterRegister.Register<TerrainAdapter>();
+	adapterRegister.Register<SkeletonAdapter>();
 }
 
 void Game::TestPool()

@@ -15,12 +15,14 @@ void SkeletonAdapter::FillUniformBlock(const UniformAdapter::SourceData& aData, 
 	const Skeleton* skeleton = skeletonPtr.Get();
 	Skeleton::BoneIndex boneCount = skeleton->GetBoneCount();
 
-	aUB.SetUniform(0, 0, boneCount);
 	for (Skeleton::BoneIndex index = 0; index < boneCount; index++)
 	{
 		const Transform& worldTransf = skeleton->GetBoneWorldTransform(index);
-		aUB.SetUniform(1, index, worldTransf.GetPos());
-		aUB.SetUniform(2, index, worldTransf.GetScale());
-		aUB.SetUniform(3, index, worldTransf.GetRotation());
+		const Transform& inverseTransf = skeleton->GetBoneIverseBindTransform(index);
+		Transform skinningTransf = worldTransf * inverseTransf;
+
+		aUB.SetUniform(0, index, skinningTransf.GetPos());
+		aUB.SetUniform(1, index, skinningTransf.GetScale());
+		aUB.SetUniform(2, index, skinningTransf.GetRotation());
 	}
 }

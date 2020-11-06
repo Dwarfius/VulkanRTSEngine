@@ -20,6 +20,13 @@
 			"myBone": 1,
 			"myAffectedProperty" : 8,
 			"myInterpolation" : 0
+		},
+		{
+			"myTrackStart" : 9,
+			"myMarkCount": 2,
+			"myBone": 2,
+			"myAffectedProperty" : 8,
+			"myInterpolation" : 0
 		}
 	],
 	"myMarks" : [
@@ -50,6 +57,14 @@
 		{
 			"myTimeStamp" : 4.0,
 			"myValue" : -0.5
+		},
+		{
+			"myTimeStamp" : 0.0,
+			"myValue" : 0.0
+		},
+		{
+			"myTimeStamp" : 4.0,
+			"myValue" : 6.28318530718
 		},
 		{
 			"myTimeStamp" : 0.0,

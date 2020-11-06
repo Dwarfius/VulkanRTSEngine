@@ -11,7 +11,7 @@ public:
 	AnimationController(const PoolWeakPtr<Skeleton>& aSkeleton);
 
 	void AddClip(AnimationClip* aClip) { myClips.push_back(aClip); }
-	void PlayClip(AnimationClip* aClip);
+	void PlayClip(const AnimationClip* aClip);
 
 	bool NeedsUpdate() const { return myActiveClip != nullptr; }
 	void Update(float aDeltaTime);
@@ -22,7 +22,7 @@ private:
 	void InitMarks();
 
 	PoolWeakPtr<Skeleton> mySkeleton;
-	AnimationClip* myActiveClip = nullptr;
+	const AnimationClip* myActiveClip = nullptr;
 	std::vector<AnimationClip*> myClips;
 
 	std::vector<size_t> myCurrentMarks;

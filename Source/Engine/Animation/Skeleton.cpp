@@ -45,6 +45,7 @@ void Skeleton::AddBone(BoneIndex aParentIndex, const Transform& aLocalTransf)
 			myBones[boneIndex].myFirstChildInd++; 
 		}
 	}
+	myNeedsUpdate = true;
 }
 
 const Transform& Skeleton::GetBoneLocalTransform(BoneIndex anIndex) const
@@ -55,6 +56,11 @@ const Transform& Skeleton::GetBoneLocalTransform(BoneIndex anIndex) const
 const Transform& Skeleton::GetBoneWorldTransform(BoneIndex anIndex) const
 {
 	return myBones[anIndex].myWorldTransf;
+}
+
+const Transform& Skeleton::GetBoneIverseBindTransform(BoneIndex anIndex) const
+{
+	return myBones[anIndex].myInverseBindTransf;
 }
 
 void Skeleton::SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransform)
@@ -91,6 +97,17 @@ void Skeleton::Update()
 		UpdateBone(boneIndex, parentLocal);
 	}
 	myNeedsUpdate = false;
+
+	// TODO: [[unlikely]] or look into separating it as part of initialization
+	if (myNeedUpdatingInverses)
+	{
+		// we assume that skeleton is in bind pose when first created
+		for (Bone& bone : myBones)
+		{
+			bone.myInverseBindTransf = bone.myWorldTransf.GetInverted();
+		}
+		myNeedUpdatingInverses = false;
+	}
 }
 
 void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform) const

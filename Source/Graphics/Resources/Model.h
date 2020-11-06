@@ -13,7 +13,6 @@ public:
 	template<class T>
 	struct UploadDescriptor
 	{
-		size_t myPrimitiveCount;
 		const T* myVertices;
 		size_t myVertCount;
 		const IndexType* myIndices; // optional
@@ -152,6 +151,7 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 		myVertices = new VertStorage<T>(vertCount);
 	}
 	myIndices.resize(indexCount);
+	myHasIndices = indexCount > 0;
 
 	// Now that we have enough allocated, we can start uploading data from
 	// the descriptors

@@ -10,6 +10,6 @@ std::reference_wrapper<const UniformAdapter> UniformAdapterRegister::GetAdapter(
 #endif
 
 	const auto iter = myAdapters.find(aName);
-	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter!");
+	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter: %s", aName.c_str());
 	return std::cref(*iter->second);
 }

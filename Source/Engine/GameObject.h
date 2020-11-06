@@ -9,6 +9,7 @@
 class VisualObject;
 class ComponentBase;
 class Skeleton;
+class AnimationController;
 
 class GameObject : public IPhysControllable
 {
@@ -40,6 +41,9 @@ public:
 	const PoolPtr<Skeleton>& GetSkeleton() const { return mySkeleton; }
 	void SetSkeleton(PoolPtr<Skeleton>&& aSkeleton) { mySkeleton = std::move(aSkeleton); }
 
+	const PoolPtr<AnimationController>& GetAnimController() const {	return myAnimController; }
+	void SetAnimController(PoolPtr<AnimationController>&& aController) { myAnimController = std::move(aController); }
+
 	// IPhysControllable impl
 private:
 	virtual void SetTransformImpl(const glm::mat4& aTransf) override final;
@@ -56,6 +60,7 @@ private:
 	std::vector<ComponentBase*> myComponents;
 	VisualObject* myVisualObject;
 	PoolPtr<Skeleton> mySkeleton;
+	PoolPtr<AnimationController> myAnimController;
 };
 
 template<class TComp, class... TArgs>

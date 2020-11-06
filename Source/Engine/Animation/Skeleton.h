@@ -17,6 +17,7 @@ private:
 	{
 		Transform myWorldTransf {};
 		Transform myLocalTransf {};
+		Transform myInverseBindTransf {};
 		Skeleton::BoneIndex myParentInd = kInvalidIndex;
 		Skeleton::BoneIndex myFirstChildInd = kInvalidIndex;
 		Skeleton::BoneIndex myChildCount = 0;
@@ -47,6 +48,7 @@ public:
 
 	const Transform& GetBoneLocalTransform(BoneIndex anIndex) const;
 	const Transform& GetBoneWorldTransform(BoneIndex anIndex) const;
+	const Transform& GetBoneIverseBindTransform(BoneIndex anIndex) const;
 	void SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransform);
 	void SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransform);
 
@@ -63,4 +65,5 @@ private:
 	// Bones hierarchy is stored in breadth-first order
 	std::vector<Bone> myBones;
 	bool myNeedsUpdate = false;
+	bool myNeedUpdatingInverses = true;
 };

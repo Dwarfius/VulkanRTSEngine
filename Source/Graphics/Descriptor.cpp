@@ -17,7 +17,7 @@ void Descriptor::RecomputeSize()
 	const size_t size = myEntries.size();
 
 	myTotalSize = 0;
-	for (size_t i = 0; i < size; i++)
+	for (uint32_t i = 0; i < size; i++)
 	{
 		size_t basicAlignment = 0;
 		size_t elemSize = 0;

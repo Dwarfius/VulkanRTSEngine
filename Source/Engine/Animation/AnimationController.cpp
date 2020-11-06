@@ -9,7 +9,7 @@ AnimationController::AnimationController(const PoolWeakPtr<Skeleton>& aSkeleton)
 {
 }
 
-void AnimationController::PlayClip(AnimationClip* aClip)
+void AnimationController::PlayClip(const AnimationClip* aClip)
 {
 	ASSERT_STR(aClip && aClip->GetLength() > 0.f, "Invalid clip passed in!");
 	ASSERT_STR(aClip->GetTracks().size(), "Empty clip passed in!");
