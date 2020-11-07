@@ -12,12 +12,13 @@ class PhysicsShapeBase;
 class Transform;
 class Game;
 class AnimationSystem;
+class OBJImporter;
 
 // Class used for testing and prototyping the engine
 class EditorMode
 {
 public:
-	EditorMode(PhysicsWorld& aWorld);
+	EditorMode(Game& aGame);
 
 	void Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld);
 
@@ -40,7 +41,8 @@ private:
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::vector<PoolPtr<AnimationController>> myControllers;
 	std::vector<PoolPtr<Skeleton>> mySkeletons;
-	Handle<AnimationClip> myResClip;
+	Handle<AnimationClip> myAnimClip;
+	Handle<OBJImporter> myImportedCube;
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;

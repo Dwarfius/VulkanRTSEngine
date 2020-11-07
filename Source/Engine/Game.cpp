@@ -129,10 +129,7 @@ void Game::Init()
 	GameObject* go; 
 	VisualObject* vo;
 
-	Handle<Model> cubeModel = myAssetTracker->GetOrCreate<Model>("cube.obj");
 	// ==========================
-	Handle<Pipeline> defPipeline = myAssetTracker->GetOrCreate<Pipeline>("default.ppl");
-	Handle<Texture> cubeText = myAssetTracker->GetOrCreate<Texture>("CubeUnwrap.jpg");
 	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("terrain.ppl");
 
 	// TODO: replace heap allocation with using 
@@ -149,7 +146,7 @@ void Game::Init()
 	}
 	myTerrains[0]->AddPhysicsEntity(*go, *myPhysWorld);
 
-	myEditorMode = new EditorMode(*myPhysWorld);
+	myEditorMode = new EditorMode(*this);
 	myAnimTest = new AnimationTest(*this);
 
 	// setting up a task tree

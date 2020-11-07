@@ -52,9 +52,10 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} 
-	Core
-	STB_Image
-	TinyObjLoader
+	PUBLIC
+		Core
+	PRIVATE
+		STB_Image
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

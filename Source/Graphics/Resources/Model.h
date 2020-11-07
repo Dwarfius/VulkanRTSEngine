@@ -103,7 +103,6 @@ public:
 
 private:
 	bool UsesDescriptor() const override final { return false; };
-	// Processes an .obj file in folder "../assets/objects/".
 	void OnLoad(const File& aFile) override;
 
 	BaseStorage* myVertices;

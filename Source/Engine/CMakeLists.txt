@@ -104,6 +104,10 @@ set(SRC_GRAPHICS_ADAPTERS
 	"Graphics/Adapters/TerrainAdapter.cpp" "Graphics/Adapters/TerrainAdapter.h"
 )
 
+set(SRC_RESOURCES
+	"Resources/OBJImporter.cpp" "Resources/OBJImporter.h"
+)
+
 set(SRC_SYSTEMS
 	"Systems/ProfilerUI.cpp" "Systems/ProfilerUI.h"
 )
@@ -128,6 +132,7 @@ add_library(${PROJECT_NAME} STATIC
 			${SRC_GRAPHICS_GL} 
 			${SRC_GRAPHICS_VK}
 			${SRC_GRAPHICS_ADAPTERS}
+		${SRC_RESOURCES}
 		${SRC_SYSTEMS}
 			${SRC_SYSTEMS_IMGUI}
 )
@@ -143,6 +148,7 @@ source_group(Graphics\\GL FILES ${SRC_GRAPHICS_GL})
 if(VENGINE_BUILD_WITH_VULKAN)
 	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 endif()
+source_group(Resources FILES ${SRC_RESOURCES})
 source_group(Systems FILES ${SRC_SYSTEMS})
 source_group(Systems\\ImGUI FILES ${SRC_SYSTEMS_IMGUI})
 
@@ -165,15 +171,18 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} 
-	Core 
-	Graphics
-	Physics 
-	ImGUI
-	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:OpenAL>
-	libglew_static # TODO: generalize this
-	$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:alut_static>
-	${OPENGL_LIBRARY} 
-	$<$<BOOL:${VENGINE_BUILD_WITH_VULKAN}>:${Vulkan_LIBRARY}>
+	PUBLIC
+		Core 
+		Graphics
+		Physics 
+		ImGUI
+	PRIVATE
+		TinyObjLoader
+		$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:OpenAL>
+		libglew_static # TODO: generalize this
+		$<$<BOOL:${VENGINE_BUILD_WITH_AUDIO}>:alut_static>
+		${OPENGL_LIBRARY} 
+		$<$<BOOL:${VENGINE_BUILD_WITH_VULKAN}>:${Vulkan_LIBRARY}>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

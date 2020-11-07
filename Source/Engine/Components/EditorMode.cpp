@@ -9,6 +9,7 @@
 #include "Animation/AnimationController.h"
 #include "Animation/AnimationSystem.h"
 #include "Systems/ImGUI/ImGUISystem.h"
+#include "Resources/OBJImporter.h"
 
 #include <Core/Resources/AssetTracker.h>
 
@@ -21,9 +22,11 @@
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
 
-EditorMode::EditorMode(PhysicsWorld& aWorld)
+EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
+	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
+	myAnimClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -74,7 +77,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
 	}
 
-	if (Input::GetMouseBtnPressed(2))
+	if (myImportedCube->GetState() == Resource::State::Ready
+		&& Input::GetMouseBtnPressed(2))
 	{
 		GameObject* go = aGame.Instantiate(camTransf.GetPos());
 		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
@@ -82,13 +86,10 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
 		VisualObject* vo = new VisualObject(*go);
 
-		Handle<Model> cubeModel = assetTracker.GetOrCreate<Model>("cube.obj");
-		cubeModel->ExecLambdaOnLoad([physComp, this, &aWorld](const Resource* aRes) {
-			const Model* model = static_cast<const Model*>(aRes);
-			physComp->SetOrigin(model->GetCenter());
-			physComp->CreatePhysicsEntity(0, myPhysShape);
-			physComp->RequestAddToWorld(aWorld);
-		});
+		Handle<Model> cubeModel = myImportedCube->GetModel();
+		physComp->SetOrigin(cubeModel->GetCenter());
+		physComp->CreatePhysicsEntity(0, myPhysShape);
+		physComp->RequestAddToWorld(aWorld);
 
 		vo->SetModel(cubeModel);
 		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
@@ -169,7 +170,7 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
 	PoolPtr<AnimationController> animController = anAnimSystem.AllocateController(testSkeleton);
-	animController.Get()->PlayClip(myResClip.Get());
+	animController.Get()->PlayClip(myAnimClip.Get());
 
 	myControllers.push_back(std::move(animController));
 	mySkeletons.push_back(std::move(testSkeleton));
@@ -177,17 +178,12 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 {
-	if (!myResClip.IsValid())
-	{
-		myResClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
-	}
-
 	if (Input::GetKeyPressed(Input::Keys::F3))
 	{
 		myShowSkeletonUI = !myShowSkeletonUI;
 	}
 
-	if(myShowSkeletonUI && myResClip.IsValid())
+	if(myShowSkeletonUI && myAnimClip.IsValid())
 	{
 		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Skeleton Settings"))
