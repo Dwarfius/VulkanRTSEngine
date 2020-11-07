@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (Core LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 # TODO: provide a switch per project to download binaries only or sources
 include(FetchContent)
@@ -32,7 +31,7 @@ if(NOT tbb_POPULATED)
 	set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL "" FORCE)
 	set(TBB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-	set(CMAKE_FOLDER ThreadBuildingBlocks)
+	set(CMAKE_FOLDER Extern/ThreadBuildingBlocks)
 	add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
 endif()
 
@@ -50,7 +49,7 @@ if(NOT glm_POPULATED)
 	# TODO: play around with simd toggles
 	set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 
-	set(CMAKE_FOLDER GLM)
+	set(CMAKE_FOLDER Extern/GLM)
 	add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif()
 
@@ -71,6 +70,12 @@ if(NOT glfw_POPULATED)
 	set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 	add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
+	# GLFW sets it's own CMAKE_FOLDER property via set_target_properties(... FOLDER ...)
+	# which ignores global CMAKE_FOLDER. since we want to control how we organize 
+	# dependencies we'll override it
+	set_target_properties(glfw PROPERTIES
+		FOLDER "Extern/GLFW3"
+	)
 endif()
 
 FetchContent_Declare(

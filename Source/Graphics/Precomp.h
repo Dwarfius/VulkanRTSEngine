@@ -16,8 +16,6 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/norm.hpp>
 
-#include <tiny_obj_loader.h>
-
 #include <tbb/tbb.h>
 
 #include <Core/Debug/Assert.h>

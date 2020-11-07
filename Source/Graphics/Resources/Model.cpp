@@ -4,6 +4,7 @@
 #include "../GPUResource.h"
 #include <Core/File.h>
 
+#include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
 Model::Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices)

@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (Graphics LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Camera.cpp" "Camera.h"
@@ -48,13 +47,14 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 target_include_directories(${PROJECT_NAME}
 	PRIVATE 
 		. 
-		Extra
 	INTERFACE
 		..
 )
 
 target_link_libraries(${PROJECT_NAME} 
 	Core
+	STB_Image
+	TinyObjLoader
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

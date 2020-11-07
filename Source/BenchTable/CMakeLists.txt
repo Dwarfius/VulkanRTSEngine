@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (BenchTable LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
@@ -24,7 +23,7 @@ if(NOT googlebench_POPULATED)
 	set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 	set(BENCHMARK_BUILD_32_BITS OFF CACHE BOOL "" FORCE)
 
-	set(CMAKE_FOLDER GoogleBench)
+	set(CMAKE_FOLDER Extern/GoogleBench)
 	add_subdirectory(${googlebench_SOURCE_DIR} ${googlebench_BINARY_DIR})
 endif()
 

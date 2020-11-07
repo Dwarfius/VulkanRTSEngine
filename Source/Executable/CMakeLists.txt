@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (VEngineExe LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 file(GLOB SRC "*.cpp" "*.h")
 source_group("" FILES ${SRC})

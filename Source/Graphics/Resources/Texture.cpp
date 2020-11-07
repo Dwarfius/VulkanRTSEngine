@@ -3,7 +3,7 @@
 
 #include <Core/File.h>
 #include <Core/Resources/Serializer.h>
-#include <stb_image.h>
+#include <STB_Image/stb_image.h>
 
 unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
 {

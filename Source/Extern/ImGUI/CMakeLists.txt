@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (ImGUI LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
@@ -15,8 +14,6 @@ FetchContent_GetProperties(ImGUI)
 if(NOT imgui_POPULATED)
 	FetchContent_Populate(ImGUI)
 endif()
-
-set(CMAKE_FOLDER ImGUI)
 
 # according to https://github.com/ocornut/imgui#usage we only need a couple root files
 set(SRC 

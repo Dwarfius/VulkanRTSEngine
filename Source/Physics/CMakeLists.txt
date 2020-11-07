@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (Physics LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
@@ -28,7 +27,7 @@ if(NOT bullet3_POPULATED)
 	set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 	set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
 
-	set(CMAKE_FOLDER Bullet3)
+	set(CMAKE_FOLDER Extern/Bullet3)
 	add_subdirectory(${bullet3_SOURCE_DIR} ${bullet3_BINARY_DIR})
 endif()
 

@@ -1,7 +1,6 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
 project (Engine LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 
@@ -28,7 +27,7 @@ if(NOT glew_POPULATED)
 	set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 	set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE BOOL "" FORCE)
 
-	set(CMAKE_FOLDER GLEW)
+	set(CMAKE_FOLDER Extern/GLEW)
 	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
 endif()
 
@@ -49,7 +48,7 @@ if(VENGINE_BUILD_WITH_AUDIO)
 		set(BUILD_STATIC ON CACHE BOOL "" FORCE)
 		set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-		set(CMAKE_FOLDER Alut)
+		set(CMAKE_FOLDER Extern/Alut)
 		add_subdirectory(${alut_SOURCE_DIR} ${alut_BINARY_DIR})
 	endif()
 endif()
