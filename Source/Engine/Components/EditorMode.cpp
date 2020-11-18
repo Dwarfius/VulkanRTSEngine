@@ -10,6 +10,7 @@
 #include "Animation/AnimationSystem.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Resources/OBJImporter.h"
+#include "Resources/GLTFImporter.h"
 
 #include <Core/Resources/AssetTracker.h>
 
@@ -27,6 +28,7 @@ EditorMode::EditorMode(Game& aGame)
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
 	myAnimClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("triangle.json");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -77,7 +79,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
 	}
 
-	if (myImportedCube->GetState() == Resource::State::Ready
+	if (myGLTFImporter->GetState() == Resource::State::Ready
 		&& Input::GetMouseBtnPressed(2))
 	{
 		GameObject* go = aGame.Instantiate(camTransf.GetPos());
@@ -86,7 +88,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
 		VisualObject* vo = new VisualObject(*go);
 
-		Handle<Model> cubeModel = myImportedCube->GetModel();
+		Handle<Model> cubeModel = myGLTFImporter->GetModel();
 		physComp->SetOrigin(cubeModel->GetCenter());
 		physComp->CreatePhysicsEntity(0, myPhysShape);
 		physComp->RequestAddToWorld(aWorld);

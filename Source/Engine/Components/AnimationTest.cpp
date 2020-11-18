@@ -7,6 +7,7 @@
 #include <Graphics/Resources/Model.h>
 #include "../Animation/AnimationSystem.h"
 #include "../Animation/AnimationClip.h"
+#include "../Resources/GLTFImporter.h"
 
 AnimationTest::AnimationTest(Game& aGame)
 	: myGame(aGame)

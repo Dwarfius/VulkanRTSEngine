@@ -15,11 +15,15 @@ public:
 
 	size_t GetSize() const { return myBuffer.size(); }
 	char GetAt(size_t anIndex) const { return myBuffer[anIndex]; }
-	const char* GetCBuffer() const { return myBuffer.c_str(); }
+
+	const char* GetCBuffer() const { return myBuffer.data(); }
 	const std::string& GetBuffer() const { return myBuffer; }
+
 	const char* GetPath() const { return myPath.c_str(); }
 
 private:
 	std::string myPath;
-	std::string myBuffer;
+	// TODO: replace with std::vector<char>, and allow moving from File into
+	// std::vector<char> buffer (essentially stealing the internal buffer)
+	std::string myBuffer; 
 };

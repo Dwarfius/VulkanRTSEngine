@@ -13,6 +13,7 @@ class Transform;
 class Game;
 class AnimationSystem;
 class OBJImporter;
+class GLTFImporter;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -43,6 +44,7 @@ private:
 	std::vector<PoolPtr<Skeleton>> mySkeletons;
 	Handle<AnimationClip> myAnimClip;
 	Handle<OBJImporter> myImportedCube;
+	Handle<GLTFImporter> myGLTFImporter;
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;

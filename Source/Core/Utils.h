@@ -11,6 +11,10 @@ namespace Utils
 	// Groups copies of elements of TColl by TPred condition
 	template<class TAssocColl, class TColl, class TPred>
 	TAssocColl GroupBy(const TColl& aColl, TPred aPred);
+
+	std::vector<char> Base64Encode(const std::vector<char>& anInput);
+	std::vector<char> Base64Decode(const std::vector<char>& anInput);
+	std::vector<char> Base64Decode(std::string_view anInput);
 }
 
 template<class T>

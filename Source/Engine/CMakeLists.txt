@@ -105,6 +105,7 @@ set(SRC_GRAPHICS_ADAPTERS
 )
 
 set(SRC_RESOURCES
+	"Resources/GLTFImporter.cpp" "Resources/GLTFImporter.h"
 	"Resources/OBJImporter.cpp" "Resources/OBJImporter.h"
 )
 

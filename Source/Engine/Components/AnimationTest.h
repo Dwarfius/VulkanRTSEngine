@@ -5,6 +5,7 @@
 class Game;
 class Skeleton;
 class AnimationClip;
+class GLTFImporter;
 
 class AnimationTest
 {
