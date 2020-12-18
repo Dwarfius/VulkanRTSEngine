@@ -31,7 +31,7 @@ void AnimationController::Update(float aDeltaTime)
 	myCurrentTime += aDeltaTime;
 	if (myCurrentTime > myActiveClip->GetLength())
 	{
-		myCurrentTime -= myActiveClip->GetLength();
+		myCurrentTime = glm::mod(myCurrentTime, myActiveClip->GetLength());
 		if (!myActiveClip->IsLooping())
 		{
 			myActiveClip = nullptr;
@@ -58,9 +58,9 @@ void AnimationController::Update(float aDeltaTime)
 
 	const std::vector<AnimationClip::BoneTrack>& tracks = myActiveClip->GetTracks();
 	FetchActiveBone(tracks[0].myBone);
-	size_t markIndex = 0;
-	for (const AnimationClip::BoneTrack& track : tracks)
+	for(size_t trackIndex = 0; trackIndex < tracks.size(); trackIndex++)
 	{
+		const AnimationClip::BoneTrack& track = tracks[trackIndex];
 		if (track.myBone != boneIndex)
 		{
 			// update bone
@@ -70,20 +70,28 @@ void AnimationController::Update(float aDeltaTime)
 			FetchActiveBone(track.myBone);
 		}
 
-		size_t currMarkInd = myCurrentMarks[markIndex];
+		size_t currMarkInd = myCurrentMarks[trackIndex];
 		AnimationClip::Mark currentMark = myActiveClip->GetMark(currMarkInd);
-		// it is possible that we already progressed to the next mark
-		// so have to check the current time
-		if (currMarkInd < track.myTrackStart + track.myMarkCount - 1)
 		{
+			// it is possible that we already progressed to the next mark
+			// (or more, if the framerate is low) so have to update where we are
+			// against current time!
 			size_t nextMarkInd = currMarkInd + 1;
-			AnimationClip::Mark nextMark = myActiveClip->GetMark(nextMarkInd);
-			if (myCurrentTime >= nextMark.myTimeStamp)
+			const size_t trackEnd = track.myTrackStart + track.myMarkCount;
+			for(; nextMarkInd < trackEnd; nextMarkInd++)
 			{
-				currentMark = nextMark;
-				currMarkInd = nextMarkInd;
-				// save it for later to continue from it!
-				myCurrentMarks[markIndex] = nextMarkInd;
+				AnimationClip::Mark nextMark = myActiveClip->GetMark(nextMarkInd);
+				if (myCurrentTime >= nextMark.myTimeStamp)
+				{
+					currentMark = nextMark;
+					currMarkInd = nextMarkInd;
+					// save it for later to continue from it!
+					myCurrentMarks[trackIndex] = nextMarkInd;
+				}
+				else
+				{
+					break;
+				}
 			}
 		}
 		float newValue = myActiveClip->CalculateValue(currMarkInd, myCurrentTime, track);
@@ -100,8 +108,8 @@ void AnimationController::Update(float aDeltaTime)
 		case AnimationClip::Property::RotZ: boneEulerRot.z = newValue; break;
 		default:
 			ASSERT(false);
+			break;
 		}
-		markIndex++;
 	}
 	skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
 }
