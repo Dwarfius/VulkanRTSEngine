@@ -51,25 +51,73 @@ void AnimationClip::AddTrack(BoneIndex anIndex, Property aProperty, Interpolatio
 	}
 }
 
-float AnimationClip::CalculateValue(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const
+glm::vec3 AnimationClip::CalculateVec(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const
 {
 	ASSERT_STR(aMarkInd < myMarks.size(), "Invalid mark index!");
 	ASSERT_STR(aMarkInd >= aTrack.myTrackStart 
 		&& aMarkInd < aTrack.myTrackStart + aTrack.myMarkCount,
 		"This mark doesn't bellong to the bone track!");
 	ASSERT_STR(aTime >= 0 && aTime <= myLength, "Time outside of clips's length!");
-	const bool isLastMark = aMarkInd + 1 == aTrack.myTrackStart + aTrack.myMarkCount;
 	const Mark fromMark = myMarks[aMarkInd];
-	const size_t toMarkInd = isLastMark ? aMarkInd : (aMarkInd + 1);
-	const Mark toMark = myMarks[toMarkInd];
-	ASSERT_STR((aTime >= fromMark.myTimeStamp && aTime <= toMark.myTimeStamp) || isLastMark,
-		"Invalid aMarkInd passed in for aTime!");
-	const float relFactor = isLastMark ? 0 : ((aTime - fromMark.myTimeStamp) / (toMark.myTimeStamp - fromMark.myTimeStamp));
-	float result = 0;
+	
+	glm::vec3 result(0);
 	switch (aTrack.myInterpolation)
 	{
+	case Interpolation::Step:
+		result = glm::vec3(fromMark.myValue.x, fromMark.myValue.y, fromMark.myValue.z);
+		break;
 	case Interpolation::Linear:
-		result = fromMark.myValue + relFactor * (toMark.myValue - fromMark.myValue);
+	{
+		const bool isLastMark = aMarkInd + 1 == aTrack.myTrackStart + aTrack.myMarkCount;
+		const size_t toMarkInd = isLastMark ? aMarkInd : (aMarkInd + 1);
+		const Mark toMark = myMarks[toMarkInd];
+		ASSERT_STR((aTime >= fromMark.myTimeStamp && aTime <= toMark.myTimeStamp) || isLastMark,
+			"Invalid aMarkInd passed in for aTime!");
+		const float relFactor = isLastMark ? 0 : ((aTime - fromMark.myTimeStamp) / (toMark.myTimeStamp - fromMark.myTimeStamp));
+		const glm::vec3 fromVec = glm::vec3(fromMark.myValue.x, fromMark.myValue.y, fromMark.myValue.z);
+		const glm::vec3 toVec = glm::vec3(toMark.myValue.x, toMark.myValue.y, toMark.myValue.z);
+		result = glm::mix(fromVec, toVec, relFactor);
+	}
+		break;
+	case Interpolation::Cubic:
+		// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#appendix-c-spline-interpolation
+		ASSERT_STR(false, "Not yet implemented!");
+		break;
+	default:
+		ASSERT(false);
+	}
+	return result;
+}
+
+glm::quat AnimationClip::CalculateQuat(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const
+{
+	ASSERT_STR(aMarkInd < myMarks.size(), "Invalid mark index!");
+	ASSERT_STR(aMarkInd >= aTrack.myTrackStart
+		&& aMarkInd < aTrack.myTrackStart + aTrack.myMarkCount,
+		"This mark doesn't bellong to the bone track!");
+	ASSERT_STR(aTime >= 0 && aTime <= myLength, "Time outside of clips's length!");
+	const Mark fromMark = myMarks[aMarkInd];
+
+	glm::quat result(0, 0, 0, 1);
+	switch (aTrack.myInterpolation)
+	{
+	case Interpolation::Step:
+		result = fromMark.myValue;
+		break;
+	case Interpolation::Linear:
+	{
+		const bool isLastMark = aMarkInd + 1 == aTrack.myTrackStart + aTrack.myMarkCount;
+		const size_t toMarkInd = isLastMark ? aMarkInd : (aMarkInd + 1);
+		const Mark toMark = myMarks[toMarkInd];
+		ASSERT_STR((aTime >= fromMark.myTimeStamp && aTime <= toMark.myTimeStamp) || isLastMark,
+			"Invalid aMarkInd passed in for aTime!");
+		const float relFactor = isLastMark ? 0 : ((aTime - fromMark.myTimeStamp) / (toMark.myTimeStamp - fromMark.myTimeStamp));
+		result = glm::slerp(fromMark.myValue, toMark.myValue, relFactor);
+	}
+	break;
+	case Interpolation::Cubic:
+		// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#appendix-c-spline-interpolation
+		ASSERT_STR(false, "Not yet implemented!");
 		break;
 	default:
 		ASSERT(false);

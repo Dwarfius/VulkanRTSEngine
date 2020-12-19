@@ -23,14 +23,19 @@ AnimationTest::AnimationTest(Game& aGame)
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->Update();
 
-	PoolPtr<AnimationController> testController = aGame.GetAnimationSystem().AllocateController(testSkeleton);
-	myClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
-	Pool<AnimationController>::WeakPtr controllerRef = testController;
-	myClip->ExecLambdaOnLoad([controllerRef](const Resource* aRes) mutable {
-		const AnimationClip* animClip = static_cast<const AnimationClip*>(aRes);
-		controllerRef.Get()->PlayClip(animClip);
-	});
+	myClip = new AnimationClip(4, true);
+	std::vector<AnimationClip::Mark> marks;
+	marks.reserve(5);
+	marks.emplace_back(0.f, glm::vec3(0));
+	marks.emplace_back(1.f, glm::vec3(1, 0, 0));
+	marks.emplace_back(2.f, glm::vec3(0));
+	marks.emplace_back(3.f, glm::vec3(-1, 0, 0));
+	marks.emplace_back(4.f, glm::vec3(0));
+	myClip->AddTrack(0, AnimationClip::Property::Position, AnimationClip::Interpolation::Linear, marks);
 
+	PoolPtr<AnimationController> testController = aGame.GetAnimationSystem().AllocateController(testSkeleton);
+	testController.Get()->PlayClip(myClip.Get());
+	
 	myGO->SetSkeleton(std::move(testSkeleton));
 	myGO->SetAnimController(std::move(testController));
 
@@ -99,7 +104,7 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 	std::vector<IModel::IndexType> indices;
 	auto appendAACuboid = [&](glm::vec3 aCenter, glm::vec3 aSize, uint16_t aBone)
 	{
-		size_t indexStart = verts.size();
+		IModel::IndexType indexStart = static_cast<IModel::IndexType>(verts.size());
 		verts.reserve(verts.size() + 8);
 
 		bool xExtended = aSize.x != aSize.y && aSize.x != aSize.z;

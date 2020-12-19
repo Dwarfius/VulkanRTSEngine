@@ -27,8 +27,7 @@ EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
-	myAnimClip = aGame.GetAssetTracker().GetOrCreate<AnimationClip>("testClip.json");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("triangle.json");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("triangleAnim.json");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -172,7 +171,6 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
 	PoolPtr<AnimationController> animController = anAnimSystem.AllocateController(testSkeleton);
-	animController.Get()->PlayClip(myAnimClip.Get());
 
 	myControllers.push_back(std::move(animController));
 	mySkeletons.push_back(std::move(testSkeleton));
@@ -185,7 +183,7 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 		myShowSkeletonUI = !myShowSkeletonUI;
 	}
 
-	if(myShowSkeletonUI && myAnimClip.IsValid())
+	if(myShowSkeletonUI)
 	{
 		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Skeleton Settings"))

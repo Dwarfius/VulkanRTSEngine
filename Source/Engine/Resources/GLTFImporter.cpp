@@ -1,15 +1,19 @@
 #include "Precomp.h"
 #include "GLTFImporter.h"
 
+#include "Animation/AnimationClip.h"
+
 #include <Graphics/Resources/Model.h>
 #include <Core/File.h>
 #include <Core/Utils.h>
 #include <Core/Vertex.h>
+#include <Core/Transform.h>
 #include <nlohmann/json.hpp>
 #include <charconv>
 #include <system_error>
+#include <glm/gtx/matrix_decompose.hpp>
 
-namespace GLTFImpl_detail
+namespace glTF
 {
 	template<class T>
 	T ReadOptional(const nlohmann::json& aJson, std::string_view aKey, T aDefaultVal)
@@ -38,6 +42,96 @@ namespace GLTFImpl_detail
 
 		aVersion = versionJson->get<std::string>();
 		return true;
+	}
+	constexpr static int kInvalidInd = -1;
+
+	struct Node
+	{
+		Transform myTransform;
+		std::vector<int> myChildren;
+		std::vector<int> myWeights;
+		std::string myName;
+		int myCamera;
+		int mySkin;
+		int myMesh;
+	};
+	std::vector<Node> ReadNodes(const nlohmann::json& aRootJson)
+	{
+		std::vector<Node> nodes;
+		const nlohmann::json& nodesJson = aRootJson["nodes"];
+		for (const nlohmann::json& nodeJson : nodesJson)
+		{
+			// everything in a node is optional
+			Node node;
+			node.myCamera = ReadOptional(nodeJson, "camera", kInvalidInd);
+			node.mySkin = ReadOptional(nodeJson, "skin", kInvalidInd);
+			node.myMesh = ReadOptional(nodeJson, "mesh", kInvalidInd);
+
+			// TODO: adapt the glTF right handed coord system to my left handed
+			{
+				// transform can be represented as a 16-float...
+				const auto& matrixJson = nodeJson.find("matrix");
+				if (matrixJson != nodeJson.end())
+				{
+					glm::mat4 matrix;
+					for (char i = 0; i < 16; i++)
+					{
+						glm::value_ptr(matrix)[i] = matrixJson[i].get<float>();
+					}
+					glm::vec3 scale;
+					glm::quat rot;
+					glm::vec3 pos;
+					glm::vec3 skew;
+					glm::vec4 perspective;
+					if (glm::decompose(matrix, scale, rot, pos, skew, perspective))
+					{
+						rot = glm::conjugate(rot);
+						node.myTransform.SetPos(pos);
+						node.myTransform.SetRotation(rot);
+						node.myTransform.SetScale(scale);
+					}
+				}
+				else // ... or any combination of TRS
+				{
+					auto ExtractFunc = [&](auto aName, auto& aData)
+					{
+						const auto& iterJson = nodeJson.find(aName);
+						if (iterJson != nodeJson.end())
+						{
+							for (int i = 0; i < aData.length(); i++)
+							{
+								glm::value_ptr(aData)[i] = iterJson[i].get<float>();
+							}
+							return true;
+						}
+						return false;
+					};
+
+					glm::quat rot;
+					if (ExtractFunc("rotation", rot))
+					{
+						node.myTransform.SetRotation(rot);
+					}
+
+					glm::vec3 scale;
+					if (ExtractFunc("scale", scale))
+					{
+						node.myTransform.SetScale(scale);
+					}
+
+					glm::vec3 pos;
+					if (ExtractFunc("translation", pos))
+					{
+						node.myTransform.SetPos(pos);
+					}
+				}
+			}
+
+			node.myChildren = ReadOptional(nodeJson, "children", std::vector<int>{});
+			node.myWeights = ReadOptional(nodeJson, "weights", std::vector<int>{});
+			node.myName = ReadOptional(nodeJson, "name", std::string{});
+		}
+		return nodes;
 	}
 
 	using Buffer = std::vector<char>;
@@ -104,7 +198,7 @@ namespace GLTFImpl_detail
 		uint32_t myTarget; // GL constant for buffer type
 
 		template<class T>
-		void ReadElem(T& anElem, uint32_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
+		void ReadElem(T& anElem, size_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
 		{
 			const Buffer& buffer = aBuffers[myBuffer];
 			const size_t stride = myByteStride > 0 ? myByteStride : sizeof(T);
@@ -165,7 +259,7 @@ namespace GLTFImpl_detail
 		bool myIsNormalized;
 
 		template<class T>
-		void ReadElem(T& anElem, uint32_t anIndex, const std::vector<BufferView>& aViews, const std::vector<Buffer>& aBuffers) const
+		void ReadElem(T& anElem, size_t anIndex, const std::vector<BufferView>& aViews, const std::vector<Buffer>& aBuffers) const
 		{
 			const BufferView& view = aViews[myBufferView];
 			view.ReadElem(anElem, anIndex, myByteOffset, aBuffers);
@@ -221,7 +315,7 @@ namespace GLTFImpl_detail
 					std::memcpy(&anElem, &data, sizeof(float));
 					break;
 				}
-				default: ASSERT(false); break;
+				default: ASSERT(false);
 				}
 			};
 
@@ -235,7 +329,7 @@ namespace GLTFImpl_detail
 			case Accessor::Type::Mat2: iters = 4; break;
 			case Accessor::Type::Mat3: iters = 9; break;
 			case Accessor::Type::Mat4: iters = 16; break;
-			default: ASSERT(false); break;
+			default: ASSERT(false);
 			}
 
 			for (uint8_t i = 0; i < iters; i++)
@@ -301,7 +395,7 @@ namespace GLTFImpl_detail
 			case GL_UNSIGNED_SHORT: compType = Accessor::ComponentType::UnsignedShort; break;
 			case GL_UNSIGNED_INT: compType = Accessor::ComponentType::UnsignedInt; break;
 			case GL_FLOAT: compType = Accessor::ComponentType::Float; break;
-			default: ASSERT(false); break;
+			default: ASSERT(false);
 			}
 			accessor.myComponentType = compType;
 
@@ -370,6 +464,369 @@ namespace GLTFImpl_detail
 		}
 		return meshes;
 	}
+
+	// The default pack of inputs to accesss data stored in buffers
+	struct BufferAccessorInputs
+	{
+		const std::vector<Buffer>& myBuffers;
+		const std::vector<BufferView>& myBufferViews;
+		const std::vector<Accessor>& myAccessors;
+	};
+
+	// Input set for constructing a Model
+	struct ModelInputs : BufferAccessorInputs
+	{
+		const std::vector<Mesh>& myMeshes;
+	};
+	void ConstructModel(const ModelInputs& aInputs,	Handle<Model>& aModel)
+	{
+		const std::vector<Buffer>& buffers = aInputs.myBuffers;
+		const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
+		const std::vector<Accessor>& accessors = aInputs.myAccessors;
+		const std::vector<Mesh>& meshes = aInputs.myMeshes;
+
+		std::vector<Model::IndexType> indices;
+		std::vector<Vertex> vertices;
+
+		// concatenating all meshes into a singular one
+		// For that we need to ensure they all are of similar layout
+		// and while we're at it, collect overall count of vertices+indices
+		{
+			size_t vertCountTotal = 0;
+			size_t indexCountTotal = 0;
+			for (const Mesh& mesh : meshes)
+			{
+				ASSERT_STR(mesh.myAttributes.size() == meshes[0].myAttributes.size()
+					&& mesh.myHasIndices == meshes[0].myHasIndices,
+					"Meshes format has differing layout, this will cause issues when "
+					"concatenating meshes!");
+				vertCountTotal += accessors[mesh.myAttributes[0].myAccessor].myCount;
+				if (mesh.myHasIndices)
+				{
+					indexCountTotal += accessors[mesh.myIndexAccessor].myCount;
+				}
+			}
+			vertices.resize(vertCountTotal);
+			indices.resize(indexCountTotal);
+		}
+
+		// TODO: current implemnentation is too conservative that it does per-element copy
+		// even though we're supposed to end up with the same result IF the vertex
+		// and Index types are binary the same (so we could just perform a direct memcpy
+		// of the whole buffer)
+		Model::IndexType indexOffset = 0;
+		size_t vertOffset = 0;
+		for (const glTF::Mesh& mesh : meshes)
+		{
+			for (const glTF::Attribute& attribute : mesh.myAttributes)
+			{
+				bool hasAttribIndex = false;
+				uint32_t attributeSet = 0;
+				std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
+				// multiple attributes might be grouped in a set
+				// format: <name>_<setNum>
+				size_t separatorInd = attribute.myType.find('_');
+				if (separatorInd != std::string::npos)
+				{
+					attribName = std::string_view(attribute.myType.c_str(), separatorInd);
+					const char* start = attribute.myType.c_str() + separatorInd + 1;
+					const char* end = attribute.myType.c_str() + attribute.myType.size();
+					auto [p, errorCode] = std::from_chars(start, end, attributeSet);
+					ASSERT(errorCode == std::errc());
+					hasAttribIndex = true;
+				}
+
+				// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
+				if (attribName == "POSITION")
+				{
+					const glTF::Accessor& posAccessor = accessors[attribute.myAccessor];
+					for (size_t i = 0; i < posAccessor.myCount; i++)
+					{
+						Vertex& vert = vertices[vertOffset + i];
+						posAccessor.ReadElem(vert.myPos, i, bufferViews, buffers);
+					}
+				}
+				else if (attribName == "NORMAL")
+				{
+					const glTF::Accessor& normAccessor = accessors[attribute.myAccessor];
+					for (size_t i = 0; i < normAccessor.myCount; i++)
+					{
+						Vertex& vert = vertices[vertOffset + i];
+						normAccessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
+					}
+				}
+				else if (attribName == "TEXCOORD")
+				{
+					ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+					if (attributeSet != 0)
+					{
+						// skipping other UVs since our vertex only supports 1 UV set
+						continue;
+					}
+					const glTF::Accessor& texCoordAccessor = accessors[attribute.myAccessor];
+					ASSERT_STR(texCoordAccessor.myComponentType == glTF::Accessor::ComponentType::Float,
+						"Vertex doesn't support copying in u8 or u16 components!");
+
+					for (size_t i = 0; i < texCoordAccessor.myCount; i++)
+					{
+						Vertex& vert = vertices[vertOffset + i];
+						texCoordAccessor.ReadElem(vert.myUv, i, bufferViews, buffers);
+					}
+				}
+				else
+				{
+					ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
+				}
+			}
+
+			if (mesh.myHasIndices)
+			{
+				const glTF::Accessor& indexAccessor = accessors[mesh.myIndexAccessor];
+				for (size_t i = 0; i < indexAccessor.myCount; i++)
+				{
+					Model::IndexType& index = indices[indexOffset + i];
+					switch (indexAccessor.myComponentType)
+					{
+					case glTF::Accessor::ComponentType::UnsignedByte:
+					{
+						uint8_t readIndex;
+						indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+						index = readIndex;
+						break;
+					}
+					case glTF::Accessor::ComponentType::UnsignedShort:
+					{
+						uint16_t readIndex;
+						indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+						index = readIndex;
+						break;
+					}
+					case glTF::Accessor::ComponentType::UnsignedInt:
+						indexAccessor.ReadElem(index, i, bufferViews, buffers);
+						break;
+					}
+					ASSERT(static_cast<size_t>(index) + vertOffset < std::numeric_limits<Model::IndexType>::max());
+					index += vertOffset; // offset the index since we're concatenating meshes
+				}
+				indexOffset += indexAccessor.myCount;
+			}
+			vertOffset += accessors[mesh.myAttributes[0].myAccessor].myCount;
+		}
+
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = vertices.data();
+		uploadDesc.myVertCount = vertices.size();
+		uploadDesc.myIndices = indices.data();
+		uploadDesc.myIndCount = indices.size();
+		uploadDesc.myNextDesc = nullptr;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndOwned = false;
+		aModel->Update(uploadDesc);
+	}
+
+	struct AnimationSampler
+	{
+		uint32_t myInput; // accessorInd, for Time
+		uint32_t myOutput; // accessorInd, for Target::Path
+		AnimationClip::Interpolation myInterpolation;
+
+		static AnimationSampler Parse(const nlohmann::json& aJson)
+		{
+			uint32_t input = aJson["input"].get<uint32_t>();
+			uint32_t output = aJson["output"].get<uint32_t>();
+			std::string interpolationStr = ReadOptional(aJson, "interpolation", std::string());
+			AnimationClip::Interpolation interpolation = AnimationClip::Interpolation::Step;
+			if (interpolationStr == "LINEAR")
+			{
+				interpolation = AnimationClip::Interpolation::Linear;
+			}
+			else if (interpolationStr == "CUBICSPLINE")
+			{
+				interpolation = AnimationClip::Interpolation::Cubic;
+			}
+			return { input, output, interpolation };
+		}
+	};
+	struct Target
+	{
+		int myNode; // if -1, channel should be ignored
+		AnimationClip::Property myPath;
+
+		static Target Parse(const nlohmann::json& aJson)
+		{
+			int node = ReadOptional(aJson, "node", -1);
+			std::string pathStr = aJson["path"].get<std::string>();
+			AnimationClip::Property path = AnimationClip::Property::Position;
+			if (pathStr == "rotation")
+			{
+				path = AnimationClip::Property::Rotation;
+			}
+			else if (pathStr == "scale")
+			{
+				path = AnimationClip::Property::Scale;
+			}
+			else if (pathStr == "weights")
+			{
+				path = AnimationClip::Property::Weights;
+			}
+			return { node, path };
+		}
+	};
+	struct Channel
+	{
+		uint32_t mySampler;
+		Target myTarget;
+
+		static Channel Parse(const nlohmann::json& aJson)
+		{
+			uint32_t sampler = aJson["sampler"].get<uint32_t>();
+			Target target = Target::Parse(aJson["target"]);
+			return { sampler, target };
+		}
+
+		// Inputs required to construct a Track and Marks for the AnimationClip from a channel
+		struct TrackInputs : BufferAccessorInputs
+		{
+			const std::vector<AnimationSampler>& mySamplers;
+		};
+		void ConstructTrack(const TrackInputs& aInputs,	Handle<AnimationClip>& aClip) const
+		{
+			ASSERT_STR(myTarget.myNode > -1, "Invalid Channel, should've been skipped!");
+			if (myTarget.myPath == AnimationClip::Property::Weights)
+			{
+				ASSERT_STR(false, "Weigths are unsupported!");
+				return;
+			}
+
+			const AnimationSampler& sampler = aInputs.mySamplers[mySampler];
+
+			const Accessor& timeAccessor = aInputs.myAccessors[sampler.myInput];
+			const Accessor& valueAccessor = aInputs.myAccessors[sampler.myOutput];
+			ASSERT_STR(timeAccessor.myCount == valueAccessor.myCount, "Weird, for every time stamp there should be a value!");
+			
+			const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
+			const std::vector<Buffer>& buffers = aInputs.myBuffers;
+
+			std::vector<AnimationClip::Mark> marks;
+			marks.reserve(timeAccessor.myCount);
+			for (size_t index = 0; index < timeAccessor.myCount; index++)
+			{
+				float time;
+				timeAccessor.ReadElem(time, index, bufferViews, buffers);
+
+				switch (myTarget.myPath)
+				{
+				case AnimationClip::Property::Position:
+				{
+					glm::vec3 pos;
+					valueAccessor.ReadElem(pos, index, bufferViews, buffers);
+					marks.emplace_back(time, pos);
+				}
+					break;
+				case AnimationClip::Property::Rotation:
+				{
+					glm::quat rot;
+					valueAccessor.ReadElem(rot, index, bufferViews, buffers);
+					marks.emplace_back(time, rot);
+				}
+					break;
+				case AnimationClip::Property::Scale:
+				{
+					glm::vec3 scale;
+					valueAccessor.ReadElem(scale, index, bufferViews, buffers);
+					marks.emplace_back(time, scale);
+				}
+					break;
+				default:
+					ASSERT(false);
+				}
+			}
+
+			AnimationClip::BoneIndex index = static_cast<AnimationClip::BoneIndex>(myTarget.myNode);
+			AnimationClip::Interpolation interpolation = sampler.myInterpolation;
+			aClip->AddTrack(index, myTarget.myPath, interpolation, marks);
+		}
+	};
+	struct Animation
+	{
+		std::vector<AnimationSampler> mySamplers;
+		std::vector<Channel> myChannels;
+	};
+	std::vector<Animation> ReadAnimations(const nlohmann::json& aRootJson)
+	{
+		std::vector<Animation> animations;
+		const auto& animationsJsonIter = aRootJson.find("animations");
+		if (animationsJsonIter == aRootJson.end())
+		{
+			return animations;
+		}
+
+		for (const auto& animationJson : *animationsJsonIter)
+		{
+			Animation animation;
+			const nlohmann::json& samplersJson = animationJson["samplers"];
+			for (const nlohmann::json& samplerJson : samplersJson)
+			{
+				AnimationSampler sampler = AnimationSampler::Parse(samplerJson);
+				animation.mySamplers.emplace_back(std::move(sampler));
+			}
+
+			const nlohmann::json& channelsJson = animationJson["channels"];
+			for (const nlohmann::json& channelJson : channelsJson)
+			{
+				Channel channel = Channel::Parse(channelJson);
+				ASSERT_STR(channel.myTarget.myNode > -1, "Well, didn't think there would be such "
+					"a channel - it should be discarded!");
+				animation.myChannels.emplace_back(std::move(channel));
+			}
+
+			animations.push_back(animation);
+		}
+
+		return animations;
+	}
+
+	struct AnimationClipInput : BufferAccessorInputs
+	{
+		const std::vector<Animation> myAnimations;
+	};
+	void ConstructAnimationClips(const AnimationClipInput& aInputs, std::vector<Handle<AnimationClip>>& aClips)
+	{
+		for (const Animation& animation : aInputs.myAnimations)
+		{
+			float length = 0;
+
+			// first identify the length of animation
+			for (const AnimationSampler& sampler : animation.mySamplers)
+			{
+				const Accessor& timeAccessor = aInputs.myAccessors[sampler.myInput];
+				ASSERT_STR(timeAccessor.myType == Accessor::Type::Scalar,
+					"Time accessor must be Scalar!");
+
+				// According to docs, for time accessor min/max must be defined!
+				float newLength = 0;
+				// TODO: C++20 - replace with std::bit_cast
+				std::memcpy(&newLength, &timeAccessor.myMax[0], sizeof(float));
+				length = std::max(length, newLength);
+			}
+			ASSERT_STR(length > 0, "Failed to find the length of animation!");
+
+			// now we can start populating the clip
+			Handle<AnimationClip> clip = new AnimationClip(length, true);
+			for (const Channel& channel : animation.myChannels)
+			{
+				Channel::TrackInputs input
+				{
+					aInputs.myBuffers,
+					aInputs.myBufferViews,
+					aInputs.myAccessors,
+					animation.mySamplers
+				};
+				channel.ConstructTrack(input, clip);
+			}
+			aClips.emplace_back(std::move(clip));
+		}
+	}
 }
 
 GLTFImporter::GLTFImporter(Id anId, const std::string& aPath)
@@ -380,7 +837,6 @@ GLTFImporter::GLTFImporter(Id anId, const std::string& aPath)
 
 void GLTFImporter::OnLoad(const File& aFile)
 {
-	using namespace GLTFImpl_detail;
 	// time to start learning glTF!
 	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
 	nlohmann::json gltfJson = nlohmann::json::parse(aFile.GetBuffer(), nullptr, false);
@@ -392,7 +848,7 @@ void GLTFImporter::OnLoad(const File& aFile)
 
 	{
 		std::string version;
-		if (!FindVersion(gltfJson, version))
+		if (!glTF::FindVersion(gltfJson, version))
 		{
 			SetErrMsg("Failed to find asset version, unsupported version!");
 			return;
@@ -406,151 +862,37 @@ void GLTFImporter::OnLoad(const File& aFile)
 	}
 
 	// TODO: at the moment we don't do full fledged scene reconstruction,
-	// only exposing the related models, textures, animation clips, mesh skins
+	// only exposing the related collapsed model, textures, animation clips, mesh skins
 	// as a result, we're ignoring scenes and nodes, and just grabbing
 	// the raw resource. To expand later!
 
-	std::vector<Buffer> buffers = ReadBuffers(gltfJson);
-	std::vector<BufferView> bufferViews = ReadBufferViews(gltfJson);
-	std::vector<Accessor> accessors = ReadAccessors(gltfJson);
-	std::vector<Mesh> meshes = ReadMeshes(gltfJson);
+	std::vector<glTF::Buffer> buffers = glTF::ReadBuffers(gltfJson);
+	std::vector<glTF::BufferView> bufferViews = glTF::ReadBufferViews(gltfJson);
+	std::vector<glTF::Accessor> accessors = glTF::ReadAccessors(gltfJson);
+	std::vector<glTF::Mesh> meshes = glTF::ReadMeshes(gltfJson);
+	std::vector<glTF::Animation> animations = glTF::ReadAnimations(gltfJson);
 
-	std::vector<Model::IndexType> indices;
-	std::vector<Vertex> vertices;
-
-	// concatenating all meshes into a singular one
-	// For that we need to ensure they all are of similar layout
-	// and while we're at it, collect overall count of vertices+indices
 	{
-		size_t vertCountTotal = 0;
-		size_t indexCountTotal = 0;
-		for (const Mesh& mesh : meshes)
+		glTF::ModelInputs input
 		{
-			ASSERT_STR(mesh.myAttributes.size() == meshes[0].myAttributes.size()
-				&& mesh.myHasIndices == meshes[0].myHasIndices,
-				"Meshes format has differing layout, this will cause issues when "
-				"concatenating meshes!");
-			vertCountTotal += accessors[mesh.myAttributes[0].myAccessor].myCount;
-			if (mesh.myHasIndices)
-			{
-				indexCountTotal += accessors[mesh.myIndexAccessor].myCount;
-			}
-		}
-		vertices.resize(vertCountTotal);
-		indices.resize(indexCountTotal);
+			buffers,
+			bufferViews,
+			accessors,
+			meshes
+		};
+		glTF::ConstructModel(input, myModel);
 	}
 
-	// TODO: current implemnentation is too conservative that it does per-element copy
-	// even though we're supposed to end up with the same result IF the vertex
-	// and Index types are binary the same (so we could just perform a direct memcpy
-	// of the whole buffer)
-	Model::IndexType indexOffset = 0;
-	size_t vertOffset = 0;
-	for (const Mesh& mesh : meshes)
+	if(!animations.empty())
 	{
-		for (const Attribute& attribute : mesh.myAttributes)
+		glTF::AnimationClipInput input
 		{
-			bool hasAttribIndex = false;
-			uint32_t attributeSet = 0;
-			std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
-			// multiple attributes might be grouped in a set
-			// format: <name>_<setNum>
-			size_t separatorInd = attribute.myType.find('_');
-			if (separatorInd != std::string::npos)
-			{
-				attribName = std::string_view(attribute.myType.c_str(), separatorInd);
-				const char* start = attribute.myType.c_str() + separatorInd + 1;
-				const char* end = attribute.myType.c_str() + attribute.myType.size();
-				auto [p, errorCode] = std::from_chars(start, end, attributeSet);
-				ASSERT(errorCode == std::errc());
-				hasAttribIndex = true;
-			}
-
-			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-			if (attribName == "POSITION")
-			{
-				const Accessor& posAccessor = accessors[attribute.myAccessor];
-				for (size_t i = 0; i < posAccessor.myCount; i++)
-				{
-					Vertex& vert = vertices[vertOffset + i];
-					posAccessor.ReadElem(vert.myPos, i, bufferViews, buffers);
-				}
-			}
-			else if (attribName == "NORMAL")
-			{
-				const Accessor& normAccessor = accessors[attribute.myAccessor];
-				for (size_t i = 0; i < normAccessor.myCount; i++)
-				{
-					Vertex& vert = vertices[vertOffset + i];
-					normAccessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
-				}
-			}
-			else if (attribName == "TEXCOORD")
-			{
-				ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
-				if (attributeSet != 0)
-				{
-					// skipping other UVs since our vertex only supports 1 UV set
-					continue;
-				}
-				const Accessor& texCoordAccessor = accessors[attribute.myAccessor];
-				ASSERT_STR(texCoordAccessor.myComponentType == Accessor::ComponentType::Float,
-					"Vertex doesn't support copying in u8 or u16 components!");
-
-				for (size_t i = 0; i < texCoordAccessor.myCount; i++)
-				{
-					Vertex& vert = vertices[vertOffset + i];
-					texCoordAccessor.ReadElem(vert.myUv, i, bufferViews, buffers);
-				}
-			}
-			else
-			{
-				ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
-			}
-		}
-
-		if (mesh.myHasIndices)
-		{
-			const Accessor& indexAccessor = accessors[mesh.myIndexAccessor];
-			for (size_t i = 0; i < indexAccessor.myCount; i++)
-			{
-				Model::IndexType& index = indices[indexOffset + i];
-				switch (indexAccessor.myComponentType)
-				{
-				case Accessor::ComponentType::UnsignedByte:
-				{
-					uint8_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedShort:
-				{
-					uint16_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedInt:
-					indexAccessor.ReadElem(index, i, bufferViews, buffers);
-					break;
-				}
-				ASSERT(static_cast<size_t>(index) + vertOffset < std::numeric_limits<Model::IndexType>::max());
-				index += vertOffset; // offset the index since we're concatenating meshes
-			}
-			indexOffset += indexAccessor.myCount;
-		}
-		vertOffset += accessors[mesh.myAttributes[0].myAccessor].myCount;
+			buffers,
+			bufferViews,
+			accessors,
+			animations
+		};
+		glTF::ConstructAnimationClips(input, myAnimClips);
 	}
-
-
-	Model::UploadDescriptor<Vertex> uploadDesc;
-	uploadDesc.myVertices = vertices.data();
-	uploadDesc.myVertCount = vertices.size();
-	uploadDesc.myIndices = indices.data();
-	uploadDesc.myIndCount = indices.size();
-	uploadDesc.myNextDesc = nullptr;
-	uploadDesc.myVertsOwned = false;
-	uploadDesc.myIndOwned = false;
-	myModel->Update(uploadDesc);
 }
+

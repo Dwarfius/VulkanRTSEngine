@@ -46,14 +46,14 @@ void AnimationController::Update(float aDeltaTime)
 	Skeleton::BoneIndex boneIndex;
 	glm::vec3 bonePos;
 	glm::vec3 boneScale;
-	glm::vec3 boneEulerRot;
+	glm::quat boneRot;
 
 	auto FetchActiveBone = [&](Skeleton::BoneIndex anIndex) {
 		boneIndex = anIndex;
 		Transform boneTransf = skeleton->GetBoneLocalTransform(boneIndex);
 		bonePos = boneTransf.GetPos();
 		boneScale = boneTransf.GetScale();
-		boneEulerRot = boneTransf.GetEuler();
+		boneRot = boneTransf.GetRotation();
 	};
 
 	const std::vector<AnimationClip::BoneTrack>& tracks = myActiveClip->GetTracks();
@@ -64,7 +64,7 @@ void AnimationController::Update(float aDeltaTime)
 		if (track.myBone != boneIndex)
 		{
 			// update bone
-			skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
+			skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneRot, boneScale });
 
 			// fetch new bone
 			FetchActiveBone(track.myBone);
@@ -75,7 +75,7 @@ void AnimationController::Update(float aDeltaTime)
 		{
 			// it is possible that we already progressed to the next mark
 			// (or more, if the framerate is low) so have to update where we are
-			// against current time!
+			// against current time
 			size_t nextMarkInd = currMarkInd + 1;
 			const size_t trackEnd = track.myTrackStart + track.myMarkCount;
 			for(; nextMarkInd < trackEnd; nextMarkInd++)
@@ -94,24 +94,23 @@ void AnimationController::Update(float aDeltaTime)
 				}
 			}
 		}
-		float newValue = myActiveClip->CalculateValue(currMarkInd, myCurrentTime, track);
+
 		switch (track.myAffectedProperty)
 		{
-		case AnimationClip::Property::PosX: bonePos.x = newValue; break;
-		case AnimationClip::Property::PosY: bonePos.y = newValue; break;
-		case AnimationClip::Property::PosZ: bonePos.z = newValue; break;
-		case AnimationClip::Property::ScaleX: boneScale.x = newValue; break;
-		case AnimationClip::Property::ScaleY: boneScale.y = newValue; break;
-		case AnimationClip::Property::ScaleZ: boneScale.z = newValue; break;
-		case AnimationClip::Property::RotX: boneEulerRot.x = newValue; break;
-		case AnimationClip::Property::RotY: boneEulerRot.y = newValue; break;
-		case AnimationClip::Property::RotZ: boneEulerRot.z = newValue; break;
+		case AnimationClip::Property::Position: 
+			bonePos = myActiveClip->CalculateVec(currMarkInd, myCurrentTime, track);
+			break;
+		case AnimationClip::Property::Rotation:
+			boneRot = myActiveClip->CalculateQuat(currMarkInd, myCurrentTime, track);
+			break;
+		case AnimationClip::Property::Scale: 
+			boneScale = myActiveClip->CalculateVec(currMarkInd, myCurrentTime, track);
+			break;
 		default:
 			ASSERT(false);
-			break;
 		}
 	}
-	skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneEulerRot, boneScale });
+	skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneRot, boneScale });
 }
 
 void AnimationController::InitMarks()

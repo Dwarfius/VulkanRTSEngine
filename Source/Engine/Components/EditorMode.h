@@ -42,7 +42,6 @@ private:
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::vector<PoolPtr<AnimationController>> myControllers;
 	std::vector<PoolPtr<Skeleton>> mySkeletons;
-	Handle<AnimationClip> myAnimClip;
 	Handle<OBJImporter> myImportedCube;
 	Handle<GLTFImporter> myGLTFImporter;
 	int mySelectedSkeleton = -1;

@@ -10,28 +10,42 @@ public:
 
 	enum class Property : uint8_t
 	{
-		PosX,
-		PosY,
-		PosZ,
-		ScaleX,
-		ScaleY,
-		ScaleZ,
-		RotX,
-		RotY,
-		RotZ
+		Position,
+		Rotation,
+		Scale,
+		Weights // for morph targets, NYI
 	};
 
 	// http://paulbourke.net/miscellaneous/interpolation/
 	enum class Interpolation : uint8_t
 	{
-		Linear
-		//Cubic TODO: implement this
+		Step,
+		Linear,
+		Cubic
 	};
 
 	struct Mark
 	{
 		float myTimeStamp;
-		float myValue;
+		glm::quat myValue;
+
+		constexpr Mark()
+			: myTimeStamp(0)
+			, myValue()
+		{
+		}
+
+		constexpr Mark(float aTime, glm::quat aQuat)
+			: myTimeStamp(aTime)
+			, myValue(aQuat)
+		{
+		}
+
+		constexpr Mark(float aTime, glm::vec3 aPos)
+			: myTimeStamp(aTime)
+			, myValue(0, aPos.x, aPos.y, aPos.z)
+		{
+		}
 	};
 
 	struct BoneTrack
@@ -53,7 +67,8 @@ public:
 	float GetLength() const { return myLength; }
 
 	void AddTrack(BoneIndex anIndex, Property aProperty, Interpolation anInterMode, const std::vector<Mark>& aMarkSet);
-	float CalculateValue(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const;
+	glm::vec3 CalculateVec(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const;
+	glm::quat CalculateQuat(size_t aMarkInd, float aTime, const BoneTrack& aTrack) const;
 
 	// returns bone-ordered list of tracks
 	const std::vector<BoneTrack>& GetTracks() const { return myTracks; }
