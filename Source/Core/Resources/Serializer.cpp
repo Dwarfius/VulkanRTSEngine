@@ -102,7 +102,10 @@ void Serializer::Serialize(std::string_view aName, T& aValue)
 {
 	ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
 	
-	using StorageType = SupportedTypes::FindMatchingType<T, IsImplicitlyPromotable>;
+	using StorageType = std::conditional_t<Serializer::SupportedTypes::Contains<T>, 
+		T, 
+		SupportedTypes::FindMatchingType<T, IsImplicitlyPromotable>
+	>;
 	if (myIsReading)
 	{
 		VariantType variant = StorageType{};
@@ -122,7 +125,10 @@ void Serializer::Serialize(size_t anIndex, T& aValue)
 {
 	ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
 
-	using StorageType = SupportedTypes::FindMatchingType<T, IsImplicitlyPromotable>;
+	using StorageType = std::conditional_t<Serializer::SupportedTypes::Contains<T>,
+		T,
+		SupportedTypes::FindMatchingType<T, IsImplicitlyPromotable>
+	>;
 	if (myIsReading)
 	{
 		VariantType variant = StorageType{};
@@ -194,6 +200,17 @@ template void Serializer::Serialize(std::string_view, std::string&);
 template void Serializer::Serialize(size_t, std::string&);
 template void Serializer::Serialize(std::string_view, VariantMap&);
 template void Serializer::Serialize(size_t, VariantMap&);
+
+template void Serializer::Serialize(std::string_view, glm::vec2&);
+template void Serializer::Serialize(size_t, glm::vec2&);
+template void Serializer::Serialize(std::string_view, glm::vec3&);
+template void Serializer::Serialize(size_t, glm::vec3&);
+template void Serializer::Serialize(std::string_view, glm::vec4&);
+template void Serializer::Serialize(size_t, glm::vec4&);
+template void Serializer::Serialize(std::string_view, glm::quat&);
+template void Serializer::Serialize(size_t, glm::quat&);
+template void Serializer::Serialize(std::string_view, glm::mat4&);
+template void Serializer::Serialize(size_t, glm::mat4&);
 
 // integral conversion extensions
 template void Serializer::Serialize(std::string_view, uint8_t&);

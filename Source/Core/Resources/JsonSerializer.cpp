@@ -214,7 +214,7 @@ namespace nlohmann
     {
         static void to_json(json& j, const JsonSerializer::ResourceProxy& res)
         {
-            if (res.myPath.size() > 0)
+            if (!res.myPath.empty())
             {
                 j = json{ {"Res", res.myPath} };
             }
@@ -252,6 +252,7 @@ namespace nlohmann
             res = VariantMap();
             if (!j.is_object() || j.is_null())
             {
+                ASSERT(false);
                 return;
             }
 
@@ -321,6 +322,142 @@ namespace nlohmann
                 default:
                     ASSERT(false);
                 }
+            }
+        }
+    };
+
+    template<>
+    struct adl_serializer<glm::vec2>
+    {
+        static void to_json(json& j, const glm::vec2& res)
+        {
+            j = json::array({ res.x, res.y });
+        }
+
+        static void from_json(const json& j, glm::vec2& res)
+        {
+            if (j.is_array())
+            {
+                constexpr int matLength = glm::vec2::length();
+                for (uint8_t index = 0; index < matLength; index++)
+                {
+                    glm::value_ptr(res)[index] = j[index].get<float>();
+                }
+            }
+            else
+            {
+                ASSERT(false);
+                res = glm::vec2(0);
+            }
+        }
+    };
+
+    template<>
+    struct adl_serializer<glm::vec3>
+    {
+        static void to_json(json& j, const glm::vec3& res)
+        {
+            j = json::array({ res.x, res.y, res.z });
+        }
+
+        static void from_json(const json& j, glm::vec3& res)
+        {
+            if (j.is_array())
+            {
+                constexpr int matLength = glm::vec3::length();
+                for (uint8_t index = 0; index < matLength; index++)
+                {
+                    glm::value_ptr(res)[index] = j[index].get<float>();
+                }
+            }
+            else
+            {
+                ASSERT(false);
+                res = glm::vec3(0);
+            }
+        }
+    };
+
+    template<>
+    struct adl_serializer<glm::vec4>
+    {
+        static void to_json(json& j, const glm::vec4& res)
+        {
+            j = json::array({ res.x, res.y, res.z });
+        }
+
+        static void from_json(const json& j, glm::vec4& res)
+        {
+            if (j.is_array())
+            {
+                constexpr int matLength = glm::vec4::length();
+                for (uint8_t index = 0; index < matLength; index++)
+                {
+                    glm::value_ptr(res)[index] = j[index].get<float>();
+                }
+            }
+            else
+            {
+                ASSERT(false);
+                res = glm::vec4(0);
+            }
+        }
+    };
+
+    template<>
+    struct adl_serializer<glm::quat>
+    {
+        static void to_json(json& j, const glm::quat& res)
+        {
+            j = json::array({ res.x, res.y, res.z });
+        }
+
+        static void from_json(const json& j, glm::quat& res)
+        {
+            if (j.is_array())
+            {
+                constexpr int matLength = glm::quat::length();
+                for (uint8_t index = 0; index < matLength; index++)
+                {
+                    glm::value_ptr(res)[index] = j[index].get<float>();
+                }
+            }
+            else
+            {
+                ASSERT(false);
+                res = glm::quat(0, 0, 0, 1);
+            }
+        }
+    };
+
+    template<>
+    struct adl_serializer<glm::mat4>
+    {
+        static void to_json(json& j, const glm::mat4& res)
+        {
+            const float* data = glm::value_ptr(res);
+            j = json::array({ 
+                data[0], data[1], data[2], data[3],
+                data[4], data[5], data[6], data[7],
+                data[8], data[9], data[10], data[11],
+                data[12], data[13], data[14], data[15]
+            });
+        }
+
+        static void from_json(const json& j, glm::mat4& res)
+        {
+            if (j.is_array())
+            {
+                constexpr int matLength = glm::mat4::length() * glm::mat4::length();
+                for (uint8_t index = 0; index < matLength; index++)
+                {
+                    glm::value_ptr(res)[index] = j[index].get<float>();
+                }
+            }
+            else
+            {
+                ASSERT(false);
+                res = glm::mat4(1);
             }
         }
     };
