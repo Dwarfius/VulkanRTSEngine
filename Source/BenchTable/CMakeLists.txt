@@ -7,6 +7,7 @@ include(FetchContent)
 SET(BENCHTABLE_GenSerialization FALSE CACHE BOOL "Should BenchTable include Serialization tests")
 SET(BENCHTABLE_GenProfiling FALSE CACHE BOOL "Should BenchTable include Profiling tests")
 SET(BENCHTABLE_GenPool FALSE CACHE BOOL "Should BenchTable include Pool tests")
+SET(BENCHTABLE_GenSkeleton FALSE CACHE BOOL "Should BenchTable include Skeleton tests")
 
 FetchContent_Declare(
 	googleBench
@@ -59,7 +60,21 @@ if(BENCHTABLE_GenPool)
 	source_group("Pool" FILES ${SRC_POOL})
 endif()
 
-add_executable(${PROJECT_NAME} ${SRC} ${SRC_SERIALIZATION} ${SRC_PROFILING} ${SRC_POOL})
+if(BENCHTABLE_GenSkeleton)
+	set(SRC_SKELETON "Skeleton/SkeletonIter.cpp"
+		"Skeleton/SkeletonDirty.cpp"
+		"Skeleton/SkeletonCommon.h"
+	)
+	source_group("Skeleton" FILES ${SRC_SKELETON})
+endif()
+
+add_executable(${PROJECT_NAME} 
+	${SRC} 
+	${SRC_SERIALIZATION} 
+	${SRC_PROFILING} 
+	${SRC_POOL} 
+	${SRC_SKELETON}
+)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
