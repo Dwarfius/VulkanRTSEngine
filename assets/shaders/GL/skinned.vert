@@ -3,9 +3,10 @@
 #define MAX_BONES 100
 
 layout(location = 0) in vec3 position;
-layout(location = 1) in vec2 uvs;
-layout(location = 2) in ivec2 boneIndices;
-layout(location = 3) in vec2 boneWeights;
+layout(location = 0) in vec3 normal;
+layout(location = 2) in vec2 uvs;
+layout(location = 3) in ivec2 boneIndices;
+layout(location = 4) in vec2 boneWeights;
 
 out vec3 normalOut;
 out vec2 uvsOut;
@@ -66,6 +67,6 @@ vec4 ApplySkinning(vec3 aPos, ivec2 aBoneIndices, vec2 aBoneWeights)
 void main() 
 {
     gl_Position = MVP * ApplySkinning(position, boneIndices, boneWeights);
-    normalOut = vec3(0);
+    normalOut = (Model * ApplySkinning(normal, boneIndices, boneWeights)).xyz;
     uvsOut = uvs;
 }

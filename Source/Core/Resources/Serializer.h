@@ -14,7 +14,7 @@ class Serializer
 		Array // serializing an array
 	};
 
-public:
+protected:
 	struct ResourceProxy { std::string myPath; };
 	using SupportedTypes = VariantUtil<bool, uint64_t, int64_t, float, 
 		std::string, VariantMap, ResourceProxy,

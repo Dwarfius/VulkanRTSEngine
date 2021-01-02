@@ -71,6 +71,7 @@ set(SRC_ANIMATION
 	"Animation/AnimationClip.cpp" "Animation/AnimationClip.h"
 	"Animation/AnimationController.cpp" "Animation/AnimationController.h"
 	"Animation/AnimationSystem.cpp" "Animation/AnimationSystem.h"
+	"Animation/SkinnedVerts.h"
 )
 
 set(SRC_COMP 
@@ -109,6 +110,17 @@ set(SRC_RESOURCES
 	"Resources/OBJImporter.cpp" "Resources/OBJImporter.h"
 )
 
+set(SRC_RESOURCES_GLTF
+	"Resources/glTF/Accessor.h"
+	"Resources/glTF/Animation.cpp" "Resources/glTF/Animation.h"
+	"Resources/glTF/Buffer.h"
+	"Resources/glTF/BufferView.h"
+	"Resources/glTF/Common.h"
+	"Resources/glTF/Mesh.cpp" "Resources/glTF/Mesh.h"
+	"Resources/glTF/Node.h"
+	"Resources/glTF/Skin.cpp" "Resources/glTF/Skin.h"
+)
+
 set(SRC_SYSTEMS
 	"Systems/ProfilerUI.cpp" "Systems/ProfilerUI.h"
 )
@@ -134,6 +146,7 @@ add_library(${PROJECT_NAME} STATIC
 			${SRC_GRAPHICS_VK}
 			${SRC_GRAPHICS_ADAPTERS}
 		${SRC_RESOURCES}
+			${SRC_RESOURCES_GLTF}
 		${SRC_SYSTEMS}
 			${SRC_SYSTEMS_IMGUI}
 )
@@ -150,6 +163,7 @@ if(VENGINE_BUILD_WITH_VULKAN)
 	source_group(Graphics\\VK FILES ${SRC_GRAPHICS_VK})
 endif()
 source_group(Resources FILES ${SRC_RESOURCES})
+source_group(Resources\\glTF FILES ${SRC_RESOURCES_GLTF})
 source_group(Systems FILES ${SRC_SYSTEMS})
 source_group(Systems\\ImGUI FILES ${SRC_SYSTEMS_IMGUI})
 

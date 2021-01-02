@@ -39,9 +39,4 @@ void AnimationSystem::Update(float aDeltaTime)
 			aController.Update(aDeltaTime);
 		}
 	});
-
-	mySkeletonPool.ParallelForEach([](Skeleton& aSkeleton) {
-		Profiler::ScopedMark skeletonUpdate("SkeletonUpdate");
-		aSkeleton.Update();
-	});
 }

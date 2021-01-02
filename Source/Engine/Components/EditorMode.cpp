@@ -27,7 +27,7 @@ EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("triangleAnim.json");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("skinExample.json");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -81,21 +81,32 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	if (myGLTFImporter->GetState() == Resource::State::Ready
 		&& Input::GetMouseBtnPressed(2))
 	{
-		GameObject* go = aGame.Instantiate(camTransf.GetPos());
-		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-			
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
-		VisualObject* vo = new VisualObject(*go);
+		AnimationSystem& animSystem = aGame.GetAnimationSystem();
 
-		Handle<Model> cubeModel = myGLTFImporter->GetModel();
+		GameObject* go = aGame.Instantiate(camTransf.GetPos());
+
+		VisualObject* vo = new VisualObject(*go);
+		go->SetVisualObject(vo);
+
+		PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(0);
+		*testSkeleton.Get() = myGLTFImporter->GetSkeleton(0);
+
+		PoolPtr<AnimationController> animController = animSystem.AllocateController(testSkeleton);
+		animController.Get()->PlayClip(myGLTFImporter->GetAnimClip(0).Get());
+
+		go->SetSkeleton(std::move(testSkeleton));
+		go->SetAnimController(std::move(animController));
+
+		Handle<Model> cubeModel = myGLTFImporter->GetModel(0);
+		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
 		physComp->SetOrigin(cubeModel->GetCenter());
 		physComp->CreatePhysicsEntity(0, myPhysShape);
 		physComp->RequestAddToWorld(aWorld);
 
 		vo->SetModel(cubeModel);
-		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
+		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("skinned.ppl"));
 		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
-		go->SetVisualObject(vo);
 	}
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);

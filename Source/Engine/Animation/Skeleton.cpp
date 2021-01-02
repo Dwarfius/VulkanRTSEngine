@@ -6,46 +6,46 @@
 
 Skeleton::Skeleton(BoneIndex aCapacity)
 {
-	ASSERT_STR(aCapacity < kInvalidIndex, "Too many bones requested!");
 	myBones.reserve(aCapacity);
+}
+
+Skeleton::Skeleton(const std::vector<BoneInitData>& aBones)
+{
+	ASSERT_STR(aBones.size() < kInvalidIndex, "Too many bones requested!");
+	myBones.resize(aBones.size());
+
+	ASSERT_STR(aBones[0].myParentInd == kInvalidIndex, 
+		"First bone must be root and have no parent!");
+	for (size_t i = 0; i < aBones.size(); i++)
+	{
+		ASSERT_STR(aBones[i].myParentInd < i, "Parent bone must appear earlier in the list");
+		myBones[i].myLocalTransf = aBones[i].myLocalTransf;
+		myBones[i].myParentInd = aBones[i].myParentInd;
+	}
+
+	for (size_t i=1; i<myBones.size(); i++)
+	{
+		Bone& bone = myBones[i];
+		bone.myWorldTransf = myBones[bone.myParentInd].myWorldTransf * bone.myLocalTransf;
+		// we assume that skeleton is in bind pose when first created
+		bone.myInverseBindTransf = bone.myWorldTransf.GetInverted();
+	}
 }
 
 void Skeleton::AddBone(BoneIndex aParentIndex, const Transform& aLocalTransf)
 {
-	if (aParentIndex == kInvalidIndex)
+	ASSERT_STR(aParentIndex < myBones.size() || aParentIndex == kInvalidIndex, 
+		"Invalid parent bone index - parent must've been added before this bone.");
+	Bone& bone = myBones.emplace_back(aParentIndex, aLocalTransf);
+	if (aParentIndex != kInvalidIndex)
 	{
-		ASSERT_STR(myBones.size() == 0, "Root bone must be added first!");
-		Bone& rootBone = myBones.emplace_back(aParentIndex, aLocalTransf);
-		rootBone.myFirstChildInd = 1;
+		bone.myWorldTransf = myBones[bone.myParentInd].myWorldTransf * bone.myLocalTransf;
 	}
 	else
 	{
-		ASSERT_STR(aParentIndex < myBones.size(), "Root bone must be added first!");
-		// we're about to add a child bone, so have to find an appropriate location for it
-		// maintaining the breadth-first order
-		Bone& parentBone = myBones[aParentIndex];
-		parentBone.myChildCount++;
-		BoneIndex childGroupStart = parentBone.myFirstChildInd;
-
-		// We will always insert at the start - this makes all the book-keeping
-		// easier - we only need to shift the start indices of parent's children
-		auto childBoneIter = myBones.emplace(myBones.begin() + childGroupStart, aParentIndex, aLocalTransf);
-		Bone& childBone = *childBoneIter;
-		// since we insert at the start of the parent group, the free child index will always
-		// be at the end of the current group (parent's children)
-		childBone.myFirstChildInd = parentBone.myFirstChildInd + parentBone.myChildCount;
-
-		// since we inserted in the "middle", update the indexes
-		// of all the bones after us with a simple shift to the right
-		for (BoneIndex boneIndex = childGroupStart + 1; 
-				boneIndex < myBones.size(); 
-				boneIndex++)
-		{
-			// we inserted one - so just shift by one
-			myBones[boneIndex].myFirstChildInd++; 
-		}
+		bone.myWorldTransf = bone.myLocalTransf;
 	}
-	myNeedsUpdate = true;
+	bone.myInverseBindTransf = bone.myWorldTransf.GetInverted();
 }
 
 const Transform& Skeleton::GetBoneLocalTransform(BoneIndex anIndex) const
@@ -63,51 +63,50 @@ const Transform& Skeleton::GetBoneIverseBindTransform(BoneIndex anIndex) const
 	return myBones[anIndex].myInverseBindTransf;
 }
 
-void Skeleton::SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransform)
+void Skeleton::SetBoneLocalTransform(BoneIndex anIndex, const Transform& aTransform, bool aUpdateHierarchy /*= true*/)
 {
 	Bone& bone = myBones[anIndex];
 	bone.myLocalTransf = aTransform;
-	DirtyHierarchy(anIndex, false);
+
+	if (anIndex != 0)
+	{
+		bone.myWorldTransf = myBones[bone.myParentInd].myWorldTransf * bone.myLocalTransf;
+	}
+	else
+	{
+		bone.myWorldTransf = bone.myLocalTransf;
+	}
+
+	if (aUpdateHierarchy)
+	{
+		UpdateHierarchy(anIndex);
+	}
 }
 
-void Skeleton::SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransform)
+void Skeleton::SetBoneWorldTransform(BoneIndex anIndex, const Transform& aTransform, bool aUpdateHierarchy /*= true*/)
 {
 	Bone& bone = myBones[anIndex];
 	bone.myWorldTransf = aTransform;
-	DirtyHierarchy(anIndex, true);
+
+	if (anIndex != 0)
+	{
+		bone.myLocalTransf = myBones[bone.myParentInd].myWorldTransf * bone.myWorldTransf.GetInverted();
+	}
+	else
+	{
+		bone.myLocalTransf = bone.myWorldTransf;
+	}
+
+	if (aUpdateHierarchy)
+	{
+		UpdateHierarchy(anIndex);
+	}
 }
 
-void Skeleton::Update()
+void Skeleton::OverrideInverseBindTransform(BoneIndex anIndex, const Transform& aTransform)
 {
-	if (!myNeedsUpdate)
-	{
-		return;
-	}
-
-	// Current method relies on the fact that bones in breadth-first order
-	UpdateBone(0, {});
-	for (BoneIndex boneIndex = 1; boneIndex < myBones.size(); boneIndex++)
-	{
-		ASSERT(!myBones[myBones[boneIndex].myParentInd].myIsWorldDirty);
-		// using look back iteration... this relies on the fact that 
-		// the values are probably saved in the cache already
-		// TODO: bench a version that only does memory access if parentInd changed
-		// should have better cache utilization, at a price of misprediction
-		const Transform& parentLocal = myBones[myBones[boneIndex].myParentInd].myWorldTransf;
-		UpdateBone(boneIndex, parentLocal);
-	}
-	myNeedsUpdate = false;
-
-	// TODO: [[unlikely]] or look into separating it as part of initialization
-	if (myNeedUpdatingInverses)
-	{
-		// we assume that skeleton is in bind pose when first created
-		for (Bone& bone : myBones)
-		{
-			bone.myInverseBindTransf = bone.myWorldTransf.GetInverted();
-		}
-		myNeedUpdatingInverses = false;
-	}
+	Bone& bone = myBones[anIndex];
+	bone.myInverseBindTransf = aTransform;
 }
 
 void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform) const
@@ -126,63 +125,24 @@ void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform)
 	}
 }
 
-void Skeleton::DirtyHierarchy(BoneIndex indexOfRoot, bool aIsWorldDirty)
+void Skeleton::UpdateHierarchy(BoneIndex anIndex)
 {
-	// TODO: bench adding an early out here, before adding to the queue!
-	constexpr size_t kBonesMemorySize = 48;
+	constexpr size_t kBonesMemorySize = 128;
 	BoneIndex bonesMemory[kBonesMemorySize];
 	std::pmr::monotonic_buffer_resource stackRes(bonesMemory, sizeof(bonesMemory));
-	std::pmr::deque<BoneIndex> bonesToVisit(&stackRes);
+	std::pmr::vector<BoneIndex> dirtyIndices(&stackRes);
+	dirtyIndices.push_back(anIndex);
 
-	bonesToVisit.push_front(indexOfRoot);
-	while (bonesToVisit.size()) 
+	for (BoneIndex i = anIndex + 1; i < myBones.size(); i++)
 	{
-		const BoneIndex boneIndex = bonesToVisit.back();
-		bonesToVisit.pop_back();
-
-		Bone& bone = myBones[boneIndex];
-		if (bone.myIsLocalDirty)
-		{
-			// the hierarchy bellow has already been dirtied
-			// so skip this one
-			continue;
+		Skeleton::BoneIndex parentInd = myBones[i].myParentInd;
+		if(std::binary_search(dirtyIndices.begin(), dirtyIndices.end(), parentInd))
+		{ 
+			Bone& bone = myBones[i];
+			bone.myWorldTransf = myBones[parentInd].myWorldTransf * bone.myLocalTransf;
+			ASSERT_STR(dirtyIndices.size() + 1 < kBonesMemorySize,
+				"Insufficient array size for dity indices, increase!");
+			dirtyIndices.push_back(i);
 		}
-		// dirty current bone
-		bone.myIsLocalDirty = true;
-
-		// and schedule all of the children for dirtying
-		for (BoneIndex childOffset = 0;
-			childOffset < bone.myChildCount;
-			childOffset++)
-		{
-			bonesToVisit.push_front(bone.myFirstChildInd + childOffset);
-		}
-		ASSERT_STR(bonesToVisit.size() < kBonesMemorySize, "Not enough space "
-			"allocated on the stack to dirty the hierarchy! Try increasing the size!");
-	}
-
-	Bone& rootOfHierarchy = myBones[indexOfRoot];
-	rootOfHierarchy.myIsWorldDirty |= aIsWorldDirty;
-
-	myNeedsUpdate = true;
-}
-
-void Skeleton::UpdateBone(BoneIndex anIndex, const Transform& aParentWorld)
-{
-	Bone& bone = myBones[anIndex];
-	if (bone.myIsWorldDirty)
-	{
-		// if the world is dirty - we have to extract local 
-		// transform out of it and the parent
-		bone.myLocalTransf = aParentWorld * bone.myWorldTransf.GetInverted();
-		bone.myIsWorldDirty = false;
-		bone.myIsLocalDirty = false; // no need to update world transform based on new local
-	}
-	else if (bone.myIsLocalDirty)
-	{
-		// if the local is dirty - all we gotta do is update 
-		// the world transform based on parent
-		bone.myWorldTransf = aParentWorld * bone.myLocalTransf;
-		bone.myIsLocalDirty = false;
 	}
 }

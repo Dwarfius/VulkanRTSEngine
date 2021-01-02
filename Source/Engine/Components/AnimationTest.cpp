@@ -8,6 +8,7 @@
 #include "../Animation/AnimationSystem.h"
 #include "../Animation/AnimationClip.h"
 #include "../Resources/GLTFImporter.h"
+#include "../Animation/SkinnedVerts.h"
 
 AnimationTest::AnimationTest(Game& aGame)
 	: myGame(aGame)
@@ -21,7 +22,6 @@ AnimationTest::AnimationTest(Game& aGame)
 	skeleton->AddBone(0, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
-	skeleton->Update();
 
 	myClip = new AnimationClip(4, true);
 	std::vector<AnimationClip::Mark> marks;
@@ -59,44 +59,6 @@ void AnimationTest::Update(float aDeltaTime)
 	myGO->GetSkeleton().Get()->DebugDraw(drawer, { glm::vec3(0), glm::vec3(0), glm::vec3(1) });
 }
 
-struct AnimationVert
-{
-	glm::vec3 myPos;
-	glm::vec2 myUv;
-	uint32_t myBoneIndices[2];
-	glm::vec2 myBoneWeights;
-
-	static constexpr VertexDescriptor GetDescriptor()
-	{
-		using ThisType = AnimationVert; // for copy-paste convenience
-		return {
-			sizeof(ThisType),
-			4,
-			{
-				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myPos) },
-				{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUv) },
-				{ VertexDescriptor::MemberType::U32, 2, offsetof(ThisType, myBoneIndices) },
-				{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myBoneWeights) },
-			}
-		};
-	}
-};
-
-namespace std
-{
-	template<> struct hash<AnimationVert>
-	{
-		std::size_t operator()(const AnimationVert& v) const
-		{
-			return ((hash<glm::vec3>()(v.myPos) ^
-				(hash<glm::vec2>()(v.myUv) << 1)) >> 1) ^
-				(hash<uint16_t>()(v.myBoneIndices[0]) << 2) ^
-				(hash<uint16_t>()(v.myBoneIndices[1]) >> 2) ^
-				(hash<glm::vec2>()(v.myBoneWeights) >> 2);
-		}
-	};
-}
-
 Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 {
 	// for each skeleton bone - 1 we need a cube and an arm (rectangular cuboid)
@@ -111,58 +73,66 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 		bool yExtended = aSize.y != aSize.x && aSize.y != aSize.z;
 		bool zExtended = aSize.z != aSize.x && aSize.z != aSize.y;
 		auto GetWeights = [](bool aIsTo) {
-			return aIsTo ? glm::vec2{0, 1} : glm::vec2{ 1, 0 };
+			return aIsTo ? glm::vec4{ 0, 1, 0, 0 } : glm::vec4{ 1, 0, 0, 0 };
 		};
-
+		constexpr glm::vec3 kNoNormal = glm::vec3(0);
 		// front
 		verts.push_back({
 			aCenter + glm::vec3(-aSize.x, -aSize.y, aSize.z),
-			{0, 0},
-			{aBone, aBone + 1u},
+			kNoNormal,
+			{ 0, 0 },
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(zExtended)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(aSize.x, -aSize.y, aSize.z), 
+			kNoNormal,
 			{1, 0}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 }, 
 			GetWeights(xExtended || zExtended)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(aSize.x, aSize.y, aSize.z), 
+			kNoNormal,
 			{1, 1}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(xExtended || yExtended || zExtended)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(-aSize.x, aSize.y, aSize.z), 
+			kNoNormal,
 			{0, 1}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(yExtended || zExtended)
 		});
 
 		// back
 		verts.push_back({ 
 			aCenter + glm::vec3(-aSize.x, -aSize.y, -aSize.z), 
+			kNoNormal,
 			{1, 1}, 
-			{aBone, aBone + 1u}, 
-			{1, 0} 
+			{ aBone, aBone + 1u, 0, 0 },
+			GetWeights(false)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(aSize.x, -aSize.y, -aSize.z), 
+			kNoNormal,
 			{0, 1}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(xExtended)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(aSize.x, aSize.y, -aSize.z), 
+			kNoNormal,
 			{0, 0}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(xExtended || yExtended)
 		});
 		verts.push_back({ 
 			aCenter + glm::vec3(-aSize.x, aSize.y, -aSize.z),
+			kNoNormal,
 			{1, 0}, 
-			{aBone, aBone + 1u}, 
+			{ aBone, aBone + 1u, 0, 0 },
 			GetWeights(yExtended)
 		});
 		
