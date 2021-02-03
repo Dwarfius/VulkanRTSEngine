@@ -22,22 +22,20 @@ namespace
 		{
 		}
 
-		virtual void setWorldTransform(const btTransform& centerOfMassWorldTrans) override final
+		void setWorldTransform(const btTransform& centerOfMassWorldTrans) override final
 		{
 			glm::mat4 transf = Utils::ConvertToGLM(centerOfMassWorldTrans);
 			transf = glm::translate(transf, -myOrigin);
 			myEntity->SetTransform(transf);
 		}
 
-		virtual void getWorldTransform(btTransform& centerOfMassWorldTrans) const override final
+		void getWorldTransform(btTransform& centerOfMassWorldTrans) const override final
 		{
 			glm::mat4 transf;
 			myEntity->GetTransform(transf);
 			transf = glm::translate(transf, myOrigin);
 			centerOfMassWorldTrans = Utils::ConvertToBullet(transf);
 		}
-
-
 	};
 }
 
