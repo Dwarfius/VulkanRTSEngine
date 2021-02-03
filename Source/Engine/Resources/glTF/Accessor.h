@@ -143,6 +143,11 @@ namespace glTF
 			accessors.reserve(accessorsJson.size());
 			for (const nlohmann::json& accessorJson : accessorsJson)
 			{
+				{
+					auto sparseJsonIter = accessorJson.find("sparse");
+					ASSERT_STR(sparseJsonIter == accessorJson.end(), "Sparse not yet implemented!");
+				}
+
 				Accessor accessor;
 				// TODO: support optional bufferView!
 				accessor.myBufferView = accessorJson["bufferView"].get<uint32_t>();

@@ -16,9 +16,7 @@
 		{  
 			"myUniformAdapter":"SkeletonAdapter",
 			"myEntries":[  
-				{ "myUniformType":3, "myArraySize":100 },
-				{ "myUniformType":3, "myArraySize":100 },
-				{ "myUniformType":4, "myArraySize":100 }
+				{ "myUniformType":5, "myArraySize":100 }
 			]
 		}
 	]

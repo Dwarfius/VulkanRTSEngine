@@ -15,7 +15,7 @@ namespace glTF
 			return *this;
 		}
 
-		static std::vector<Buffer> Parse(const nlohmann::json& aRootJson)
+		static std::vector<Buffer> Parse(const nlohmann::json& aRootJson, const std::string& aRelPath)
 		{
 			std::vector<Buffer> buffers;
 			const nlohmann::json& buffersJson = aRootJson["buffers"];
@@ -51,7 +51,7 @@ namespace glTF
 				else
 				{
 					// it's a file, and we assume it's located nearby
-					File file(uri);
+					File file(aRelPath + uri);
 					if (!file.Read())
 					{
 						ASSERT_STR(false, "Failed to read %s", file.GetPath());

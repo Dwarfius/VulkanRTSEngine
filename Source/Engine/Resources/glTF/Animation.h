@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Accessor.h"
+#include "Node.h"
 #include "Animation/AnimationClip.h"
 
 namespace glTF
@@ -34,6 +35,7 @@ namespace glTF
 			// Inputs required to construct a Track and Marks for the AnimationClip from a channel
 			struct TrackInputs : BufferAccessorInputs
 			{
+				const std::vector<Node>& myNodes;
 				const std::vector<Sampler>& mySamplers;
 				const std::unordered_map<uint32_t, AnimationClip::BoneIndex>& myIndexMap;
 			};
@@ -47,6 +49,7 @@ namespace glTF
 
 		struct AnimationClipInput : BufferAccessorInputs
 		{
+			const std::vector<Node>& myNodes;
 			const std::vector<Animation>& myAnimations;
 			const std::unordered_map<uint32_t, AnimationClip::BoneIndex>& myIndexMap;
 		};

@@ -63,6 +63,7 @@ void AnimationController::Update(float aDeltaTime)
 		const AnimationClip::BoneTrack& track = tracks[trackIndex];
 		if (track.myBone != boneIndex)
 		{
+			ASSERT_STR(track.myBone > boneIndex, "Bad ordering!");
 			// update bone
 			skeleton->SetBoneLocalTransform(boneIndex, { bonePos, boneRot, boneScale });
 
@@ -72,6 +73,9 @@ void AnimationController::Update(float aDeltaTime)
 
 		size_t currMarkInd = myCurrentMarks[trackIndex];
 		AnimationClip::Mark currentMark = myActiveClip->GetMark(currMarkInd);
+
+		// TODO: take this out of the loop and put above
+		// find the smallest deltaTime of mark-pair, and hide this behind the check
 		{
 			// it is possible that we already progressed to the next mark
 			// (or more, if the framerate is low) so have to update where we are
@@ -128,6 +132,8 @@ void AnimationController::InitMarks()
 	size_t index = 0;
 	for (const AnimationClip::BoneTrack& track : tracks)
 	{
+		ASSERT_STR(myActiveClip->GetMark(track.myTrackStart).myTimeStamp == 0.f,
+			"We require that there is a mark at t==0 bellow and in ::Update!");
 		size_t markIndex = track.myTrackStart;
 		while (markIndex < track.myTrackStart + track.myMarkCount
 			&& myCurrentTime >= myActiveClip->GetMark(markIndex).myTimeStamp)

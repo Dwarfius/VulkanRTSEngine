@@ -34,14 +34,13 @@ private:
 	ProfilerUI myProfilerUI;
 
 	// Testing
-	void AddTestSkeleton(AnimationSystem& anAnimSystem);
+	void AddTestSkeleton(Game& aGame);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
 	void DrawBoneHierarchy(int aSkeletonIndex);
 	void DrawBoneInfo(int aSkeletonIndex);
 	
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
-	std::vector<PoolPtr<AnimationController>> myControllers;
-	std::vector<PoolPtr<Skeleton>> mySkeletons;
+	std::vector<GameObject*> myGOs;
 	Handle<OBJImporter> myImportedCube;
 	Handle<GLTFImporter> myGLTFImporter;
 	int mySelectedSkeleton = -1;

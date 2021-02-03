@@ -27,7 +27,9 @@ EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("skinExample.json");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("whale.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("riggedFigure.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -106,7 +108,9 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 
 		vo->SetModel(cubeModel);
 		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("skinned.ppl"));
-		vo->SetTexture(assetTracker.GetOrCreate<Texture>("CubeUnwrap.jpg"));
+		vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.png"));
+
+		myGOs.push_back(go);
 	}
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
@@ -171,9 +175,10 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
 }
 
-void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
+void EditorMode::AddTestSkeleton(Game& aGame)
 {
-	PoolPtr<Skeleton> testSkeleton = anAnimSystem.AllocateSkeleton(4);
+	AnimationSystem& animSystem = aGame.GetAnimationSystem();
+	PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(4);
 	Skeleton* skeleton = testSkeleton.Get();
 
 	skeleton->AddBone(Skeleton::kInvalidIndex, {});
@@ -181,10 +186,13 @@ void EditorMode::AddTestSkeleton(AnimationSystem& anAnimSystem)
 	skeleton->AddBone(1, { glm::vec3(0, 0, 1), glm::vec3(0.f), glm::vec3(1.f) });
 	skeleton->AddBone(2, { glm::vec3(0, 1, 0), glm::vec3(0.f), glm::vec3(1.f) });
 
-	PoolPtr<AnimationController> animController = anAnimSystem.AllocateController(testSkeleton);
+	PoolPtr<AnimationController> animController = animSystem.AllocateController(testSkeleton);
 
-	myControllers.push_back(std::move(animController));
-	mySkeletons.push_back(std::move(testSkeleton));
+	Camera& cam = *aGame.GetCamera();
+	GameObject* go = aGame.Instantiate(cam.GetTransform().GetPos());
+	go->SetSkeleton(std::move(testSkeleton));
+	go->SetAnimController(std::move(animController));
+	myGOs.push_back(go);
 }
 
 void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
@@ -204,7 +212,7 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 			{
 				for (int i = 0; i < myAddSkeletonCount; i++)
 				{
-					AddTestSkeleton(aGame.GetAnimationSystem());
+					AddTestSkeleton(aGame);
 				}
 			}
 
@@ -216,19 +224,30 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 		ImGui::End();
 	}
 
-	for (const PoolPtr<Skeleton>& skeleton : mySkeletons)
+	for (const GameObject* gameObject : myGOs)
 	{
-		skeleton.Get()->DebugDraw(aGame.GetDebugDrawer(), { glm::vec3(1), glm::vec3(0), glm::vec3(1) });
+		const PoolPtr<Skeleton>& skeletonPtr = gameObject->GetSkeleton();
+		if (skeletonPtr.IsValid())
+		{
+			skeletonPtr.Get()->DebugDraw(aGame.GetDebugDrawer(), gameObject->GetTransform());
+		}
 	}
 }
 
 void EditorMode::DrawBoneHierarchy(int aSkeletonIndex)
 {
 	if (aSkeletonIndex >= 0 
-		&& aSkeletonIndex < mySkeletons.size() 
+		&& aSkeletonIndex < myGOs.size() 
 		&& ImGui::TreeNode("SkeletonTreeNode", "Skeleton %d", aSkeletonIndex))
 	{
-		Skeleton* skeleton = mySkeletons[aSkeletonIndex].Get();
+		const PoolPtr<Skeleton>& skeletonPtr = myGOs[aSkeletonIndex]->GetSkeleton();
+		if (!skeletonPtr.IsValid())
+		{
+			ImGui::TreePop();
+			return;
+		}
+
+		const Skeleton* skeleton = skeletonPtr.Get();
 
 		char formatBuffer[128];
 		for (Skeleton::BoneIndex index = 0;
@@ -265,7 +284,14 @@ void EditorMode::DrawBoneHierarchy(int aSkeletonIndex)
 			mySelectedBone = Skeleton::kInvalidIndex;
 		}
 
-		const AnimationController* controller = myControllers[aSkeletonIndex].Get();
+		const PoolPtr<AnimationController>& controllerPtr = myGOs[aSkeletonIndex]->GetAnimController();
+		if (!controllerPtr.IsValid())
+		{
+			ImGui::TreePop();
+			return;
+		}
+
+		const AnimationController* controller = controllerPtr.Get();
 		ImGui::Text("Animation time: %f", controller->GetTime());
 
 		ImGui::TreePop();
@@ -276,14 +302,21 @@ void EditorMode::DrawBoneInfo(int aSkeletonIndex)
 {
 	if (mySelectedBone == Skeleton::kInvalidIndex
 		|| aSkeletonIndex == -1
-		|| aSkeletonIndex >= mySkeletons.size())
+		|| aSkeletonIndex >= myGOs.size())
 	{
 		return;
 	}
 
 	if (ImGui::TreeNode("Bone Info"))
 	{
-		Skeleton* skeleton = mySkeletons[aSkeletonIndex].Get();
+		PoolWeakPtr<Skeleton> skeletonPtr = myGOs[aSkeletonIndex]->GetSkeleton();
+		if (!skeletonPtr.IsValid())
+		{
+			ImGui::TreePop();
+			return;
+		}
+
+		Skeleton* skeleton = skeletonPtr.Get();
 		if (ImGui::TreeNode("World Transform"))
 		{
 			Transform transform = skeleton->GetBoneWorldTransform(mySelectedBone);

@@ -70,8 +70,20 @@ void GLTFImporter::OnLoad(const File& aFile)
 	// as a result, we're ignoring scenes and just grabbing
 	// the raw resources. To expand later!
 
+	std::string relPath = aFile.GetPath();
+	size_t pos = relPath.find_last_of('/');
+	if (pos != std::string::npos)
+	{
+		// incl last /
+		relPath = relPath.substr(0, pos + 1);
+	}
+	else
+	{
+		relPath = std::string();
+	}
+
 	std::vector<glTF::Node> nodes = glTF::Node::Parse(gltfJson);
-	std::vector<glTF::Buffer> buffers = glTF::Buffer::Parse(gltfJson);
+	std::vector<glTF::Buffer> buffers = glTF::Buffer::Parse(gltfJson, relPath);
 	std::vector<glTF::BufferView> bufferViews = glTF::BufferView::Parse(gltfJson);
 	std::vector<glTF::Accessor> accessors = glTF::Accessor::Parse(gltfJson);
 	std::vector<glTF::Mesh> meshes = glTF::Mesh::Parse(gltfJson);
@@ -113,6 +125,7 @@ void GLTFImporter::OnLoad(const File& aFile)
 			buffers,
 			bufferViews,
 			accessors,
+			nodes,
 			animations,
 			nodeBoneMap
 		};

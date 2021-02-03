@@ -66,11 +66,18 @@ namespace glTF
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
 
 		std::vector<AnimationClip::Mark> marks;
-		marks.reserve(timeAccessor.myCount);
+		// over-reserve to avoid an extra realloc if we have t0 mark missing
+		marks.reserve(timeAccessor.myCount + 1);
 		for (size_t index = 0; index < timeAccessor.myCount; index++)
 		{
 			float time;
 			timeAccessor.ReadElem(time, index, bufferViews, buffers);
+
+			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0/#animation-samplerinput-white_check_mark
+			// glTF 2.0 permits recorded marks to start with t>=0, but we expect to always
+			// have a t == 0 for beginning in AnimationController logic
+			// (otherwise, the logic to handle it will be messy)
+			const bool mustInjectStartMark = index == 0 && time > 0.f;
 
 			switch (myTarget.myPath)
 			{
@@ -78,6 +85,11 @@ namespace glTF
 			{
 				glm::vec3 pos;
 				valueAccessor.ReadElem(pos, index, bufferViews, buffers);
+				// TODO: [[unlikely]]
+				if (mustInjectStartMark)
+				{
+					marks.emplace_back(0.f, aInputs.myNodes[myTarget.myNode].myTransform.GetPos());
+				}
 				marks.emplace_back(time, pos);
 			}
 			break;
@@ -85,6 +97,11 @@ namespace glTF
 			{
 				glm::quat rot;
 				valueAccessor.ReadElem(rot, index, bufferViews, buffers);
+				// TODO: [[unlikely]]
+				if (mustInjectStartMark)
+				{
+					marks.emplace_back(0.f, aInputs.myNodes[myTarget.myNode].myTransform.GetRotation());
+				}
 				marks.emplace_back(time, rot);
 			}
 			break;
@@ -92,6 +109,11 @@ namespace glTF
 			{
 				glm::vec3 scale;
 				valueAccessor.ReadElem(scale, index, bufferViews, buffers);
+				// TODO: [[unlikely]]
+				if (mustInjectStartMark)
+				{
+					marks.emplace_back(0.f, aInputs.myNodes[myTarget.myNode].myTransform.GetScale());
+				}
 				marks.emplace_back(time, scale);
 			}
 			break;
@@ -99,13 +121,13 @@ namespace glTF
 				ASSERT(false);
 			}
 		}
-
+		
 		uint32_t nodeIndex = static_cast<uint32_t>(myTarget.myNode);
 		// we have to remap the index, as we store the bones in different hierarchy
 		// (not as part of Node tree, but as a seperate Skeleton tree)
-		AnimationClip::BoneIndex skeletonIndex = aInputs.myIndexMap.at(nodeIndex);
+		AnimationClip::BoneIndex boneIndex = aInputs.myIndexMap.at(nodeIndex);
 		AnimationClip::Interpolation interpolation = sampler.myInterpolation;
-		aClip->AddTrack(skeletonIndex, myTarget.myPath, interpolation, marks);
+		aClip->AddTrack(boneIndex, myTarget.myPath, interpolation, marks);
 	}
 
 	std::vector<Animation> Animation::Parse(const nlohmann::json& aRootJson)
@@ -173,6 +195,7 @@ namespace glTF
 					aInputs.myBuffers,
 					aInputs.myBufferViews,
 					aInputs.myAccessors,
+					aInputs.myNodes,
 					animation.mySamplers,
 					aInputs.myIndexMap
 				};

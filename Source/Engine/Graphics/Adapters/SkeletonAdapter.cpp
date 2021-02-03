@@ -11,18 +11,16 @@ void SkeletonAdapter::FillUniformBlock(const UniformAdapter::SourceData& aData, 
 	const PoolPtr<Skeleton>& skeletonPtr = data.myGO.GetSkeleton();
 	ASSERT_STR(skeletonPtr.IsValid(), "Using adapter for an object that doesn't have a skeleton!");
 
-	// TODO: replace with direct copy - need to adjust Skeleton internals for it!
 	const Skeleton* skeleton = skeletonPtr.Get();
 	Skeleton::BoneIndex boneCount = skeleton->GetBoneCount();
-
 	for (Skeleton::BoneIndex index = 0; index < boneCount; index++)
 	{
-		const Transform& worldTransf = skeleton->GetBoneWorldTransform(index);
-		const Transform& inverseTransf = skeleton->GetBoneIverseBindTransform(index);
-		Transform skinningTransf = worldTransf * inverseTransf;
+		const glm::mat4& worldBoneTransf = skeleton->GetBoneWorldTransform(index).GetMatrix();
+		const glm::mat4& inverseBindPoseTransf = skeleton->GetBoneIverseBindTransform(index);
+		//const glm::mat4& rootTransf = skeleton->myRootTransform.GetMatrix();
+		//glm::mat4 skinningSkeletonSpace = rootTransf * worldBoneTransf * inverseBindPoseTransf;
+		glm::mat4 skinningSkeletonSpace = worldBoneTransf * inverseBindPoseTransf;
 
-		aUB.SetUniform(0, index, skinningTransf.GetPos());
-		aUB.SetUniform(1, index, skinningTransf.GetScale());
-		aUB.SetUniform(2, index, skinningTransf.GetRotation());
+		aUB.SetUniform(0, index, skinningSkeletonSpace);
 	}
 }

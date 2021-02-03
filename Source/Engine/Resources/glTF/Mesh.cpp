@@ -73,6 +73,7 @@ namespace glTF
 		}
 	}
 
+	// TODO: cleanup some of the common code between this and ConstruckSkinnedModel
 	void Mesh::ConstructStaticModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel)
 	{
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
@@ -107,10 +108,6 @@ namespace glTF
 			indices.resize(indexCountTotal);
 		}
 
-		// TODO: current implemnentation is too conservative that it does per-element copy
-		// even though we're supposed to end up with the same result IF the vertex
-		// and Index types are binary the same (so we could just perform a direct memcpy
-		// of the whole buffer)
 		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
 		{
 			bool hasAttribIndex = false;
@@ -316,7 +313,8 @@ namespace glTF
 			{
 				if (attributeSet != 0)
 				{
-					// skipping other joints since our vertex only supports 1 joint set
+					// skipping other joints since our vertex only supports 
+					// a single 4-joint set
 					continue;
 				}
 

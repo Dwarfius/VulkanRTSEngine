@@ -20,11 +20,7 @@ namespace glTF
 			skin.mySkeleton = ReadOptional(skinJson, "skeleton", kInvalidInd);
 
 			const nlohmann::json& jointsJson = skinJson["joints"];
-			skin.myJoints.reserve(jointsJson.size());
-			for (const nlohmann::json& jointJson : jointsJson)
-			{
-				skin.myJoints.push_back(jointJson.get<uint32_t>());
-			}
+			skin.myJoints = jointsJson.get<std::vector<uint32_t>>();
 
 			skin.myName = ReadOptional(skinJson, "name", std::string{});
 			skins.push_back(std::move(skin));
@@ -41,8 +37,6 @@ namespace glTF
 		std::unordered_map<uint32_t, uint32_t> childParentMap;
 		for (const Skin& skin : aInputs.mySkins)
 		{
-			ASSERT_STR(skin.mySkeleton == kInvalidInd, "Custom root bone not yet handled!");
-
 			Skeleton skeleton(static_cast<Skeleton::BoneIndex>(skin.myJoints.size()));
 			
 			// first have to pre-process the joints to determine their hierarchy
@@ -51,6 +45,7 @@ namespace glTF
 			sortedJoints.reserve(skin.myJoints.size());
 			sortedJoints.insert(sortedJoints.end(), skin.myJoints.begin(), skin.myJoints.end());
 			std::sort(sortedJoints.begin(), sortedJoints.end());
+
 			for (uint32_t joint : skin.myJoints)
 			{
 				const Node& node = aInputs.myNodes[joint];
@@ -66,7 +61,7 @@ namespace glTF
 			sortedJoints.clear();
 
 			// we're now ready to reconstruct the hierarchy as a skeleton
-			bool foundRoot = false;
+			Skeleton::BoneIndex foundRoot = Skeleton::kInvalidIndex;
 			for (uint32_t joint : skin.myJoints)
 			{
 				const Node& node = aInputs.myNodes[joint];
@@ -78,14 +73,32 @@ namespace glTF
 				}
 				else
 				{
-					ASSERT_STR(!foundRoot, "Uh oh, extra root - how?");
-					foundRoot = true;
+					ASSERT_STR(foundRoot == Skeleton::kInvalidIndex, 
+						"Uh oh, extra root - how?");
+					foundRoot = static_cast<Skeleton::BoneIndex>(joint);
 				}
 				
 				anIndexMap.insert({ joint, skeleton.GetBoneCount() });
+
 				skeleton.AddBone(parentIndex, node.myTransform);
 			}
 
+			auto nodeIter = std::find_if(aInputs.myNodes.begin(), aInputs.myNodes.end(), [&](const Node& aNode)
+			{
+				return aNode.mySkin == aSkeletons.size();
+			});
+
+			Transform rootTransform = nodeIter->myWorldTransform.GetInverted();
+			if (skin.mySkeleton != kInvalidInd
+				&& skin.mySkeleton != foundRoot)
+			{
+				skeleton.SetRootTransform(rootTransform * aInputs.myNodes[skin.mySkeleton].myTransform);
+			}
+			else
+			{
+				skeleton.SetRootTransform(rootTransform);
+			}
+			
 			// clearing the map, as the joints can be reused across skins
 			childParentMap.clear();
 
@@ -100,28 +113,9 @@ namespace glTF
 					glm::mat4 inverseMatrix;
 					matricesAccessor.ReadElem(inverseMatrix, matrixInd, 
 						aInputs.myBufferViews, aInputs.myBuffers);
-
-					glm::vec3 scale;
-					glm::quat rot;
-					glm::vec3 pos;
-					glm::vec3 skew;
-					glm::vec4 perspective;
-
-					Transform transf;
-					if (glm::decompose(inverseMatrix, scale, rot, pos, skew, perspective))
-					{
-						rot = glm::conjugate(rot);
-						transf.SetPos(pos);
-						transf.SetRotation(rot);
-						transf.SetScale(scale);
-					}
-					else
-					{
-						ASSERT_STR(false, "Weird, failed to decompose, inverse matrices will be broken!");
-					}
 					
 					Skeleton::BoneIndex boneInd = static_cast<Skeleton::BoneIndex>(matrixInd);
-					skeleton.OverrideInverseBindTransform(boneInd, transf);
+					skeleton.OverrideInverseBindTransform(boneInd, inverseMatrix);
 				}
 			}
 
