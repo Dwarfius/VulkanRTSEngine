@@ -22,6 +22,9 @@ AnimationClip::AnimationClip(Id anId, const std::string& aPath)
 
 void AnimationClip::AddTrack(BoneIndex anIndex, Property aProperty, Interpolation anInterMode, const std::vector<Mark>& aMarkSet)
 {
+	ASSERT_STR(aMarkSet[0].myTimeStamp == 0.f, 
+		"A track must have a mark at the start or interpolation won't work correctly!");
+
 	// In order to make it easier to animate bones
 	// we need to order both the Marks and BoneTracks
 	std::vector<BoneTrack>::iterator insertIter = myTracks.begin();
@@ -31,7 +34,7 @@ void AnimationClip::AddTrack(BoneIndex anIndex, Property aProperty, Interpolatio
 		insertIter++;
 	}
 
-	size_t trackStart = 0;
+	size_t trackStart = myMarks.size(); // if we didn't find it, we add to the end
 	if (insertIter != myTracks.end())
 	{
 		trackStart = insertIter->myTrackStart;
