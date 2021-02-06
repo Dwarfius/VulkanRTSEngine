@@ -5,7 +5,7 @@
 class Transform
 {
 public:
-	// Creates zero-initialized transform (identity matrix)
+	// Creates zero-initialized transform with scale of 1
 	Transform();
 	Transform(glm::vec3 aPos, glm::quat aRot, glm::vec3 aScale);
 

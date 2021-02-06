@@ -9,11 +9,10 @@ Skeleton::Skeleton(BoneIndex aCapacity)
 	myBones.reserve(aCapacity);
 }
 
-Skeleton::Skeleton(const std::vector<BoneInitData>& aBones, const Transform& aRootTransf)
+Skeleton::Skeleton(const std::vector<BoneInitData>& aBones)
 {
 	ASSERT_STR(aBones.size() < kInvalidIndex, "Too many bones requested!");
 	myBones.resize(aBones.size());
-	myRootTransform = aRootTransf;
 
 	ASSERT_STR(aBones[0].myParentInd == kInvalidIndex, 
 		"First bone must be root and have no parent!");
@@ -56,7 +55,7 @@ const Transform& Skeleton::GetBoneLocalTransform(BoneIndex anIndex) const
 
 Transform Skeleton::GetBoneWorldTransform(BoneIndex anIndex) const
 {
-	return myRootTransform * myBones[anIndex].myWorldTransf;
+	return myBones[anIndex].myWorldTransf;
 }
 
 const glm::mat4& Skeleton::GetBoneIverseBindTransform(BoneIndex anIndex) const
@@ -110,24 +109,15 @@ void Skeleton::OverrideInverseBindTransform(BoneIndex anIndex, const glm::mat4& 
 	bone.myInverseBindTransf = anInverseMat;
 }
 
-void Skeleton::SetRootTransform(const Transform& aTransf)
-{
-	myRootTransform = aTransf;
-}
-
 void Skeleton::DebugDraw(DebugDrawer& aDrawer, const Transform& aWorldTransform) const
 {
 	for (const Bone& bone : myBones)
 	{
-		// HACK
-		//Transform globalTransf = aWorldTransform * bone.myWorldTransf;
-		Transform globalTransf = aWorldTransform * myRootTransform * bone.myWorldTransf;
+		Transform globalTransf = aWorldTransform * bone.myWorldTransf;
 		aDrawer.AddTransform(globalTransf);
 		if (bone.myParentInd != kInvalidIndex)
 		{
-			// HACK
-			//Transform parentGlobalTransf = aWorldTransform * myBones[bone.myParentInd].myWorldTransf;
-			Transform parentGlobalTransf = aWorldTransform * myRootTransform * myBones[bone.myParentInd].myWorldTransf;
+			Transform parentGlobalTransf = aWorldTransform * myBones[bone.myParentInd].myWorldTransf;
 			const glm::vec3 parentPos = parentGlobalTransf.GetPos();
 			const glm::vec3 bonePos = globalTransf.GetPos();
 			aDrawer.AddLine(bonePos, parentPos, glm::vec3(1, 1, 0));

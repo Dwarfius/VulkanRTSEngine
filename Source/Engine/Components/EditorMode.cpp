@@ -27,14 +27,14 @@ EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("whale.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("whale.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("riggedFigure.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 {
-	// FPS camera implementation
 	Camera* cam = aGame.GetCamera();
 	Transform& camTransf = cam->GetTransform();
 
@@ -62,6 +62,13 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		}
 	}
 
+	{
+		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
+		ImGui::Begin("Camera");
+		ImGui::Text("Pos: %f %f %f", camTransf.GetPos().x, camTransf.GetPos().y, camTransf.GetPos().z);
+		ImGui::End();
+	}
+
 	if (Input::GetMouseBtnPressed(0))
 	{
 		glm::vec3 from = camTransf.GetPos();
@@ -86,29 +93,47 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
 		AnimationSystem& animSystem = aGame.GetAnimationSystem();
 
-		GameObject* go = aGame.Instantiate(camTransf.GetPos());
+		Transform objTransf = myGLTFImporter->GetTransform(0);
+		objTransf.SetPos(objTransf.GetPos() +  camTransf.GetPos());
+		GameObject* go = aGame.Instantiate(objTransf);
 
 		VisualObject* vo = new VisualObject(*go);
 		go->SetVisualObject(vo);
 
-		PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(0);
-		*testSkeleton.Get() = myGLTFImporter->GetSkeleton(0);
-
-		PoolPtr<AnimationController> animController = animSystem.AllocateController(testSkeleton);
-		animController.Get()->PlayClip(myGLTFImporter->GetAnimClip(0).Get());
-
-		go->SetSkeleton(std::move(testSkeleton));
-		go->SetAnimController(std::move(animController));
-
-		Handle<Model> cubeModel = myGLTFImporter->GetModel(0);
-		PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-		physComp->SetOrigin(cubeModel->GetCenter());
+		Handle<Model> model = myGLTFImporter->GetModel(0);
+		/*PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
+		physComp->SetOrigin(model->GetCenter());
 		physComp->CreatePhysicsEntity(0, myPhysShape);
-		physComp->RequestAddToWorld(aWorld);
+		physComp->RequestAddToWorld(aWorld);*/
 
-		vo->SetModel(cubeModel);
-		vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("skinned.ppl"));
-		vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.png"));
+		vo->SetModel(model);
+		if (myGLTFImporter->GetTextureCount() > 0)
+		{
+			vo->SetTexture(myGLTFImporter->GetTexture(0));
+		}
+		else
+		{
+			vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.png"));
+		}
+
+		if(myGLTFImporter->GetSkeletonCount() > 0)
+		{
+			PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(0);
+			*testSkeleton.Get() = myGLTFImporter->GetSkeleton(0);
+			go->SetSkeleton(std::move(testSkeleton));
+
+			if (myGLTFImporter->GetClipCount() > 0)
+			{
+				PoolPtr<AnimationController> animController = animSystem.AllocateController(go->GetSkeleton());
+				animController.Get()->PlayClip(myGLTFImporter->GetAnimClip(0).Get());
+				go->SetAnimController(std::move(animController));
+			}
+			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("skinned.ppl"));
+		}
+		else
+		{
+			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
+		}
 
 		myGOs.push_back(go);
 	}
@@ -189,7 +214,9 @@ void EditorMode::AddTestSkeleton(Game& aGame)
 	PoolPtr<AnimationController> animController = animSystem.AllocateController(testSkeleton);
 
 	Camera& cam = *aGame.GetCamera();
-	GameObject* go = aGame.Instantiate(cam.GetTransform().GetPos());
+	Transform objTransf;
+	objTransf.SetPos(cam.GetTransform().GetPos());
+	GameObject* go = aGame.Instantiate(objTransf);
 	go->SetSkeleton(std::move(testSkeleton));
 	go->SetAnimController(std::move(animController));
 	myGOs.push_back(go);

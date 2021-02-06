@@ -8,9 +8,9 @@
 
 #include <Graphics/Graphics.h>
 
-GameObject::GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale)
+GameObject::GameObject(const Transform& aTransform)
 	: myUID(UID::Create())
-	, myTransf(aPos, aRot, aScale)
+	, myTransf(aTransform)
 	, myVisualObject(nullptr)
 	, myIsDead(false)
 {

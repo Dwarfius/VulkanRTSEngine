@@ -5,75 +5,68 @@
 #include <Core/Resources/Serializer.h>
 #include <STB_Image/stb_image.h>
 
-unsigned char* Texture::LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
+Handle<Texture> Texture::LoadFromDisk(const std::string& aPath)
 {
+	int width = 0;
+	int height = 0;
+	int actualChannels = 0;
 	int desiredChannels = STBI_default;
-	switch (aFormat)
+	unsigned char* data = stbi_load(aPath.c_str(), &width, &height, &actualChannels, STBI_default);
+	ASSERT_STR(data, "FAiled to load texture from file: %s", aPath.c_str());
+
+	Format format = Format::UNorm_RGB;
+	switch (actualChannels)
 	{
-	case Format::UNorm_R: desiredChannels = STBI_grey; break;
-	case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
-	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
-	case Format::UNorm_RGBA: // fallthrough
-	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	case STBI_grey: format = Format::UNorm_R; break;
+	case STBI_grey_alpha: format = Format::UNorm_RG; break;
+	case STBI_rgb:	format = Format::UNorm_RGB; break;
+	case STBI_rgb_alpha: format = Format::UNorm_RGBA; break;
 	default: ASSERT(false);
 	}
 
-	int actualChannels = 0;
-	unsigned char* data = stbi_load(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);;
-	return data;
+	Handle<Texture> textureHandle = new Texture();
+	Texture* texture = textureHandle.Get();
+	texture->SetFormat(format);
+	texture->SetHeight(height);
+	texture->SetWidth(width);
+	texture->SetPixels(data);
+	texture->myIsSTBIBuffer = true;
+	return textureHandle;
 }
 
-unsigned short* Texture::LoadFromDisk16(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight)
+Handle<Texture> Texture::LoadFromMemory(const unsigned char* aBuffer, size_t aLength)
 {
+	int width = 0;
+	int height = 0;
+	int actualChannels = 0;
 	int desiredChannels = STBI_default;
-	switch (aFormat)
+	ASSERT_STR(aLength > std::numeric_limits<int>::max(),
+		"Bbuffer too large, STBI can't parse it!");
+	unsigned char* data = stbi_load_from_memory(aBuffer, static_cast<int>(aLength), &width, &height, &actualChannels, STBI_default);
+	ASSERT_STR(data, "Failed to load texture from memory!");
+
+	Format format = Format::UNorm_RGB;
+	switch (actualChannels)
 	{
-	case Format::UNorm_R: desiredChannels = STBI_grey; break;
-	case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
-	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
-	case Format::UNorm_RGBA: // fallthrough
-	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+	case STBI_grey: format = Format::UNorm_R; break;
+	case STBI_grey_alpha: format = Format::UNorm_RG; break;
+	case STBI_rgb:	format = Format::UNorm_RGB; break;
+	case STBI_rgb_alpha: format = Format::UNorm_RGBA; break;
 	default: ASSERT(false);
 	}
 
-	int actualChannels = 0;
-	return stbi_load_16(aPath.c_str(), &aWidth, &aHeight, &actualChannels, desiredChannels);
-}
-
-void Texture::FreePixels(unsigned char* aBuffer)
-{
-	stbi_image_free(aBuffer);
-}
-
-void Texture::FreePixels(unsigned short* aBuffer)
-{
-	stbi_image_free(aBuffer);
-}
-
-Texture::Texture()
-	: myPixels(nullptr)
-	, myFormat(Format::UNorm_RGB)
-	, myWrapMode(WrapMode::Clamp)
-	, myMinFilter(Filter::Linear)
-	, myMagFilter(Filter::Linear)
-	, myWidth(0)
-	, myHeight(0)
-	, myEnableMipmaps(false)
-	, myOwnsBuffer(false)
-{
+	Handle<Texture> textureHandle = new Texture();
+	Texture* texture = textureHandle.Get();
+	texture->SetFormat(format);
+	texture->SetHeight(height);
+	texture->SetWidth(width);
+	texture->SetPixels(data);
+	texture->myIsSTBIBuffer = true;
+	return textureHandle;
 }
 
 Texture::Texture(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
-	, myPixels(nullptr)
-	, myFormat(Format::UNorm_RGB)
-	, myWrapMode(WrapMode::Clamp)
-	, myMinFilter(Filter::Linear)
-	, myMagFilter(Filter::Linear)
-	, myWidth(0)
-	, myHeight(0)
-	, myEnableMipmaps(false)
-	, myOwnsBuffer(false)
 {
 }
 
@@ -94,21 +87,23 @@ void Texture::SetPixels(unsigned char* aPixels, bool aShouldOwn /* = true */)
 	}
 	myPixels = aPixels;
 	myOwnsBuffer = aShouldOwn;
+	myIsSTBIBuffer = false;
 }
 
 void Texture::FreePixels()
 {
 	ASSERT_STR(myPixels, "Double free of texture!");
-	if (GetId() == Resource::InvalidId)
+	if (myOwnsBuffer)
 	{
-		if (myOwnsBuffer)
+		if (myIsSTBIBuffer)
 		{
+			stbi_image_free(myPixels);
+		}
+		else
+		{
+			// TODO: unsafe assumption that new[] was used
 			delete[] myPixels;
 		}
-	}
-	else
-	{
-		stbi_image_free(myPixels);
 	}
 	myPixels = nullptr;
 }
@@ -147,6 +142,7 @@ void Texture::OnLoad(const File& aFile)
 	}
 
 	myOwnsBuffer = true;
+	myIsSTBIBuffer = true;
 }
 
 void Texture::Serialize(Serializer& aSerializer)

@@ -6,11 +6,17 @@ namespace glTF
 {
 	struct BufferView
 	{
+		enum class Target
+		{
+			None,
+			VBO,
+			EBO
+		};
 		size_t myByteOffset;
 		size_t myBufferLength;
 		size_t myByteStride;
 		uint32_t myBuffer;
-		uint32_t myTarget; // GL constant for buffer type
+		uint32_t myTarget;
 
 		template<class T>
 		void ReadElem(T& anElem, size_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
@@ -33,6 +39,7 @@ namespace glTF
 				view.myBuffer = bufferViewJson["buffer"].get<uint32_t>();
 				view.myByteOffset = ReadOptional(bufferViewJson, "byteOffset", 0ull);
 				view.myBufferLength = bufferViewJson["byteLength"].get<size_t>();
+				// TODO: fix this target - use enum Target instead
 				view.myTarget = ReadOptional(bufferViewJson, "target", 0u);
 				view.myByteStride = ReadOptional(bufferViewJson, "byteStride", 0u);
 				bufferViews.push_back(std::move(view));

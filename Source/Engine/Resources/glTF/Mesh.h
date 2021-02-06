@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Accessor.h"
+#include "Node.h"
 
 template<class T> class Handle;
 class Model;
@@ -24,9 +25,10 @@ namespace glTF
 		// Input set for constructing a Model
 		struct ModelInputs : BufferAccessorInputs
 		{
+			const std::vector<Node>& myNodes;
 			const std::vector<Mesh>& myMeshes;
 		};
-		static void ConstructModels(const ModelInputs& aInputs, std::vector<Handle<Model>>& aModels);
+		static void ConstructModels(const ModelInputs& aInputs, std::vector<Handle<Model>>& aModels, std::vector<Transform>& aTransforms);
 
 	private:
 		static void ConstructStaticModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel);

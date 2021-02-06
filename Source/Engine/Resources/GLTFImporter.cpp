@@ -5,8 +5,7 @@
 #include "Resources/glTF/Node.h"
 #include "Resources/glTF/Mesh.h"
 #include "Resources/glTF/Skin.h"
-
-#include <Graphics/Resources/Model.h>
+#include "Resources/glTF/Texture.h"
 
 #include <Core/File.h>
 #include <Core/Vertex.h>
@@ -87,8 +86,8 @@ void GLTFImporter::OnLoad(const File& aFile)
 	std::vector<glTF::BufferView> bufferViews = glTF::BufferView::Parse(gltfJson);
 	std::vector<glTF::Accessor> accessors = glTF::Accessor::Parse(gltfJson);
 	std::vector<glTF::Mesh> meshes = glTF::Mesh::Parse(gltfJson);
-	std::vector<glTF::Animation> animations = glTF::Animation::Parse(gltfJson);
 	std::vector<glTF::Skin> skins = glTF::Skin::Parse(gltfJson);
+	std::vector<glTF::Texture> textures = glTF::Texture::Parse(gltfJson);
 
 	{
 		glTF::Mesh::ModelInputs input
@@ -96,18 +95,19 @@ void GLTFImporter::OnLoad(const File& aFile)
 			buffers,
 			bufferViews,
 			accessors,
+			nodes,
 			meshes
 		};
-		glTF::Mesh::ConstructModels(input, myModels);
+		glTF::Mesh::ConstructModels(input, myModels, myTransforms);
 	}
-
-	// we have to remap the index, as we store the bones in different hierarchy
-	// (not as part of Node tree, but as a seperate Skeleton tree)
-	// Key is Node index, value is Skeleton Bone index
-	std::unordered_map<uint32_t, Skeleton::BoneIndex> nodeBoneMap;
+	
 	if (!skins.empty())
 	{
-		glTF::Skin::SkeletonInput input
+		// we have to remap the index, as we store the bones in different hierarchy
+		// (not as part of Node tree, but as a seperate Skeleton tree)
+		// Key is Node index, value is Skeleton Bone index
+		std::unordered_map<uint32_t, Skeleton::BoneIndex> nodeBoneMap;
+		glTF::Skin::SkeletonInput skinInput
 		{
 			buffers,
 			bufferViews,
@@ -115,12 +115,10 @@ void GLTFImporter::OnLoad(const File& aFile)
 			nodes,
 			skins
 		};
-		glTF::Skin::ConstructSkeletons(input, mySkeletons, nodeBoneMap);
-	}
-
-	if(!animations.empty())
-	{
-		glTF::Animation::AnimationClipInput input
+		glTF::Skin::ConstructSkeletons(skinInput, mySkeletons, nodeBoneMap, myTransforms);
+		
+		std::vector<glTF::Animation> animations = glTF::Animation::Parse(gltfJson);
+		glTF::Animation::AnimationClipInput animInput
 		{
 			buffers,
 			bufferViews,
@@ -129,7 +127,23 @@ void GLTFImporter::OnLoad(const File& aFile)
 			animations,
 			nodeBoneMap
 		};
-		glTF::Animation::ConstructAnimationClips(input, myAnimClips);
+		glTF::Animation::ConstructAnimationClips(animInput, myAnimClips);
+	}
+
+	if (!textures.empty())
+	{
+		std::vector<glTF::Image> images = glTF::Image::Parse(gltfJson);
+		std::vector<glTF::Sampler> samplers = glTF::Sampler::Parse(gltfJson);
+		glTF::Texture::TextureInputs input
+		{
+			buffers,
+			bufferViews,
+			accessors,
+			images,
+			samplers,
+			textures
+		};
+		glTF::Texture::ConstructTextures(input, myTextures);
 	}
 }
 

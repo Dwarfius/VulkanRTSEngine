@@ -9,13 +9,11 @@ class Texture : public Resource, public ITexture
 public:
 	static constexpr StaticString kDir = Resource::AssetsFolder + "textures/";
 
-	static unsigned char* LoadFromDisk(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight);
-	static unsigned short* LoadFromDisk16(const std::string& aPath, Format aFormat, int& aWidth, int& aHeight);
-	static void FreePixels(unsigned char* aBuffer);
-	static void FreePixels(unsigned short* aBuffer);
+	static Handle<Texture> LoadFromDisk(const std::string& aPath);
+	static Handle<Texture> LoadFromMemory(const unsigned char* aBuffer, size_t aLength);
 
 public:
-	Texture();
+	Texture() = default;
 	Texture(Resource::Id anId, const std::string& aPath);
 	~Texture();
 
@@ -43,14 +41,14 @@ public:
 	void SetPixels(unsigned char* aPixels, bool aShouldOwn = true);
 
 protected:
-	unsigned char* myPixels;
-	uint32_t myWidth;
-	uint32_t myHeight;
-	Format myFormat;
-	WrapMode myWrapMode;
-	Filter myMinFilter;
-	Filter myMagFilter;
-	bool myEnableMipmaps;
+	unsigned char* myPixels = nullptr;
+	uint32_t myWidth = 0;
+	uint32_t myHeight = 0;
+	Format myFormat = Format::UNorm_RGB;
+	WrapMode myWrapMode = WrapMode::Clamp;
+	Filter myMinFilter = Filter::Nearest;
+	Filter myMagFilter = Filter::Nearest;
+	bool myEnableMipmaps = false;
 
 private:
 	void FreePixels();
@@ -59,5 +57,6 @@ private:
 	void OnLoad(const File& aFile) override;
 	void Serialize(Serializer& aSerializer) override final;
 
-	bool myOwnsBuffer;
+	bool myOwnsBuffer = false;
+	bool myIsSTBIBuffer = false;
 };

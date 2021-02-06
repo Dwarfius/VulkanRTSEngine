@@ -119,6 +119,7 @@ set(SRC_RESOURCES_GLTF
 	"Resources/glTF/Mesh.cpp" "Resources/glTF/Mesh.h"
 	"Resources/glTF/Node.h"
 	"Resources/glTF/Skin.cpp" "Resources/glTF/Skin.h"
+	"Resources/glTF/Texture.cpp" "Resources/glTF/Texture.h"
 )
 
 set(SRC_SYSTEMS

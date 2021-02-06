@@ -30,7 +30,8 @@ namespace glTF
 
 	void Skin::ConstructSkeletons(const SkeletonInput& aInputs, 
 		std::vector<Skeleton>& aSkeletons, 
-		std::unordered_map<uint32_t, Skeleton::BoneIndex>& anIndexMap)
+		std::unordered_map<uint32_t, Skeleton::BoneIndex>& anIndexMap,
+		std::vector<Transform>& aTransforms)
 	{
 		aSkeletons.reserve(aInputs.mySkins.size());
 		std::vector<uint32_t> sortedJoints;
@@ -88,15 +89,12 @@ namespace glTF
 				return aNode.mySkin == aSkeletons.size();
 			});
 
-			Transform rootTransform = nodeIter->myWorldTransform.GetInverted();
 			if (skin.mySkeleton != kInvalidInd
 				&& skin.mySkeleton != foundRoot)
 			{
-				skeleton.SetRootTransform(rootTransform * aInputs.myNodes[skin.mySkeleton].myTransform);
-			}
-			else
-			{
-				skeleton.SetRootTransform(rootTransform);
+				// baking in the extra root transform into the gameobject transform
+				Transform& transf = aTransforms[aSkeletons.size()];
+				transf = transf * aInputs.myNodes[skin.mySkeleton].myWorldTransform;
 			}
 			
 			// clearing the map, as the joints can be reused across skins

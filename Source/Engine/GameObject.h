@@ -14,7 +14,7 @@ class AnimationController;
 class GameObject : public IPhysControllable
 {
 public:
-	GameObject(glm::vec3 aPos, glm::vec3 aRot, glm::vec3 aScale);
+	GameObject(const Transform& aTransform);
 	~GameObject();
 
 	void Update(float aDeltaTime);

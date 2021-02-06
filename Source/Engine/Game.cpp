@@ -275,14 +275,20 @@ GLFWwindow* Game::GetWindow() const
 	return myRenderThread->GetWindow();
 }
 
-GameObject* Game::Instantiate(glm::vec3 aPos /*=glm::vec3()*/, glm::vec3 aRot /*=glm::vec3()*/, glm::vec3 aScale /*=glm::vec3(1)*/)
+GameObject* Game::Instantiate()
+{
+	// Overload is present to keep the Transform include out of the Game.h
+	return Instantiate(Transform());
+}
+
+GameObject* Game::Instantiate(const Transform& aTransform)
 {
 	Profiler::ScopedMark profile(__func__);
 	GameObject* go = nullptr;
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	if (myGameObjects.size() < kMaxObjects)
 	{
-		go = new GameObject(aPos, aRot, aScale);
+		go = new GameObject(aTransform);
 		myAddQueue.emplace(go);
 	}
 	return go;

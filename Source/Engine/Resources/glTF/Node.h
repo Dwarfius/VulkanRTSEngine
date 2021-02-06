@@ -56,9 +56,12 @@ namespace glTF
 						ASSERT_STR(decomposed, "According to glTF spec, matrix must be decomposable!");
 #if GLM_VERSION < 999
 						// https://github.com/g-truc/glm/pull/1012
-						rot = glm::conjugate(rot);
+						//rot = glm::conjugate(rot);
+						// Despite above issue, I don't need to do it - weird
+						// In 9.9.9 GLM it gets fixed internally, 
+						// which might break existing logic!
 #else
-#error remove the hack!
+#error Check this logic!
 #endif
 						node.myTransform.SetPos(pos);
 						node.myTransform.SetRotation(rot);

@@ -23,6 +23,7 @@ namespace glTF
 		};
 		static void ConstructSkeletons(const SkeletonInput& aInputs, 
 			std::vector<Skeleton>& aSkeletons,
-			std::unordered_map<uint32_t, Skeleton::BoneIndex>& anIndexMap);
+			std::unordered_map<uint32_t, Skeleton::BoneIndex>& anIndexMap,
+			std::vector<Transform>& aTransforms);
 	};
 }

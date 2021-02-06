@@ -47,7 +47,9 @@ namespace glTF
 		return meshes;
 	}
 
-	void Mesh::ConstructModels(const ModelInputs& aInputs, std::vector<Handle<Model>>& aModels)
+	void Mesh::ConstructModels(const ModelInputs& aInputs, 
+		std::vector<Handle<Model>>& aModels,
+		std::vector<Transform>& aTransforms)
 	{
 		for (const Mesh& mesh : aInputs.myMeshes)
 		{
@@ -69,6 +71,13 @@ namespace glTF
 				// skinning present, so construct a model with skinned vertices
 				ConstructSkinnedModel(mesh, aInputs, model);
 			}
+
+			const auto& nodeIter = std::find_if(aInputs.myNodes.begin(), aInputs.myNodes.end(), 
+				[&](const Node& aNode) {
+					return aNode.myMesh == aModels.size();
+				}
+			);
+			aTransforms.push_back(nodeIter->myWorldTransform);
 			aModels.push_back(std::move(model));
 		}
 	}
