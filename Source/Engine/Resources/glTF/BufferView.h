@@ -9,14 +9,14 @@ namespace glTF
 		enum class Target
 		{
 			None,
-			VBO,
-			EBO
+			VertexBuffer,
+			IndexBuffer
 		};
 		size_t myByteOffset;
 		size_t myBufferLength;
 		size_t myByteStride;
 		uint32_t myBuffer;
-		uint32_t myTarget;
+		Target myTarget;
 
 		template<class T>
 		void ReadElem(T& anElem, size_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
@@ -28,23 +28,27 @@ namespace glTF
 			std::memcpy(&anElem, elemPos, sizeof(T));
 		}
 
-		static std::vector<BufferView> Parse(const nlohmann::json& aRootJson)
+		static void ParseItem(const nlohmann::json& aViewJson, BufferView& aView)
 		{
-			std::vector<BufferView> bufferViews;
-			const nlohmann::json& bufferViewsJson = aRootJson["bufferViews"];
-			bufferViews.reserve(bufferViewsJson.size());
-			for (const nlohmann::json& bufferViewJson : bufferViewsJson)
+			aView.myBuffer = aViewJson["buffer"].get<uint32_t>();
+			aView.myByteOffset = ReadOptional(aViewJson, "byteOffset", 0ull);
+			aView.myBufferLength = aViewJson["byteLength"].get<size_t>();
+			int target = ReadOptional(aViewJson, "target", kInvalidInd);
+			switch (target)
 			{
-				BufferView view;
-				view.myBuffer = bufferViewJson["buffer"].get<uint32_t>();
-				view.myByteOffset = ReadOptional(bufferViewJson, "byteOffset", 0ull);
-				view.myBufferLength = bufferViewJson["byteLength"].get<size_t>();
-				// TODO: fix this target - use enum Target instead
-				view.myTarget = ReadOptional(bufferViewJson, "target", 0u);
-				view.myByteStride = ReadOptional(bufferViewJson, "byteStride", 0u);
-				bufferViews.push_back(std::move(view));
+			case kInvalidInd: // TODO: [[fallthrough]]
+				aView.myTarget = Target::None;
+				break;
+			case 34962: // GL_ARRAY_BUFFER
+				aView.myTarget = Target::VertexBuffer;
+				break;
+			case 34963:
+				aView.myTarget = Target::IndexBuffer;
+				break;
+			default:
+				ASSERT_STR(false, "Unrecognized target! %d", target);
 			}
-			return bufferViews;
+			aView.myByteStride = ReadOptional(aViewJson, "byteStride", 0u);
 		}
 	};
 }

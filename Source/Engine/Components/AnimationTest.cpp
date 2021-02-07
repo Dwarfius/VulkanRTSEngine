@@ -62,7 +62,7 @@ void AnimationTest::Update(float aDeltaTime)
 Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 {
 	// for each skeleton bone - 1 we need a cube and an arm (rectangular cuboid)
-	std::vector<AnimationVert> verts;
+	std::vector<SkinnedVertex> verts;
 	std::vector<IModel::IndexType> indices;
 	auto appendAACuboid = [&](glm::vec3 aCenter, glm::vec3 aSize, uint16_t aBone)
 	{
@@ -218,10 +218,10 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 		}
 	}
 
-	Model::VertStorage<AnimationVert>* storage = new Model::VertStorage<AnimationVert>(verts.size());
+	Model::VertStorage<SkinnedVertex>* storage = new Model::VertStorage<SkinnedVertex>(verts.size());
 	Model* model = new Model(PrimitiveType::Triangles, storage, true);
 
-	Model::UploadDescriptor<AnimationVert> uploadDesc;
+	Model::UploadDescriptor<SkinnedVertex> uploadDesc;
 	uploadDesc.myVertices = verts.data();
 	uploadDesc.myVertCount = verts.size();
 	uploadDesc.myIndices = indices.data();

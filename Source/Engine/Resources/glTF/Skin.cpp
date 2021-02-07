@@ -3,29 +3,15 @@
 
 namespace glTF
 {
-	std::vector<Skin> Skin::Parse(const nlohmann::json& aRoot)
+	void Skin::ParseItem(const nlohmann::json& aSkinJson, Skin& aSkin)
 	{
-		std::vector<Skin> skins;
-		const auto& skinsJsonIter = aRoot.find("skins");
-		if (skinsJsonIter == aRoot.end())
-		{
-			return skins;
-		}
+		aSkin.myInverseBindMatrices = ReadOptional(aSkinJson, "inverseBindMatrices", kInvalidInd);
+		aSkin.mySkeleton = ReadOptional(aSkinJson, "skeleton", kInvalidInd);
 
-		skins.reserve(skinsJsonIter->size());
-		for (const nlohmann::json& skinJson : *skinsJsonIter)
-		{
-			Skin skin;
-			skin.myInverseBindMatrices = ReadOptional(skinJson, "inverseBindMatrices", kInvalidInd);
-			skin.mySkeleton = ReadOptional(skinJson, "skeleton", kInvalidInd);
+		const nlohmann::json& jointsJson = aSkinJson["joints"];
+		aSkin.myJoints = jointsJson.get<std::vector<uint32_t>>();
 
-			const nlohmann::json& jointsJson = skinJson["joints"];
-			skin.myJoints = jointsJson.get<std::vector<uint32_t>>();
-
-			skin.myName = ReadOptional(skinJson, "name", std::string{});
-			skins.push_back(std::move(skin));
-		}
-		return skins;
+		aSkin.myName = ReadOptional(aSkinJson, "name", std::string{});
 	}
 
 	void Skin::ConstructSkeletons(const SkeletonInput& aInputs, 

@@ -14,7 +14,7 @@ namespace glTF
 		int myInverseBindMatrices; // index of accessor of mat4s
 		int mySkeleton; // index of node used as skeleton root
 
-		static std::vector<Skin> Parse(const nlohmann::json& aRoot);
+		static void ParseItem(const nlohmann::json& aSkinJson, Skin& aSkin);
 
 		struct SkeletonInput : BufferAccessorInputs
 		{

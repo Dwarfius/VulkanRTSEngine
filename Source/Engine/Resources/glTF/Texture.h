@@ -19,7 +19,7 @@ namespace glTF
 		int myBufferView;
 		std::string myName;
 
-		static std::vector<Image> Parse(const nlohmann::json& aRoot);
+		static void ParseItem(const nlohmann::json& anImageJson, Image& anImage);
 	};
 
 	struct Sampler
@@ -30,7 +30,7 @@ namespace glTF
 		::Texture::WrapMode myWrapV;
 		std::string myName;
 
-		static std::vector<Sampler> Parse(const nlohmann::json& aRoot);
+		static void ParseItem(const nlohmann::json& aSamplerJson, Sampler& aSampler);
 	};
 
 	struct Texture
@@ -39,7 +39,7 @@ namespace glTF
 		int mySampler;
 		std::string myName;
 		
-		static std::vector<Texture> Parse(const nlohmann::json& aRoot);
+		static void ParseItem(const nlohmann::json& aTextureJson, Texture& aTexture);
 
 		struct TextureInputs : BufferAccessorInputs
 		{

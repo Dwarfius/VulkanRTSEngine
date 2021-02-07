@@ -18,106 +18,104 @@ namespace glTF
 		int mySkin;
 		int myMesh;
 
-		static std::vector<Node> Parse(const nlohmann::json& aRootJson)
+		static void ParseItem(const nlohmann::json& aNodeJson, Node& aNode)
 		{
-			std::vector<Node> nodes;
-			const nlohmann::json& nodesJson = aRootJson["nodes"];
-			nodes.reserve(nodesJson.size());
+			aNode.myCamera = ReadOptional(aNodeJson, "camera", kInvalidInd);
+			aNode.mySkin = ReadOptional(aNodeJson, "skin", kInvalidInd);
+			aNode.myMesh = ReadOptional(aNodeJson, "mesh", kInvalidInd);
 
-			std::unordered_map<int, int> childParentMap;
-
-			for (const nlohmann::json& nodeJson : nodesJson)
 			{
-				// everything in a node is optional
-				Node node;
-				node.myCamera = ReadOptional(nodeJson, "camera", kInvalidInd);
-				node.mySkin = ReadOptional(nodeJson, "skin", kInvalidInd);
-				node.myMesh = ReadOptional(nodeJson, "mesh", kInvalidInd);
-
+				// transform can be represented as a 16-float...
+				const auto& matrixJson = aNodeJson.find("matrix");
+				if (matrixJson != aNodeJson.end())
 				{
-					// transform can be represented as a 16-float...
-					const auto& matrixJson = nodeJson.find("matrix");
-					if (matrixJson != nodeJson.end())
+					glm::mat4 matrix;
+					const std::vector<float>& matrixVec = (*matrixJson).get<std::vector<float>>();
+					for (char i = 0; i < 16; i++)
 					{
-						glm::mat4 matrix;
-						const std::vector<float>& matrixVec = (*matrixJson).get<std::vector<float>>();
-						for (char i = 0; i < 16; i++)
-						{
-							glm::value_ptr(matrix)[i] = matrixVec[i];
-						}
+						glm::value_ptr(matrix)[i] = matrixVec[i];
+					}
 
-						glm::vec3 scale;
-						glm::quat rot;
-						glm::vec3 pos;
-						glm::vec3 skew;
-						glm::vec4 perspective;
+					glm::vec3 scale;
+					glm::quat rot;
+					glm::vec3 pos;
+					glm::vec3 skew;
+					glm::vec4 perspective;
 
-						const bool decomposed = glm::decompose(matrix, scale, rot, pos, skew, perspective);
-						ASSERT_STR(decomposed, "According to glTF spec, matrix must be decomposable!");
+					const bool decomposed = glm::decompose(matrix, scale, rot, pos, skew, perspective);
+					ASSERT_STR(decomposed, "According to glTF spec, matrix must be decomposable!");
 #if GLM_VERSION < 999
-						// https://github.com/g-truc/glm/pull/1012
-						//rot = glm::conjugate(rot);
-						// Despite above issue, I don't need to do it - weird
-						// In 9.9.9 GLM it gets fixed internally, 
-						// which might break existing logic!
+					// https://github.com/g-truc/glm/pull/1012
+					//rot = glm::conjugate(rot);
+					// Despite above issue, I don't need to do it - weird
+					// In 9.9.9 GLM it gets fixed internally, 
+					// which might break existing logic!
 #else
 #error Check this logic!
 #endif
-						node.myTransform.SetPos(pos);
-						node.myTransform.SetRotation(rot);
-						node.myTransform.SetScale(scale);
-					}
-					else // ... or any combination of TRS
-					{
-						auto ExtractFunc = [&](auto aName, auto& aData)
-						{
-							const auto& iterJson = nodeJson.find(aName);
-							if (iterJson != nodeJson.end())
-							{
-								const std::vector<float>& dataVec = (*iterJson).get<std::vector<float>>();
-								for (int i = 0; i < aData.length(); i++)
-								{
-									glm::value_ptr(aData)[i] = dataVec[i];
-								}
-								return true;
-							}
-							return false;
-						};
-
-						glm::quat rot;
-						if (ExtractFunc("rotation", rot))
-						{
-							node.myTransform.SetRotation(rot);
-						}
-
-						glm::vec3 scale;
-						if (ExtractFunc("scale", scale))
-						{
-							node.myTransform.SetScale(scale);
-						}
-
-						glm::vec3 pos;
-						if (ExtractFunc("translation", pos))
-						{
-							node.myTransform.SetPos(pos);
-						}
-					}
+					aNode.myTransform.SetPos(pos);
+					aNode.myTransform.SetRotation(rot);
+					aNode.myTransform.SetScale(scale);
 				}
-
-				node.myWorldTransform = node.myTransform;
-				node.myChildren = ReadOptional(nodeJson, "children", std::vector<int>{});
-				for (int child : node.myChildren)
+				else // ... or any combination of TRS
 				{
-					childParentMap.emplace(child, static_cast<int>(nodes.size()));
+					auto ExtractFunc = [&](auto aName, auto& aData)
+					{
+						const auto& iterJson = aNodeJson.find(aName);
+						if (iterJson != aNodeJson.end())
+						{
+							const std::vector<float>& dataVec = (*iterJson).get<std::vector<float>>();
+							for (int i = 0; i < aData.length(); i++)
+							{
+								glm::value_ptr(aData)[i] = dataVec[i];
+							}
+							return true;
+						}
+						return false;
+					};
+
+					glm::quat rot;
+					if (ExtractFunc("rotation", rot))
+					{
+						aNode.myTransform.SetRotation(rot);
+					}
+
+					glm::vec3 scale;
+					if (ExtractFunc("scale", scale))
+					{
+						aNode.myTransform.SetScale(scale);
+					}
+
+					glm::vec3 pos;
+					if (ExtractFunc("translation", pos))
+					{
+						aNode.myTransform.SetPos(pos);
+					}
 				}
-				node.myWeights = ReadOptional(nodeJson, "weights", std::vector<int>{});
-				node.myName = ReadOptional(nodeJson, "name", std::string{});
-				
-				nodes.push_back(std::move(node));
 			}
 
+			aNode.myWorldTransform = aNode.myTransform;
+			aNode.myChildren = ReadOptional(aNodeJson, "children", std::vector<int>{});
+			aNode.myWeights = ReadOptional(aNodeJson, "weights", std::vector<int>{});
+			aNode.myName = ReadOptional(aNodeJson, "name", std::string{});
+		}
+
+		static void UpdateWorldTransforms(std::vector<Node>& aNodes)
+		{
+			std::unordered_map<int, int> childParentMap;
+
+			// collect the hierarchy...
+			for (const Node& node : aNodes)
+			{
+				for (int child : node.myChildren)
+				{
+					childParentMap.emplace(child, static_cast<int>(aNodes.size()));
+				}
+			}
+
+			// find roots to kick off the hierarchy update...
 			std::queue<int> dirtyHierarchy;
-			for (int i = 0; i < nodes.size(); i++)
+			for (int i = 0; i < aNodes.size(); i++)
 			{
 				auto iter = childParentMap.find(i);
 				if (iter != childParentMap.end())
@@ -130,19 +128,19 @@ namespace glTF
 				dirtyHierarchy.push(i);
 			}
 
+			// update the transforms
 			while (!dirtyHierarchy.empty())
 			{
 				int parentInd = dirtyHierarchy.front();
 				dirtyHierarchy.pop();
-				const Node& parentNode = nodes[parentInd];
+				const Node& parentNode = aNodes[parentInd];
 				for (int childInd : parentNode.myChildren)
 				{
-					Node& child = nodes[childInd];
+					Node& child = aNodes[childInd];
 					child.myWorldTransform = parentNode.myWorldTransform * child.myTransform;
 					dirtyHierarchy.push(childInd);
 				}
 			}
-			return nodes;
 		}
 	};
 }

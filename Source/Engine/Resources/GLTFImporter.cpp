@@ -81,13 +81,14 @@ void GLTFImporter::OnLoad(const File& aFile)
 		relPath = std::string();
 	}
 
-	std::vector<glTF::Node> nodes = glTF::Node::Parse(gltfJson);
-	std::vector<glTF::Buffer> buffers = glTF::Buffer::Parse(gltfJson, relPath);
-	std::vector<glTF::BufferView> bufferViews = glTF::BufferView::Parse(gltfJson);
-	std::vector<glTF::Accessor> accessors = glTF::Accessor::Parse(gltfJson);
-	std::vector<glTF::Mesh> meshes = glTF::Mesh::Parse(gltfJson);
-	std::vector<glTF::Skin> skins = glTF::Skin::Parse(gltfJson);
-	std::vector<glTF::Texture> textures = glTF::Texture::Parse(gltfJson);
+	std::vector<glTF::Node> nodes = glTF::Parse<glTF::Node>(gltfJson, "nodes");
+	glTF::Node::UpdateWorldTransforms(nodes);
+	std::vector<glTF::Buffer> buffers = glTF::Parse<glTF::Buffer>(gltfJson, "buffers", relPath);
+	std::vector<glTF::BufferView> bufferViews = glTF::Parse<glTF::BufferView>(gltfJson, "bufferViews");
+	std::vector<glTF::Accessor> accessors = glTF::Parse<glTF::Accessor>(gltfJson, "accessors");
+	std::vector<glTF::Mesh> meshes = glTF::Parse<glTF::Mesh>(gltfJson, "meshes");
+	std::vector<glTF::Skin> skins = glTF::Parse<glTF::Skin>(gltfJson, "skins");
+	std::vector<glTF::Texture> textures = glTF::Parse<glTF::Texture>(gltfJson, "textures");
 
 	{
 		glTF::Mesh::ModelInputs input
@@ -132,8 +133,8 @@ void GLTFImporter::OnLoad(const File& aFile)
 
 	if (!textures.empty())
 	{
-		std::vector<glTF::Image> images = glTF::Image::Parse(gltfJson);
-		std::vector<glTF::Sampler> samplers = glTF::Sampler::Parse(gltfJson);
+		std::vector<glTF::Image> images = glTF::Parse<glTF::Image>(gltfJson, "images");
+		std::vector<glTF::Sampler> samplers = glTF::Parse<glTF::Sampler>(gltfJson, "samplers");
 		glTF::Texture::TextureInputs input
 		{
 			buffers,

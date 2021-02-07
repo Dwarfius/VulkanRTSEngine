@@ -3,162 +3,107 @@
 
 namespace glTF
 {
-	// TODO: refactor out all the boilerplate in Parse
-	std::vector<Image> Image::Parse(const nlohmann::json& aRoot)
+	void Image::ParseItem(const nlohmann::json& anImageJson, Image& anImage)
 	{
-		std::vector<Image> images;
+		anImage.myUri = ReadOptional(anImageJson, "uri", std::string());
 
-		const auto& imagesJsonIter = aRoot.find("images");
-		if (imagesJsonIter == aRoot.end())
+		std::string mimeType = ReadOptional(anImageJson, "mimeType", std::string());
+		anImage.myMimeType = Image::MimeType::None;
+		if (mimeType == "image/jpeg")
 		{
-			return images;
+			anImage.myMimeType = Image::MimeType::Jpeg;
+		}
+		else if (mimeType == "image/png")
+		{
+			anImage.myMimeType = Image::MimeType::PNG;
+		}
+		else
+		{
+			ASSERT_STR(mimeType.empty(), "Unrecognized MIME type!");
 		}
 
-		const std::vector<nlohmann::json>& imagesJson = *imagesJsonIter;
-		images.reserve(imagesJson.size());
-		for (const auto& imageJson : imagesJson)
-		{
-			Image image;
-			image.myUri = ReadOptional(imageJson, "uri", std::string());
-			
-			std::string mimeType = ReadOptional(imageJson, "mimeType", std::string());
-			image.myMimeType = Image::MimeType::None;
-			if (mimeType == "image/jpeg")
-			{
-				image.myMimeType = Image::MimeType::Jpeg;
-			}
-			else if (mimeType == "image/png")
-			{
-				image.myMimeType = Image::MimeType::PNG;
-			}
-			else
-			{
-				ASSERT_STR(mimeType.empty(), "Unrecognized MIME type!");
-			}
-
-			image.myBufferView = ReadOptional(imageJson, "bufferView", kInvalidInd);
-			image.myName = ReadOptional(imageJson, "name", std::string());
-
-			images.push_back(std::move(image));
-		}
-		return images;
+		anImage.myBufferView = ReadOptional(anImageJson, "bufferView", kInvalidInd);
+		anImage.myName = ReadOptional(anImageJson, "name", std::string());
 	}
 
-	std::vector<Sampler> Sampler::Parse(const nlohmann::json& aRoot)
+	void Sampler::ParseItem(const nlohmann::json& aSamplerJson, Sampler& aSampler)
 	{
-		std::vector<Sampler> samplers;
-
-		const auto& samplersJsonIter = aRoot.find("samplers");
-		if (samplersJsonIter == aRoot.end())
+		int magFilter = ReadOptional(aSamplerJson, "magFilter", 9728); // GL_NEAREST
+		switch (magFilter)
 		{
-			return samplers;
+		case 9728: // GL_NEAREST
+			aSampler.myMagFilter = ::Texture::Filter::Nearest;
+			break;
+		case 9729: // GL_LINEAR
+			aSampler.myMagFilter = ::Texture::Filter::Linear;
+			break;
+		default:
+			ASSERT_STR(false, "Unrecognized Mag filter!");
+		}
+		int minFilter = ReadOptional(aSamplerJson, "magFilter", 9728);  // GL_NEAREST
+		switch (minFilter)
+		{
+		case 9728: // GL_NEAREST
+			aSampler.myMinFilter = ::Texture::Filter::Nearest;
+			break;
+		case 9729: // GL_LINEAR
+			aSampler.myMinFilter = ::Texture::Filter::Linear;
+			break;
+		case 9984: // GL_NEAREST_MIPMAP_NEAREST
+			aSampler.myMinFilter = ::Texture::Filter::Nearest_MipMapNearest;
+			break;
+		case 9985: // GL_LINEAR_MIPMAP_NEAREST
+			aSampler.myMinFilter = ::Texture::Filter::Linear_MipMapNearest;
+			break;
+		case 9986: // GL_NEAREST_MIPMAP_LINEAR
+			aSampler.myMinFilter = ::Texture::Filter::Nearest_MipMapLinear;
+			break;
+		case 9987: // GL_LINEAR_MIPMAP_LINEAR
+			aSampler.myMinFilter = ::Texture::Filter::Linear_MipMapLinear;
+			break;
+		default:
+			ASSERT_STR(false, "Unrecognized Min filter!");
 		}
 
-		const std::vector<nlohmann::json>& samplersJson = *samplersJsonIter;
-		samplers.reserve(samplersJson.size());
-		for (const auto& samplerJson : samplersJson)
+		int wrapS = ReadOptional(aSamplerJson, "wrapS", 10497); // GL_REPEAT
+		switch (wrapS)
 		{
-			Sampler sampler;
-
-			int magFilter = ReadOptional(samplerJson, "magFilter", 9728); // GL_NEAREST
-			switch (magFilter)
-			{
-			case 9728: // GL_NEAREST
-				sampler.myMagFilter = ::Texture::Filter::Nearest;
-				break;
-			case 9729: // GL_LINEAR
-				sampler.myMagFilter = ::Texture::Filter::Linear;
-				break;
-			default:
-				ASSERT_STR(false, "Unrecognized Mag filter!");
-			}
-			int minFilter = ReadOptional(samplerJson, "magFilter", 9728);  // GL_NEAREST
-			switch (minFilter)
-			{
-			case 9728: // GL_NEAREST
-				sampler.myMinFilter = ::Texture::Filter::Nearest;
-				break;
-			case 9729: // GL_LINEAR
-				sampler.myMinFilter = ::Texture::Filter::Linear;
-				break;
-			case 9984: // GL_NEAREST_MIPMAP_NEAREST
-				sampler.myMinFilter = ::Texture::Filter::Nearest_MipMapNearest;
-				break;
-			case 9985: // GL_LINEAR_MIPMAP_NEAREST
-				sampler.myMinFilter = ::Texture::Filter::Linear_MipMapNearest;
-				break;
-			case 9986: // GL_NEAREST_MIPMAP_LINEAR
-				sampler.myMinFilter = ::Texture::Filter::Nearest_MipMapLinear;
-				break;
-			case 9987: // GL_LINEAR_MIPMAP_LINEAR
-				sampler.myMinFilter = ::Texture::Filter::Linear_MipMapLinear;
-				break;
-			default:
-				ASSERT_STR(false, "Unrecognized Min filter!");
-			}
-
-			int wrapS = ReadOptional(samplerJson, "wrapS", 10497); // GL_REPEAT
-			switch (wrapS)
-			{
-			case 10497: // GL_REPEAT
-				sampler.myWrapU = ::Texture::WrapMode::Repeat;
-				break;
-			case 33071: // GL_CLAMP_TO_EDGE
-				sampler.myWrapU = ::Texture::WrapMode::Clamp;
-				break;
-			case 33648: // GL_MIRRORED_REPEAT
-				sampler.myWrapU = ::Texture::WrapMode::MirroredRepeat;
-				break;
-			default:
-				ASSERT_STR(false, "Unrecognized WrapS!");
-			}
-
-			int wrapT = ReadOptional(samplerJson, "wrapT", 10497); // GL_REPEAT
-			switch (wrapT)
-			{
-			case 10497: // GL_REPEAT
-				sampler.myWrapV = ::Texture::WrapMode::Repeat;
-				break;
-			case 33071: // GL_CLAMP_TO_EDGE
-				sampler.myWrapV = ::Texture::WrapMode::Clamp;
-				break;
-			case 33648: // GL_MIRRORED_REPEAT
-				sampler.myWrapV = ::Texture::WrapMode::MirroredRepeat;
-				break;
-			default:
-				ASSERT_STR(false, "Unrecognized WrapT!");
-			}
-			sampler.myName = ReadOptional(samplerJson, "name", std::string());
-
-			samplers.push_back(std::move(sampler));
+		case 10497: // GL_REPEAT
+			aSampler.myWrapU = ::Texture::WrapMode::Repeat;
+			break;
+		case 33071: // GL_CLAMP_TO_EDGE
+			aSampler.myWrapU = ::Texture::WrapMode::Clamp;
+			break;
+		case 33648: // GL_MIRRORED_REPEAT
+			aSampler.myWrapU = ::Texture::WrapMode::MirroredRepeat;
+			break;
+		default:
+			ASSERT_STR(false, "Unrecognized WrapS!");
 		}
-		return samplers;
+
+		int wrapT = ReadOptional(aSamplerJson, "wrapT", 10497); // GL_REPEAT
+		switch (wrapT)
+		{
+		case 10497: // GL_REPEAT
+			aSampler.myWrapV = ::Texture::WrapMode::Repeat;
+			break;
+		case 33071: // GL_CLAMP_TO_EDGE
+			aSampler.myWrapV = ::Texture::WrapMode::Clamp;
+			break;
+		case 33648: // GL_MIRRORED_REPEAT
+			aSampler.myWrapV = ::Texture::WrapMode::MirroredRepeat;
+			break;
+		default:
+			ASSERT_STR(false, "Unrecognized WrapT!");
+		}
+		aSampler.myName = ReadOptional(aSamplerJson, "name", std::string());
 	}
 
-	std::vector<Texture> Texture::Parse(const nlohmann::json& aRoot)
+	void Texture::ParseItem(const nlohmann::json& aTextureJson, Texture& aTexture)
 	{
-		std::vector<Texture> textures;
-
-		const auto& texturesJsonIter = aRoot.find("textures");
-		if (texturesJsonIter == aRoot.end())
-		{
-			return textures;
-		}
-
-		const std::vector<nlohmann::json>& texturesJson = *texturesJsonIter;
-		textures.reserve(texturesJson.size());
-		for (const auto& textureJson : texturesJson)
-		{
-			Texture texture;
-
-			texture.mySource = ReadOptional(textureJson, "source", kInvalidInd);
-			texture.mySampler = ReadOptional(textureJson, "source", kInvalidInd);
-			texture.myName = ReadOptional(textureJson, "name", std::string());
-
-			textures.push_back(std::move(texture));
-		}
-
-		return textures;
+		aTexture.mySource = ReadOptional(aTextureJson, "source", kInvalidInd);
+		aTexture.mySampler = ReadOptional(aTextureJson, "source", kInvalidInd);
+		aTexture.myName = ReadOptional(aTextureJson, "name", std::string());
 	}
 
 	void Texture::ConstructTextures(const TextureInputs& aInputs,

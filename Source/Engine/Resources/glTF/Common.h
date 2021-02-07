@@ -18,6 +18,26 @@ namespace glTF
 		return aDefaultVal;
 	}
 
+	template<class T, class... TParseItemArgs>
+	std::vector<T> Parse(const nlohmann::json& aRoot, std::string_view aName, TParseItemArgs&&... aArgs)
+	{
+		std::vector<T> items;
+
+		const auto& itemsJsonIter = aRoot.find(aName);
+		if (itemsJsonIter == aRoot.end())
+		{
+			return items;
+		}
+
+		const std::vector<nlohmann::json>& itemsJson = *itemsJsonIter;
+		items.resize(itemsJson.size());
+		for (size_t i=0; i<items.size(); i++)
+		{
+			T::ParseItem(itemsJson[i], items[i], std::forward<TParseItemArgs>(aArgs)...);
+		}
+		return items;
+	}
+
 	inline bool IsDataURI(const std::string& aUri)
 	{
 		if (aUri.size() <= 5)

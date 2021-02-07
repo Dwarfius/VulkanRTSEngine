@@ -1,6 +1,6 @@
 #pragma once
 
-struct AnimationVert
+struct SkinnedVertex
 {
 	glm::vec3 myPos;
 	glm::vec3 myNormal;
@@ -10,7 +10,7 @@ struct AnimationVert
 
 	static constexpr VertexDescriptor GetDescriptor()
 	{
-		using ThisType = AnimationVert; // for copy-paste convenience
+		using ThisType = SkinnedVertex; // for copy-paste convenience
 		return {
 			sizeof(ThisType),
 			5,
@@ -27,9 +27,9 @@ struct AnimationVert
 
 namespace std
 {
-	template<> struct hash<AnimationVert>
+	template<> struct hash<SkinnedVertex>
 	{
-		std::size_t operator()(const AnimationVert& v) const
+		std::size_t operator()(const SkinnedVertex& v) const
 		{
 			return hash<glm::vec3>()(v.myPos) ^
 				((hash<glm::vec3>()(v.myNormal) >> 1) << 1) ^
