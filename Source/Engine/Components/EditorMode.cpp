@@ -30,7 +30,8 @@ EditorMode::EditorMode(Game& aGame)
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("whale.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("riggedFigure.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
+	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("sparse.gltf");
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)

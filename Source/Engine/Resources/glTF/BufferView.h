@@ -21,11 +21,16 @@ namespace glTF
 		template<class T>
 		void ReadElem(T& anElem, size_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
 		{
-			const Buffer& buffer = aBuffers[myBuffer];
 			const size_t stride = myByteStride > 0 ? myByteStride : sizeof(T);
-			const char* bufferViewStart = buffer.data() + myByteOffset;
-			const char* elemPos = bufferViewStart + anAccessorOffset + anIndex * stride;
+			const char* elemPos = GetPtrToElem(stride, anIndex, anAccessorOffset, aBuffers);
 			std::memcpy(&anElem, elemPos, sizeof(T));
+		}
+
+		const char* GetPtrToElem(size_t aStride, size_t anIndex, size_t anAccessorOffset, const std::vector<Buffer>& aBuffers) const
+		{
+			const Buffer& buffer = aBuffers[myBuffer];
+			const char* bufferViewStart = buffer.data() + myByteOffset;
+			return bufferViewStart + anAccessorOffset + anIndex * aStride;
 		}
 
 		static void ParseItem(const nlohmann::json& aViewJson, BufferView& aView)

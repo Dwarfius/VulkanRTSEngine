@@ -83,9 +83,18 @@ void GLTFImporter::OnLoad(const File& aFile)
 
 	std::vector<glTF::Node> nodes = glTF::Parse<glTF::Node>(gltfJson, "nodes");
 	glTF::Node::UpdateWorldTransforms(nodes);
+
 	std::vector<glTF::Buffer> buffers = glTF::Parse<glTF::Buffer>(gltfJson, "buffers", relPath);
 	std::vector<glTF::BufferView> bufferViews = glTF::Parse<glTF::BufferView>(gltfJson, "bufferViews");
 	std::vector<glTF::Accessor> accessors = glTF::Parse<glTF::Accessor>(gltfJson, "accessors");
+	for (glTF::Accessor& accessor : accessors)
+	{
+		if (accessor.HasSparseBuffer())
+		{
+			accessor.ReconstructSparseBuffer(bufferViews, buffers);
+		}
+	}
+
 	std::vector<glTF::Mesh> meshes = glTF::Parse<glTF::Mesh>(gltfJson, "meshes");
 	std::vector<glTF::Skin> skins = glTF::Parse<glTF::Skin>(gltfJson, "skins");
 	std::vector<glTF::Texture> textures = glTF::Parse<glTF::Texture>(gltfJson, "textures");

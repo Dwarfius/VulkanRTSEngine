@@ -66,17 +66,43 @@ namespace glTF
 			Mat3,
 			Mat4
 		};
+
+		struct Sparse
+		{
+			struct Indices
+			{
+				size_t myByteOffset = 0;
+				uint32_t myBufferView; // req
+				ComponentType myComponentType; // req
+			};
+
+			struct Values
+			{
+				size_t myByteOffset = 0;
+				uint32_t myBufferView; // req
+			};
+
+			Indices myIndices; // req
+			Values myValues; // req
+			size_t myCount = 0; // req, but we use this to signal if it's set or not
+
+			static void ParseItem(const nlohmann::json& aSparseJson, Sparse& aSparse);
+		};
 		
-		size_t myByteOffset;
-		size_t myCount;
-		uint32_t myMax[16];
-		uint32_t myMin[16];
-		uint32_t myBufferView;
-		ComponentType myComponentType;
-		Type myType;
-		bool myIsNormalized;
+		size_t myByteOffset = 0;
+		size_t myCount = 0; // req
+		uint32_t myMax[16] = {};
+		uint32_t myMin[16] = {};
+		Sparse mySparse;
+		uint32_t myBufferView = 0;
+		ComponentType myComponentType; // req
+		Type myType; // req
+		bool myIsNormalized = false;
 
 		static void ParseItem(const nlohmann::json& anAccessortJson, Accessor& anAccessor);
+
+		bool HasSparseBuffer() const;
+		void ReconstructSparseBuffer(std::vector<BufferView>& aBufferViews, std::vector<Buffer>& aBuffers);
 
 		template<class T>
 		void ReadElem(T& anElem, size_t anIndex, const std::vector<BufferView>& aViews, const std::vector<Buffer>& aBuffers) const
@@ -99,6 +125,8 @@ namespace glTF
 		}
 
 	private:
+		constexpr static ComponentType IdentifyCompType(uint32_t anId);
+
 		constexpr static uint8_t GetElemCount(Type aType)
 		{
 			uint8_t count = 0;
