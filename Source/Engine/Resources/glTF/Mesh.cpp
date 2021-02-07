@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "Mesh.h"
 
+#include <Graphics/Resources/Model.h>
 #include <charconv>
 #include "../../Animation/SkinnedVerts.h"
 
@@ -54,12 +55,12 @@ namespace glTF
 			if (weightsAttribIter == attribs.end())
 			{
 				// no skinning, so create a simple model 
-				ConstructModel<Vertex>(mesh, aInputs, model, UpdateVertex);
+				ConstructStaticModel(mesh, aInputs, model);
 			}
 			else
 			{
 				// skinning present, so construct a model with skinned vertices
-				ConstructModel<SkinnedVertex>(mesh, aInputs, model, UpdateSkinnedVertex);
+				ConstructSkinnedModel(mesh, aInputs, model);
 			}
 
 			const auto& nodeIter = std::find_if(aInputs.myNodes.begin(), aInputs.myNodes.end(), 
@@ -72,212 +73,366 @@ namespace glTF
 		}
 	}
 
-	void Mesh::UpdateVertex(Vertex& aVertex, const Attribute& anAttribute, const BufferAccessorInputs& aInputs)
+	// TODO: cleanup some of the common code between this and ConstruckSkinnedModel
+	void Mesh::ConstructStaticModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel)
 	{
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
 		const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
 		const std::vector<Accessor>& accessors = aInputs.myAccessors;
 
-		bool hasAttribIndex = false;
-		uint32_t attributeSet = 0;
-		std::string_view attribName(anAttribute.myType.c_str(), anAttribute.myType.size());
-		// multiple attributes might be grouped in a set
-		// format: <name>_<setNum>
-		size_t separatorInd = anAttribute.myType.find('_');
-		if (separatorInd != std::string::npos)
+		std::vector<Model::IndexType> indices;
+		std::vector<Vertex> vertices;
+
+		// just to speed up the process and avoid growth, resize the arrays
 		{
-			attribName = std::string_view(anAttribute.myType.c_str(), separatorInd);
-			const char* start = anAttribute.myType.c_str() + separatorInd + 1;
-			const char* end = anAttribute.myType.c_str() + anAttribute.myType.size();
-			auto [p, errorCode] = std::from_chars(start, end, attributeSet);
-			ASSERT(errorCode == std::errc());
-			hasAttribIndex = true;
+			size_t vertCountTotal = 0;
+			size_t indexCountTotal = 0;
+				
+			int posAccessor = kInvalidInd;
+			for (int i=0; i<aMesh.myAttributes.size(); i++)
+			{
+				if (aMesh.myAttributes[i].myType == "POSITION")
+				{
+					posAccessor = i;
+					break;
+				}
+			}
+			ASSERT_STR(posAccessor != kInvalidInd, "Failed to find pos attribute!");
+
+			vertCountTotal += accessors[posAccessor].myCount;
+			if (aMesh.myHasIndices)
+			{
+				indexCountTotal += accessors[aMesh.myIndexAccessor].myCount;
+			}
+			vertices.resize(vertCountTotal);
+			indices.resize(indexCountTotal);
 		}
 
-		const Accessor& accessor = accessors[anAttribute.myAccessor];
+		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
+		{
+			bool hasAttribIndex = false;
+			uint32_t attributeSet = 0;
+			std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
+			// multiple attributes might be grouped in a set
+			// format: <name>_<setNum>
+			size_t separatorInd = attribute.myType.find('_');
+			if (separatorInd != std::string::npos)
+			{
+				attribName = std::string_view(attribute.myType.c_str(), separatorInd);
+				const char* start = attribute.myType.c_str() + separatorInd + 1;
+				const char* end = attribute.myType.c_str() + attribute.myType.size();
+				auto [p, errorCode] = std::from_chars(start, end, attributeSet);
+				ASSERT(errorCode == std::errc());
+				hasAttribIndex = true;
+			}
 
-		// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-		if (attribName == "POSITION")
-		{
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				accessor.ReadElem(aVertex.myPos, i, bufferViews, buffers);
-			}
-		}
-		else if (attribName == "NORMAL")
-		{
-			const Accessor& normAccessor = accessors[anAttribute.myAccessor];
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				accessor.ReadElem(aVertex.myNormal, i, bufferViews, buffers);
-			}
-		}
-		else if (attribName == "TEXCOORD")
-		{
-			ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
-			if (attributeSet != 0)
-			{
-				// skipping other UVs since our vertex only supports 1 UV set
-				return;
-			}
-			ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
-				"Vertex doesn't support copying in u8 or u16 components!");
+			const Accessor& accessor = accessors[attribute.myAccessor];
 
-			for (size_t i = 0; i < accessor.myCount; i++)
+			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
+			if (attribName == "POSITION")
 			{
-				accessor.ReadElem(aVertex.myUv, i, bufferViews, buffers);
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					Vertex& vert = vertices[i];
+					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "NORMAL")
+			{
+				const Accessor& normAccessor = accessors[attribute.myAccessor];
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					Vertex& vert = vertices[i];
+					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "TEXCOORD")
+			{
+				ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+				if (attributeSet != 0)
+				{
+					// skipping other UVs since our vertex only supports 1 UV set
+					continue;
+				}
+				ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
+					"Vertex doesn't support copying in u8 or u16 components!");
+
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					Vertex& vert = vertices[i];
+					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "JOINTS")
+			{
+				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
+			}
+			else if (attribName == "WEIGHTS")
+			{
+				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
+			}
+			else
+			{
+				ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
 			}
 		}
-		else if (attribName == "JOINTS")
+
+		if (aMesh.myHasIndices)
 		{
-			ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
+			const Accessor& indexAccessor = accessors[aMesh.myIndexAccessor];
+			for (size_t i = 0; i < indexAccessor.myCount; i++)
+			{
+				Model::IndexType& index = indices[i];
+				switch (indexAccessor.myComponentType)
+				{
+				case Accessor::ComponentType::UnsignedByte:
+				{
+					uint8_t readIndex;
+					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+					index = readIndex;
+					break;
+				}
+				case Accessor::ComponentType::UnsignedShort:
+				{
+					uint16_t readIndex;
+					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+					index = readIndex;
+					break;
+				}
+				case Accessor::ComponentType::UnsignedInt:
+					indexAccessor.ReadElem(index, i, bufferViews, buffers);
+					break;
+				}
+			}
 		}
-		else if (attribName == "WEIGHTS")
-		{
-			ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
-		}
-		else
-		{
-			ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
-		}
+
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = vertices.data();
+		uploadDesc.myVertCount = vertices.size();
+		uploadDesc.myIndices = indices.data();
+		uploadDesc.myIndCount = indices.size();
+		uploadDesc.myNextDesc = nullptr;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndOwned = false;
+		aModel->Update(uploadDesc);
 	}
 
-	void Mesh::UpdateSkinnedVertex(SkinnedVertex& aVertex, const Attribute& anAttribute, const BufferAccessorInputs& aInputs)
+	void Mesh::ConstructSkinnedModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel)
 	{
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
 		const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
 		const std::vector<Accessor>& accessors = aInputs.myAccessors;
 
-		bool hasAttribIndex = false;
-		uint32_t attributeSet = 0;
-		std::string_view attribName(anAttribute.myType.c_str(), anAttribute.myType.size());
-		// multiple attributes might be grouped in a set
-		// format: <name>_<setNum>
-		size_t separatorInd = anAttribute.myType.find('_');
-		if (separatorInd != std::string::npos)
-		{
-			attribName = std::string_view(anAttribute.myType.c_str(), separatorInd);
-			const char* start = anAttribute.myType.c_str() + separatorInd + 1;
-			const char* end = anAttribute.myType.c_str() + anAttribute.myType.size();
-			auto [p, errorCode] = std::from_chars(start, end, attributeSet);
-			ASSERT(errorCode == std::errc());
-			hasAttribIndex = true;
-		}
+		std::vector<Model::IndexType> indices;
+		std::vector<SkinnedVertex> vertices;
 
-		const Accessor& accessor = accessors[anAttribute.myAccessor];
+		// just to speed up the process and avoid growth, resize the arrays
+		{
+			size_t vertCountTotal = 0;
+			size_t indexCountTotal = 0;
 
-		// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-		if (attribName == "POSITION")
-		{
-			for (size_t i = 0; i < accessor.myCount; i++)
+			int posAccessor = kInvalidInd;
+			for (int i = 0; i < aMesh.myAttributes.size(); i++)
 			{
-				accessor.ReadElem(aVertex.myPos, i, bufferViews, buffers);
-			}
-		}
-		else if (attribName == "NORMAL")
-		{
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				accessor.ReadElem(aVertex.myNormal, i, bufferViews, buffers);
-			}
-		}
-		else if (attribName == "TEXCOORD")
-		{
-			ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
-			if (attributeSet != 0)
-			{
-				// skipping other UVs since our vertex only supports 1 UV set
-				return;
-			}
-			ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
-				"Vertex doesn't support copying in u8 or u16 components!");
-
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				accessor.ReadElem(aVertex.myUv, i, bufferViews, buffers);
-			}
-		}
-		else if (attribName == "JOINTS")
-		{
-			if (attributeSet != 0)
-			{
-				// skipping other joints since our vertex only supports 
-				// a single 4-joint set
-				return;
-			}
-
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				if (accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
+				if (aMesh.myAttributes[i].myType == "POSITION")
 				{
-					uint8_t indices[4];
-					accessor.ReadElem(indices, i, bufferViews, buffers);
-					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+					posAccessor = i;
+					break;
+				}
+			}
+			ASSERT_STR(posAccessor != kInvalidInd, "Failed to find pos attribute!");
+
+			vertCountTotal += accessors[posAccessor].myCount;
+			if (aMesh.myHasIndices)
+			{
+				indexCountTotal += accessors[aMesh.myIndexAccessor].myCount;
+			}
+			vertices.resize(vertCountTotal);
+			indices.resize(indexCountTotal);
+		}
+
+		// TODO: current implemnentation is too conservative that it does per-element copy
+		// even though we're supposed to end up with the same result IF the vertex
+		// and Index types are binary the same (so we could just perform a direct memcpy
+		// of the whole buffer)
+		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
+		{
+			bool hasAttribIndex = false;
+			uint32_t attributeSet = 0;
+			std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
+			// multiple attributes might be grouped in a set
+			// format: <name>_<setNum>
+			size_t separatorInd = attribute.myType.find('_');
+			if (separatorInd != std::string::npos)
+			{
+				attribName = std::string_view(attribute.myType.c_str(), separatorInd);
+				const char* start = attribute.myType.c_str() + separatorInd + 1;
+				const char* end = attribute.myType.c_str() + attribute.myType.size();
+				auto [p, errorCode] = std::from_chars(start, end, attributeSet);
+				ASSERT(errorCode == std::errc());
+				hasAttribIndex = true;
+			}
+
+			const Accessor& accessor = accessors[attribute.myAccessor];
+
+			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
+			if (attribName == "POSITION")
+			{
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					SkinnedVertex& vert = vertices[i];
+					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "NORMAL")
+			{
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					SkinnedVertex& vert = vertices[i];
+					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "TEXCOORD")
+			{
+				ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+				if (attributeSet != 0)
+				{
+					// skipping other UVs since our vertex only supports 1 UV set
+					continue;
+				}
+				ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
+					"Vertex doesn't support copying in u8 or u16 components!");
+
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					SkinnedVertex& vert = vertices[i];
+					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
+				}
+			}
+			else if (attribName == "JOINTS")
+			{
+				if (attributeSet != 0)
+				{
+					// skipping other joints since our vertex only supports 
+					// a single 4-joint set
+					continue;
+				}
+
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					SkinnedVertex& vert = vertices[i];
+					if (accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
 					{
-						aVertex.myBoneIndices[elemIndex] = indices[elemIndex];
+						uint8_t indices[4];
+						accessor.ReadElem(indices, i, bufferViews, buffers);
+						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+						{
+							vert.myBoneIndices[elemIndex] = indices[elemIndex];
+						}
 					}
-				}
-				else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
-				{
-					uint16_t indices[4];
-					accessor.ReadElem(indices, i, bufferViews, buffers);
-					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+					else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
 					{
-						aVertex.myBoneIndices[elemIndex] = indices[elemIndex];
+						uint16_t indices[4];
+						accessor.ReadElem(indices, i, bufferViews, buffers);
+						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+						{
+							vert.myBoneIndices[elemIndex] = indices[elemIndex];
+						}
 					}
-				}
-				else
-				{
-					ASSERT(false);
-				}
-			}
-		}
-		else if (attribName == "WEIGHTS")
-		{
-			if (attributeSet != 0)
-			{
-				// skipping other weight sets since our vertex only supports 1 weights set
-				return;
-			}
-
-			for (size_t i = 0; i < accessor.myCount; i++)
-			{
-				// weights can be either floats or normalized byte/short
-				// so we have to un-normalize them
-				if (accessor.myComponentType == Accessor::ComponentType::Float)
-				{
-					float weights[4];
-					accessor.ReadElem(weights, i, bufferViews, buffers);
-					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+					else
 					{
-						aVertex.myBoneWeights[elemIndex] = weights[elemIndex];
-					}
-				}
-				else if(accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
-				{
-					ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
-					uint8_t weigthsNorm[4];
-					accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
-					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-					{
-						aVertex.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 255.f;
-					}
-				}
-				else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
-				{
-					ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
-					uint16_t weigthsNorm[4];
-					accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
-					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-					{
-						aVertex.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 65535.f;
+						ASSERT(false);
 					}
 				}
 			}
+			else if (attribName == "WEIGHTS")
+			{
+				if (attributeSet != 0)
+				{
+					// skipping other weight sets since our vertex only supports 1 weights set
+					continue;
+				}
+
+				for (size_t i = 0; i < accessor.myCount; i++)
+				{
+					SkinnedVertex& vert = vertices[i];
+
+					// weights can be either floats or normalized byte/short
+					// so we have to un-normalize them
+					if (accessor.myComponentType == Accessor::ComponentType::Float)
+					{
+						float weights[4];
+						accessor.ReadElem(weights, i, bufferViews, buffers);
+						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+						{
+							vert.myBoneWeights[elemIndex] = weights[elemIndex];
+						}
+					}
+					else if(accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
+					{
+						ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
+						uint8_t weigthsNorm[4];
+						accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
+						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+						{
+							vert.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 255.f;
+						}
+					}
+					else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
+					{
+						ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
+						uint16_t weigthsNorm[4];
+						accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
+						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+						{
+							vert.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 65535.f;
+						}
+					}
+				}
+			}
+			else
+			{
+				ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
+			}
 		}
-		else
+
+		if (aMesh.myHasIndices)
 		{
-			ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
+			const Accessor& indexAccessor = accessors[aMesh.myIndexAccessor];
+			for (size_t i = 0; i < indexAccessor.myCount; i++)
+			{
+				Model::IndexType& index = indices[i];
+				switch (indexAccessor.myComponentType)
+				{
+				case Accessor::ComponentType::UnsignedByte:
+				{
+					uint8_t readIndex;
+					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+					index = readIndex;
+					break;
+				}
+				case Accessor::ComponentType::UnsignedShort:
+				{
+					uint16_t readIndex;
+					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
+					index = readIndex;
+					break;
+				}
+				case Accessor::ComponentType::UnsignedInt:
+					indexAccessor.ReadElem(index, i, bufferViews, buffers);
+					break;
+				}
+			}
 		}
+
+		Model::UploadDescriptor<SkinnedVertex> uploadDesc;
+		uploadDesc.myVertices = vertices.data();
+		uploadDesc.myVertCount = vertices.size();
+		uploadDesc.myIndices = indices.data();
+		uploadDesc.myIndCount = indices.size();
+		uploadDesc.myNextDesc = nullptr;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndOwned = false;
+		aModel->Update(uploadDesc);
 	}
 }
