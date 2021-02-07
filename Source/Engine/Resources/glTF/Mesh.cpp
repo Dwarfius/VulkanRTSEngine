@@ -20,7 +20,63 @@ namespace glTF
 				attribIter++)
 			{
 				Attribute attribute;
-				attribute.myType = attribIter.key();
+
+				// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
+				std::string_view attributeName = attribIter.key();
+				bool hasAttribIndex = false;
+				attribute.mySet = 0;
+				// multiple attributes might be grouped in a set
+				// format: <name>_<setNum>
+				size_t separatorInd = attributeName.find('_');
+				if (separatorInd != std::string::npos)
+				{
+					std::string_view fullName = attributeName;
+					attributeName = std::string_view(attributeName.data(), separatorInd);
+					const char* start = fullName.data() + separatorInd + 1;
+					const char* end = fullName.data() + fullName.size();
+					auto [p, errorCode] = std::from_chars(start, end, attribute.mySet);
+					ASSERT(errorCode == std::errc());
+					hasAttribIndex = true;
+				}
+
+				if (attributeName == "POSITION")
+				{
+					attribute.myType = Attribute::Type::Position;
+				}
+				else if (attributeName == "NORMAL")
+				{
+					attribute.myType = Attribute::Type::Normal;
+				}
+				else if (attributeName == "TANGENT")
+				{
+					attribute.myType = Attribute::Type::Tangent;
+				}
+				else if (attributeName == "COLOR")
+				{
+					ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+					attribute.myType = Attribute::Type::Color;
+				}
+				else if (attributeName == "TEXCOORD")
+				{
+					ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+					attribute.myType = Attribute::Type::TexCoord;
+				}
+				else if (attributeName == "JOINTS")
+				{
+					ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+					attribute.myType = Attribute::Type::Joints;
+				}
+				else if (attributeName == "WEIGHTS")
+				{
+					ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
+					attribute.myType = Attribute::Type::Weights;
+				}
+				else
+				{
+					ASSERT_STR(false, "'%s' semantic attribute NYI, skipping!", attributeName.data());
+					continue;
+				}
+
 				attribute.myAccessor = attribIter->get<uint32_t>();
 				aMesh.myAttributes.emplace_back(std::move(attribute));
 			}
@@ -47,7 +103,7 @@ namespace glTF
 			const std::vector<Attribute>& attribs = mesh.myAttributes;
 			const auto& weightsAttribIter = std::find_if(attribs.begin(), attribs.end(),
 				[](const Attribute& aAttrib) {
-					return aAttrib.myType == "WEIGHTS_0";
+					return aAttrib.myType == Attribute::Type::Weights;
 				}
 			);
 			// Assuming that indexing is always present
@@ -91,7 +147,7 @@ namespace glTF
 			int posAccessor = kInvalidInd;
 			for (int i=0; i<aMesh.myAttributes.size(); i++)
 			{
-				if (aMesh.myAttributes[i].myType == "POSITION")
+				if (aMesh.myAttributes[i].myType == Attribute::Type::Position)
 				{
 					posAccessor = i;
 					break;
@@ -110,46 +166,26 @@ namespace glTF
 
 		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
 		{
-			bool hasAttribIndex = false;
-			uint32_t attributeSet = 0;
-			std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
-			// multiple attributes might be grouped in a set
-			// format: <name>_<setNum>
-			size_t separatorInd = attribute.myType.find('_');
-			if (separatorInd != std::string::npos)
-			{
-				attribName = std::string_view(attribute.myType.c_str(), separatorInd);
-				const char* start = attribute.myType.c_str() + separatorInd + 1;
-				const char* end = attribute.myType.c_str() + attribute.myType.size();
-				auto [p, errorCode] = std::from_chars(start, end, attributeSet);
-				ASSERT(errorCode == std::errc());
-				hasAttribIndex = true;
-			}
-
 			const Accessor& accessor = accessors[attribute.myAccessor];
 
-			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-			if (attribName == "POSITION")
+			switch (attribute.myType)
 			{
+			case Attribute::Type::Position:
 				for (size_t i = 0; i < accessor.myCount; i++)
 				{
 					Vertex& vert = vertices[i];
 					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "NORMAL")
-			{
-				const Accessor& normAccessor = accessors[attribute.myAccessor];
+				break;
+			case Attribute::Type::Normal:
 				for (size_t i = 0; i < accessor.myCount; i++)
 				{
 					Vertex& vert = vertices[i];
 					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "TEXCOORD")
-			{
-				ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
-				if (attributeSet != 0)
+				break;
+			case Attribute::Type::TexCoord:
+				if (attribute.mySet != 0)
 				{
 					// skipping other UVs since our vertex only supports 1 UV set
 					continue;
@@ -162,18 +198,15 @@ namespace glTF
 					Vertex& vert = vertices[i];
 					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "JOINTS")
-			{
+				break;
+			case Attribute::Type::Joints:
 				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
-			}
-			else if (attribName == "WEIGHTS")
-			{
+				break;
+			case Attribute::Type::Weights:
 				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
-			}
-			else
-			{
-				ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
+				break;
+			default:
+				ASSERT_STR(false, "Semantic attribute NYI!");
 			}
 		}
 
@@ -234,7 +267,7 @@ namespace glTF
 			int posAccessor = kInvalidInd;
 			for (int i = 0; i < aMesh.myAttributes.size(); i++)
 			{
-				if (aMesh.myAttributes[i].myType == "POSITION")
+				if (aMesh.myAttributes[i].myType == Attribute::Type::Position)
 				{
 					posAccessor = i;
 					break;
@@ -257,45 +290,26 @@ namespace glTF
 		// of the whole buffer)
 		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
 		{
-			bool hasAttribIndex = false;
-			uint32_t attributeSet = 0;
-			std::string_view attribName(attribute.myType.c_str(), attribute.myType.size());
-			// multiple attributes might be grouped in a set
-			// format: <name>_<setNum>
-			size_t separatorInd = attribute.myType.find('_');
-			if (separatorInd != std::string::npos)
-			{
-				attribName = std::string_view(attribute.myType.c_str(), separatorInd);
-				const char* start = attribute.myType.c_str() + separatorInd + 1;
-				const char* end = attribute.myType.c_str() + attribute.myType.size();
-				auto [p, errorCode] = std::from_chars(start, end, attributeSet);
-				ASSERT(errorCode == std::errc());
-				hasAttribIndex = true;
-			}
-
 			const Accessor& accessor = accessors[attribute.myAccessor];
 
-			// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
-			if (attribName == "POSITION")
+			switch (attribute.myType)
 			{
+			case Attribute::Type::Position:
 				for (size_t i = 0; i < accessor.myCount; i++)
 				{
 					SkinnedVertex& vert = vertices[i];
 					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "NORMAL")
-			{
+				break;
+			case Attribute::Type::Normal:
 				for (size_t i = 0; i < accessor.myCount; i++)
 				{
 					SkinnedVertex& vert = vertices[i];
 					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "TEXCOORD")
-			{
-				ASSERT_STR(hasAttribIndex, "glTF 2.0 standard requires indices!");
-				if (attributeSet != 0)
+				break;
+			case Attribute::Type::TexCoord:
+				if (attribute.mySet != 0)
 				{
 					// skipping other UVs since our vertex only supports 1 UV set
 					continue;
@@ -308,10 +322,9 @@ namespace glTF
 					SkinnedVertex& vert = vertices[i];
 					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
 				}
-			}
-			else if (attribName == "JOINTS")
-			{
-				if (attributeSet != 0)
+				break;
+			case Attribute::Type::Joints:
+				if (attribute.mySet != 0)
 				{
 					// skipping other joints since our vertex only supports 
 					// a single 4-joint set
@@ -344,10 +357,9 @@ namespace glTF
 						ASSERT(false);
 					}
 				}
-			}
-			else if (attribName == "WEIGHTS")
-			{
-				if (attributeSet != 0)
+				break;
+			case Attribute::Type::Weights:
+				if (attribute.mySet != 0)
 				{
 					// skipping other weight sets since our vertex only supports 1 weights set
 					continue;
@@ -356,43 +368,13 @@ namespace glTF
 				for (size_t i = 0; i < accessor.myCount; i++)
 				{
 					SkinnedVertex& vert = vertices[i];
-
 					// weights can be either floats or normalized byte/short
 					// so we have to un-normalize them
-					if (accessor.myComponentType == Accessor::ComponentType::Float)
-					{
-						float weights[4];
-						accessor.ReadElem(weights, i, bufferViews, buffers);
-						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-						{
-							vert.myBoneWeights[elemIndex] = weights[elemIndex];
-						}
-					}
-					else if(accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
-					{
-						ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
-						uint8_t weigthsNorm[4];
-						accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
-						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-						{
-							vert.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 255.f;
-						}
-					}
-					else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
-					{
-						ASSERT_STR(accessor.myIsNormalized, "Must be normalized according to doc!");
-						uint16_t weigthsNorm[4];
-						accessor.ReadElem(weigthsNorm, i, bufferViews, buffers);
-						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-						{
-							vert.myBoneWeights[elemIndex] = weigthsNorm[elemIndex] / 65535.f;
-						}
-					}
+					accessor.ReadAndDenormalize(vert.myBoneWeights, i, bufferViews, buffers);
 				}
-			}
-			else
-			{
-				ASSERT_STR(false, "'%s' semantic attribute NYI!", attribName.data());
+				break;
+			default:
+				ASSERT_STR(false, "Semantic attribute NYI!");
 			}
 		}
 

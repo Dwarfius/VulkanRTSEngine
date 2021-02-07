@@ -111,7 +111,7 @@ set(SRC_RESOURCES
 )
 
 set(SRC_RESOURCES_GLTF
-	"Resources/glTF/Accessor.h"
+	"Resources/glTF/Accessor.cpp" "Resources/glTF/Accessor.h"
 	"Resources/glTF/Animation.cpp" "Resources/glTF/Animation.h"
 	"Resources/glTF/Buffer.h"
 	"Resources/glTF/BufferView.h"

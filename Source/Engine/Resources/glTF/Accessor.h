@@ -4,8 +4,48 @@
 
 namespace glTF
 {
+	struct Accessor;
+	// The default pack of inputs to accesss data stored in buffers
+	struct BufferAccessorInputs
+	{
+		const std::vector<Buffer>& myBuffers;
+		const std::vector<BufferView>& myBufferViews;
+		const std::vector<Accessor>& myAccessors;
+	};
+
 	struct Accessor
 	{
+	private:
+		// Util to detemine size of arrays and compound glm types
+		template<class T>
+		constexpr static size_t ArraySize = std::is_array_v<T> ? std::extent_v<T> : // array
+			// glm mat4 special case - length is of a row not entire mat4!
+			std::is_same_v<T, glm::mat4> ? 16 :
+			// simple case of single arithmetic variable
+			std::is_arithmetic_v<T> ? 1 :
+			// must be something custom - 
+			// try to fall back to glm's static length method
+			T::length();
+
+		template<class T, size_t TElems>
+		struct ReadAndDenormalizeJunc
+		{
+			static void Call(T& anElem, size_t anIndex,
+				const std::vector<BufferView>& aViews,
+				const std::vector<Buffer>& aBuffers,
+				const Accessor& anAccessor);
+		};
+
+		template<class T>
+		struct ReadAndDenormalizeJunc<T, 1>
+		{
+			static void Call(T& anElem, size_t anIndex,
+				const std::vector<BufferView>& aViews,
+				const std::vector<Buffer>& aBuffers,
+				const Accessor& anAccessor);
+		};
+
+	public:
 		enum class ComponentType : unsigned char
 		{
 			Byte,
@@ -26,6 +66,39 @@ namespace glTF
 			Mat3,
 			Mat4
 		};
+		
+		size_t myByteOffset;
+		size_t myCount;
+		uint32_t myMax[16];
+		uint32_t myMin[16];
+		uint32_t myBufferView;
+		ComponentType myComponentType;
+		Type myType;
+		bool myIsNormalized;
+
+		static void ParseItem(const nlohmann::json& anAccessortJson, Accessor& anAccessor);
+
+		template<class T>
+		void ReadElem(T& anElem, size_t anIndex, const std::vector<BufferView>& aViews, const std::vector<Buffer>& aBuffers) const
+		{
+			ASSERT_STR(sizeof(T) == GetElemSize(myComponentType, myType),
+				"Missmatched T passed in, the resulting element will not be properly read!");
+				
+			const BufferView& view = aViews[myBufferView];
+			view.ReadElem(anElem, anIndex, myByteOffset, aBuffers);
+		}
+
+		// Reads an element as gltf declared type and denormalizes to passed in T type
+		// Supports float, u8, u16
+		template<class T, size_t TElems = ArraySize<T>>
+		void ReadAndDenormalize(T& anElem, size_t anIndex,
+			const std::vector<BufferView>& aViews,
+			const std::vector<Buffer>& aBuffers) const
+		{
+			ReadAndDenormalizeJunc<T, TElems>::Call(anElem, anIndex, aViews, aBuffers, *this);
+		}
+
+	private:
 		constexpr static uint8_t GetElemCount(Type aType)
 		{
 			uint8_t count = 0;
@@ -58,165 +131,94 @@ namespace glTF
 			return count * size;
 		}
 
-		size_t myByteOffset;
-		size_t myCount;
-		uint32_t myMax[16];
-		uint32_t myMin[16];
-		uint32_t myBufferView;
-		ComponentType myComponentType;
-		Type myType;
-		bool myIsNormalized;
-
-		template<class T>
-		void ReadElem(T& anElem, size_t anIndex, const std::vector<BufferView>& aViews, const std::vector<Buffer>& aBuffers) const
-		{
-			ASSERT_STR(sizeof(T) == GetElemSize(myComponentType, myType),
-				"Missmatched T passed in, the resulting element will not be properly read!");
-				
-			const BufferView& view = aViews[myBufferView];
-			view.ReadElem(anElem, anIndex, myByteOffset, aBuffers);
-		}
-
-		static void ParseItem(const nlohmann::json& anAccessortJson, Accessor& anAccessor)
-		{
-			{
-				auto sparseJsonIter = anAccessortJson.find("sparse");
-				ASSERT_STR(sparseJsonIter == anAccessortJson.end(), "Sparse not yet implemented!");
-			}
-
-			// TODO: support optional bufferView!
-			anAccessor.myBufferView = anAccessortJson["bufferView"].get<uint32_t>();
-			anAccessor.myByteOffset = ReadOptional(anAccessortJson, "byteOffset", 0ull);
-			anAccessor.myCount = anAccessortJson["count"].get<size_t>();
-			anAccessor.myIsNormalized = ReadOptional(anAccessortJson, "normalized", false);
-
-			std::string typeStr = anAccessortJson["type"].get<std::string>();
-			anAccessor.myType = Accessor::Type::Scalar;
-			if (typeStr == "SCALAR")
-			{
-				anAccessor.myType = Accessor::Type::Scalar;
-			}
-			else if (typeStr == "VEC2")
-			{
-				anAccessor.myType = Accessor::Type::Vec2;
-			}
-			else if (typeStr == "VEC3")
-			{
-				anAccessor.myType = Accessor::Type::Vec3;
-			}
-			else if (typeStr == "VEC4")
-			{
-				anAccessor.myType = Accessor::Type::Vec4;
-			}
-			else if (typeStr == "MAT2")
-			{
-				anAccessor.myType = Accessor::Type::Mat2;
-			}
-			else if (typeStr == "MAT3")
-			{
-				anAccessor.myType = Accessor::Type::Mat3;
-			}
-			else if (typeStr == "MAT4")
-			{
-				anAccessor.myType = Accessor::Type::Mat4;
-			}
-			else
-			{
-				ASSERT(false);
-			}
-
-			Accessor::ComponentType compType = Accessor::ComponentType::Byte;
-			uint32_t componentType = anAccessortJson["componentType"].get<uint32_t>();
-			switch (componentType)
-			{
-			case GL_BYTE: compType = Accessor::ComponentType::Byte; break;
-			case GL_UNSIGNED_BYTE: compType = Accessor::ComponentType::UnsignedByte; break;
-			case GL_SHORT: compType = Accessor::ComponentType::Short; break;
-			case GL_UNSIGNED_SHORT: compType = Accessor::ComponentType::UnsignedShort; break;
-			case GL_UNSIGNED_INT: compType = Accessor::ComponentType::UnsignedInt; break;
-			case GL_FLOAT: compType = Accessor::ComponentType::Float; break;
-			default: ASSERT(false);
-			}
-			anAccessor.myComponentType = compType;
-
-			const auto& maxIter = anAccessortJson.find("max");
-			if (maxIter != anAccessortJson.end())
-			{
-				ExtractLimit(*maxIter, anAccessor.myMax, anAccessor.myType, compType);
-			}
-			const auto& minIter = anAccessortJson.find("min");
-			if (minIter != anAccessortJson.end())
-			{
-				ExtractLimit(*minIter, anAccessor.myMin, anAccessor.myType, compType);
-			}
-		}
-
-	private:
 		static void ExtractLimit(const nlohmann::json& aJson,
 			uint32_t(&aMember)[16],
 			Accessor::Type aType,
-			Accessor::ComponentType aCompType)
-		{
-			auto Read = [](const nlohmann::json& aJson,
-				uint32_t& anElem,
-				Accessor::ComponentType aCompType)
-			{
-				switch (aCompType)
-				{
-				case Accessor::ComponentType::Byte:
-				{
-					const int8_t data = aJson.get<int8_t>();
-					std::memcpy(&anElem, &data, sizeof(int8_t));
-					break;
-				}
-				case Accessor::ComponentType::UnsignedByte:
-				{
-					const uint8_t data = aJson.get<uint8_t>();
-					std::memcpy(&anElem, &data, sizeof(uint8_t));
-					break;
-				}
-				case Accessor::ComponentType::Short:
-				{
-					const int16_t data = aJson.get<int16_t>();
-					std::memcpy(&anElem, &data, sizeof(int16_t));
-					break;
-				}
-				case Accessor::ComponentType::UnsignedShort:
-				{
-					const uint16_t data = aJson.get<uint16_t>();
-					std::memcpy(&anElem, &data, sizeof(uint16_t));
-					break;
-				}
-				case Accessor::ComponentType::UnsignedInt:
-				{
-					const uint32_t data = aJson.get<uint32_t>();
-					std::memcpy(&anElem, &data, sizeof(uint32_t));
-					break;
-				}
-				case Accessor::ComponentType::Float:
-				{
-					const float data = aJson.get<float>();
-					std::memcpy(&anElem, &data, sizeof(float));
-					break;
-				}
-				default: ASSERT(false);
-				}
-			};
-
-			uint8_t iters = GetElemCount(aType);
-			ASSERT(iters != 0);
-			for (uint8_t i = 0; i < iters; i++)
-			{
-				Read(aJson.at(i), aMember[i], aCompType);
-			}
-		}
+			Accessor::ComponentType aCompType);
 	};
 
-	// The default pack of inputs to accesss data stored in buffers
-	struct BufferAccessorInputs
+	template<class T, size_t TElems>
+	void Accessor::ReadAndDenormalizeJunc<T, TElems>::Call(T& anElem, size_t anIndex,
+		const std::vector<BufferView>& aViews,
+		const std::vector<Buffer>& aBuffers,
+		const Accessor& anAccessor)
 	{
-		const std::vector<Buffer>& myBuffers;
-		const std::vector<BufferView>& myBufferViews;
-		const std::vector<Accessor>& myAccessors;
-	};
+		ComponentType compType = anAccessor.myComponentType;
+		Type type = anAccessor.myType;
+		ASSERT_STR(sizeof(T) == GetElemSize(compType, type),
+			"Missmatched T passed in, the resulting element will not be properly read!");
+
+		ASSERT_STR(GetElemCount(type) > 1, "Doesn't handle single elements!");
+		switch (compType)
+		{
+		case ComponentType::Float:
+			// no denorm needed!
+			anAccessor.ReadElem(anElem, anIndex, aViews, aBuffers);
+			break;
+		case ComponentType::UnsignedByte:
+		{
+			ASSERT_STR(anAccessor.myIsNormalized, "Must be normalized according to doc!");
+			uint8_t temp[TElems];
+			anAccessor.ReadElem(temp, anIndex, aViews, aBuffers);
+			for (uint8_t elemIndex = 0; elemIndex < TElems; elemIndex++)
+			{
+				anElem[elemIndex] = temp[elemIndex] / static_cast<float>(std::numeric_limits<uint8_t>::max());
+			}
+			break;
+		}
+		case ComponentType::UnsignedShort:
+		{
+			ASSERT_STR(anAccessor.myIsNormalized, "Must be normalized according to doc!");
+			uint16_t temp[TElems];
+			anAccessor.ReadElem(temp, anIndex, aViews, aBuffers);
+			for (uint8_t elemIndex = 0; elemIndex < TElems; elemIndex++)
+			{
+				anElem[elemIndex] = temp[elemIndex] / static_cast<float>(std::numeric_limits<uint16_t>::max());;
+			}
+			break;
+		}
+		default:
+			ASSERT_STR(false, "Unsupported component type!");
+		}
+	}
+
+	template<class T>
+	void Accessor::ReadAndDenormalizeJunc<T, 1>::Call(T& anElem, size_t anIndex,
+		const std::vector<BufferView>& aViews,
+		const std::vector<Buffer>& aBuffers,
+		const Accessor& anAccessor)
+	{
+		ComponentType compType = anAccessor.myComponentType;
+		Type type = anAccessor.myType;
+		ASSERT_STR(sizeof(T) == GetElemSize(compType, type),
+			"Missmatched T passed in, the resulting element will not be properly read!");
+
+		// This is brittle, but should suffice
+		ASSERT_STR(GetElemCount(type) == 1, "Doesn't handle multiple elements!");
+		switch (compType)
+		{
+		case ComponentType::Float:
+			// no denorm needed!
+			anAccessor.ReadElem(anElem, anIndex, aViews, aBuffers);
+			break;
+		case ComponentType::UnsignedByte:
+		{
+			ASSERT_STR(anAccessor.myIsNormalized, "Must be normalized according to doc!");
+			uint8_t temp;
+			anAccessor.ReadElem(temp, anIndex, aViews, aBuffers);
+			anElem = temp / static_cast<float>(std::numeric_limits<uint8_t>::max());
+			break;
+		}
+		case ComponentType::UnsignedShort:
+		{
+			ASSERT_STR(anAccessor.myIsNormalized, "Must be normalized according to doc!");
+			uint16_t temp;
+			anAccessor.ReadElem(temp, anIndex, aViews, aBuffers);
+			anElem = temp / static_cast<float>(std::numeric_limits<uint16_t>::max());;
+			break;
+		}
+		default:
+			ASSERT_STR(false, "Unsupported component type!");
+		}
+	}
 }

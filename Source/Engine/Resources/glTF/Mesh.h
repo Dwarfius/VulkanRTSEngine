@@ -12,8 +12,19 @@ namespace glTF
 	{
 		struct Attribute
 		{
-			std::string myType;
+			enum class Type
+			{
+				Position,
+				Normal,
+				Tangent,
+				Color,
+				TexCoord,
+				Joints,
+				Weights
+			};
+			Type myType;
 			uint32_t myAccessor;
+			uint8_t mySet;
 		};
 
 		std::vector<Attribute> myAttributes;
