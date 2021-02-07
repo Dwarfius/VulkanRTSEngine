@@ -111,12 +111,12 @@ namespace glTF
 			if (weightsAttribIter == attribs.end())
 			{
 				// no skinning, so create a simple model 
-				ConstructStaticModel(mesh, aInputs, model);
+				ConstructModel<Vertex>(mesh, aInputs, model);
 			}
 			else
 			{
 				// skinning present, so construct a model with skinned vertices
-				ConstructSkinnedModel(mesh, aInputs, model);
+				ConstructModel<SkinnedVertex>(mesh, aInputs, model);
 			}
 
 			const auto& nodeIter = std::find_if(aInputs.myNodes.begin(), aInputs.myNodes.end(), 
@@ -129,292 +129,142 @@ namespace glTF
 		}
 	}
 
-	// TODO: cleanup some of the common code between this and ConstruckSkinnedModel
-	void Mesh::ConstructStaticModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel)
+	void Mesh::ProcessAttribute(const Attribute& anAttribute, const BufferAccessorInputs& aInputs, std::vector<Vertex>& aVertices)
 	{
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
 		const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
-		const std::vector<Accessor>& accessors = aInputs.myAccessors;
+		const Accessor& accessor = aInputs.myAccessors[anAttribute.myAccessor];
 
-		std::vector<Model::IndexType> indices;
-		std::vector<Vertex> vertices;
-
-		// just to speed up the process and avoid growth, resize the arrays
+		switch (anAttribute.myType)
 		{
-			size_t vertCountTotal = 0;
-			size_t indexCountTotal = 0;
-				
-			int posAccessor = kInvalidInd;
-			for (int i=0; i<aMesh.myAttributes.size(); i++)
+		case Attribute::Type::Position:
+			for (size_t i = 0; i < accessor.myCount; i++)
 			{
-				if (aMesh.myAttributes[i].myType == Attribute::Type::Position)
-				{
-					posAccessor = i;
-					break;
-				}
+				Vertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
 			}
-			ASSERT_STR(posAccessor != kInvalidInd, "Failed to find pos attribute!");
+			break;
+		case Attribute::Type::Normal:
+			for (size_t i = 0; i < accessor.myCount; i++)
+			{
+				Vertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
+			}
+			break;
+		case Attribute::Type::TexCoord:
+			ASSERT_STR(anAttribute.mySet == 0, "Vertex only supports 1 texcoord set!");
+			if (anAttribute.mySet != 0)
+			{
+				return;
+			}
+			ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
+				"Vertex doesn't support copying in u8 or u16 components!");
 
-			vertCountTotal += accessors[posAccessor].myCount;
-			if (aMesh.myHasIndices)
+			for (size_t i = 0; i < accessor.myCount; i++)
 			{
-				indexCountTotal += accessors[aMesh.myIndexAccessor].myCount;
+				Vertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
 			}
-			vertices.resize(vertCountTotal);
-			indices.resize(indexCountTotal);
+			break;
+		case Attribute::Type::Joints:
+			ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
+			break;
+		case Attribute::Type::Weights:
+			ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
+			break;
+		default:
+			ASSERT_STR(false, "Semantic attribute NYI!");
 		}
-
-		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
-		{
-			const Accessor& accessor = accessors[attribute.myAccessor];
-
-			switch (attribute.myType)
-			{
-			case Attribute::Type::Position:
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					Vertex& vert = vertices[i];
-					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::Normal:
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					Vertex& vert = vertices[i];
-					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::TexCoord:
-				if (attribute.mySet != 0)
-				{
-					// skipping other UVs since our vertex only supports 1 UV set
-					continue;
-				}
-				ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
-					"Vertex doesn't support copying in u8 or u16 components!");
-
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					Vertex& vert = vertices[i];
-					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::Joints:
-				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
-				break;
-			case Attribute::Type::Weights:
-				ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
-				break;
-			default:
-				ASSERT_STR(false, "Semantic attribute NYI!");
-			}
-		}
-
-		if (aMesh.myHasIndices)
-		{
-			const Accessor& indexAccessor = accessors[aMesh.myIndexAccessor];
-			for (size_t i = 0; i < indexAccessor.myCount; i++)
-			{
-				Model::IndexType& index = indices[i];
-				switch (indexAccessor.myComponentType)
-				{
-				case Accessor::ComponentType::UnsignedByte:
-				{
-					uint8_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedShort:
-				{
-					uint16_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedInt:
-					indexAccessor.ReadElem(index, i, bufferViews, buffers);
-					break;
-				}
-			}
-		}
-
-		Model::UploadDescriptor<Vertex> uploadDesc;
-		uploadDesc.myVertices = vertices.data();
-		uploadDesc.myVertCount = vertices.size();
-		uploadDesc.myIndices = indices.data();
-		uploadDesc.myIndCount = indices.size();
-		uploadDesc.myNextDesc = nullptr;
-		uploadDesc.myVertsOwned = false;
-		uploadDesc.myIndOwned = false;
-		aModel->Update(uploadDesc);
 	}
 
-	void Mesh::ConstructSkinnedModel(const Mesh& aMesh, const BufferAccessorInputs& aInputs, Handle<Model>& aModel)
+	void Mesh::ProcessAttribute(const Attribute& anAttribute, const BufferAccessorInputs& aInputs, std::vector<SkinnedVertex>& aVertices)
 	{
 		const std::vector<Buffer>& buffers = aInputs.myBuffers;
 		const std::vector<BufferView>& bufferViews = aInputs.myBufferViews;
-		const std::vector<Accessor>& accessors = aInputs.myAccessors;
+		const Accessor& accessor = aInputs.myAccessors[anAttribute.myAccessor];
 
-		std::vector<Model::IndexType> indices;
-		std::vector<SkinnedVertex> vertices;
-
-		// just to speed up the process and avoid growth, resize the arrays
+		switch (anAttribute.myType)
 		{
-			size_t vertCountTotal = 0;
-			size_t indexCountTotal = 0;
-
-			int posAccessor = kInvalidInd;
-			for (int i = 0; i < aMesh.myAttributes.size(); i++)
+		case Attribute::Type::Position:
+			for (size_t i = 0; i < accessor.myCount; i++)
 			{
-				if (aMesh.myAttributes[i].myType == Attribute::Type::Position)
-				{
-					posAccessor = i;
-					break;
-				}
+				SkinnedVertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
 			}
-			ASSERT_STR(posAccessor != kInvalidInd, "Failed to find pos attribute!");
-
-			vertCountTotal += accessors[posAccessor].myCount;
-			if (aMesh.myHasIndices)
+			break;
+		case Attribute::Type::Normal:
+			for (size_t i = 0; i < accessor.myCount; i++)
 			{
-				indexCountTotal += accessors[aMesh.myIndexAccessor].myCount;
+				SkinnedVertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
 			}
-			vertices.resize(vertCountTotal);
-			indices.resize(indexCountTotal);
-		}
-
-		// TODO: current implemnentation is too conservative that it does per-element copy
-		// even though we're supposed to end up with the same result IF the vertex
-		// and Index types are binary the same (so we could just perform a direct memcpy
-		// of the whole buffer)
-		for (const Mesh::Attribute& attribute : aMesh.myAttributes)
-		{
-			const Accessor& accessor = accessors[attribute.myAccessor];
-
-			switch (attribute.myType)
+			break;
+		case Attribute::Type::TexCoord:
+			ASSERT_STR(anAttribute.mySet == 0, "SkinnedVertex only supports 1 texcoord set!");
+			if (anAttribute.mySet != 0)
 			{
-			case Attribute::Type::Position:
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					SkinnedVertex& vert = vertices[i];
-					accessor.ReadElem(vert.myPos, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::Normal:
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					SkinnedVertex& vert = vertices[i];
-					accessor.ReadElem(vert.myNormal, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::TexCoord:
-				if (attribute.mySet != 0)
-				{
-					// skipping other UVs since our vertex only supports 1 UV set
-					continue;
-				}
-				ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
-					"Vertex doesn't support copying in u8 or u16 components!");
+				return;
+			}
+			ASSERT_STR(accessor.myComponentType == Accessor::ComponentType::Float,
+				"Vertex doesn't support copying in u8 or u16 components!");
 
-				for (size_t i = 0; i < accessor.myCount; i++)
-				{
-					SkinnedVertex& vert = vertices[i];
-					accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
-				}
-				break;
-			case Attribute::Type::Joints:
-				if (attribute.mySet != 0)
-				{
-					// skipping other joints since our vertex only supports 
-					// a single 4-joint set
-					continue;
-				}
+			for (size_t i = 0; i < accessor.myCount; i++)
+			{
+				SkinnedVertex& vert = aVertices[i];
+				accessor.ReadElem(vert.myUv, i, bufferViews, buffers);
+			}
+			break;
+		case Attribute::Type::Joints:
+			ASSERT_STR(anAttribute.mySet == 0, "SkinnedVertex only supports 1 joint set!");
+			if (anAttribute.mySet != 0)
+			{
+				return;
+			}
 
-				for (size_t i = 0; i < accessor.myCount; i++)
+			for (size_t i = 0; i < accessor.myCount; i++)
+			{
+				SkinnedVertex& vert = aVertices[i];
+				if (accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
 				{
-					SkinnedVertex& vert = vertices[i];
-					if (accessor.myComponentType == Accessor::ComponentType::UnsignedByte)
+					uint8_t indices[4];
+					accessor.ReadElem(indices, i, bufferViews, buffers);
+					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
 					{
-						uint8_t indices[4];
-						accessor.ReadElem(indices, i, bufferViews, buffers);
-						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-						{
-							vert.myBoneIndices[elemIndex] = indices[elemIndex];
-						}
-					}
-					else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
-					{
-						uint16_t indices[4];
-						accessor.ReadElem(indices, i, bufferViews, buffers);
-						for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
-						{
-							vert.myBoneIndices[elemIndex] = indices[elemIndex];
-						}
-					}
-					else
-					{
-						ASSERT(false);
+						vert.myBoneIndices[elemIndex] = indices[elemIndex];
 					}
 				}
-				break;
-			case Attribute::Type::Weights:
-				if (attribute.mySet != 0)
+				else if (accessor.myComponentType == Accessor::ComponentType::UnsignedShort)
 				{
-					// skipping other weight sets since our vertex only supports 1 weights set
-					continue;
+					uint16_t indices[4];
+					accessor.ReadElem(indices, i, bufferViews, buffers);
+					for (uint8_t elemIndex = 0; elemIndex < 4; elemIndex++)
+					{
+						vert.myBoneIndices[elemIndex] = indices[elemIndex];
+					}
 				}
-
-				for (size_t i = 0; i < accessor.myCount; i++)
+				else
 				{
-					SkinnedVertex& vert = vertices[i];
-					// weights can be either floats or normalized byte/short
-					// so we have to un-normalize them
-					accessor.ReadAndDenormalize(vert.myBoneWeights, i, bufferViews, buffers);
+					ASSERT(false);
 				}
-				break;
-			default:
-				ASSERT_STR(false, "Semantic attribute NYI!");
 			}
-		}
-
-		if (aMesh.myHasIndices)
-		{
-			const Accessor& indexAccessor = accessors[aMesh.myIndexAccessor];
-			for (size_t i = 0; i < indexAccessor.myCount; i++)
+			break;
+		case Attribute::Type::Weights:
+			ASSERT_STR(anAttribute.mySet == 0, "SkinnedVertex only supports 1 weight set!");
+			if (anAttribute.mySet != 0)
 			{
-				Model::IndexType& index = indices[i];
-				switch (indexAccessor.myComponentType)
-				{
-				case Accessor::ComponentType::UnsignedByte:
-				{
-					uint8_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedShort:
-				{
-					uint16_t readIndex;
-					indexAccessor.ReadElem(readIndex, i, bufferViews, buffers);
-					index = readIndex;
-					break;
-				}
-				case Accessor::ComponentType::UnsignedInt:
-					indexAccessor.ReadElem(index, i, bufferViews, buffers);
-					break;
-				}
+				return;
 			}
-		}
 
-		Model::UploadDescriptor<SkinnedVertex> uploadDesc;
-		uploadDesc.myVertices = vertices.data();
-		uploadDesc.myVertCount = vertices.size();
-		uploadDesc.myIndices = indices.data();
-		uploadDesc.myIndCount = indices.size();
-		uploadDesc.myNextDesc = nullptr;
-		uploadDesc.myVertsOwned = false;
-		uploadDesc.myIndOwned = false;
-		aModel->Update(uploadDesc);
+			for (size_t i = 0; i < accessor.myCount; i++)
+			{
+				SkinnedVertex& vert = aVertices[i];
+				// weights can be either floats or normalized byte/short
+				// so we have to un-normalize them
+				accessor.ReadAndDenormalize(vert.myBoneWeights, i, bufferViews, buffers);
+			}
+			break;
+		default:
+			ASSERT_STR(false, "Semantic attribute NYI!");
+		}
 	}
 }
