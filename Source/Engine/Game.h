@@ -63,8 +63,13 @@ public:
 	Graphics* GetGraphics();
 	const Graphics* GetGraphics() const;
 
-	void AddGameObject(Handle<GameObject> aGO);
-	void RemoveGameObject(Handle<GameObject> aGo);
+	// Adds GameObject and it's children to the world
+	// Does not add the parent of the GameObject to the world -
+	// it is assumed it's already been added
+	void AddGameObject(Handle<GameObject> aGOHandle);
+	// Removes GameObject and it's children from the world
+	// If GameObject has a parent, it's retained in the world
+	void RemoveGameObject(Handle<GameObject> aGOHandle);
 
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
 	static bool ourGODeleteEnabled;

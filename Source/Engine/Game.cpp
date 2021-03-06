@@ -34,6 +34,8 @@
 
 #include <Core/Pool.h>
 
+#include <memory_resource>
+
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
@@ -250,8 +252,12 @@ void Game::CleanUp()
 
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
-	ourGODeleteEnabled = true;
-	myGameObjects.clear();
+	for (auto [key, goHandle] : myGameObjects)
+	{
+		RemoveGameObject(goHandle);
+	}
+	RemoveGameObjects();
+	ASSERT_STR(myGameObjects.empty(), "All objects should've been cleaned up!");
 
 	for (Terrain* terrain : myTerrains)
 	{
@@ -292,16 +298,95 @@ const Graphics* Game::GetGraphics() const
 	return myRenderThread->GetGraphics();
 }
 
-void Game::AddGameObject(Handle<GameObject> go)
+void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
+	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
+
 	tbb::spin_mutex::scoped_lock spinLock(myAddLock);
-	myAddQueue.push(go);
+	
+	myAddQueue.push(aGOHandle);
+
+	GameObject* go = aGOHandle.Get();
+	const size_t childCount = go->GetChildCount();
+	if (!childCount)
+	{
+		return;
+	}
+
+	// if there's children - schedule all of them for addition
+	constexpr size_t kGOMemorySize = 128;
+	GameObject* childMemory[kGOMemorySize];
+	std::pmr::monotonic_buffer_resource stackRes(childMemory, sizeof(childMemory));
+	std::pmr::vector<GameObject*> dirtyGOs(&stackRes);
+	for (size_t childInd = 0; childInd < childCount; childInd++)
+	{
+		dirtyGOs.push_back(&go->GetChild(childInd));
+	}
+
+	while (dirtyGOs.size())
+	{
+		GameObject* dirtyGO = dirtyGOs.back();
+		dirtyGOs.pop_back();
+
+		myAddQueue.push(dirtyGO);
+
+		const size_t dirtyCount = dirtyGO->GetChildCount();
+		for (size_t childInd = 0; childInd < dirtyCount; childInd++)
+		{
+			dirtyGOs.push_back(&dirtyGO->GetChild(childInd));
+		}
+	}
+
 }
 
-void Game::RemoveGameObject(Handle<GameObject> go)
+void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 {
+	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
+
 	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
-	myRemoveQueue.push(go);
+
+	myRemoveQueue.push(aGOHandle);
+
+	// if there's a parent - let it stay in the world
+	GameObject* go = aGOHandle.Get();
+	if (go->GetParent().IsValid())
+	{
+		go->DetachFromParent();
+	}
+
+	const size_t childCount = go->GetChildCount();
+	if (!childCount)
+	{
+		return;
+	}
+
+	// if there's children - schedule all of them for removal
+	constexpr size_t kGOMemorySize = 128;
+	GameObject* childMemory[kGOMemorySize];
+	std::pmr::monotonic_buffer_resource stackRes(childMemory, sizeof(childMemory));
+	std::pmr::vector<GameObject*> dirtyGOs(&stackRes);
+	for (size_t childInd = 0; childInd < childCount; childInd++)
+	{
+		dirtyGOs.push_back(&go->GetChild(childInd));
+	}
+
+	while (dirtyGOs.size())
+	{
+		GameObject* dirtyGO = dirtyGOs.back();
+		dirtyGOs.pop_back();
+
+		myRemoveQueue.push(dirtyGO);
+
+		// We need to detach from parent to break the circular dependency
+		// between Parent <=> Child (because both of them are Handles)
+		dirtyGO->DetachFromParent();
+
+		const size_t dirtyCount = dirtyGO->GetChildCount();
+		for (size_t childInd = 0; childInd < dirtyCount; childInd++)
+		{
+			dirtyGOs.push_back(&dirtyGO->GetChild(childInd));
+		}
+	}
 }
 
 void Game::AddGameObjects()

@@ -98,9 +98,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		Transform objTransf = myGLTFImporter->GetTransform(0);
 		objTransf.SetPos(objTransf.GetPos() +  camTransf.GetPos());
 		Handle<GameObject> newGO = new GameObject(objTransf);
-		aGame.AddGameObject(newGO);
+		
 		GameObject* go = newGO.Get();
-
 		VisualObject* vo = new VisualObject(*go);
 		go->SetVisualObject(vo);
 
@@ -138,6 +137,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		myGOs.push_back(go);
 
 		AddChildCube(aGame, newGO);
+		aGame.AddGameObject(newGO);
 	}
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
@@ -205,7 +205,6 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 void EditorMode::AddChildCube(Game& aGame, Handle<GameObject> aParent)
 {
 	Handle<GameObject> childBoxGO = new GameObject(Transform(glm::vec3(0, -1, 0), {}, {1, 1, 1}));
-	aGame.AddGameObject(childBoxGO);
 
 	GameObject* childGO = childBoxGO.Get();
 	VisualObject* vo = new VisualObject(*childGO);
