@@ -77,7 +77,7 @@ public:
 		}
 	}
 
-	Handle(Handle&& aHandle)
+	Handle(Handle&& aHandle) noexcept
 	{
 		myObject = aHandle.myObject;
 		aHandle.myObject = nullptr;
@@ -210,8 +210,18 @@ public:
 	}
 
 private:
+	template<class T1, class T2>
+	friend bool operator==(const Handle<T1>& aLeft, const Handle<T2>& aRight);
+
 	RefCounted* myObject;
 #ifdef HANDLE_HEAVY_DEBUG
 	mutable AssertRWMutex myDebugMutex;
 #endif
 };
+
+template<class T1, class T2>
+bool operator==(const Handle<T1>& aLeft, const Handle<T2>& aRight)
+{
+	static_assert(std::is_base_of_v<T2, T1>, "Invalid comparison - unrelated types!");
+	return aLeft.myObject == aRight.myObject;
+}

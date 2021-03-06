@@ -15,6 +15,7 @@ class GPUResource;
 class VisualObject
 {
 public:
+	// TODO: replace with OOP inheritance classes
 	enum class Category : char
 	{
 		GameObject,

@@ -17,13 +17,11 @@ class btCollisionObject;
 
 class IPhysControllable
 {
-public:
-	void SetTransform(const glm::mat4& aTransf) { SetTransformImpl(aTransf); }
-	void GetTransform(glm::mat4& aTransf) const { GetTransformImpl(aTransf); }
-
 private:
-	virtual void SetTransformImpl(const glm::mat4& aTransf) = 0;
-	virtual void GetTransformImpl(glm::mat4& aTranfs) const = 0;
+	friend struct EntityMotionState;
+	friend class PhysicsEntity;
+	virtual void SetPhysTransform(const glm::mat4& aTransf) = 0;
+	virtual void GetPhysTransform(glm::mat4& aTranfs) const = 0;
 };
 
 class PhysicsEntity

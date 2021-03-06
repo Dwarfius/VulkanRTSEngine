@@ -89,6 +89,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	}
 
 	if (myGLTFImporter->GetState() == Resource::State::Ready
+		&& myImportedCube->GetState() == Resource::State::Ready
 		&& Input::GetMouseBtnPressed(2))
 	{
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
@@ -96,16 +97,14 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 
 		Transform objTransf = myGLTFImporter->GetTransform(0);
 		objTransf.SetPos(objTransf.GetPos() +  camTransf.GetPos());
-		GameObject* go = aGame.Instantiate(objTransf);
+		Handle<GameObject> newGO = new GameObject(objTransf);
+		aGame.AddGameObject(newGO);
+		GameObject* go = newGO.Get();
 
 		VisualObject* vo = new VisualObject(*go);
 		go->SetVisualObject(vo);
 
 		Handle<Model> model = myGLTFImporter->GetModel(0);
-		/*PhysicsComponent* physComp = go->AddComponent<PhysicsComponent>();
-		physComp->SetOrigin(model->GetCenter());
-		physComp->CreatePhysicsEntity(0, myPhysShape);
-		physComp->RequestAddToWorld(aWorld);*/
 
 		vo->SetModel(model);
 		if (myGLTFImporter->GetTextureCount() > 0)
@@ -137,6 +136,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		}
 
 		myGOs.push_back(go);
+
+		AddChildCube(aGame, newGO);
 	}
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
@@ -201,6 +202,21 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
 }
 
+void EditorMode::AddChildCube(Game& aGame, Handle<GameObject> aParent)
+{
+	Handle<GameObject> childBoxGO = new GameObject(Transform(glm::vec3(0, -1, 0), {}, {1, 1, 1}));
+	aGame.AddGameObject(childBoxGO);
+
+	GameObject* childGO = childBoxGO.Get();
+	VisualObject* vo = new VisualObject(*childGO);
+	childGO->SetVisualObject(vo);
+	vo->SetTexture(aGame.GetAssetTracker().GetOrCreate<Texture>("gray.png"));
+	vo->SetModel(myImportedCube->GetModel());
+	vo->SetPipeline(aGame.GetAssetTracker().GetOrCreate<Pipeline>("default.ppl"));
+
+	aParent->AddChild(childBoxGO, false);
+}
+
 void EditorMode::AddTestSkeleton(Game& aGame)
 {
 	AnimationSystem& animSystem = aGame.GetAnimationSystem();
@@ -217,7 +233,9 @@ void EditorMode::AddTestSkeleton(Game& aGame)
 	Camera& cam = *aGame.GetCamera();
 	Transform objTransf;
 	objTransf.SetPos(cam.GetTransform().GetPos());
-	GameObject* go = aGame.Instantiate(objTransf);
+	Handle<GameObject> newGO = new GameObject(objTransf);
+	aGame.AddGameObject(newGO);
+	GameObject* go = newGO.Get();
 	go->SetSkeleton(std::move(testSkeleton));
 	go->SetAnimController(std::move(animController));
 	myGOs.push_back(go);
@@ -257,7 +275,7 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 		const PoolPtr<Skeleton>& skeletonPtr = gameObject->GetSkeleton();
 		if (skeletonPtr.IsValid())
 		{
-			skeletonPtr.Get()->DebugDraw(aGame.GetDebugDrawer(), gameObject->GetTransform());
+			skeletonPtr.Get()->DebugDraw(aGame.GetDebugDrawer(), gameObject->GetWorldTransform());
 		}
 	}
 }

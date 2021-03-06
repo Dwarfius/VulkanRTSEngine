@@ -4,7 +4,7 @@
 #include <Graphics/Camera.h>
 #include <Graphics/UniformBlock.h>
 
-#include "../../VisualObject.h"
+#include "../../GameObject.h"
 #include "../../Terrain.h"
 #include "../../Game.h"
 #include "AdapterSourceData.h"
@@ -33,15 +33,10 @@ void TerrainAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 {
 	const UniformAdapterSource& source = static_cast<const UniformAdapterSource&>(aData);
 
-	const VisualObject& visualObject = source.myVO;
-
-	// Note: prefer to grab from VisualObject if possible, since the call will come from
-	// VisualObject, thus memory will be in cache already
-
 	const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
 	const glm::ivec2 gridTiles = GetTileCount(terrain);
 
-	glm::vec3 terrainOrigin = visualObject.GetTransform().GetPos();
+	glm::vec3 terrainOrigin = source.myGO.GetWorldTransform().GetPos();
 	// move origin to center
 	terrainOrigin -= glm::vec3(terrain->GetWidth(), 0, terrain->GetDepth()) / 2.f;
 

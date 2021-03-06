@@ -144,7 +144,7 @@ void Terrain::AddPhysicsEntity(GameObject& aGO, PhysicsWorld& aPhysWorld)
 		std::shared_ptr<PhysicsShapeHeightfield> terrShape = std::make_shared<PhysicsShapeHeightfield>
 			(myWidth, myHeight, myHeightCache.data(), myMinHeight, myMaxHeight);
 
-		glm::vec3 pos = aGO.GetTransform().GetPos();
+		glm::vec3 pos = aGO.GetWorldTransform().GetPos();
 		pos = terrShape->AdjustPositionForRecenter(pos);
 		physComp->SetOrigin(pos);
 

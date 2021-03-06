@@ -34,6 +34,7 @@ private:
 	ProfilerUI myProfilerUI;
 
 	// Testing
+	void AddChildCube(Game& aGame, Handle<GameObject> aParent);
 	void AddTestSkeleton(Game& aGame);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
 	void DrawBoneHierarchy(int aSkeletonIndex);

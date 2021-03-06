@@ -13,7 +13,9 @@
 AnimationTest::AnimationTest(Game& aGame)
 	: myGame(aGame)
 {
-	myGO = myGame.Instantiate();
+	myGO = new GameObject(Transform{});
+	myGame.AddGameObject(myGO);
+	GameObject* go = myGO.Get();
 
 	PoolPtr<Skeleton> testSkeleton = aGame.GetAnimationSystem().AllocateSkeleton(4);
 	Skeleton* skeleton = testSkeleton.Get();
@@ -36,21 +38,16 @@ AnimationTest::AnimationTest(Game& aGame)
 	PoolPtr<AnimationController> testController = aGame.GetAnimationSystem().AllocateController(testSkeleton);
 	testController.Get()->PlayClip(myClip.Get());
 	
-	myGO->SetSkeleton(std::move(testSkeleton));
-	myGO->SetAnimController(std::move(testController));
+	go->SetSkeleton(std::move(testSkeleton));
+	go->SetAnimController(std::move(testController));
 
 	Handle<Pipeline> skinnedPipeline = myGame.GetAssetTracker().GetOrCreate<Pipeline>("skinned.ppl");
 	Handle<Texture> wireframeTexture = myGame.GetAssetTracker().GetOrCreate<Texture>("wireframe.png");
-	VisualObject* vo = new VisualObject(*myGO);
+	VisualObject* vo = new VisualObject(*go);
 	vo->SetPipeline(skinnedPipeline);
 	vo->SetTexture(wireframeTexture);
 	vo->SetModel(GenerateModel(*skeleton));
-	myGO->SetVisualObject(vo);
-}
-
-AnimationTest::~AnimationTest()
-{
-	myGame.RemoveGameObject(myGO);
+	go->SetVisualObject(vo);
 }
 
 void AnimationTest::Update(float aDeltaTime)

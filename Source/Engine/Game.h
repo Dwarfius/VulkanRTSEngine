@@ -4,10 +4,10 @@
 #include <Core/Debug/DebugDrawer.h>
 
 #include "GameTaskManager.h"
+#include "GameObject.h"
 
 class Camera;
 class EditorMode;
-class GameObject;
 class Graphics;
 class Terrain;
 class PhysicsWorld;
@@ -30,6 +30,7 @@ public:
 	Game(ReportError aReporterFunc);
 	~Game();
 
+	// TODO: get rid of this
 	static Game* GetInstance() { return ourInstance; }
 
 	AssetTracker& GetAssetTracker();
@@ -50,12 +51,7 @@ public:
 	// might not be threadsafe!
 	GLFWwindow* GetWindow() const;
 
-	const std::unordered_map<UID, GameObject*>& GetGameObjects() const { return myGameObjects; }
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
-	GameObject* Instantiate();
-	GameObject* Instantiate(const Transform& aTransform);
-	// TODO: get rid of this limit by improving VK renderer
-	constexpr static uint32_t kMaxObjects = 4000;
 
 	Camera* GetCamera() const { return myCamera; }
 	const Terrain* GetTerrain(glm::vec3 pos) const;
@@ -67,7 +63,8 @@ public:
 	Graphics* GetGraphics();
 	const Graphics* GetGraphics() const;
 
-	void RemoveGameObject(GameObject* aGo);
+	void AddGameObject(Handle<GameObject> aGO);
+	void RemoveGameObject(Handle<GameObject> aGo);
 
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
 	static bool ourGODeleteEnabled;
@@ -99,9 +96,9 @@ private:
 	EditorMode* myEditorMode;
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
-	std::unordered_map<UID, GameObject*> myGameObjects;
-	std::queue<GameObject*> myAddQueue;
-	std::queue<GameObject*> myRemoveQueue;
+	std::unordered_map<UID, Handle<GameObject>> myGameObjects;
+	std::queue<Handle<GameObject>> myAddQueue;
+	std::queue<Handle<GameObject>> myRemoveQueue;
 	std::vector<Terrain*> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker* myAssetTracker;

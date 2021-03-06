@@ -43,10 +43,21 @@ public:
 	// Returns a new point, which is calculated by rotating point around a refPoint using angles
 	static glm::vec3 RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::vec3 anAngles);
 
+	bool operator==(const Transform& aOther) const
+	{
+		return myPos == aOther.myPos
+			&& myScale == aOther.myScale
+			&& myRotation == aOther.myRotation;
+	}
+	bool operator!=(const Transform& aOther) const
+	{
+		return !(*this == aOther);
+	}
+
 private:
 	glm::vec3 myPos;
 	glm::vec3 myScale;
 	glm::quat myRotation;
 
-	glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
+	static glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
 };

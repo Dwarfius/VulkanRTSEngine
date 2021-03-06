@@ -4,7 +4,6 @@
 #include "Input.h"
 #include "Audio.h"
 #include "Terrain.h"
-#include "GameObject.h"
 #include "Terrain.h"
 #include "VisualObject.h"
 #include "Components/AnimationTest.h"
@@ -119,14 +118,15 @@ void Game::Init()
 	Profiler::ScopedMark profile("Game::Init");
 	RegisterUniformAdapters();
 
-	myGameObjects.reserve(kMaxObjects);
+	constexpr static uint32_t kInitReserve = 4000;
+	myGameObjects.reserve(kInitReserve);
 
 	myRenderThread->Init(BootWithVK, *myAssetTracker);
 
 	// TODO: has implicit dependency on window initialized - make explicit!
 	myImGUISystem->Init();
 
-	GameObject* go; 
+	Handle<GameObject> go; 
 	VisualObject* vo;
 
 	// ==========================
@@ -136,15 +136,16 @@ void Game::Init()
 	// a continuous allocated storage of VisualObjects
 
 	// terrain
-	go = Instantiate();
+	go = new GameObject(Transform{});
 	{
-		vo = new VisualObject(*go);
+		vo = new VisualObject(*go.Get());
 		vo->SetPipeline(terrainPipeline);
 		vo->SetTexture(myTerrains[0]->GetTextureHandle());
 		vo->SetCategory(VisualObject::Category::Terrain);
 		go->SetVisualObject(vo);
 	}
-	myTerrains[0]->AddPhysicsEntity(*go, *myPhysWorld);
+	myTerrains[0]->AddPhysicsEntity(*go.Get(), *myPhysWorld);
+	AddGameObject(go);
 
 	myEditorMode = new EditorMode(*this);
 	myAnimTest = new AnimationTest(*this);
@@ -250,10 +251,6 @@ void Game::CleanUp()
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
 	ourGODeleteEnabled = true;
-	for (auto pair : myGameObjects)
-	{
-		delete pair.second;
-	}
 	myGameObjects.clear();
 
 	for (Terrain* terrain : myTerrains)
@@ -273,25 +270,6 @@ bool Game::IsRunning() const
 GLFWwindow* Game::GetWindow() const
 {
 	return myRenderThread->GetWindow();
-}
-
-GameObject* Game::Instantiate()
-{
-	// Overload is present to keep the Transform include out of the Game.h
-	return Instantiate(Transform());
-}
-
-GameObject* Game::Instantiate(const Transform& aTransform)
-{
-	Profiler::ScopedMark profile(__func__);
-	GameObject* go = nullptr;
-	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
-	if (myGameObjects.size() < kMaxObjects)
-	{
-		go = new GameObject(aTransform);
-		myAddQueue.emplace(go);
-	}
-	return go;
 }
 
 const Terrain* Game::GetTerrain(glm::vec3 pos) const
@@ -314,7 +292,13 @@ const Graphics* Game::GetGraphics() const
 	return myRenderThread->GetGraphics();
 }
 
-void Game::RemoveGameObject(GameObject* go)
+void Game::AddGameObject(Handle<GameObject> go)
+{
+	tbb::spin_mutex::scoped_lock spinLock(myAddLock);
+	myAddQueue.push(go);
+}
+
+void Game::RemoveGameObject(Handle<GameObject> go)
 {
 	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
 	myRemoveQueue.push(go);
@@ -328,7 +312,7 @@ void Game::AddGameObjects()
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	while (myAddQueue.size())
 	{
-		GameObject* go = myAddQueue.front();
+		Handle<GameObject> go = myAddQueue.front();
 		myAddQueue.pop();
 		myGameObjects[go->GetUID()] = go;
 	}
@@ -367,7 +351,7 @@ void Game::Update()
 
 	// TODO: get rid of this and switch to ECS style synchronization via task
 	// dependency management
-	for (const std::pair<UID, GameObject*>& pair : myGameObjects)
+	for (std::pair<const UID, Handle<GameObject>>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
 	}
@@ -404,7 +388,7 @@ void Game::Render()
 	Profiler::ScopedMark profile(__func__);
 	// TODO: get rid of single map, and use a separate vector for Renderables
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
-	for (const std::pair<UID, GameObject*>& elem : myGameObjects)
+	for (std::pair<const UID, Handle<GameObject>>& elem : myGameObjects)
 	{
 		VisualObject* visObj = elem.second->GetVisualObject();
 		if (visObj)
@@ -458,9 +442,8 @@ void Game::RemoveGameObjects()
 	tbb::spin_mutex::scoped_lock spinlock(myRemoveLock);
 	while (myRemoveQueue.size())
 	{
-		GameObject* go = myRemoveQueue.front();
+		Handle<GameObject> go = myRemoveQueue.front();
 		myGameObjects.erase(go->GetUID());
-		delete go;
 		myRemoveQueue.pop();
 	}
 	ourGODeleteEnabled = false;
