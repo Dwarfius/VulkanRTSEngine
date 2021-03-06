@@ -5,6 +5,8 @@
 #include "../VisualObject.h"
 #include <Core/Resources/AssetTracker.h>
 #include <Graphics/Resources/Model.h>
+#include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/Texture.h>
 #include "../Animation/AnimationSystem.h"
 #include "../Animation/AnimationClip.h"
 #include "../Resources/GLTFImporter.h"

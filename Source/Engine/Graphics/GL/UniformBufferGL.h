@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Graphics/GPUResource.h>
-
-class Descriptor;
+#include <Graphics/Descriptor.h>
 
 class UniformBufferGL : public GPUResource
 {
