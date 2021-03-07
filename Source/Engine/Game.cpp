@@ -252,6 +252,13 @@ void Game::CleanUp()
 
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
+	// get rid of pending objects
+	while (myAddQueue.size())
+	{
+		myAddQueue.pop();
+	}
+
+	// get rid of tracked objects
 	for (auto [key, goHandle] : myGameObjects)
 	{
 		RemoveGameObject(goHandle);

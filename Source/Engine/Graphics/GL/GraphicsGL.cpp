@@ -173,6 +173,8 @@ void GraphicsGL::Display()
 
 void GraphicsGL::CleanUp()
 {
+	Graphics::CleanUp();
+
 	myDebugPipeline = Handle<PipelineGL>();
 	myLineCache.myBuffer = Handle<ModelGL>();
 
@@ -191,7 +193,17 @@ void GraphicsGL::CleanUp()
 		delete descriptors[--descInd];
 	}
 
-	UnloadAll();
+	// clean up all render pass jobs
+	for (RenderPassJobMap& map : myRenderPassJobs)
+	{
+		for (auto [key, job] : map)
+		{
+			delete job;
+		}
+	}
+
+	ProcessUnloadQueue();
+	ASSERT_STR(AreResourcesEmpty(), "Leak! Everything should've been cleaned up!");
 
 	glfwDestroyWindow(myWindow);
 	ourActiveGraphics = nullptr;

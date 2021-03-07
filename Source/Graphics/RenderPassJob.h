@@ -93,6 +93,8 @@ private:
 class RenderPassJob
 {
 public:
+	virtual ~RenderPassJob() = default;
+
 	// add a single job
 	virtual void Add(const RenderJob& aJob) = 0;
 	// move a collection of jobs

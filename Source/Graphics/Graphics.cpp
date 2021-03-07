@@ -62,6 +62,16 @@ void Graphics::Display()
 	}
 }
 
+void Graphics::CleanUp()
+{
+	// we need to delete render passes early as they keep
+	// Handles to resources
+	for (IRenderPass* pass : myRenderPasses)
+	{
+		delete pass;
+	}
+}
+
 void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames
@@ -129,16 +139,19 @@ void Graphics::TriggerUpload(GPUResource* aGPUResource)
 	aGPUResource->TriggerUpload();
 }
 
-void Graphics::UnloadAll()
+void Graphics::ProcessUnloadQueue()
 {
-	for (ResourceMap::iterator iter = myResources.begin();
-		iter != myResources.end();
-		iter++)
+	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Unload");
+	GPUResource* aResource;
+	while (myUnloadQueue.try_pop(aResource))
 	{
-		iter->second->TriggerUnload();
-		delete iter->second;
+		aResource->TriggerUnload();
+		if (aResource->myResId != Resource::InvalidId)
+		{
+			myResources.erase(aResource->myResId);
+		}
+		delete aResource;
 	}
-	myResources.clear();
 }
 
 void Graphics::ProcessGPUQueues()
@@ -204,19 +217,7 @@ void Graphics::ProcessGPUQueues()
 		}
 	}
 
-	{
-		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Unload");
-		GPUResource* aResource;
-		while (myUnloadQueue.try_pop(aResource))
-		{
-			aResource->TriggerUnload();
-			if (aResource->myResId != Resource::InvalidId)
-			{
-				myResources.erase(aResource->myResId);
-			}
-			delete aResource;
-		}
-	}
+	ProcessUnloadQueue();
 }
 
 IRenderPass* Graphics::GetRenderPass(IRenderPass::Category aCategory) const

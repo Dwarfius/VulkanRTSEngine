@@ -17,6 +17,7 @@ struct PhysicsCommand
 	};
 
 	PhysicsCommand(Type aType);
+	virtual ~PhysicsCommand() = default;
 
 	Type myType;
 };

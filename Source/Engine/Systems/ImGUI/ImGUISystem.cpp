@@ -52,7 +52,6 @@ void ImGUISystem::Shutdown()
 {
 	myGLFWImpl.Shutdown();
 	ImGui::DestroyContext();
-	delete myRenderPass;
 }
 
 void ImGUISystem::NewFrame(float aDeltaTime)

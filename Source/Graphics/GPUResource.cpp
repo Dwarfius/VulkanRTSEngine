@@ -11,6 +11,9 @@ void GPUResource::Destroy(GPUResource* aResource)
 {
 	// we don't delete the resource here, instead Graphics will take care of it
 	aResource->Unload();
+	// we can also immediately drop our dependencies
+	// this schedules their removal earlier
+	aResource->myDependencies.clear();
 }
 
 GPUResource::GPUResource()

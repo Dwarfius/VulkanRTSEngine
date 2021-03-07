@@ -26,13 +26,14 @@ public:
 
 public:
 	Graphics(AssetTracker& anAssetTracker);
+	virtual ~Graphics() = default;
 
 	virtual void Init() = 0;
 	virtual void BeginGather();
 	bool CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const;
 	void Render(IRenderPass::Category aCategory, RenderJob& aJob, const IRenderPass::IParams& aParams);
 	virtual void Display();
-	virtual void CleanUp() = 0;
+	virtual void CleanUp();
 	
 	virtual void PrepareLineCache(size_t aCacheSize) = 0;
 	virtual void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) = 0;
@@ -78,7 +79,8 @@ protected:
 	uint32_t myRenderCalls;
 	std::vector<IRenderPass*> myRenderPasses;
 
-	void UnloadAll();
+	void ProcessUnloadQueue();
+	bool AreResourcesEmpty() const { return myResources.empty(); }
 
 private:
 	using ResourceMap = std::unordered_map<Resource::Id, GPUResource*>;

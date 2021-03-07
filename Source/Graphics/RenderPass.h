@@ -38,6 +38,7 @@ public:
 	};
 public:
 	IRenderPass();
+	virtual ~IRenderPass() = default;
 
 	virtual bool HasResources(const RenderJob& aJob) const = 0;
 	virtual void AddRenderable(RenderJob& aJob, const IParams& aParams) = 0;
