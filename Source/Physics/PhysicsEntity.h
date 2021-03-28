@@ -67,6 +67,8 @@ public:
 	// so if it needs to be fetched, use GetTransformInterp()
 	void SetTransform(const glm::mat4& aTransf);
 
+	float GetMass() const;
+
 	// Thread-safe: add a force, will resolve on next phys step
 	void AddForce(glm::vec3 aForce);
 

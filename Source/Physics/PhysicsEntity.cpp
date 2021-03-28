@@ -147,6 +147,13 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 	myBody->setWorldTransform(Utils::ConvertToBullet(aTransf));
 }
 
+float PhysicsEntity::GetMass() const
+{
+	ASSERT(myBody);
+	ASSERT_STR(!myIsStatic, "Static objects don't have mass!");
+	return static_cast<const btRigidBody*>(myBody)->getMass();
+}
+
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
 	ASSERT(myBody);

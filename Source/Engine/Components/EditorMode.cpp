@@ -32,6 +32,12 @@ EditorMode::EditorMode(Game& aGame)
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
 	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("sparse.gltf");
+
+	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("testGO.json");
+	myGO->ExecLambdaOnLoad([&](Resource* aRes){
+		GameObject* go = static_cast<GameObject*>(aRes);
+		aGame.AddGameObject(go);
+	});
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)

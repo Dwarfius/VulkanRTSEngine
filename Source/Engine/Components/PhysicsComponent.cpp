@@ -1,11 +1,13 @@
 #include "Precomp.h"
 #include "PhysicsComponent.h"
 
-#include "../Game.h"
+#include "Game.h"
+#include "GameObject.h"
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
-#include "GameObject.h"
+#include <Physics/PhysicsShapes.h>
+#include <Core/Resources/Serializer.h>
 
 PhysicsComponent::PhysicsComponent()
 	: myEntity(nullptr)
@@ -24,6 +26,7 @@ PhysicsComponent::~PhysicsComponent()
 void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape)
 {
 	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
+	ASSERT_STR(!myEntity, "About to leak entity!");
 	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, myOrigin);
 }
 
@@ -64,4 +67,71 @@ void PhysicsComponent::RequestAddToWorld(PhysicsWorld& aWorld) const
 {
 	ASSERT(myEntity);
 	aWorld.AddEntity(myEntity);
+}
+
+void PhysicsComponent::Serialize(Serializer& aSerializer)
+{
+	PhysicsShapeBase::Type shapeType = myEntity ? 
+		myEntity->GetShape().GetType() : PhysicsShapeBase::Type::Invalid;
+	aSerializer.Serialize("myShape", shapeType);
+
+	float mass = myEntity ? myEntity->GetMass() : 0;
+	aSerializer.Serialize("myMass", mass);
+	if (aSerializer.IsReading())
+	{
+		if (myEntity)
+		{
+			DeletePhysicsEntity();
+		}
+		std::shared_ptr<PhysicsShapeBase> shape;
+		switch (shapeType)
+		{
+		case PhysicsShapeBase::Type::Box:
+		{
+			glm::vec3 halfExtents;
+			aSerializer.Serialize("myHalfExtents", halfExtents);
+			shape = std::make_shared<PhysicsShapeBox>(halfExtents);
+			break;
+		}
+		case PhysicsShapeBase::Type::Sphere:
+		{
+			float radius = 0;
+			aSerializer.Serialize("myRadius", radius);
+			shape = std::make_shared<PhysicsShapeSphere>(radius);
+			break;
+		}
+		case PhysicsShapeBase::Type::Capsule:
+		{
+			float radius = 0;
+			aSerializer.Serialize("myRadius", radius);
+			float height = 0;
+			aSerializer.Serialize("myHeight", height);
+			shape = std::make_shared<PhysicsShapeCapsule>(radius, height);
+			break;
+		}
+		case PhysicsShapeBase::Type::ConvexHull:
+		{
+			std::string hullFile;
+			aSerializer.Serialize("myHullFile", hullFile);
+			ASSERT_STR(false, "NYI");
+			break;
+		}
+		case PhysicsShapeBase::Type::Heightfield:
+		{
+			std::string heightsFile;
+			aSerializer.Serialize("myHeightsFile", heightsFile);
+			ASSERT_STR(false, "NYI");
+			break;
+		}
+		default:
+			ASSERT(false);
+		}
+		CreatePhysicsEntity(mass, shape);
+	}
+	else
+	{
+		ASSERT_STR(false, "NYI");
+	}
+
+	aSerializer.Serialize("myOrigin", myOrigin);
 }

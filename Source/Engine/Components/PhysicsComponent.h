@@ -7,9 +7,11 @@ class PhysicsWorld;
 class PhysicsShapeBase;
 
 // Component that handles the life-cycle of a physics entity
-class PhysicsComponent : public ComponentBase
+class PhysicsComponent : public SerializableComponent<PhysicsComponent>
 {
 public:
+	constexpr static std::string_view kName = "PhysicsComponent";
+
 	PhysicsComponent();
 	virtual ~PhysicsComponent();
 
@@ -25,7 +27,10 @@ public:
 	bool IsInWorld() const;
 	void RequestAddToWorld(PhysicsWorld& aWorld) const;
 
+	void Serialize(Serializer& aSerializer) final;
+
 private:
+	// TODO: rewrite using unique_ptr
 	// we own a phys entity, until we don't - see dtor
 	PhysicsEntity* myEntity;
 	glm::vec3 myOrigin;

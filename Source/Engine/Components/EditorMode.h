@@ -47,4 +47,6 @@ private:
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;
+
+	Handle<GameObject> myGO;
 };

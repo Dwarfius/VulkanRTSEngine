@@ -309,9 +309,10 @@ void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
 
-	tbb::spin_mutex::scoped_lock spinLock(myAddLock);
-	
-	myAddQueue.push(aGOHandle);
+	{
+		tbb::spin_mutex::scoped_lock spinLock(myAddLock);
+		myAddQueue.push(aGOHandle);
+	}
 
 	GameObject* go = aGOHandle.Get();
 	const size_t childCount = go->GetChildCount();
@@ -335,7 +336,10 @@ void Game::AddGameObject(Handle<GameObject> aGOHandle)
 		GameObject* dirtyGO = dirtyGOs.back();
 		dirtyGOs.pop_back();
 
-		myAddQueue.push(dirtyGO);
+		{
+			tbb::spin_mutex::scoped_lock spinLock(myAddLock);
+			myAddQueue.push(dirtyGO);
+		}
 
 		const size_t dirtyCount = dirtyGO->GetChildCount();
 		for (size_t childInd = 0; childInd < dirtyCount; childInd++)
@@ -350,9 +354,10 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
 
-	tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
-
-	myRemoveQueue.push(aGOHandle);
+	{
+		tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
+		myRemoveQueue.push(aGOHandle);
+	}
 
 	// if there's a parent - let it stay in the world
 	GameObject* go = aGOHandle.Get();
@@ -382,7 +387,10 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 		GameObject* dirtyGO = dirtyGOs.back();
 		dirtyGOs.pop_back();
 
-		myRemoveQueue.push(dirtyGO);
+		{
+			tbb::spin_mutex::scoped_lock spinLock(myRemoveLock);
+			myRemoveQueue.push(dirtyGO);
+		}
 
 		// We need to detach from parent to break the circular dependency
 		// between Parent <=> Child (because both of them are Handles)

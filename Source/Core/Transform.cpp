@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "Transform.h"
 
+#include "Resources/Serializer.h"
+
 Transform::Transform()
 	: Transform(glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f))
 {
@@ -78,6 +80,13 @@ glm::vec3 Transform::RotateAround(glm::vec3 aPoint, glm::vec3 aRefPoint, glm::ve
 	aPoint -= aRefPoint;
 	aPoint = glm::quat(anAngles) * aPoint;
 	return aPoint + aRefPoint;
+}
+
+void Transform::Serialize(Serializer& aSerializer)
+{
+	aSerializer.Serialize("myPos", myPos);
+	aSerializer.Serialize("myScale", myScale);
+	aSerializer.Serialize("myRotation", myRotation);
 }
 
 // the quaternion needed to rotate v1 so that it matches v2

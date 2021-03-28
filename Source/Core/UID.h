@@ -1,5 +1,7 @@
 #pragma once
 
+class Serializer;
+
 class UID
 {
 public:
@@ -15,6 +17,8 @@ public:
 	{
 		return myMac == other.myMac && myTime == other.myTime && myRndNum == other.myRndNum;
 	}
+
+	void Serialize(Serializer& aSerializer);
 
 private:
 	static thread_local std::mt19937 ourRandomGen;

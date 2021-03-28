@@ -90,6 +90,9 @@ public:
 	template<class T>
 	Scope SerializeArray(size_t anIndex, std::vector<T>& aVec);
 
+	Scope SerializeArray(std::string_view aName, size_t& anArraySize);
+	Scope SerializeArray(size_t anIndex, size_t& anArraySize);
+
 	void SerializeVersion(int64_t& aVersion);
 
 	bool IsReading() const { return myIsReading; }
@@ -189,8 +192,7 @@ Serializer::Scope Serializer::SerializeArray(std::string_view aName, std::vector
 	}
 	else
 	{
-		size_t vecSize = aVec.size();
-		BeginSerializeArrayImpl(aName, vecSize);
+		BeginSerializeArrayImpl(aName, aVec.size());
 	}
 	myState = State::Array;
 	return Scope(*this, aName, myState, isValid);
@@ -205,13 +207,12 @@ Serializer::Scope Serializer::SerializeArray(size_t anIndex, std::vector<T>& aVe
 	if (myIsReading)
 	{
 		size_t vecSize = 0;
-		isValid = BeginDeserializeArrayImpl(myIndex, vecSize);
+		isValid = BeginDeserializeArrayImpl(anIndex, vecSize);
 		aVec.resize(vecSize);
 	}
 	else
 	{
-		size_t vecSize = aVec.size();
-		BeginSerializeArrayImpl(myIndex, vecSize);
+		BeginSerializeArrayImpl(anIndex, aVec.size());
 	}
 	myState = State::Array;
 	return Scope(*this, anIndex, myState, isValid);

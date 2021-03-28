@@ -5,6 +5,7 @@
 #include "Components/ComponentBase.h"
 
 #include <Core/Transform.h>
+#include <Core/Resources/Serializer.h>
 
 #include <Graphics/Graphics.h>
 #include <memory_resource>
@@ -13,6 +14,17 @@ GameObject::GameObject(const Transform& aTransform)
 	: myUID(UID::Create())
 	, myWorldTransf(aTransform)
 	, myLocalTransf(aTransform)
+	, myVisualObject(nullptr)
+	, myIsDead(false)
+	, myCenter(0)
+{
+}
+
+GameObject::GameObject(Id anId, const std::string& aPath)
+	: Resource(anId, aPath)
+	, myUID(UID::Create())
+	, myWorldTransf(Transform())
+	, myLocalTransf(Transform())
 	, myVisualObject(nullptr)
 	, myIsDead(false)
 	, myCenter(0)
@@ -191,4 +203,97 @@ void GameObject::UpdateHierarchy()
 			dirtyGOs.push_back(child.Get());
 		}
 	}
+}
+
+void GameObject::Serialize(Serializer& aSerializer)
+{
+	// Checking if we're serializing a child GameObject
+	// If so - we can abort read serialization if child is the only holder of
+	// parent handle
+	const bool isReading = aSerializer.IsReading();
+	if (isReading && myParent.IsValid() && myParent.IsLastHandle())
+	{
+		// it is - break the circular reference and early out
+		// this will avoid zombie objects,
+		// save time and prevent further hierarchy serialization
+		myParent = Handle<GameObject>();
+		return;
+	}
+
+	if (Serializer::Scope uidScope = aSerializer.SerializeObject("myUID"))
+	{
+		myUID.Serialize(aSerializer);
+	}
+	
+	// we can reconstruct world from local, so only serializing local
+	if (Serializer::Scope localTransfScope = aSerializer.SerializeObject("myLocalTransf"))
+	{
+		myLocalTransf.Serialize(aSerializer);
+		if (isReading)
+		{
+			// because we're serializing hierarchy top to bottom,
+			// parent GO can set the myParent early
+			if(myParent.IsValid())
+			{
+				myWorldTransf = myParent->GetWorldTransform() * myLocalTransf;
+			}
+			else
+			{
+				myWorldTransf = myLocalTransf;
+			}
+		}
+	}
+
+	aSerializer.Serialize("myCenter", myCenter);
+
+	size_t compsCount = myComponents.size();
+	if (Serializer::Scope compsScope = aSerializer.SerializeArray("myComponents", compsCount))
+	{
+		if (isReading)
+		{
+			myComponents.resize(compsCount);
+		}
+
+		for (size_t i = 0; i < compsCount; i++)
+		{
+			if (Serializer::Scope compTypeScope = aSerializer.SerializeObject(i))
+			{
+				if (isReading)
+				{
+					std::string compType;
+					aSerializer.Serialize("myCompType", compType);
+					ComponentBase* comp = ComponentRegister::Get().Create(compType);
+					comp->Init(this);
+					myComponents[i] = comp;
+				}
+				else
+				{
+					std::string_view compTypeView = myComponents[i]->GetName();
+					std::string compType(compTypeView.data(), compTypeView.size());
+					aSerializer.Serialize("myCompType", compType);
+				}
+
+				if (Serializer::Scope compScope = aSerializer.SerializeObject("myCompData"))
+				{
+					myComponents[i]->Serialize(aSerializer);
+				}
+			}
+		}
+	}
+
+	// We're skipping parent serialization as it doesn't make much sense in
+	// saving who's the parent of current object, as we serialize hierarchy top to bottom
+	if (Serializer::Scope childrenScope = aSerializer.SerializeArray("myChildren", myChildren))
+	{
+		for (size_t i = 0; i < myChildren.size(); i++)
+		{
+			aSerializer.Serialize(i, myChildren[i]);
+			// This is potentially dangerous - circular dep!
+			// To mitigate, children's serialization starts with a check if they own
+			// the last handle
+			myChildren[i]->myParent = this; 
+		}
+	}
+
+	// TODO: Figure out what to do with VisualObject - to spawn from components?
 }

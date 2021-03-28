@@ -176,6 +176,40 @@ Serializer::Scope Serializer::SerializeObject(size_t anIndex)
 	return Scope(*this, anIndex, myState, isValid);
 }
 
+Serializer::Scope Serializer::SerializeArray(std::string_view aName, size_t& anArraySize)
+{
+	ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
+
+	bool isValid = true;
+	if (myIsReading)
+	{
+		isValid = BeginDeserializeArrayImpl(aName, anArraySize);
+	}
+	else
+	{
+		BeginSerializeArrayImpl(aName, anArraySize);
+	}
+	myState = State::Array;
+	return Scope(*this, aName, myState, isValid);
+}
+
+Serializer::Scope Serializer::SerializeArray(size_t anIndex, size_t& anArraySize)
+{
+	ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
+
+	bool isValid = true;
+	if (myIsReading)
+	{
+		isValid = BeginDeserializeArrayImpl(anIndex, anArraySize);
+	}
+	else
+	{
+		BeginSerializeArrayImpl(anIndex, anArraySize);
+	}
+	myState = State::Array;
+	return Scope(*this, anIndex, myState, isValid);
+}
+
 void Serializer::SerializeVersion(int64_t& aVersion)
 {
 	if (myIsReading)

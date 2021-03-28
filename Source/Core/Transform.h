@@ -1,5 +1,7 @@
 #pragma once
 
+class Serializer;
+
 // class that exposes utility functions around translation, rotation and scaling
 // built around the left-hand coordinate system. Provides pivot functionality
 class Transform
@@ -53,6 +55,8 @@ public:
 	{
 		return !(*this == aOther);
 	}
+
+	void Serialize(Serializer& aSerializer);
 
 private:
 	glm::vec3 myPos;

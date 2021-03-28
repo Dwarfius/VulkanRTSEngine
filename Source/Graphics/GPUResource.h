@@ -92,10 +92,6 @@ private:
 	void TriggerUnload();
 	//================================
 
-	// This method automatically creates GPUResource's from
-	// aRes' dependencies
-	void UpdateDependencies(const Resource* aRes);
-
 	Graphics* myGraphics; // non owning ptr
 	std::vector<UploadRegion> myRegionsToUpload;
 

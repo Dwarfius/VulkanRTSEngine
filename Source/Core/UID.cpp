@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "UID.h"
 
+#include "Resources/Serializer.h"
+
 #ifdef _WIN32
 #include <intrin.h>
 #include <iphlpapi.h>
@@ -60,7 +62,14 @@ UID::UID()
 {
 }
 
-void UID::GetString(char* string) const
+void UID::GetString(char* aString) const
 {
-	std::snprintf(string, 32, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
+	std::snprintf(aString, 32, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
+}
+
+void UID::Serialize(Serializer& aSerializer)
+{
+	aSerializer.Serialize("myMac", myMac);
+	aSerializer.Serialize("myTime", myTime);
+	aSerializer.Serialize("myRndNum", myRndNum);
 }

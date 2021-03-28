@@ -14,7 +14,10 @@ class ComponentBase;
 class GameObject : public Resource, public IPhysControllable
 {
 public:
+	constexpr static StaticString kDir = Resource::AssetsFolder;
+
 	GameObject(const Transform& aTransform);
+	GameObject(Id anId, const std::string& aPath);
 	~GameObject();
 
 	void Update(float aDeltaTime);
@@ -63,6 +66,8 @@ private:
 
 private:
 	void UpdateHierarchy();
+
+	void Serialize(Serializer& aSerializer) final;
 
 	UID myUID;
 	

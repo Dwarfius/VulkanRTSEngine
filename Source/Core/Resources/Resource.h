@@ -11,7 +11,7 @@ class Resource : public RefCounted
 {
 public:
 	using Id = uint32_t;
-	using Callback = std::function<void(const Resource*)>;
+	using Callback = std::function<void(Resource*)>;
 
 	constexpr static Id InvalidId = 0;
 	constexpr static StaticString AssetsFolder = "../assets/";
@@ -67,10 +67,10 @@ private:
 	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
 	virtual bool UsesDescriptor() const { return true; };
 	// Loads a raw resource (png, obj, etc)
-	virtual void OnLoad(const File& aFile) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this shoudl be implemented!"); };
+	virtual void OnLoad(const File& aFile) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };
 	// Loads a resource descriptor. Returns true if an actual resource 
 	// load is needed, false otherwise.
-	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this shoudl be implemented!"); };
+	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };
 
 #ifdef _DEBUG
 	// used for tracking what went wrong
