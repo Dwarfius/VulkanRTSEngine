@@ -40,6 +40,9 @@ EditorMode::EditorMode(Game& aGame)
 		// TEST - NOT THREAD SAFE!
 		go->GetComponent<VisualComponent>()->SetModel(myImportedCube->GetModel());
 		aGame.AddGameObject(go);
+
+		// TEST 2 - saving!
+		aGame.GetAssetTracker().SaveAndTrack("goSaveTest.json", go);
 	});
 }
 

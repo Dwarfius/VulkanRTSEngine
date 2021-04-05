@@ -6,12 +6,16 @@ File::File(const std::string& aPath)
 {
 }
 
+File::File(const std::string& aPath, std::string&& aData)
+	: myPath(aPath)
+	, myBuffer(std::move(aData))
+{
+}
+
 bool File::Read()
 {
 	// opening at the end allows us to know size quickly
-	// Note: heard cases where this managed to fail to seek to the end
-	// of binary file
-	std::ifstream file(myPath, std::ios::ate | std::ios::binary);
+	std::ifstream file(myPath, std::ios::ate | std::ios::binary | std::ios::in);
 	if (!file.is_open())
 	{
 		return false;
@@ -20,7 +24,29 @@ bool File::Read()
 	size_t size = file.tellg();
 	myBuffer.resize(size);
 	file.seekg(0);
-	file.read(&myBuffer[0], size);
+	file.read(myBuffer.data(), size);
+	file.close();
+	return true;
+}
+
+bool File::Write(std::string_view aData)
+{
+	// Overwrite existing data
+	myBuffer.resize(aData.size());
+	aData.copy(myBuffer.data(), aData.size());
+
+	return Write();
+}
+
+bool File::Write() const
+{
+	std::ofstream file(myPath, std::ios::binary | std::ios::out);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	file.write(myBuffer.data(), myBuffer.size());
 	file.close();
 	return true;
 }

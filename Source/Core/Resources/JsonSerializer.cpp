@@ -383,7 +383,7 @@ namespace nlohmann
     {
         static void to_json(json& j, const glm::vec4& res)
         {
-            j = json::array({ res.x, res.y, res.z });
+            j = json::array({ res.x, res.y, res.z, res.w });
         }
 
         static void from_json(const json& j, glm::vec4& res)
@@ -409,7 +409,7 @@ namespace nlohmann
     {
         static void to_json(json& j, const glm::quat& res)
         {
-            j = json::array({ res.x, res.y, res.z });
+            j = json::array({ res.x, res.y, res.z, res.w });
         }
 
         static void from_json(const json& j, glm::quat& res)

@@ -2,8 +2,6 @@
 
 #include "Resource.h"
 
-#include <optional>
-
 class Serializer;
 
 // Class for handling different resource types using the same interface. 
@@ -41,17 +39,12 @@ public:
 	void SaveAndTrack(
 		const std::string& aPath,
 		Handle<Resource> aHandle
-	)
-	{
-		ASSERT_STR(false, "NYI");
-	}
+	);
 
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(const std::string& aPath);
-
-	std::optional<std::reference_wrapper<Serializer>> GetReadSerializer(const std::string& aPath);
 
 private:
 	// Utility method to clean-up the resource from registry and asset collections

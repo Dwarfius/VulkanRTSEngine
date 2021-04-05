@@ -13,7 +13,8 @@ tbb::task* AssetTracker::LoadTask::execute()
 	// so can skip it and destroy it implicitly
 	if (!myRes.IsLastHandle())
 	{
-		myRes->Load(myAssetTracker);
+		Serializer& serializer = *myAssetTracker.myReadSerializers.local();
+		myRes->Load(myAssetTracker, serializer);
 		ASSERT_STR(myRes->GetState() == Resource::State::Ready
 			|| myRes->GetState() == Resource::State::Error,
 			"Found a resource that didn't change it's state after Load!");
@@ -47,17 +48,32 @@ AssetTracker::~AssetTracker()
 	}
 }
 
-std::optional<std::reference_wrapper<Serializer>> AssetTracker::GetReadSerializer(const std::string& aPath)
+void AssetTracker::SaveAndTrack(const std::string& aPath, Handle<Resource> aRes)
 {
-	File file(aPath);
-	if (!file.Read())
+	// change the handle's path
+	ASSERT_STR(aRes.IsValid(), "Invalid handle - nothing to save!");
+	aRes->myPath = aPath;
+
+	// dump to disk
+	Serializer& serializer = *myWriteSerializers.local();
+	aRes->Save(*this, serializer);
+
+	// if it's a newly generated object - give it an id for tracking
+	if (aRes->GetId() == Resource::InvalidId)
 	{
-		return std::nullopt;
+		aRes->myId = ++myCounter;
 	}
 
-	Serializer& serializer = *myReadSerializers.local();
-	serializer.ReadFrom(file);
-	return std::ref(serializer);
+	// register for tracking
+	{
+		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
+		myRegister[aPath] = aRes->GetId();
+	}
+
+	{
+		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
+		myAssets[aRes->GetId()] = aRes.Get();
+	}
 }
 
 void AssetTracker::RemoveResource(const Resource* aRes)

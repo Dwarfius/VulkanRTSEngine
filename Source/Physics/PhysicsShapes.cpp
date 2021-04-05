@@ -59,6 +59,13 @@ PhysicsShapeBox::PhysicsShapeBox(glm::vec3 aHalfExtents)
 	myType = Type::Box;
 }
 
+glm::vec3 PhysicsShapeBox::GetHalfExtents() const
+{
+	const btBoxShape* boxShape = static_cast<const btBoxShape*>(myShape);
+	btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
+	return Utils::ConvertToGLM(halfExtents);
+}
+
 // ====================================================
 PhysicsShapeSphere::PhysicsShapeSphere(float aRadius)
 	: PhysicsShapeBase()
@@ -67,12 +74,30 @@ PhysicsShapeSphere::PhysicsShapeSphere(float aRadius)
 	myType = Type::Sphere;
 }
 
+float PhysicsShapeSphere::GetRadius() const
+{
+	const btSphereShape* shape = static_cast<const btSphereShape*>(myShape);
+	return shape->getRadius();
+}
+
 // ====================================================
 PhysicsShapeCapsule::PhysicsShapeCapsule(float aRadius, float aHeight)
 	: PhysicsShapeBase()
 {
 	myShape = new btCapsuleShape(aRadius, aHeight);
 	myType = Type::Capsule;
+}
+
+float PhysicsShapeCapsule::GetRadius() const
+{
+	const btCapsuleShape* shape = static_cast<const btCapsuleShape*>(myShape);
+	return shape->getRadius();
+}
+
+float PhysicsShapeCapsule::GetHeight() const
+{
+	const btCapsuleShape* shape = static_cast<const btCapsuleShape*>(myShape);
+	return shape->getHalfHeight() * 2;
 }
 
 // ====================================================

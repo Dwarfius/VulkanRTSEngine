@@ -35,7 +35,7 @@ class JsonSerializer : public Serializer
 	void EndDeserializeArrayImpl(std::string_view aName) const override final;
 	void EndDeserializeArrayImpl(size_t anIndex) const override final;
 
-	mutable nlohmann::json myCurrObj;
+	mutable nlohmann::json myCurrObj = nlohmann::json::object_t();
 	mutable std::stack<nlohmann::json> myObjStack;
 
 	friend struct nlohmann::adl_serializer<ResourceProxy>;

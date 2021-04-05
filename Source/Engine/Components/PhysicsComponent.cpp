@@ -75,7 +75,7 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 		myEntity->GetShape().GetType() : PhysicsShapeBase::Type::Invalid;
 	aSerializer.Serialize("myShape", shapeType);
 
-	float mass = myEntity ? myEntity->GetMass() : 0;
+	float mass = myEntity && myEntity->IsDynamic() ? myEntity->GetMass() : 0;
 	aSerializer.Serialize("myMass", mass);
 	if (aSerializer.IsReading())
 	{
@@ -109,20 +109,6 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 			shape = std::make_shared<PhysicsShapeCapsule>(radius, height);
 			break;
 		}
-		case PhysicsShapeBase::Type::ConvexHull:
-		{
-			std::string hullFile;
-			aSerializer.Serialize("myHullFile", hullFile);
-			ASSERT_STR(false, "NYI");
-			break;
-		}
-		case PhysicsShapeBase::Type::Heightfield:
-		{
-			std::string heightsFile;
-			aSerializer.Serialize("myHeightsFile", heightsFile);
-			ASSERT_STR(false, "NYI");
-			break;
-		}
 		default:
 			ASSERT(false);
 		}
@@ -130,7 +116,37 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 	}
 	else
 	{
-		ASSERT_STR(false, "NYI");
+		if (myEntity)
+		{
+			const PhysicsShapeBase& baseShape = myEntity->GetShape();
+			switch (shapeType)
+			{
+			case PhysicsShapeBase::Type::Box:
+			{
+				const PhysicsShapeBox& shape = static_cast<const PhysicsShapeBox&>(baseShape);
+				aSerializer.Serialize("myHalfExtents", shape.GetHalfExtents());
+				break;
+			}
+			case PhysicsShapeBase::Type::Sphere:
+			{
+				const PhysicsShapeSphere& shape = static_cast<const PhysicsShapeSphere&>(baseShape);
+				float radius = shape.GetRadius();
+				aSerializer.Serialize("myRadius", radius);
+				break;
+			}
+			case PhysicsShapeBase::Type::Capsule:
+			{
+				const PhysicsShapeCapsule& shape = static_cast<const PhysicsShapeCapsule&>(baseShape);
+				float radius = shape.GetRadius();
+				aSerializer.Serialize("myRadius", radius);
+				float height = shape.GetHeight();
+				aSerializer.Serialize("myHeight", height);
+				break;
+			}
+			default:
+				ASSERT(false);
+			}
+		}
 	}
 
 	aSerializer.Serialize("myOrigin", myOrigin);

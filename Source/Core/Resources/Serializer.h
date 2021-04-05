@@ -96,16 +96,11 @@ public:
 	void SerializeVersion(int64_t& aVersion);
 
 	bool IsReading() const { return myIsReading; }
-	
-private:
-	// TODO: replace with public methods that work on streams!
-	// Exposed for AssetTracker
-	friend class AssetTracker;
 
 	virtual void ReadFrom(const File& aFile) = 0;
 	virtual void WriteTo(std::string& aBuffer) const = 0;
-	// ===========================
-
+	
+private:
 	virtual void SerializeImpl(std::string_view aName, const VariantType& aValue) = 0;
 	virtual void SerializeImpl(size_t anIndex, const VariantType& aValue) = 0;
 	virtual void DeserializeImpl(std::string_view aName, VariantType& aValue) const = 0;

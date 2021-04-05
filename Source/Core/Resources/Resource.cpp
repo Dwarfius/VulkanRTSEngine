@@ -2,7 +2,8 @@
 #include "Resource.h"
 
 #include "AssetTracker.h"
-#include "../File.h"
+#include "File.h"
+#include "Resources/Serializer.h"
 
 Resource::Resource()
 	: myId(InvalidId)
@@ -54,30 +55,25 @@ void Resource::SetErrMsg(std::string&& anErrString)
 #endif
 }
 
-void Resource::Load(AssetTracker& anAssetTracker)
+void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 {
 	ASSERT_STR(myPath.size(), "Empty path during resource load!");
 	ASSERT_STR(myState == State::Uninitialized, "Double load detected!");
 	
+	File file(myPath);
+	if (!file.Read())
+	{
+		SetErrMsg("Failed to read file!");
+		return;
+	}
+
 	if (UsesDescriptor())
 	{
-		if (std::optional<std::reference_wrapper<Serializer>>& serializer = anAssetTracker.GetReadSerializer(myPath))
-		{
-			Serialize(*serializer);
-		}
-		else
-		{
-			SetErrMsg("Failed to read descriptor file!");
-		}
+		aSerializer.ReadFrom(file);
+		Serialize(aSerializer);
 	}
 	else
 	{
-		File file(myPath);
-		if (!file.Read())
-		{
-			SetErrMsg("Failed to read file!");
-			return;
-		}
 		OnLoad(file);
 	}
 
@@ -99,4 +95,24 @@ void Resource::Load(AssetTracker& anAssetTracker)
 		myOnLoadCBs.clear();
 		myOnLoadCBs.shrink_to_fit();
 	}
+}
+
+void Resource::Save(AssetTracker& anAssetTracker, Serializer& aSerializer)
+{
+	ASSERT_STR(myPath.size(), "Empty path during resource save!");
+	ASSERT_STR(myState == State::Ready, "Must be fully loaded in to save!");
+
+	std::string buffer;
+	if (UsesDescriptor())
+	{
+		Serialize(aSerializer);
+		aSerializer.WriteTo(buffer);
+	}
+	else
+	{
+		OnSave(buffer);
+	}
+	File file(myPath, std::move(buffer));
+	bool success = file.Write();
+	ASSERT_STR(success, "Failed to write a file!");
 }

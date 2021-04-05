@@ -57,18 +57,22 @@ class PhysicsShapeBox : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeBox(glm::vec3 aHalfExtents);
+	glm::vec3 GetHalfExtents() const;
 };
 
 class PhysicsShapeSphere : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeSphere(float aRadius);
+	float GetRadius() const;
 };
 
 class PhysicsShapeCapsule : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeCapsule(float aRadius, float aHeight);
+	float GetRadius() const;
+	float GetHeight() const;
 };
 
 class PhysicsShapeConvexHull : public PhysicsShapeBase

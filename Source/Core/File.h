@@ -9,9 +9,12 @@ class File : public RefCounted
 {
 public:
 	File(const std::string& aPath);
+	File(const std::string& aPath, std::string&& aData);
 
 	// Blocking until entire file is read
 	bool Read();
+	bool Write(std::string_view aData);
+	bool Write() const;
 
 	size_t GetSize() const { return myBuffer.size(); }
 	char GetAt(size_t anIndex) const { return myBuffer[anIndex]; }

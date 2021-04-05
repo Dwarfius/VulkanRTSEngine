@@ -61,13 +61,15 @@ private:
 	// ============================
 	// AssetTracker support
 	friend class AssetTracker;
-	void Load(AssetTracker& anAssetTracker);
+	void Load(AssetTracker& anAssetTracker, Serializer& aSerializer);
+	void Save(AssetTracker& anAssetTracker, Serializer& aSerializer);
 	// ============================
 
 	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
 	virtual bool UsesDescriptor() const { return true; };
 	// Loads a raw resource (png, obj, etc)
-	virtual void OnLoad(const File& aFile) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };
+	virtual void OnLoad(const File& aFile) { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); };
+	virtual void OnSave(std::string& aBuffer) const { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); }
 	// Loads a resource descriptor. Returns true if an actual resource 
 	// load is needed, false otherwise.
 	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };
