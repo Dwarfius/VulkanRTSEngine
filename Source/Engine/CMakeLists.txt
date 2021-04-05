@@ -79,6 +79,7 @@ set(SRC_COMP
 	"Components/ComponentBase.cpp" "Components/ComponentBase.h"
 	"Components/EditorMode.cpp" "Components/EditorMode.h"
 	"Components/PhysicsComponent.cpp" "Components/PhysicsComponent.h"
+	"Components/VisualComponent.cpp" "Components/VisualComponent.h"
 )
 
 set(SRC_GRAPHICS 

@@ -38,11 +38,13 @@ public:
 
 	// Saves an asset to the disk. Tracks it for future use
 	// Threadsafe
-	template<class TAsset>
 	void SaveAndTrack(
 		const std::string& aPath,
-		Handle<TAsset> aHandle
-	);
+		Handle<Resource> aHandle
+	)
+	{
+		ASSERT_STR(false, "NYI");
+	}
 
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
@@ -69,15 +71,6 @@ private:
 	TLSSerializers myReadSerializers;
 	TLSSerializers myWriteSerializers;
 };
-
-template<class TAsset>
-void AssetTracker::SaveAndTrack(
-	const std::string& aPath,
-	Handle<TAsset> aHandle
-)
-{
-	ASSERT_STR(false, "NYI");
-}
 
 template<class TAsset>
 Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)

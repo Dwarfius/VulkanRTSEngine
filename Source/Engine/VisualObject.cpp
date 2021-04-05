@@ -49,6 +49,8 @@ float VisualObject::GetRadius() const
 
 bool VisualObject::Resolve()
 {
+	// TODO: get another look at this, I think it can be resolved
+	// via Pipeline and ExecLambdaOnLoad
 	if (myPipeline->GetState() != GPUResource::State::Valid)
 	{
 		return false;

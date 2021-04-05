@@ -6,7 +6,7 @@
 class File;
 class Serializer;
 
-// Base class for resources. Disables copying. All resources must be loaded from disk.
+// Base class for resources that can be loaded from disk. Disables copying. 
 class Resource : public RefCounted
 {
 public:

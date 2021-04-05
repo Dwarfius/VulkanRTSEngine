@@ -141,7 +141,7 @@ private:
 template<class T>
 void Serializer::Serialize(std::string_view aName, Handle<T>& aValue)
 {
-	static_assert(std::is_base_of_v<Resource, T>, "Unsupported type!");
+	static_assert(std::is_base_of_v<Resource, T>, "T must inherit from Resource!");
 
 	ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
 	if (myIsReading)
@@ -161,7 +161,7 @@ void Serializer::Serialize(std::string_view aName, Handle<T>& aValue)
 template<class T>
 void Serializer::Serialize(size_t anIndex, Handle<T>& aValue)
 {
-	static_assert(std::is_base_of_v<Resource, T>, "Unsupported type!");
+	static_assert(std::is_base_of_v<Resource, T>, "T must inherit from Resource!");
 	
 	ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
 	if (myIsReading)

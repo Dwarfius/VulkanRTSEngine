@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "Input.h"
 #include "Components/PhysicsComponent.h"
+#include "Components/VisualComponent.h"
 #include "GameObject.h"
 #include "VisualObject.h"
 #include "Animation/AnimationController.h"
@@ -36,6 +37,8 @@ EditorMode::EditorMode(Game& aGame)
 	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("testGO.json");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){
 		GameObject* go = static_cast<GameObject*>(aRes);
+		// TEST - NOT THREAD SAFE!
+		go->GetComponent<VisualComponent>()->SetModel(myImportedCube->GetModel());
 		aGame.AddGameObject(go);
 	});
 }

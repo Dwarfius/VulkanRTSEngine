@@ -294,6 +294,4 @@ void GameObject::Serialize(Serializer& aSerializer)
 			myChildren[i]->myParent = this; 
 		}
 	}
-
-	// TODO: Figure out what to do with VisualObject - to spawn from components?
 }

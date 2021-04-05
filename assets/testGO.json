@@ -19,7 +19,21 @@
 				"myHalfExtents": [0.5, 0.5, 0.5],
 				"myOrigin": [0, 0, 0]
 			}
-		}
+		},
+        {
+            "myCompType": "VisualComponent",
+            "myCompData": {
+                "myTransf": {
+                    "myPos": [0, 0, 0],
+                    "myScale": [1, 1, 1],
+                    "myRotation": [0, 0, 0, 1]
+                },
+                "myPipeline": "default.ppl",
+                "myTextures": [
+                    "CubeUnwrap.jpg"
+                ]
+            }
+        }
 	],
 	"myChildren": []
 }

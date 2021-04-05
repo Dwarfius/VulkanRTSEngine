@@ -57,17 +57,20 @@ class SerializableComponent : public TBase
 {
 public:
 	// this is needed to get past ODR and cause implicit template instantiation
-	~SerializableComponent() { ourMyRegistrar; } 
+	~SerializableComponent() { ourRegistrar; } 
 	std::string_view GetName() const override { return TComp::kName; }
 
 private:
-	static bool ourMyRegistrar;
+	static bool Register()
+	{
+		auto newT = [] {
+			return static_cast<ComponentBase*>(new TComp());
+		};
+		ComponentRegister::Get().Register(TComp::kName, newT);
+		return true;
+	}
+	static bool ourRegistrar;
 };
 
 template<class TComp, class TBase>
-bool SerializableComponent<TComp, TBase>::ourMyRegistrar = [] {
-	ComponentRegister::Get().Register(TComp::kName, [] { 
-		return static_cast<ComponentBase*>(new TComp());
-	});
-	return true;
-} ();
+bool SerializableComponent<TComp, TBase>::ourRegistrar = SerializableComponent::Register();
