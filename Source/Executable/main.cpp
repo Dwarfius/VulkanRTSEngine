@@ -2,6 +2,7 @@
 #include <Engine/Game.h>
 
 #include <Core/Resources/BinarySerializer.h>
+#include <Core/Resources/JsonSerializer.h>
 
 void glfwErrorReporter(int code, const char* desc)
 {
@@ -119,60 +120,88 @@ void TestPool()
 	kSumTest(poolOfInts, 0);
 }
 
-void TestBinarySerializer()
+struct Test
 {
-	struct Test
+	struct Inner
 	{
-		bool my1;
-		uint8_t my2;
-		int32_t my3;
-		uint32_t my4;
-		std::string my5;
-		std::vector<std::string> my6;
+		glm::vec3 my1;
+		glm::mat4 my2;
 
 		void Serialize(Serializer& aSerializer)
 		{
 			aSerializer.Serialize("my1", my1);
 			aSerializer.Serialize("my2", my2);
-			aSerializer.Serialize("my3", my3);
-			aSerializer.Serialize("my4", my4);
-			aSerializer.Serialize("my5", my5);
-			if (Serializer::Scope scope = aSerializer.SerializeArray("my6", my6))
-			{
-				for (size_t i = 0; i < my6.size(); i++)
-				{
-					aSerializer.Serialize(i, my6[i]);
-				}
-			}
 		}
 
-		void Match(const Test& aOther) const
+		void Match(const Inner& aOther) const
 		{
 			ASSERT(my1 == aOther.my1);
 			ASSERT(my2 == aOther.my2);
-			ASSERT(my3 == aOther.my3);
-			ASSERT(my4 == aOther.my4);
-			ASSERT(my5 == aOther.my5);
-
-			ASSERT(my6.size() == aOther.my6.size());
-			for (size_t i = 0; i < my6.size(); i++)
-			{
-				ASSERT(my6[i] == aOther.my6[i]);
-			}
 		}
 	};
 
-	Test testWrite{
-		true,
-		255,
-		-10000,
-		20000,
-		"Hello",
-		{ " Binary ", " World!" }
-	};
+	bool my1;
+	uint8_t my2;
+	int32_t my3;
+	uint32_t my4;
+	std::string my5;
+	std::vector<std::string> my6;
+	Inner my7;
+
+	void Serialize(Serializer& aSerializer)
+	{
+		aSerializer.Serialize("my1", my1);
+		aSerializer.Serialize("my2", my2);
+		aSerializer.Serialize("my3", my3);
+		aSerializer.Serialize("my4", my4);
+		aSerializer.Serialize("my5", my5);
+		if (Serializer::Scope scope = aSerializer.SerializeArray("my6", my6))
+		{
+			for (size_t i = 0; i < my6.size(); i++)
+			{
+				aSerializer.Serialize(i, my6[i]);
+			}
+		}
+
+		if (Serializer::Scope scope = aSerializer.SerializeObject("my7"))
+		{
+			my7.Serialize(aSerializer);
+		}
+	}
+
+	void Match(const Test& aOther) const
+	{
+		ASSERT(my1 == aOther.my1);
+		ASSERT(my2 == aOther.my2);
+		ASSERT(my3 == aOther.my3);
+		ASSERT(my4 == aOther.my4);
+		ASSERT(my5 == aOther.my5);
+
+		ASSERT(my6.size() == aOther.my6.size());
+		for (size_t i = 0; i < my6.size(); i++)
+		{
+			ASSERT(my6[i] == aOther.my6[i]);
+		}
+
+		my7.Match(aOther.my7);
+	}
+};
+
+Test nominalTest{
+	true,
+	255,
+	-10000,
+	20000,
+	"Hello",
+	{ " Binary ", " World!" },
+	{ glm::vec3(1, 2, 3), glm::mat4(9) }
+};
+
+void TestBinarySerializer()
+{
 	AssetTracker dummyTracker;
 	BinarySerializer writeSerializer(dummyTracker, false);
-	testWrite.Serialize(writeSerializer);
+	nominalTest.Serialize(writeSerializer);
 	std::vector<char> buffer;
 	writeSerializer.WriteTo(buffer);
 
@@ -181,7 +210,23 @@ void TestBinarySerializer()
 	Test testRead;
 	testRead.Serialize(readSerializer);
 
-	testRead.Match(testWrite);
+	testRead.Match(nominalTest);
+}
+
+void TestJsonSerializer()
+{
+	AssetTracker dummyTracker;
+	JsonSerializer writeSerializer(dummyTracker, false);
+	nominalTest.Serialize(writeSerializer);
+	std::vector<char> buffer;
+	writeSerializer.WriteTo(buffer);
+
+	JsonSerializer readSerializer(dummyTracker, true);
+	readSerializer.ReadFrom(buffer);
+	Test testRead;
+	testRead.Serialize(readSerializer);
+
+	testRead.Match(nominalTest);
 }
 
 void RunTests()
@@ -189,4 +234,5 @@ void RunTests()
 	TestBase64();
 	TestPool();
 	TestBinarySerializer();
+	TestJsonSerializer();
 }
