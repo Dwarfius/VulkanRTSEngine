@@ -17,13 +17,15 @@ Shader::Shader(Resource::Id anId, const std::string& aPath)
 	}
 }
 
-void Shader::OnLoad(const File& aFile)
+void Shader::OnLoad(const std::vector<char>& aBuffer)
 {
 	// TODO: add a similar to .ppl file that contains paths to correct
 	// shader files (GLSL/SPIR-V)
 	// TODO: this does a copy - add a move from function to File
 	// with safety-use asserts, or figure out alternative approach
-	myFileContents = aFile.GetBuffer();
+	myFileContents.resize(aBuffer.size() + 1);
+	std::memcpy(myFileContents.data(), aBuffer.data(), aBuffer.size());
+	myFileContents[aBuffer.size()] = 0;
 }
 
 IShader::Type Shader::DetermineType(const std::string& aPath)

@@ -9,6 +9,35 @@
 
 #include <sstream>
 
+namespace 
+{
+	// converts a duration into larger units of time, them puts it
+	// into a string buffer with a resulting unit of time
+	// Warning: assumes aDuration is in nanosecods!
+	template<uint32_t Length>
+	void DurationToString(char(& aBuffer)[Length], long long aDuration)
+	{
+		uint32_t conversions = 0;
+		long long remainder = 0;
+		while (aDuration >= 1000 && conversions < 3)
+		{
+			remainder = aDuration % 1000;
+			aDuration /= 1000;
+			conversions++;
+		}
+		const char* unitOfTime;
+		switch (conversions)
+		{
+		case 0: unitOfTime = "ns"; break;
+		case 1: unitOfTime = "micros"; break;
+		case 2: unitOfTime = "ms"; break;
+		case 3: unitOfTime = "s"; break;
+		default: ASSERT(false); break;
+		}
+		Utils::StringFormat(aBuffer, "%lld.%lld%s", aDuration, remainder, unitOfTime);
+	}
+}
+
 void ProfilerUI::Draw()
 {
 	if (Input::GetKeyPressed(Input::Keys::F2))
@@ -50,7 +79,7 @@ void ProfilerUI::Draw()
 	char nodeName[64];
 	for (const FrameData& frameData : myFramesToRender)
 	{
-		sprintf(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
+		Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
 		if (ImGui::TreeNode(nodeName))
 		{
 			// Precalculate the whole height
@@ -84,7 +113,7 @@ void ProfilerUI::Draw()
 void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const
 {
 	char name[64];
-	std::sprintf(name, "%llu##ThreadColumn", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##ThreadColumn", aFrameData.myFrameProfile.myFrameNum);
 	ImGui::BeginChild(name, { kThreadColumnWidth, aTotalHeight });
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
@@ -111,20 +140,20 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 	// Unresizing scrollable parent window
 	char name[64];
 	char duration[32];
-	std::sprintf(name, "%llu##MarksColumn", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##MarksColumn", aFrameData.myFrameProfile.myFrameNum);
 	ImGui::BeginChild(name, { 0, aTotalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
 
 	// Zoomable child window
 	const float fixedWindowWidth = ImGui::GetWindowWidth();
 	float plotWidth = fixedWindowWidth * myWidthScale;
 	plotWidth = std::max(plotWidth, fixedWindowWidth);
-	std::sprintf(name, "%llu##ZoomWindow", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##ZoomWindow", aFrameData.myFrameProfile.myFrameNum);
 	ImGui::BeginChild(name, { plotWidth, aTotalHeight - ImGui::GetStyle().ScrollbarSize });
 
 	// top bar for frame
 	const long long frameDuration = (aFrameData.myFrameProfile.myEndStamp - aFrameData.myFrameProfile.myBeginStamp).count();
 	DurationToString(duration, frameDuration);
-	std::sprintf(name, "Duration: %s", duration);
+	Utils::StringFormat(name, "Duration: %s", duration);
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
 	ImGui::Button(name, { plotWidth, kMarkHeight });
@@ -183,11 +212,11 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			if (markDuration)
 			{
 				DurationToString(duration, markDuration);
-				std::sprintf(name, "%s - %s", mark.myName, duration);
+				Utils::StringFormat(name, "%s - %s", mark.myName, duration);
 			}
 			else
 			{
-				std::sprintf(name, "%s - Ongoing", mark.myName);
+				Utils::StringFormat(name, "%s - Ongoing", mark.myName);
 			}
 			ImGui::Button(name, { width, kMarkHeight });
 			
@@ -264,24 +293,3 @@ ProfilerUI::FrameData ProfilerUI::ProcessFrameProfile(const Profiler::FrameProfi
 	return data;
 }
 
-void ProfilerUI::DurationToString(char* aBuffer, long long aDuration)
-{
-	uint32_t conversions = 0;
-	long long remainder = 0;
-	while (aDuration >= 1000 && conversions < 3)
-	{
-		remainder = aDuration % 1000;
-		aDuration /= 1000;
-		conversions++;
-	}
-	const char* unitOfTime;
-	switch (conversions)
-	{
-	case 0: unitOfTime = "ns"; break;
-	case 1: unitOfTime = "micros"; break;
-	case 2: unitOfTime = "ms"; break;
-	case 3: unitOfTime = "s"; break;
-	default: ASSERT(false); break;
-	}
-	std::sprintf(aBuffer, "%lld.%lld%s", aDuration, remainder, unitOfTime);
-}

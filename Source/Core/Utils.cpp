@@ -64,16 +64,16 @@ namespace Utils
 		// Base64 is a six-bit encoding scheme, so:
 		// read 6 bits -> record value from table -> move to next 6
 		constexpr char kLeftOctetMasks[4] = {
-			0b11111100, // index 0 
-			0b00000011, // index 0
-			0b00001111, // index 1
-			0b00111111  // index 2
+			static_cast<char>(0b11111100), // index 0 
+			static_cast<char>(0b00000011), // index 0
+			static_cast<char>(0b00001111), // index 1
+			static_cast<char>(0b00111111)  // index 2
 		};
 		constexpr char kRightOctetMasks[4] = {
-			0b00000000, // index 1
-			0b11110000, // index 1
-			0b11000000, // index 2
-			0b00000000  // index 3
+			static_cast<char>(0b00000000), // index 1
+			static_cast<char>(0b11110000), // index 1
+			static_cast<char>(0b11000000), // index 2
+			static_cast<char>(0b00000000)  // index 3
 		};
 		const size_t triOctetCount = anInput.size() / 3;
 		// TODO: play around with simd intrinsics

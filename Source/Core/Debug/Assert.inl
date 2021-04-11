@@ -2,6 +2,7 @@
 #include <cstdarg>
 #include <iostream>
 #include <tbb/mutex.h>
+#include "../Utils.h"
 
 namespace DebugImpl
 {
@@ -13,8 +14,9 @@ namespace DebugImpl
 // the hash check and AssertDialog
 #define USE_DOUBLE_LOCK_IMPL
 
-	template<uint32_t HashVal>
-	void AssertNotify(const char* anExpr, const char* aFile, int aLine, const char* aFmt, ...)
+	template<uint32_t HashVal, class... TArgs>
+	void AssertNotify(const char* anExpr, const char* aFile, int aLine, 
+						const char* aFmt, const TArgs&... aArgs)
 	{
 		// first, check whether this assert should be ignored
 		tbb::mutex::scoped_lock lock(assertMutex);
@@ -32,35 +34,16 @@ namespace DebugImpl
 		char smallMsgBuffer[cSmallMsgSize] = { 0 };
 		if (aFmt)
 		{
-			va_list args;
-			va_start(args, aFmt);
-
-#if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
-			// MSVC is annoying because it doesn't follow the __STDC_WANT_LIB_EXT1__
-			// logic of using __STDC_LIB_EXT1__, instead it uses __STDC_WANT_SECURE_LIB__
-			vsnprintf_s(smallMsgBuffer, cSmallMsgSize, aFmt, args);
-#else
-			vsnprintf(smallMsgBuffer, cSmallMsgSize, aFmt, args);
-#endif
-
-			va_end(args);
+			Utils::StringFormat(smallMsgBuffer, aFmt, aArgs...);
 		}
 		char fullMsg[cFullMsgSize];
 		if (aFmt)
 		{
-#if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
-			sprintf_s(fullMsg, cFullMsgSize, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
-#else
-			sprintf(fullMsg, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
-#endif
+			Utils::StringFormat(fullMsg, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
 		}
 		else
 		{
-#if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
-			sprintf_s(fullMsg, cFullMsgSize, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
-#else
-			sprintf(fullMsg, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
-#endif
+			Utils::StringFormat(fullMsg, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
 		}
 
 #ifdef USE_DOUBLE_LOCK_IMPL

@@ -30,10 +30,7 @@ namespace glTF
 					ASSERT_STR(false, "Failed to read %s", file.GetPath());
 					return;
 				}
-				// TODO: this is a copy, after File's TODO is done,
-				// change to use buffer stealing
-				const std::string& fileBuff = file.GetBuffer();
-				aBuffer.assign(fileBuff.begin(), fileBuff.end());
+				aBuffer = std::move(file.ConsumeBuffer());
 			}
 
 			size_t byteLength = aBufferJson["byteLength"].get<size_t>();

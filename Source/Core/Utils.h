@@ -15,6 +15,9 @@ namespace Utils
 	std::vector<char> Base64Encode(const std::vector<char>& anInput);
 	std::vector<char> Base64Decode(const std::vector<char>& anInput);
 	std::vector<char> Base64Decode(std::string_view anInput);
+
+	template<uint32_t Length, class... TArgs>
+	void StringFormat(char(& aBuffer)[Length], const char* aFormat, const TArgs&... aArgs);
 }
 
 template<class T>
@@ -40,4 +43,14 @@ TAssocColl Utils::GroupBy(const TColl& aColl, TPred aPred)
 		assocCollection[key].push_back(item);
 	}
 	return assocCollection;
+}
+
+template<uint32_t Length, class... TArgs>
+void Utils::StringFormat(char(&aBuffer)[Length], const char* aFormat, const TArgs&... aArgs)
+{
+#if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
+	sprintf_s(aBuffer, aFormat, aArgs...);
+#else
+	sprintf(aBuffer, aFormat, aArgs...);
+#endif
 }

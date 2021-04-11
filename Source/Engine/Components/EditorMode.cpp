@@ -312,7 +312,7 @@ void EditorMode::DrawBoneHierarchy(int aSkeletonIndex)
 			index++)
 		{
 			glm::vec3 worldPos = skeleton->GetBoneWorldTransform(index).GetPos();
-			sprintf(formatBuffer, "%u", index);
+			Utils::StringFormat(formatBuffer, "%u", index);
 
 			const bool isSelectedBone = index == mySelectedBone;
 

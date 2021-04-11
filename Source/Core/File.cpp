@@ -6,7 +6,7 @@ File::File(const std::string& aPath)
 {
 }
 
-File::File(const std::string& aPath, std::string&& aData)
+File::File(const std::string& aPath, std::vector<char>&& aData)
 	: myPath(aPath)
 	, myBuffer(std::move(aData))
 {
@@ -29,11 +29,11 @@ bool File::Read()
 	return true;
 }
 
-bool File::Write(std::string_view aData)
+bool File::Write(const char* aData, size_t aLength)
 {
 	// Overwrite existing data
-	myBuffer.resize(aData.size());
-	aData.copy(myBuffer.data(), aData.size());
+	myBuffer.resize(aLength);
+	std::memcpy(myBuffer.data(), aData, aLength);
 
 	return Write();
 }

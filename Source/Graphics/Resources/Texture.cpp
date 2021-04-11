@@ -117,9 +117,9 @@ bool Texture::UsesDescriptor() const
 	return pathExt.compare("desc") == 0;
 }
 
-void Texture::OnLoad(const File& aFile)
+void Texture::OnLoad(const std::vector<char>& aBuffer)
 {
-	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aFile.GetCBuffer());
+	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aBuffer.data());
 	int desiredChannels = STBI_default;
 	switch (myFormat)
 	{
@@ -132,7 +132,7 @@ void Texture::OnLoad(const File& aFile)
 	}
 
 	int actualChannels = 0;
-	myPixels = stbi_load_from_memory(buffer, static_cast<int>(aFile.GetSize()), 
+	myPixels = stbi_load_from_memory(buffer, static_cast<int>(aBuffer.size()),
 						reinterpret_cast<int*>(&myWidth), reinterpret_cast<int*>(&myHeight),
 						&actualChannels, desiredChannels);
 	if (!myPixels)
@@ -166,5 +166,5 @@ void Texture::Serialize(Serializer& aSerializer)
 		SetErrMsg("Failed to find texture file!");
 		return;
 	}
-	OnLoad(file);
+	OnLoad(file.GetBuffer());
 }

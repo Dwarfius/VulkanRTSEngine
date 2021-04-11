@@ -9,4 +9,6 @@
 
 #include <tbb/tbb.h>
 
+#include <glm/glm.hpp>
+
 #include <Core/Debug/Assert.h>

@@ -54,7 +54,7 @@ private:
 	void FreePixels();
 
 	bool UsesDescriptor() const override final;
-	void OnLoad(const File& aFile) override;
+	void OnLoad(const std::vector<char>& aBuffer) override;
 	void Serialize(Serializer& aSerializer) override final;
 
 	bool myOwnsBuffer = false;

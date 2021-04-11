@@ -103,7 +103,7 @@ public:
 
 private:
 	bool UsesDescriptor() const override final { return false; };
-	void OnLoad(const File& aFile) override;
+	void OnLoad(const std::vector<char>& aBuffer) override;
 
 	BaseStorage* myVertices;
 	std::vector<IndexType> myIndices;

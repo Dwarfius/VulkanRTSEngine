@@ -3,16 +3,18 @@
 
 #include "../File.h"
 
-void JsonSerializer::ReadFrom(const File& aFile)
+void JsonSerializer::ReadFrom(const std::vector<char>& aBuffer)
 {
-    myCurrObj = nlohmann::json::parse(aFile.GetCBuffer(), nullptr, false);
-    ASSERT_STR(myCurrObj.is_object(), "Error parsing %s: Root entry must be a json object!", aFile.GetPath());
+    myCurrObj = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
+    ASSERT_STR(myCurrObj.is_object(), "Error parsing Root entry must be a json object!");
 }
 
-void JsonSerializer::WriteTo(std::string& aBuffer) const
+void JsonSerializer::WriteTo(std::vector<char>& aBuffer) const
 {
     ASSERT_STR(myObjStack.empty(), "Tried to write to buffer before unrolling the entire obj stack!");
-	aBuffer = myCurrObj.dump();
+    const std::string& generatedJson = myCurrObj.dump();
+    aBuffer.resize(generatedJson.size());
+	generatedJson.copy(aBuffer.data(), generatedJson.size());
 }
 
 void JsonSerializer::SerializeImpl(std::string_view aName, const VariantType& aValue)

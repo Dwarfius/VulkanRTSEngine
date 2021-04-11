@@ -33,8 +33,9 @@ namespace DebugImpl
 	AssertAction ShowAssertDialog(const char* aTitle, const char* aMsg);
 	void TriggerBreakpoint();
 
-	template<uint32_t HashVal>
-	void AssertNotify(const char* anExpr, const char* aFile, int aLine, const char* aFmt, ...);
+	template<uint32_t HashVal, class... TArgs>
+	void AssertNotify(const char* anExpr, const char* aFile, int aLine, 
+						const char* aFmt, const TArgs&... aArgs);
 }
 
 #include "../CRC32.h" // using Utils::CRC32

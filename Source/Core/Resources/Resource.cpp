@@ -66,15 +66,15 @@ void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 		SetErrMsg("Failed to read file!");
 		return;
 	}
-
+	const std::vector<char>& buffer = file.GetBuffer();
 	if (UsesDescriptor())
 	{
-		aSerializer.ReadFrom(file);
+		aSerializer.ReadFrom(buffer);
 		Serialize(aSerializer);
 	}
 	else
 	{
-		OnLoad(file);
+		OnLoad(file.GetBuffer());
 	}
 
 	if (myState == State::Error)
@@ -102,7 +102,7 @@ void Resource::Save(AssetTracker& anAssetTracker, Serializer& aSerializer)
 	ASSERT_STR(myPath.size(), "Empty path during resource save!");
 	ASSERT_STR(myState == State::Ready, "Must be fully loaded in to save!");
 
-	std::string buffer;
+	std::vector<char> buffer;
 	if (UsesDescriptor())
 	{
 		Serialize(aSerializer);

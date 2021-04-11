@@ -32,7 +32,7 @@ public:
 private:
 	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
 	bool UsesDescriptor() const override final { return false; };
-	void OnLoad(const File& aFile) override final;
+	void OnLoad(const std::vector<char>& aBuffer) override final;
 
 	std::vector<Handle<Model>> myModels;
 	std::vector<Transform> myTransforms;

@@ -4,8 +4,6 @@
 #include "AssetTracker.h"
 #include "../VariantUtils.h"
 
-class File;
-
 class Serializer
 {
 	enum class State : uint8_t
@@ -97,8 +95,8 @@ public:
 
 	bool IsReading() const { return myIsReading; }
 
-	virtual void ReadFrom(const File& aFile) = 0;
-	virtual void WriteTo(std::string& aBuffer) const = 0;
+	virtual void ReadFrom(const std::vector<char>& aBuffer) = 0;
+	virtual void WriteTo(std::vector<char>& aBuffer) const = 0;
 	
 private:
 	virtual void SerializeImpl(std::string_view aName, const VariantType& aValue) = 0;

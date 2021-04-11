@@ -199,10 +199,10 @@ namespace glTF
 
 		BufferView newView = origView;
 		newView.myByteOffset = 0; // baked in above
-		newView.myBuffer = aBuffers.size();
+		newView.myBuffer = static_cast<uint32_t>(aBuffers.size());
 
 		// repoint to new view
-		myBufferView = aBufferViews.size();
+		myBufferView = static_cast<uint32_t>(aBufferViews.size());
 		myByteOffset = 0; // baked in above
 
 		aBufferViews.push_back(std::move(newView));

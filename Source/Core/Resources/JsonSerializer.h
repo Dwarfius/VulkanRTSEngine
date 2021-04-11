@@ -7,8 +7,8 @@
 class JsonSerializer : public Serializer
 {
 	using Serializer::Serializer;
-	void ReadFrom(const File& aFile) override final;
-	void WriteTo(std::string& aBuffer) const override final;
+	void ReadFrom(const std::vector<char>& aBuffer) override final;
+	void WriteTo(std::vector<char>& aBuffer) const override final;
 
 	void SerializeImpl(std::string_view aName, const VariantType& aValue) override final;
 	void SerializeImpl(size_t anIndex, const VariantType& aValue) override final;

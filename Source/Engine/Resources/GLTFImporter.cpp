@@ -38,11 +38,11 @@ GLTFImporter::GLTFImporter(Id anId, const std::string& aPath)
 {
 }
 
-void GLTFImporter::OnLoad(const File& aFile)
+void GLTFImporter::OnLoad(const std::vector<char>& aBuffer)
 {
 	// time to start learning glTF!
 	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
-	nlohmann::json gltfJson = nlohmann::json::parse(aFile.GetBuffer(), nullptr, false);
+	nlohmann::json gltfJson = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
 	if (!gltfJson.is_object())
 	{
 		SetErrMsg("Failed to parse file!");
@@ -69,7 +69,7 @@ void GLTFImporter::OnLoad(const File& aFile)
 	// as a result, we're ignoring scenes and just grabbing
 	// the raw resources. To expand later!
 
-	std::string relPath = aFile.GetPath();
+	std::string relPath = GetPath();
 	size_t pos = relPath.find_last_of('/');
 	if (pos != std::string::npos)
 	{

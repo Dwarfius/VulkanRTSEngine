@@ -61,7 +61,7 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 }
 
-void Model::OnLoad(const File& aFile)
+void Model::OnLoad(const std::vector<char>& aBuffer)
 {
 	ASSERT_STR(false, "Direct model serialization is NYI, use OBJResource instead!");
 }
