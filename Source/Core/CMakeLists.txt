@@ -134,6 +134,7 @@ set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl"
 )
 
 set(SRC_RESOURCES "Resources/AssetTracker.cpp" "Resources/AssetTracker.h"
+	"Resources/BinarySerializer.cpp" "Resources/BinarySerializer.h"
 	"Resources/JsonSerializer.cpp" "Resources/JsonSerializer.h"
 	"Resources/Resource.cpp" "Resources/Resource.h"
 	"Resources/Serializer.cpp" "Resources/Serializer.h"

@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Serializer.h"
-#include <nlohmann/json.hpp>
-#include <stack>
 
-class JsonSerializer : public Serializer
+// Linearly serializes data into a single, flattened binary blob
+// Binary blob will not contain metadata (no names, no separators,
+// no type info), but will contain array size
+// Internal binary serialization is little-endian
+class BinarySerializer : public Serializer
 {
 	using Serializer::Serializer;
 
+	// Serializer Interface
 public:
 	void ReadFrom(const std::vector<char>& aBuffer) final;
 	void WriteTo(std::vector<char>& aBuffer) const final;
@@ -24,6 +27,7 @@ private:
 	void EndSerializeObjectImpl(size_t anIndex) final;
 	// TODO: [[nodiscard]]
 	bool BeginDeserializeObjectImpl(std::string_view aName) const final;
+	// TODO: [[nodiscard]]
 	bool BeginDeserializeObjectImpl(size_t anIndex) const final;
 	void EndDeserializeObjectImpl(std::string_view aName) const final;
 	void EndDeserializeObjectImpl(size_t anIndex) const final;
@@ -34,13 +38,38 @@ private:
 	void EndSerializeArrayImpl(size_t anIndex) final;
 	// TODO: [[nodiscard]]
 	bool BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const final;
+	// TODO: [[nodiscard]]
 	bool BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const final;
 	void EndDeserializeArrayImpl(std::string_view aName) const final;
 	void EndDeserializeArrayImpl(size_t anIndex) const final;
 
-	mutable nlohmann::json myCurrObj = nlohmann::json::object_t();
-	mutable std::stack<nlohmann::json> myObjStack;
+	// Read/Write Impl
+private:
+	void Write(bool aValue);
+	void Read(bool& aValue) const;
+	void Write(uint64_t aValue);
+	void Read(uint64_t& aValue) const;
+	void Write(int64_t aValue);
+	void Read(int64_t& aValue) const;
+	void Write(float aValue);
+	void Read(float& aValue) const;
+	void Write(const std::string& aValue);
+	void Read(std::string& aValue) const;
+	void Write(const VariantMap& aValue);
+	void Read(VariantMap& aValue) const;
+	void Write(const ResourceProxy& aValue);
+	void Read(ResourceProxy& aValue) const;
+	void Write(const glm::vec2& aValue);
+	void Read(glm::vec2& aValue) const;
+	void Write(const glm::vec3& aValue);
+	void Read(glm::vec3& aValue) const;
+	void Write(const glm::vec4& aValue);
+	void Read(glm::vec4& aValue) const;
+	void Write(const glm::quat& aValue);
+	void Read(glm::quat& aValue) const;
+	void Write(const glm::mat4& aValue);
+	void Read(glm::mat4& aValue) const;
 
-	friend struct nlohmann::adl_serializer<ResourceProxy>;
-	friend struct nlohmann::adl_serializer<VariantMap>;
+	std::vector<char> myBuffer;
+	mutable size_t myIndex;
 };

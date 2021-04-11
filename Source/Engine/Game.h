@@ -88,8 +88,6 @@ private:
 
 	void RegisterUniformAdapters();
 
-	void TestPool();
-
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
 	std::unique_ptr<GameTaskManager> myTaskManager;
