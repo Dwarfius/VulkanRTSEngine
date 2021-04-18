@@ -14,8 +14,6 @@ public:
 	using Resource::Resource;
 	GLTFImporter(Id anId, const std::string& aPath);
 
-	static constexpr StaticString kDir = Resource::AssetsFolder + "objects/";
-
 	size_t GetModelCount() const { return myModels.size(); }
 	Handle<Model> GetModel(size_t anIndex) const { return myModels[anIndex]; }
 	Transform GetTransform(size_t anIndex) const { return myTransforms[anIndex]; }

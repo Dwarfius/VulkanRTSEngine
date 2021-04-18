@@ -14,7 +14,7 @@ public:
 	using Callback = std::function<void(Resource*)>;
 
 	constexpr static Id InvalidId = 0;
-	constexpr static StaticString AssetsFolder = "../assets/";
+	constexpr static StaticString kAssetsFolder = "../assets/";
 
 	enum class State
 	{

@@ -88,7 +88,7 @@ void GraphicsGL::Init()
 #endif
 
 	{
-		Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("debug.ppl");
+		Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl");
 		myDebugPipeline = GetOrCreate(debugPipeline).Get<PipelineGL>();
 	}
 

@@ -7,8 +7,6 @@
 class Texture : public Resource, public ITexture
 {
 public:
-	static constexpr StaticString kDir = Resource::AssetsFolder + "textures/";
-
 	static Handle<Texture> LoadFromDisk(const std::string& aPath);
 	static Handle<Texture> LoadFromMemory(const unsigned char* aBuffer, size_t aLength);
 

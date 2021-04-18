@@ -1,0 +1,23 @@
+{  
+	"type":0,
+	"shaders":[
+		"AnimTest/skinned.vert",
+		"Engine/base.frag"
+	],
+	"descriptors":[  
+		{  
+			"myUniformAdapter":"ObjectMatricesAdapter",
+			"myEntries":[  
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":5, "myArraySize":1 }
+			]
+		},
+		{  
+			"myUniformAdapter":"SkeletonAdapter",
+			"myEntries":[  
+				{ "myUniformType":5, "myArraySize":100 }
+			]
+		}
+	]
+}

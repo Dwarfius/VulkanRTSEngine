@@ -11,9 +11,6 @@ class UniformAdapter;
 class Pipeline : public Resource, public IPipeline
 {
 public:
-	static constexpr StaticString kDir = Resource::AssetsFolder + "pipelines/";
-
-public:
 	Pipeline();
 	Pipeline(Resource::Id anId, const std::string& aPath);
 

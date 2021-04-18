@@ -18,7 +18,7 @@ void OBJImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 	// importing external assets is not per-frame frequent
 	std::string stringBuffer(aBuffer.cbegin(), aBuffer.cend());
 	std::istringstream stream(stringBuffer.c_str());
-	tinyobj::MaterialFileReader matFileReader(kDir.CStr());
+	tinyobj::MaterialFileReader matFileReader(kAssetsFolder.CStr());
 	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, &stream, &matFileReader);
 	if (!loaded)
 	{

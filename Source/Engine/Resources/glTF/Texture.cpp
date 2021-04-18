@@ -107,7 +107,8 @@ namespace glTF
 	}
 
 	void Texture::ConstructTextures(const TextureInputs& aInputs,
-		std::vector<Handle<::Texture>>& aTextures)
+		std::vector<Handle<::Texture>>& aTextures,
+		const std::string& aRelPath)
 	{
 		for (const Texture& gltfTexture : aInputs.myTextures)
 		{
@@ -139,7 +140,7 @@ namespace glTF
 				}
 				else
 				{
-					std::string amendedPath = ::Texture::kDir.CStr() + image.myUri;
+					std::string amendedPath = aRelPath + image.myUri;
 					texture = ::Texture::LoadFromDisk(amendedPath);
 				}
 

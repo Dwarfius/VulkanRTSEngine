@@ -5,7 +5,6 @@
 class AnimationClip : public Resource
 {
 public:
-	static constexpr StaticString kDir = Resource::AssetsFolder + "anims/";
 	using BoneIndex = uint16_t; // must be in sync with Skeleton::BoneIndex!
 
 	enum class Property : uint8_t

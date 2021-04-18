@@ -1,8 +1,0 @@
-{  
-	"type":0,
-	"shaders":[
-		"debug.vert",
-		"debug.frag"
-	],
-	"descriptors":[]
-}

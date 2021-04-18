@@ -7,8 +7,6 @@
 class Shader : public Resource, public IShader
 {
 public:
-	static constexpr StaticString kDir = Resource::AssetsFolder + "shaders/";
-
 	Shader();
 	Shader(Resource::Id anId, const std::string& aPath);
 

@@ -71,7 +71,7 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 	static_assert(std::is_base_of_v<Resource, TAsset>, "Asset tracker cannot track this type!");
 
 	// first gotta check if we have it in the registry
-	std::string path = TAsset::kDir.CStr() + aPath;
+	std::string path = Resource::kAssetsFolder.CStr() + aPath;
 	Resource::Id resourceId = Resource::InvalidId;
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);

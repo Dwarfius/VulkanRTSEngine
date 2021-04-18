@@ -1,0 +1,15 @@
+{  
+	"type":0,
+	"shaders":[
+		"Engine/imgui.vert",
+		"Engine/imgui.frag"
+	],
+	"descriptors":[  
+		{
+			"myUniformAdapter":"ImGUIAdapter",
+			"myEntries":[  
+				{ "myUniformType":5, "myArraySize":1 }
+			]
+		}
+	]
+}

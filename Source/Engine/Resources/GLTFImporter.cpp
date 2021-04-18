@@ -153,7 +153,7 @@ void GLTFImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 			samplers,
 			textures
 		};
-		glTF::Texture::ConstructTextures(input, myTextures);
+		glTF::Texture::ConstructTextures(input, myTextures, relPath);
 	}
 }
 

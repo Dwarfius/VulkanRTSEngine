@@ -16,7 +16,7 @@ void VertexDescriptor::Serialize(Serializer& aSerializer)
 	size_t memberCount = myMemberCount;
 	if (Serializer::Scope membersScope = aSerializer.SerializeArray("myMembers", memberCount))
 	{
-		myMemberCount = memberCount;
+		myMemberCount = static_cast<uint8_t>(memberCount);
 		for (size_t i = 0; i < myMemberCount; i++)
 		{
 			if (Serializer::Scope memberScope = aSerializer.SerializeObject(i))

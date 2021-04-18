@@ -9,8 +9,6 @@ class File;
 class Model : public Resource, public IModel
 {
 public:
-	static constexpr StaticString kDir = Resource::AssetsFolder + "objects/";
-
 	template<class T>
 	struct UploadDescriptor
 	{

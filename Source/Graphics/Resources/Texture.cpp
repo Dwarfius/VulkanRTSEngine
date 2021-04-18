@@ -160,7 +160,19 @@ void Texture::Serialize(Serializer& aSerializer)
 		SetErrMsg("Texture missing 'path'!");
 		return;
 	}
-	File file(texturePath);
+
+	std::string relPath = GetPath();
+	size_t pos = relPath.find_last_of('/');
+	if (pos != std::string::npos)
+	{
+		// incl last /
+		relPath = relPath.substr(0, pos + 1);
+	}
+	else
+	{
+		relPath = std::string();
+	}
+	File file(relPath + texturePath);
 	if (!file.Read())
 	{
 		SetErrMsg("Failed to find texture file!");

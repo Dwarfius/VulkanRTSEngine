@@ -11,8 +11,6 @@ class OBJImporter : public Resource
 public:
 	using Resource::Resource;
 
-	static constexpr StaticString kDir = Resource::AssetsFolder + "objects/";
-
 	const Handle<Model>& GetModel() { return myModel; }
 
 private:

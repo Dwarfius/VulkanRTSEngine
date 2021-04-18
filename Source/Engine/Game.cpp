@@ -73,7 +73,7 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("Tynemouth-tangrams.desc");
+		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.desc");
 		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
 		constexpr uint32_t kTerrCells = 64;
 		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
@@ -132,7 +132,7 @@ void Game::Init()
 	VisualObject* vo;
 
 	// ==========================
-	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("terrain.ppl");
+	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
 
 	// TODO: replace heap allocation with using 
 	// a continuous allocated storage of VisualObjects

@@ -1,0 +1,205 @@
+#version 420
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(vertices=1) out;
+
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
+{
+	mat4 Model;
+	mat4 ModelView;
+	mat4 MVP;
+};
+
+layout (std140, binding = 1) uniform TerrainAdapter
+{
+	vec3 GridOrigin;
+	float TileSize;
+	int GridWidth;
+	int GridHeight;
+	float YScale;
+};
+
+layout (std140, binding = 2) uniform CameraAdapter
+{
+	mat4 CamView;
+	mat4 CamProj;
+	// TODO: add ability to adapters to have arrays
+	vec4 FrustumPlaneLeft;
+	vec4 FrustumPlaneRight;
+	vec4 FrustumPlaneDown;
+	vec4 FrustumPlaneUp;
+	vec4 FrustumPlaneFar;
+	vec4 FrustumPlaneNear;
+	vec3 CamPos;
+	vec2 Viewport;
+};
+
+layout(location = 0) in DataIn
+{
+	vec2 TexCoords;
+} In[];
+
+layout(location = 0) out DataOut
+{
+	vec2 TexCoords;
+} Out[];
+
+uniform sampler2D TexHeightmap;
+
+#define SQRT2 1.41421356f
+#define TRIANGLE_SIZE 5
+
+// Taken from NVidia's terrain tesselation whitepaper sample
+// Sphere-frustum intersection test in world space
+bool isVisible(vec3 aPos, float aRadius)
+{
+    const vec4 pos = vec4(aPos, 1.f);
+	bool isOutside = (dot(pos, FrustumPlaneLeft) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneRight) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneDown) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneUp) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneFar) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlaneNear) + aRadius < 0.0);
+	return !isOutside;
+}
+
+vec2 eyeToScreen(vec4 pos)
+{
+	vec4 p = CamProj * pos; // clip space
+	p.xy /= p.w; // project (now [-1, 1])
+	p.xy = p.xy * 0.5f + 0.5f; // to NDC
+	p.xy *= Viewport;
+	return p.xy;
+}
+
+float getComponentMax(vec3 v)
+{
+	return max(v.x, max(v.y, v.z));
+}
+
+// given 2 points in Local Space, calculates size(of pixels) of sphere wrapping
+// an edge transformed to screen space
+float tessViaEdgeSphere(vec3 v1, vec3 v2)
+{
+	vec3 distanceLS = abs(v2 - v1);
+	vec3 midPointLS = (v1 + v2) * 0.5f;
+	float sphereRadius = getComponentMax(distanceLS) * 0.5f;
+	vec4 centerES = ModelView * vec4(midPointLS, 1.f);
+	vec4 p1ES = centerES - vec4(sphereRadius, 0, 0, 0);
+	vec4 p2ES = centerES + vec4(sphereRadius, 0, 0, 0);
+	vec2 midPointSS = eyeToScreen(p1ES);
+	vec2 perpEyePointSS = eyeToScreen(p2ES);
+	float d = distance(midPointSS, perpEyePointSS);
+	return clamp(d / TRIANGLE_SIZE, 1, 64);
+}
+
+// ===================================================================
+
+#define PI 3.1415926535897f
+
+// NOTE: make sure this is in sync with tess-control.tevl
+// produce a sine field
+float terrain(vec2 uv)
+{
+#define USE_SINE_FIELD 0
+#if USE_SINE_FIELD
+	vec2 denormalizedUV = uv * vec2(GridWidth, GridHeight);
+	vec2 piCycles = denormalizedUV * (PI / 2.f);
+	float h = (sin(piCycles.x) + sin(piCycles.y)) / 2.f;
+	return h * YScale * 0.5f; // div by 2 because h is [-1, 1] and not [0, 1]
+#else
+	// need to remap the current [0, Size-1] scale to [0.5, Size-1.5],
+	// to avoid the texture being sampled at the borders producing
+	// incorrect interpolation results
+	vec2 texSize = vec2(textureSize(TexHeightmap, 0));
+	vec2 denormalizedUV = 0.5f + uv * (texSize-1.f);
+	vec2 remappedUV = denormalizedUV / texSize;
+	return texture(TexHeightmap, remappedUV).x * YScale;
+#endif
+}
+
+// ===================================================================
+
+void main() 
+{
+	const float halfSize = TileSize / 2.f;
+	const vec2 uvStep = vec2(1.f / GridWidth, 1.f / GridHeight);
+	const vec2 uvHalfStep = uvStep * 0.5f;
+
+#define USE_PRECISE_CENTER 1
+#if USE_PRECISE_CENTER
+	// position the sphere exactly where it should be
+	const float centerHeight = terrain(In[gl_InvocationID].TexCoords + uvHalfStep);
+	const vec3 centerLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, centerHeight, halfSize);
+#else
+	// sphere is positioned on the middle-plane, may cause erroneous culling
+	const vec3 centerLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(halfSize, YScale / 2.f, halfSize);
+#endif
+
+	const vec3 centerPosWS = (Model * vec4(centerLS, 1.f)).xyz;
+
+	float topLeftHeight = 0;
+	float topRightHeight = 0;
+	float bottomLeftHeight = 0;
+	float bottomRightHeight = 0;
+
+// using improved bounds without precise center might lead to worse results
+#define USE_IMPROVED_BOUNDS 1
+#if USE_IMPROVED_BOUNDS
+	// instead of assumming worst case scenario,
+	// assume extremum points are at tile vertices
+	topLeftHeight = terrain(In[gl_InvocationID].TexCoords + vec2(0, uvStep.y));
+	topRightHeight = terrain(In[gl_InvocationID].TexCoords + uvStep);
+	bottomLeftHeight = terrain(In[gl_InvocationID].TexCoords);
+	bottomRightHeight = terrain(In[gl_InvocationID].TexCoords + vec2(uvStep.x, 0));
+	const float minHeight = min(min(topLeftHeight, topRightHeight), 
+								min(bottomLeftHeight, bottomRightHeight));
+	const float maxHeight = max(max(topLeftHeight, topRightHeight), 
+								max(bottomLeftHeight, bottomRightHeight));
+	// using center as an sphere center to calculate 
+	// bounding sphere radius
+	const float minDelta = abs(minHeight - centerLS.y);
+	const float maxDelta = abs(maxHeight - centerLS.y);
+	const float boundingSphereRad = max(halfSize * SQRT2, max(minDelta, maxDelta));
+#else
+	// extremelly inaccurate, can miss culling quite a bit
+	const float boundingSphereRad = max(halfSize * SQRT2, YScale / 2.f);
+#endif
+	if(isVisible(centerPosWS, boundingSphereRad)) // sphere around entire tile
+	{
+#define USE_SAMPLE_HEIGHT 1
+#if USE_SAMPLE_HEIGHT && !USE_IMPROVED_BOUNDS
+		topLeftHeight = terrain(In[gl_InvocationID].TexCoords + vec2(0, uvStep.y));
+		topRightHeight = terrain(In[gl_InvocationID].TexCoords + uvStep);
+		bottomLeftHeight = terrain(In[gl_InvocationID].TexCoords);
+		bottomRightHeight = terrain(In[gl_InvocationID].TexCoords + vec2(uvStep.x, 0));
+#endif
+
+		vec3 topLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, topLeftHeight, TileSize);
+		vec3 topRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(TileSize, topRightHeight, TileSize);
+		vec3 bottomLeftLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(0, bottomLeftHeight, 0);
+		vec3 bottomRightLS = gl_in[gl_InvocationID].gl_Position.xyz + vec3(TileSize, bottomRightHeight, 0);
+
+		gl_TessLevelOuter[0] = tessViaEdgeSphere(topLeftLS, bottomLeftLS); // left
+		gl_TessLevelOuter[1] = tessViaEdgeSphere(bottomLeftLS, bottomRightLS); // bottom
+		gl_TessLevelOuter[2] = tessViaEdgeSphere(bottomRightLS, topRightLS); // right
+		gl_TessLevelOuter[3] = tessViaEdgeSphere(topRightLS, topLeftLS); // top
+
+		// calc interior tessellation level - use average of outer levels
+		gl_TessLevelInner[0] = 0.5f * (gl_TessLevelOuter[1] + gl_TessLevelOuter[3]);
+    	gl_TessLevelInner[1] = 0.5f * (gl_TessLevelOuter[0] + gl_TessLevelOuter[2]);
+	}
+	else
+	{
+		gl_TessLevelOuter[0] = -1;
+		gl_TessLevelOuter[1] = -1;
+		gl_TessLevelOuter[2] = -1;
+		gl_TessLevelOuter[3] = -1;
+
+		gl_TessLevelInner[0] = -1;
+		gl_TessLevelInner[1] = -1;
+	}
+
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+	Out[gl_InvocationID].TexCoords = In[gl_InvocationID].TexCoords;
+}

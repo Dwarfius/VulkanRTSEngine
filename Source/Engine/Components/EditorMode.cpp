@@ -28,23 +28,23 @@ EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("whale.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("riggedFigure.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/whale.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/riggedFigure.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/RiggedSimple.gltf");
+	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("Boombox/BoomBox.gltf");
 	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("sparse.gltf");
 	myGLTFImporter->ExecLambdaOnLoad([&](Resource* aRes) {
 		GLTFImporter* importer = static_cast<GLTFImporter*>(aRes);
 		Handle<Model> model = importer->GetModel(0);
-		aGame.GetAssetTracker().SaveAndTrack("modelTest.bin", model);
+		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.bin", model);
 	});
 
-	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("testGO.json");
+	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("TestGameObject/testGO.json");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){
 		GameObject* go = static_cast<GameObject*>(aRes);
 		aGame.AddGameObject(go);
 
-		aGame.GetAssetTracker().SaveAndTrack("goSaveTest.json", go);
+		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/goSaveTest.json", go);
 	});
 }
 
@@ -141,11 +141,11 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 				animController.Get()->PlayClip(myGLTFImporter->GetAnimClip(0).Get());
 				go->SetAnimController(std::move(animController));
 			}
-			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("skinned.ppl"));
+			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));
 		}
 		else
 		{
-			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("default.ppl"));
+			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl"));
 		}
 
 		myGOs.push_back(go);
@@ -225,7 +225,7 @@ void EditorMode::AddChildCube(Game& aGame, Handle<GameObject> aParent)
 	childGO->SetVisualObject(vo);
 	vo->SetTexture(aGame.GetAssetTracker().GetOrCreate<Texture>("gray.png"));
 	vo->SetModel(myImportedCube->GetModel());
-	vo->SetPipeline(aGame.GetAssetTracker().GetOrCreate<Pipeline>("default.ppl"));
+	vo->SetPipeline(aGame.GetAssetTracker().GetOrCreate<Pipeline>("Engine/default.ppl"));
 
 	aParent->AddChild(childBoxGO, false);
 }

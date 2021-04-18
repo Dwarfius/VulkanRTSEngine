@@ -60,7 +60,7 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	size_t shaderCount = pipeline->GetShaderCount();
 	for (size_t i = 0; i < shaderCount; i++)
 	{
-		const std::string& shaderName = "GL/" + pipeline->GetShader(i);
+		const std::string& shaderName = pipeline->GetShader(i);
 		Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
 		myDependencies.push_back(aGraphics.GetOrCreate(shader));
 	}

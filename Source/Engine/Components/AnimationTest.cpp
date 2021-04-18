@@ -43,8 +43,9 @@ AnimationTest::AnimationTest(Game& aGame)
 	go->SetSkeleton(std::move(testSkeleton));
 	go->SetAnimController(std::move(testController));
 
-	Handle<Pipeline> skinnedPipeline = myGame.GetAssetTracker().GetOrCreate<Pipeline>("skinned.ppl");
-	Handle<Texture> wireframeTexture = myGame.GetAssetTracker().GetOrCreate<Texture>("wireframe.png");
+	AssetTracker& tracker = myGame.GetAssetTracker();
+	Handle<Pipeline> skinnedPipeline = tracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl");
+	Handle<Texture> wireframeTexture = tracker.GetOrCreate<Texture>("Engine/wireframe.png");
 	VisualObject* vo = new VisualObject(*go);
 	vo->SetPipeline(skinnedPipeline);
 	vo->SetTexture(wireframeTexture);

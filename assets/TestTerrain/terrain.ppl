@@ -1,0 +1,44 @@
+{  
+	"type":0,
+	"shaders":[
+		"TestTerrain/terrain.vert",
+		"TestTerrain/terrain.frag",
+		"Engine/tess-control.tctr",
+		"Engine/tess-eval.tevl"
+	],
+	"descriptors":[  
+		{  
+			"myUniformAdapter":"ObjectMatricesAdapter",
+			"myEntries":[  
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":5, "myArraySize":1 }
+			]
+		},
+		{  
+			"myUniformAdapter":"TerrainAdapter",
+			"myEntries":[  
+				{ "myUniformType":3, "myArraySize":1 },
+				{ "myUniformType":1, "myArraySize":1 },
+				{ "myUniformType":0, "myArraySize":1 },
+				{ "myUniformType":0, "myArraySize":1 },
+				{ "myUniformType":1, "myArraySize":1 }
+			]
+		},
+		{
+			"myUniformAdapter":"CameraAdapter",
+			"myEntries":[
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":5, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":4, "myArraySize":1 },
+				{ "myUniformType":3, "myArraySize":1 },
+				{ "myUniformType":2, "myArraySize":1 }
+			]
+		}
+	]
+}

@@ -28,7 +28,7 @@ void ImGUISystem::Init()
 
 	myGLFWImpl.Init();
 
-	Handle<Pipeline> imGUIPipeline = myGame.GetAssetTracker().GetOrCreate<Pipeline>("imgui.ppl");
+	Handle<Pipeline> imGUIPipeline = myGame.GetAssetTracker().GetOrCreate<Pipeline>("Engine/imgui.ppl");
 	Handle<Texture> fontAtlas = new Texture();
 	fontAtlas->SetMinFilter(ITexture::Filter::Linear);
 	fontAtlas->SetMagFilter(ITexture::Filter::Linear);
