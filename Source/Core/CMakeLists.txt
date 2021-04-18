@@ -119,7 +119,7 @@ set(SRC "Precomp.h"
 	"VariantMap.cpp" "VariantMap.h"
 	"VariantUtils.h"
 	"Vertex.h"
-	"VertexDescriptor.h"
+	"VertexDescriptor.cpp" "VertexDescriptor.h"
 )
 
 set(SRC_ALGOS "Algos/DiamondSquareAlgo.h"

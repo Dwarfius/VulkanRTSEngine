@@ -23,5 +23,5 @@ protected:
 
 private:
 	bool UsesDescriptor() const override final { return false; }
-	void OnLoad(const std::vector<char>& aBuffer) override;
+	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) override;
 };

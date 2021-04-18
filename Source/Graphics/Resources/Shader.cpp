@@ -17,7 +17,7 @@ Shader::Shader(Resource::Id anId, const std::string& aPath)
 	}
 }
 
-void Shader::OnLoad(const std::vector<char>& aBuffer)
+void Shader::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 {
 	// TODO: add a similar to .ppl file that contains paths to correct
 	// shader files (GLSL/SPIR-V)

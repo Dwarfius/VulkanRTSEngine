@@ -6,7 +6,7 @@
 #include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
-void OBJImporter::OnLoad(const std::vector<char>& aBuffer)
+void OBJImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 {
 	// TODO: extend Model to support more than 1 Vertex type loading
 	tinyobj::attrib_t attrib;

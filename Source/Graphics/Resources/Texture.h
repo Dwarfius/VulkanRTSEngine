@@ -53,9 +53,9 @@ protected:
 private:
 	void FreePixels();
 
-	bool UsesDescriptor() const override final;
-	void OnLoad(const std::vector<char>& aBuffer) override;
-	void Serialize(Serializer& aSerializer) override final;
+	bool UsesDescriptor() const final;
+	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) final;
+	void Serialize(Serializer& aSerializer) final;
 
 	bool myOwnsBuffer = false;
 	bool myIsSTBIBuffer = false;

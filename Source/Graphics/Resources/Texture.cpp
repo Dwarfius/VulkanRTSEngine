@@ -117,7 +117,7 @@ bool Texture::UsesDescriptor() const
 	return pathExt.compare("desc") == 0;
 }
 
-void Texture::OnLoad(const std::vector<char>& aBuffer)
+void Texture::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 {
 	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aBuffer.data());
 	int desiredChannels = STBI_default;
@@ -166,5 +166,8 @@ void Texture::Serialize(Serializer& aSerializer)
 		SetErrMsg("Failed to find texture file!");
 		return;
 	}
-	OnLoad(file.GetBuffer());
+
+	// TODO: look to simply this
+	AssetTracker dummy;
+	OnLoad(file.GetBuffer(), dummy);
 }

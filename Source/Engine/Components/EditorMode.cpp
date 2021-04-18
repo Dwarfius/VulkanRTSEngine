@@ -33,15 +33,17 @@ EditorMode::EditorMode(Game& aGame)
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("RiggedSimple.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("BoomBox.gltf");
 	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("sparse.gltf");
+	myGLTFImporter->ExecLambdaOnLoad([&](Resource* aRes) {
+		GLTFImporter* importer = static_cast<GLTFImporter*>(aRes);
+		Handle<Model> model = importer->GetModel(0);
+		aGame.GetAssetTracker().SaveAndTrack("modelTest.bin", model);
+	});
 
 	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("testGO.json");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){
 		GameObject* go = static_cast<GameObject*>(aRes);
-		// TEST - NOT THREAD SAFE!
-		go->GetComponent<VisualComponent>()->SetModel(myImportedCube->GetModel());
 		aGame.AddGameObject(go);
 
-		// TEST 2 - saving!
 		aGame.GetAssetTracker().SaveAndTrack("goSaveTest.json", go);
 	});
 }

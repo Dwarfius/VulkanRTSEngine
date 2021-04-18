@@ -74,7 +74,7 @@ void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 	}
 	else
 	{
-		OnLoad(file.GetBuffer());
+		OnLoad(buffer, anAssetTracker);
 	}
 
 	if (myState == State::Error)
@@ -110,7 +110,7 @@ void Resource::Save(AssetTracker& anAssetTracker, Serializer& aSerializer)
 	}
 	else
 	{
-		OnSave(buffer);
+		OnSave(buffer, anAssetTracker);
 	}
 	File file(myPath, std::move(buffer));
 	bool success = file.Write();

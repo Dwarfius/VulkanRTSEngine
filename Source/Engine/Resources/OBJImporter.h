@@ -17,8 +17,8 @@ public:
 
 private:
 	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
-	bool UsesDescriptor() const override final { return false; };
-	void OnLoad(const std::vector<char>& aBuffer) override final;
+	bool UsesDescriptor() const final { return false; };
+	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) final;
 
 	Handle<Model> myModel;
 };

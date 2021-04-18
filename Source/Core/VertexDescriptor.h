@@ -1,5 +1,7 @@
 #pragma once
 
+class Serializer;
+
 struct VertexDescriptor
 {
 	enum class MemberType : uint8_t
@@ -34,6 +36,8 @@ struct VertexDescriptor
 		{
 			return !(*this == aOther);
 		}
+
+		void Serialize(Serializer& aSerializer);
 	};
 
 	static constexpr uint8_t kMaxMembers = 16;
@@ -66,4 +70,6 @@ struct VertexDescriptor
 	{
 		return !(*this == aOther);
 	}
+
+	void Serialize(Serializer& aSerializer);
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/Resources/Resource.h>
+#include <Core/Resources/Serializer.h>
 #include "../Interfaces/IModel.h"
 
 class File;
@@ -28,10 +29,11 @@ public:
 		const void* GetRawData() const { return myData; }
 		size_t GetCount() const { return myCount; }
 		VertexDescriptor GetVertexDescriptor() const { return myVertDesc; }
+		virtual void Serialize(Serializer& aSerializer) = 0;
 
 	protected:
-		void* myData;
-		size_t myCount;
+		void* myData = nullptr;
+		size_t myCount = 0;
 		VertexDescriptor myVertDesc;
 	};
 	template<class T>
@@ -57,6 +59,8 @@ public:
 		}
 
 		const T* GetData() const { return static_cast<const T*>(myData); }
+
+		void Serialize(Serializer& aSerializer) final;
 	private:
 		friend class Model;
 		T* GetData() { return static_cast<T*>(myData); }
@@ -102,8 +106,9 @@ public:
 	void Update(const UploadDescriptor<T>& aDescChain);
 
 private:
-	bool UsesDescriptor() const override final { return false; };
-	void OnLoad(const std::vector<char>& aBuffer) override;
+	bool UsesDescriptor() const final { return false; };
+	void OnLoad(const std::vector<char>& aBuffer, AssetTracker& anAssetTracker) final;
+	void OnSave(std::vector<char>& aBuffer, AssetTracker& anAssetTracker) final;
 
 	BaseStorage* myVertices;
 	std::vector<IndexType> myIndices;
@@ -185,6 +190,42 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 			if (currDesc->myIndOwned)
 			{
 				delete[] currDesc->myIndices;
+			}
+		}
+	}
+}
+
+namespace SerializeHelpers
+{
+	template<class T> void Serialize(Serializer&, T&)
+	{
+		ASSERT_STR(false, "Tried to serialize an unsupported type! Are you missing a specialization?");
+	}
+}
+
+void Serialize(Serializer& aSerializer, Vertex& aVert);
+
+template<class T>
+void Model::VertStorage<T>::Serialize(Serializer& aSerializer)
+{
+	size_t oldCount = myCount;
+	if (Serializer::Scope vertsScope = aSerializer.SerializeArray("myVerts", myCount))
+	{
+		if (aSerializer.IsReading() && oldCount != myCount)
+		{
+			if (myData)
+			{
+				delete[] myData;
+			}
+			myData = new T[myCount];
+		}
+		T* verts = GetData();
+		for (size_t i = 0; i < myCount; i++)
+		{
+			if (Serializer::Scope vertScope = aSerializer.SerializeObject(i))
+			{
+				using SerializeHelpers::Serialize;
+				Serialize(aSerializer, verts[i]);
 			}
 		}
 	}

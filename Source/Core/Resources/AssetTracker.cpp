@@ -52,7 +52,7 @@ void AssetTracker::SaveAndTrack(const std::string& aPath, Handle<Resource> aRes)
 {
 	// change the handle's path
 	ASSERT_STR(aRes.IsValid(), "Invalid handle - nothing to save!");
-	aRes->myPath = aPath;
+	aRes->myPath = Resource::AssetsFolder.CStr() + aPath;
 
 	// dump to disk
 	Serializer& serializer = *myWriteSerializers.local();

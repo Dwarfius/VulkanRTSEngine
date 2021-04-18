@@ -31,7 +31,8 @@
                 "myPipeline": "default.ppl",
                 "myTextures": [
                     "CubeUnwrap.jpg"
-                ]
+                ],
+                "myModel": "modelTest.bin"
             }
         }
 	],

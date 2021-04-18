@@ -38,7 +38,7 @@ GLTFImporter::GLTFImporter(Id anId, const std::string& aPath)
 {
 }
 
-void GLTFImporter::OnLoad(const std::vector<char>& aBuffer)
+void GLTFImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 {
 	// time to start learning glTF!
 	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
