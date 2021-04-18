@@ -1,7 +1,13 @@
 Info
 ====
 
-This is a mutltithreaded engine project indended as a research in to Vulkan API. The engine features a OpenGL and Vulkan rendering backends with ability to switch them out at will. The engine executes a RTS-battle scenarion until stopped.
+This is a hobby project to practice developing a mutltithreaded engine. The engine features:
+* an OpenGL rendering backend (supporting simple feature set)
+* a resource management system with PNG, JPG, GLTF and OBJ support
+* an ImGUI integration
+* an Animation system
+* Bullet driving physics
+* a standalone benchmarking executable using Google Benchmark
 
 Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
 * CMake will fetch and configure for you:
