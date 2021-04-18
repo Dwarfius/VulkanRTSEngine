@@ -6,7 +6,7 @@ This is a hobby project to practice developing a mutltithreaded engine. The engi
 * a resource management system with PNG, JPG, GLTF and OBJ support
 * an ImGUI integration
 * an Animation system
-* Bullet driving physics
+* Physics driven by Bullet
 * a standalone benchmarking executable using Google Benchmark
 
 Project uses CMake(3.13). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
