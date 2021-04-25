@@ -18,6 +18,9 @@ namespace Utils
 
 	template<uint32_t Length, class... TArgs>
 	void StringFormat(char(& aBuffer)[Length], const char* aFormat, const TArgs&... aArgs);
+
+	// tries to match the filter to the string. Supports * wildcard
+	bool Matches(std::string_view aStr, std::string_view filter);
 }
 
 template<class T>

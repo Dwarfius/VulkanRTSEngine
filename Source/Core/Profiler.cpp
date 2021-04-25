@@ -104,6 +104,8 @@ void Profiler::Storage::NewFrame(std::vector<Mark>& aBuffer)
 {
     // Safety mutex, currently the assumption is that a mark will never begin
     // during NewFrame call.
+    // TODO: there's currently an edge case where engine starts to load a resource
+    // in an async task
     AssertLock assertLock(myBeginMutex);
 
     // Because some tasks can be cross-frame, it's possible that

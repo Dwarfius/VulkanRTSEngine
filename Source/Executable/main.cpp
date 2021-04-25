@@ -229,10 +229,22 @@ void TestJsonSerializer()
 	testRead.Match(nominalTest);
 }
 
+void TestUtilMatches()
+{
+	std::string inputStr = "Some very long string, oh no";
+	ASSERT(Utils::Matches(inputStr, "Some"));
+	ASSERT(Utils::Matches(inputStr, "*very"));
+	ASSERT(Utils::Matches(inputStr, "oh*"));
+	ASSERT(Utils::Matches(inputStr, "Some*long*oh"));
+	ASSERT(Utils::Matches(inputStr, "**"));
+	ASSERT(Utils::Matches(inputStr, "*"));
+}
+
 void RunTests()
 {
 	TestBase64();
 	TestPool();
 	TestBinarySerializer();
 	TestJsonSerializer();
+	TestUtilMatches();
 }

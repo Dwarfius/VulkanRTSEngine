@@ -189,4 +189,33 @@ namespace Utils
 	{
 		return Base64Decode_Impl(anInput);
 	}
+
+	bool Matches(std::string_view aStr, std::string_view aFilter)
+	{
+		size_t currStrOffset = 0;
+		size_t currFilterInd = 0;
+		size_t nextFilterInd = aFilter.find('*');
+		while (nextFilterInd != std::string::npos)
+		{
+			std::string_view filterPart = aFilter.substr(currFilterInd, nextFilterInd - currFilterInd);
+			currFilterInd = nextFilterInd + 1;
+
+			currStrOffset = aStr.find(filterPart, currStrOffset);
+			if (currStrOffset == std::string::npos)
+			{
+				return false;
+			}
+			currStrOffset += filterPart.size();
+			nextFilterInd = aFilter.find('*', currFilterInd);
+		}
+
+		// check if our filter ends with * - weird case, but avoid crashing
+		if (currFilterInd == aFilter.size())
+		{
+			return true;
+		}
+
+		std::string_view lastFilterPart = aFilter.substr(currFilterInd, nextFilterInd - currFilterInd);
+		return aStr.find(lastFilterPart, currStrOffset) != std::string::npos;
+	}
 }

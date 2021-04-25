@@ -133,6 +133,10 @@ set(SRC_SYSTEMS_IMGUI
 	"Systems/ImGUI/ImGUIRendering.cpp" "Systems/ImGUI/ImGUIRendering.h"
 )
 
+set(SRC_UIWIDGETS
+	"UIWidgets/FileDialog.cpp" "UIWidgets/FileDialog.h"
+)
+
 if(VENGINE_BUILD_WITH_VULKAN)
 	set(SRC_GRAPHICS_VK "Graphics/VK/GraphicsVK.cpp" "Graphics/VK/GraphicsVK.h"
 	)
@@ -151,6 +155,7 @@ add_library(${PROJECT_NAME} STATIC
 			${SRC_RESOURCES_GLTF}
 		${SRC_SYSTEMS}
 			${SRC_SYSTEMS_IMGUI}
+		${SRC_UIWIDGETS}
 )
 
 # just to make our life a little bit more organized, group files
@@ -168,6 +173,7 @@ source_group(Resources FILES ${SRC_RESOURCES})
 source_group(Resources\\glTF FILES ${SRC_RESOURCES_GLTF})
 source_group(Systems FILES ${SRC_SYSTEMS})
 source_group(Systems\\ImGUI FILES ${SRC_SYSTEMS_IMGUI})
+source_group(UIWidgets FILES ${SRC_UIWIDGETS})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
