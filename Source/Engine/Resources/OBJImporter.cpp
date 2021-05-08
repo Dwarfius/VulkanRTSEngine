@@ -137,4 +137,5 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 
 	myModel->SetAABB(aabbMin, aabbMax);
 	myModel->SetSphereRadius(sphereRadius);
+	return true;
 }
