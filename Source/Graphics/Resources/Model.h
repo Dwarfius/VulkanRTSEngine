@@ -68,6 +68,7 @@ public:
 	// TODO: instead of baseStorage pointer, use template<class VertexT>
 	Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices);
 	Model(Resource::Id anId, const std::string& aPath);
+	~Model();
 
 	// Full access to typed vertex storage of a model
 	template<class T>
@@ -104,18 +105,17 @@ public:
 	void Update(const UploadDescriptor<T>& aDescChain);
 
 private:
-	bool UsesDescriptor() const final { return false; };
-	void OnLoad(const std::vector<char>& aBuffer, AssetTracker& anAssetTracker) final;
-	void OnSave(std::vector<char>& aBuffer, AssetTracker& anAssetTracker) final;
+	bool PrefersBinarySerialization() const final { return true; }
+	void Serialize(Serializer& aSerializer) final;
 
-	BaseStorage* myVertices;
+	BaseStorage* myVertices = nullptr;
 	std::vector<IndexType> myIndices;
-	glm::vec3 myAABBMin;
-	glm::vec3 myAABBMax;
-	glm::vec3 myCenter;
-	float mySphereRadius;
-	PrimitiveType myPrimitiveType;
-	bool myHasIndices;
+	glm::vec3 myAABBMin = glm::vec3(std::numeric_limits<float>::max());
+	glm::vec3 myAABBMax = glm::vec3(std::numeric_limits<float>::min());
+	glm::vec3 myCenter = glm::vec3(0.f);
+	float mySphereRadius = 0.f;
+	PrimitiveType myPrimitiveType = PrimitiveType::Triangles;
+	bool myHasIndices = false;
 };
 
 template<class T>

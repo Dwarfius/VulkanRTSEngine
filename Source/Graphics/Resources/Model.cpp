@@ -8,11 +8,7 @@
 #include <sstream>
 
 Model::Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices)
-	: myAABBMin(std::numeric_limits<float>::max())
-	, myAABBMax(std::numeric_limits<float>::min())
-	, myCenter(0.f)
-	, mySphereRadius(0.f)
-	, myPrimitiveType(aPrimitiveType)
+	: myPrimitiveType(aPrimitiveType)
 	, myVertices(aStorage)
 	, myHasIndices(aHasIndices)
 {
@@ -20,14 +16,15 @@ Model::Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndic
 
 Model::Model(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
-	, myAABBMin(std::numeric_limits<float>::max())
-	, myAABBMax(std::numeric_limits<float>::min())
-	, myCenter(0.f)
-	, mySphereRadius(0.f)
-	, myPrimitiveType(PrimitiveType::Triangles)
-	, myVertices(nullptr)
-	, myHasIndices(false)
 {
+}
+
+Model::~Model()
+{
+	if (myVertices)
+	{
+		delete myVertices;
+	}
 }
 
 const Model::BaseStorage* Model::GetBaseVertexStorage() const
@@ -61,87 +58,59 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 }
 
-void Model::OnLoad(const std::vector<char>& aBuffer, AssetTracker& anAssetTracker)
+void Model::Serialize(Serializer& aSerializer)
 {
-	BinarySerializer serializer(anAssetTracker, true);
-	serializer.ReadFrom(aBuffer);
-
-	size_t version;
-	serializer.Serialize("myVersion", version);
+	size_t version = 1;
+	aSerializer.Serialize("myVersion", version);
 	ASSERT_STR(version == 1, "Unsupported version!");
 
-	if (Serializer::Scope vertsScope = serializer.SerializeObject("myVertices"))
+	if (Serializer::Scope vertsScope = aSerializer.SerializeObject("myVertices"))
 	{
 		VertexDescriptor descriptor;
-		if (Serializer::Scope descriptorScope = serializer.SerializeObject("myDescriptor"))
+		if (myVertices)
 		{
-			descriptor.Serialize(serializer);
+			descriptor = GetVertexDescriptor();
+		}
+		if (Serializer::Scope descriptorScope = aSerializer.SerializeObject("myDescriptor"))
+		{
+			descriptor.Serialize(aSerializer);
 		}
 
-		if (descriptor == Vertex::GetDescriptor())
+		if (aSerializer.IsReading())
 		{
-			myVertices = new VertStorage<Vertex>(0);
-		}
-		else
-		{
-			ASSERT(false);
+			if (myVertices)
+			{
+				delete myVertices;
+			}
+
+			if (descriptor == Vertex::GetDescriptor())
+			{
+				myVertices = new VertStorage<Vertex>(0);
+			}
+			else
+			{
+				ASSERT(false);
+			}
 		}
 
-		myVertices->Serialize(serializer);
+		myVertices->Serialize(aSerializer);
 	}
 
-	if (Serializer::Scope indexScope = serializer.SerializeArray("myIndices", myIndices))
+	if (Serializer::Scope indexScope = aSerializer.SerializeArray("myIndices", myIndices))
 	{
 		for (size_t i = 0; i < myIndices.size(); i++)
 		{
-			serializer.Serialize(i, myIndices[i]);
+			aSerializer.Serialize(i, myIndices[i]);
 		}
 	}
 	myHasIndices = myIndices.size() > 0;
 
-	serializer.Serialize("myAABBMin", myAABBMin);
-	serializer.Serialize("myAABBMax", myAABBMax);
+	aSerializer.Serialize("myAABBMin", myAABBMin);
+	aSerializer.Serialize("myAABBMax", myAABBMax);
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 
-	serializer.Serialize("mySphereRadius", mySphereRadius);
-	serializer.Serialize("myPrimitiveType", myPrimitiveType);
-}
-
-void Model::OnSave(std::vector<char>& aBuffer, AssetTracker& anAssetTracker)
-{
-	ASSERT_STR(myVertices, "Missing vertices!");
-	BinarySerializer serializer(anAssetTracker, false);
-
-	size_t version = 1;
-	serializer.Serialize("myVersion", version);
-
-	if (Serializer::Scope vertsScope = serializer.SerializeObject("myVertices"))
-	{
-		// we must serialize the descriptor separately,
-		// so that we can determine what vertex storage to create!
-		if (Serializer::Scope descriptorScope = serializer.SerializeObject("myDescriptor"))
-		{
-			GetVertexDescriptor().Serialize(serializer);
-		}
-
-		myVertices->Serialize(serializer);
-	}
-
-	if (Serializer::Scope indexScope = serializer.SerializeArray("myIndices", myIndices))
-	{
-		for (size_t i = 0; i < myIndices.size(); i++)
-		{
-			serializer.Serialize(i, myIndices[i]);
-		}
-	}
-
-	serializer.Serialize("myAABBMin", myAABBMin);
-	serializer.Serialize("myAABBMax", myAABBMax);
-
-	serializer.Serialize("mySphereRadius", mySphereRadius);
-	serializer.Serialize("myPrimitiveType", myPrimitiveType);
-
-	serializer.WriteTo(aBuffer);
+	aSerializer.Serialize("mySphereRadius", mySphereRadius);
+	aSerializer.Serialize("myPrimitiveType", myPrimitiveType);
 }
 
 void Serialize(Serializer& aSerializer, Vertex& aVert)
