@@ -6,7 +6,18 @@
 #include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
-void OBJImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
+bool OBJImporter::Load(const std::string& aPath)
+{
+	File file(aPath);
+	return Load(file);
+}
+
+bool OBJImporter::Load(const File& aFile)
+{
+	return Load(aFile.GetBuffer());
+}
+
+bool OBJImporter::Load(const std::vector<char>& aBuffer)
 {
 	// TODO: extend Model to support more than 1 Vertex type loading
 	tinyobj::attrib_t attrib;
@@ -18,12 +29,12 @@ void OBJImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 	// importing external assets is not per-frame frequent
 	std::string stringBuffer(aBuffer.cbegin(), aBuffer.cend());
 	std::istringstream stream(stringBuffer.c_str());
-	tinyobj::MaterialFileReader matFileReader(kAssetsFolder.CStr());
+	tinyobj::MaterialFileReader matFileReader(Resource::kAssetsFolder.CStr());
 	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, &stream, &matFileReader);
 	if (!loaded)
 	{
-		SetErrMsg(move(err));
-		return;
+		ASSERT_STR(false, err.c_str());
+		return false;
 	}
 
 	if (!err.empty())

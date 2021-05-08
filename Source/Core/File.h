@@ -1,11 +1,6 @@
 #pragma once
 
-#include "RefCounted.h"
-
-// A simple wrapper for reading and storing data with refcounting.
-// The read from disk is done explicitly calling Read(),
-// until then, this represents an empty file
-class File : public RefCounted
+class File
 {
 public:
 	File(const std::string& aPath);
@@ -27,7 +22,5 @@ public:
 
 private:
 	std::string myPath;
-	// TODO: replace with std::vector<char>, and allow moving from File into
-	// std::vector<char> buffer (essentially stealing the internal buffer)
 	std::vector<char> myBuffer; 
 };

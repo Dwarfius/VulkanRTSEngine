@@ -10,7 +10,6 @@
 #include "Animation/AnimationController.h"
 #include "Animation/AnimationSystem.h"
 #include "Systems/ImGUI/ImGUISystem.h"
-#include "Resources/OBJImporter.h"
 #include "Resources/GLTFImporter.h"
 
 #include <Core/Resources/AssetTracker.h>
@@ -27,7 +26,6 @@
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
-	myImportedCube = aGame.GetAssetTracker().GetOrCreate<OBJImporter>("cube.obj");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/whale.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/riggedFigure.gltf");
 	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/RiggedSimple.gltf");
@@ -103,7 +101,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	}
 
 	if (myGLTFImporter->GetState() == Resource::State::Ready
-		&& myImportedCube->GetState() == Resource::State::Ready
 		&& Input::GetMouseBtnPressed(2))
 	{
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
@@ -150,7 +147,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 
 		myGOs.push_back(go);
 
-		AddChildCube(aGame, newGO);
 		aGame.AddGameObject(newGO);
 	}
 
@@ -214,20 +210,6 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	const glm::quat yawRot(glm::radians(yawDelta));
 
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
-}
-
-void EditorMode::AddChildCube(Game& aGame, Handle<GameObject> aParent)
-{
-	Handle<GameObject> childBoxGO = new GameObject(Transform(glm::vec3(0, -1, 0), {}, {1, 1, 1}));
-
-	GameObject* childGO = childBoxGO.Get();
-	VisualObject* vo = new VisualObject(*childGO);
-	childGO->SetVisualObject(vo);
-	vo->SetTexture(aGame.GetAssetTracker().GetOrCreate<Texture>("gray.png"));
-	vo->SetModel(myImportedCube->GetModel());
-	vo->SetPipeline(aGame.GetAssetTracker().GetOrCreate<Pipeline>("Engine/default.ppl"));
-
-	aParent->AddChild(childBoxGO, false);
 }
 
 void EditorMode::AddTestSkeleton(Game& aGame)

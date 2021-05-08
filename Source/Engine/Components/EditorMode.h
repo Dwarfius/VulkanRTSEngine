@@ -12,7 +12,6 @@ class PhysicsShapeBase;
 class Transform;
 class Game;
 class AnimationSystem;
-class OBJImporter;
 class GLTFImporter;
 
 // Class used for testing and prototyping the engine
@@ -34,7 +33,6 @@ private:
 	ProfilerUI myProfilerUI;
 
 	// Testing
-	void AddChildCube(Game& aGame, Handle<GameObject> aParent);
 	void AddTestSkeleton(Game& aGame);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
 	void DrawBoneHierarchy(int aSkeletonIndex);
@@ -42,7 +40,6 @@ private:
 	
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::vector<GameObject*> myGOs;
-	Handle<OBJImporter> myImportedCube;
 	Handle<GLTFImporter> myGLTFImporter;
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
