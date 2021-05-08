@@ -108,7 +108,7 @@ void Serializer::Serialize(std::string_view aName, T& aValue)
 	>;
 	if (myIsReading)
 	{
-		VariantType variant = StorageType{};
+		VariantType variant = StorageType{ aValue };
 		DeserializeImpl(aName, variant);
 		aValue = static_cast<T>(std::get<StorageType>(variant));
 	}
@@ -131,7 +131,7 @@ void Serializer::Serialize(size_t anIndex, T& aValue)
 	>;
 	if (myIsReading)
 	{
-		VariantType variant = StorageType{};
+		VariantType variant = StorageType{ aValue };
 		DeserializeImpl(anIndex, variant);
 		aValue = static_cast<T>(std::get<StorageType>(variant));
 	}
