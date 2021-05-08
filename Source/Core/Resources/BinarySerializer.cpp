@@ -12,6 +12,32 @@ void BinarySerializer::WriteTo(std::vector<char>& aBuffer) const
 	aBuffer = myBuffer;
 }
 
+void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob)
+{
+	std::string filename(aFile);
+	Serializer::Serialize("myExternFile", filename);
+	size_t size = aBlob.size();
+	Serializer::Serialize("myExternFileSize", size);
+	if (IsReading())
+	{
+		aBlob.resize(size);
+		for (size_t i = 0; i < size; i++)
+		{
+			aBlob[i] = myBuffer[myIndex + i];
+		}
+		myIndex += size;
+	}
+	else
+	{
+		size_t currPos = myBuffer.size();
+		myBuffer.resize(myBuffer.size() + size);
+		for (size_t i = 0; i < size; i++)
+		{
+			myBuffer[currPos + i] = aBlob[i];
+		}
+	}
+}
+
 void BinarySerializer::SerializeImpl(std::string_view, const VariantType& aValue)
 {
 	std::visit([&](auto&& aVarValue) {

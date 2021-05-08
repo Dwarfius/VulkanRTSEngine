@@ -17,6 +17,20 @@ void JsonSerializer::WriteTo(std::vector<char>& aBuffer) const
 	generatedJson.copy(aBuffer.data(), generatedJson.size());
 }
 
+void JsonSerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob)
+{
+    File file(aFile);
+    if (IsReading())
+    {
+        file.Read();
+        aBlob = file.ConsumeBuffer();
+    }
+    else
+    {
+        file.Write(aBlob.data(), aBlob.size());
+    }
+}
+
 void JsonSerializer::SerializeImpl(std::string_view aName, const VariantType& aValue)
 {
 	std::visit([&](auto&& aVarValue) {

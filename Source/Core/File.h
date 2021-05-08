@@ -3,6 +3,7 @@
 class File
 {
 public:
+	File(std::string_view aPath);
 	File(const std::string& aPath);
 	File(const std::string& aPath, std::vector<char>&& aData);
 

@@ -12,6 +12,8 @@ public:
 	void ReadFrom(const std::vector<char>& aBuffer) final;
 	void WriteTo(std::vector<char>& aBuffer) const final;
 
+	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) final;
+
 private:
 	void SerializeImpl(std::string_view aName, const VariantType& aValue) final;
 	void SerializeImpl(size_t anIndex, const VariantType& aValue) final;

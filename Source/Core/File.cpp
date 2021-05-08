@@ -1,6 +1,11 @@
 #include "Precomp.h"
 #include "File.h"
 
+File::File(std::string_view aPath)
+	: myPath(aPath)
+{
+}
+
 File::File(const std::string& aPath)
 	: myPath(aPath)
 {

@@ -79,12 +79,10 @@ public:
 	}
 
 	Scope SerializeObject(std::string_view aName);
-
 	Scope SerializeObject(size_t anIndex);
 
 	template<class T>
 	Scope SerializeArray(std::string_view aName, std::vector<T>& aVec);
-
 	template<class T>
 	Scope SerializeArray(size_t anIndex, std::vector<T>& aVec);
 
@@ -92,6 +90,7 @@ public:
 	Scope SerializeArray(size_t anIndex, size_t& anArraySize);
 
 	void SerializeVersion(int64_t& aVersion);
+	virtual void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) = 0;
 
 	bool IsReading() const { return myIsReading; }
 
