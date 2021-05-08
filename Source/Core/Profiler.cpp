@@ -60,82 +60,90 @@ Profiler::Storage::Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler
 
 void Profiler::Storage::BeginMark(std::string_view aName)
 {
-    // Safety mutex, currently the assumption is that a mark will never begin
-    // during NewFrame call.
-    AssertLock lock(myBeginMutex);
-
-    int parentId = -1;
-    if (!myMarkStack.empty())
-    {
-        parentId = myMarkStack.top().myId;
-    }
-
     Mark newMark;
     newMark.myBeginStamp = Clock::now();
     newMark.myEndStamp = newMark.myBeginStamp; // tag that this mark isn't finished yet
     std::memcpy(newMark.myName, aName.data(), aName.size());
     newMark.myName[aName.size()] = 0;
     newMark.myId = myIdCounter++;
-    newMark.myParentId = parentId;
     newMark.myThreadId = std::this_thread::get_id();
-    myMarkStack.push(std::move(newMark));
-    ASSERT_STR(myMarks.size() < std::numeric_limits<int>::max(),
-        "About to pass the supported limit, following static_cast will no longer be valid!");
+
+    {
+        // Because some tasks can be cross-frame, it's possible that
+        // a thread will start the mark in the middle of us preparing for
+        // a new frame
+        tbb::spin_mutex::scoped_lock lock(myStackMutex);
+
+        int parentId = -1;
+        if (!myMarkStack.empty())
+        {
+            parentId = myMarkStack.top().myId;
+        }
+        newMark.myParentId = parentId;
+        myMarkStack.push(newMark);
+    }
 }
 
 void Profiler::Storage::EndMark()
 {
     const Stamp timeStampBeforeLock = Clock::now();
-    // Because some tasks can be cross-frame, it's possible that
-    // a thread will end the mark in the middle of us preparing for
-    // a new frame
-    tbb::mutex::scoped_lock lock(myNewFrameMutex);
 
-    Mark lastMark = myMarkStack.top();
-    myMarkStack.pop();
+    Mark lastMark;
+
+    {
+        // Because some tasks can be cross-frame, it's possible that
+        // a thread will end the mark in the middle of us preparing for
+        // a new frame
+        tbb::spin_mutex::scoped_lock lock(myStackMutex);
+        lastMark = myMarkStack.top();
+        myMarkStack.pop();
+    }
     
     // close up the mark
     lastMark.myEndStamp = timeStampBeforeLock;
 
-    myMarks.push_back(lastMark);
+    {
+        // same as above
+        tbb::mutex::scoped_lock lock(myMarksMutex);
+        myMarks.push_back(lastMark);
+    }
 }
 
 void Profiler::Storage::NewFrame(std::vector<Mark>& aBuffer)
 {
-    // Safety mutex, currently the assumption is that a mark will never begin
-    // during NewFrame call.
-    // TODO: there's currently an edge case where engine starts to load a resource
-    // in an async task
-    AssertLock assertLock(myBeginMutex);
-
-    // Because some tasks can be cross-frame, it's possible that
-    // a thread will end the mark in the middle of us preparing for
-    // a new frame
-    tbb::mutex::scoped_lock marksLock(myNewFrameMutex);
-
-    aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
-    myMarks.clear();
-
-    // We need to uppend unfinished marks to the buffer, because they are still
-    // valid profile marks, and they will be finished during next frame
-    constexpr uint32_t unfinishedMarksBufferSize = 32;
-    Mark unfinishedMarksBuffer[unfinishedMarksBufferSize];
-    ASSERT_STR(myMarkStack.size() < unfinishedMarksBufferSize, "Buffer too small, need an increase!");
-    uint32_t bufferInd = 0;
-    aBuffer.reserve(aBuffer.size() + myMarkStack.size());
-    while (!myMarkStack.empty())
     {
-        unfinishedMarksBuffer[bufferInd] = myMarkStack.top();
-        aBuffer.push_back(unfinishedMarksBuffer[bufferInd]);
-        bufferInd++;
-        myMarkStack.pop();
+        // Because some tasks can be cross-frame, it's possible that
+        // a thread will end the mark in the middle of us preparing for
+        // a new frame
+        tbb::mutex::scoped_lock lock(myMarksMutex);
+        aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
+        myMarks.clear();
     }
 
-    // Need to reconstruct the stack(with the right order) 
-    // so that EndMark calls are successful in the new frame
-    for (; bufferInd > 0; bufferInd--)
     {
-        uint32_t index = bufferInd - 1;
-        myMarkStack.push(unfinishedMarksBuffer[index]);
+        tbb::spin_mutex::scoped_lock lock(myStackMutex);
+
+        // We need to uppend unfinished marks to the buffer, because they are still
+        // valid profile marks, and they will be finished during next frame
+        constexpr uint32_t unfinishedMarksBufferSize = 32;
+        Mark unfinishedMarksBuffer[unfinishedMarksBufferSize];
+        ASSERT_STR(myMarkStack.size() < unfinishedMarksBufferSize, "Buffer too small, need an increase!");
+        uint32_t bufferInd = 0;
+        aBuffer.reserve(aBuffer.size() + myMarkStack.size());
+        while (!myMarkStack.empty())
+        {
+            unfinishedMarksBuffer[bufferInd] = myMarkStack.top();
+            aBuffer.push_back(unfinishedMarksBuffer[bufferInd]);
+            bufferInd++;
+            myMarkStack.pop();
+        }
+
+        // Need to reconstruct the stack(with the right order) 
+        // so that EndMark calls are successful in the new frame
+        for (; bufferInd > 0; bufferInd--)
+        {
+            uint32_t index = bufferInd - 1;
+            myMarkStack.push(unfinishedMarksBuffer[index]);
+        }
     }
 }

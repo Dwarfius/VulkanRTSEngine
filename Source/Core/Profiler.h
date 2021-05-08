@@ -26,6 +26,8 @@ public:
 		int myParentId;
 		std::thread::id myThreadId;
 	};
+    static_assert(std::is_trivially_copyable_v<Mark>, "Relying on fast copies!");
+    static_assert(std::is_trivially_destructible_v<Mark>, "Relying on noop destructors!");
 
     // A record of a frame's profiling data - how long the entire frame took,
     // what's the frame counter, and all of the marks of that frame
@@ -84,8 +86,8 @@ public:
 private:
     std::stack<Mark> myMarkStack;
     std::vector<Mark> myMarks;
-    AssertMutex myBeginMutex;
-    tbb::mutex myNewFrameMutex;
+    tbb::spin_mutex myStackMutex;
+    tbb::mutex myMarksMutex;
     std::atomic<int>& myIdCounter;
 };
 
