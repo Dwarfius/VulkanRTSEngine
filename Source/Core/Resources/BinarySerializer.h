@@ -49,6 +49,12 @@ private:
 private:
 	void Write(bool aValue);
 	void Read(bool& aValue) const;
+	void Write(char aValue);
+	void Read(char& aValue) const;
+	void Write(uint32_t aValue);
+	void Read(uint32_t& aValue) const;
+	void Write(int32_t aValue);
+	void Read(int32_t& aValue) const;
 	void Write(uint64_t aValue);
 	void Read(uint64_t& aValue) const;
 	void Write(int64_t aValue);

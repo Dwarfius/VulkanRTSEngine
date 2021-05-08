@@ -171,6 +171,58 @@ void BinarySerializer::Read(bool& aValue) const
 	myIndex++;
 }
 
+void BinarySerializer::Write(char aValue)
+{
+	myBuffer.push_back(aValue);
+}
+
+void BinarySerializer::Read(char& aValue) const
+{
+	aValue = myBuffer[myIndex];
+	myIndex++;
+}
+
+void BinarySerializer::Write(uint32_t aValue)
+{
+	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
+	size_t currPos = myBuffer.size();
+	myBuffer.resize(myBuffer.size() + kIters);
+	for (size_t i = 0; i < kIters; i++)
+	{
+		const char byteVal = static_cast<const char>(aValue >> (i * 8));
+		myBuffer[currPos + i] = byteVal;
+	}
+}
+
+void BinarySerializer::Read(uint32_t& aValue) const
+{
+	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
+	aValue = 0;
+	for (size_t i = 0; i < kIters; i++)
+	{
+		unsigned char byteVal = myBuffer[myIndex + i];
+		uint32_t value = byteVal;
+		aValue |= value << (i * 8);
+	}
+	myIndex += kIters;
+}
+
+void BinarySerializer::Write(int32_t aValue)
+{
+	// TODO: C++20 std::bitcast
+	uint32_t value;
+	std::memcpy(&value, &aValue, sizeof(aValue));
+	Write(value);
+}
+
+void BinarySerializer::Read(int32_t& aValue) const
+{
+	uint32_t value;
+	Read(value);
+	// TODO: C++20 std::bitcast
+	std::memcpy(&aValue, &value, sizeof(value));
+}
+
 void BinarySerializer::Write(uint64_t aValue)
 {
 	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
@@ -215,14 +267,14 @@ void BinarySerializer::Read(int64_t& aValue) const
 void BinarySerializer::Write(float aValue)
 {
 	// TODO: C++20 std::bitcast
-	uint64_t value;
+	uint32_t value;
 	std::memcpy(&value, &aValue, sizeof(aValue));
 	Write(value);
 }
 
 void BinarySerializer::Read(float& aValue) const
 {
-	uint64_t value;
+	uint32_t value;
 	Read(value);
 	// TODO: C++20 std::bitcast
 	std::memcpy(&aValue, &value, sizeof(value));
