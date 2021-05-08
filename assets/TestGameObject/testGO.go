@@ -30,7 +30,7 @@
                 },
                 "myPipeline": "Engine/default.ppl",
                 "myTextures": [
-                    "CubeUnwrap.jpg"
+                    "CubeUnwrap.img"
                 ],
                 "myModel": "TestGameObject/modelTest.bin"
             }

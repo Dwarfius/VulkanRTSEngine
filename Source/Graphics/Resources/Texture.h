@@ -8,7 +8,7 @@ class Texture : public Resource, public ITexture
 {
 public:
 	static Handle<Texture> LoadFromDisk(const std::string& aPath);
-	static Handle<Texture> LoadFromMemory(const unsigned char* aBuffer, size_t aLength);
+	static Handle<Texture> LoadFromMemory(const char* aBuffer, size_t aLength);
 
 public:
 	Texture() = default;
@@ -38,7 +38,12 @@ public:
 	unsigned char* GetPixels() const { return myPixels; }
 	void SetPixels(unsigned char* aPixels, bool aShouldOwn = true);
 
-protected:
+private:
+	void FreePixels();
+
+	void LoadFromMemory(const char* aData, size_t aLength, int aDesiredChannels, int& aActualChannels);
+	void Serialize(Serializer& aSerializer) final;
+
 	unsigned char* myPixels = nullptr;
 	uint32_t myWidth = 0;
 	uint32_t myHeight = 0;
@@ -47,14 +52,9 @@ protected:
 	Filter myMinFilter = Filter::Nearest;
 	Filter myMagFilter = Filter::Nearest;
 	bool myEnableMipmaps = false;
-
-private:
-	void FreePixels();
-
-	bool UsesDescriptor() const final;
-	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) final;
-	void Serialize(Serializer& aSerializer) final;
-
 	bool myOwnsBuffer = false;
 	bool myIsSTBIBuffer = false;
+
+	std::string myImgExtension = "png";
+	std::vector<char> myRawSource;
 };

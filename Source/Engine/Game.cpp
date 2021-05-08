@@ -40,7 +40,7 @@ Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
-constexpr StaticString kHeightmapName("Tynemouth-tangrams.png");
+constexpr StaticString kHeightmapName("Tynemouth-tangrams.img");
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
@@ -73,7 +73,7 @@ Game::Game(ReportError aReporterFunc)
 		constexpr float kResolution = 928; // pixels
 		Terrain* terr = new Terrain();
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.desc");
+		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.img");
 		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
 		constexpr uint32_t kTerrCells = 64;
 		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);

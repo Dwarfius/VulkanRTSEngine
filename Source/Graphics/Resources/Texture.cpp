@@ -7,13 +7,15 @@
 
 Handle<Texture> Texture::LoadFromDisk(const std::string& aPath)
 {
-	int width = 0;
-	int height = 0;
-	int actualChannels = 0;
-	int desiredChannels = STBI_default;
-	unsigned char* data = stbi_load(aPath.c_str(), &width, &height, &actualChannels, STBI_default);
-	ASSERT_STR(data, "FAiled to load texture from file: %s", aPath.c_str());
+	File file(aPath);
+	bool success = file.Read();
+	ASSERT_STR(success, "Failed to read a file: %s", aPath.c_str());
 
+	Handle<Texture> textureHandle = new Texture();
+	Texture* texture = textureHandle.Get();
+
+	int actualChannels = 0;
+	texture->LoadFromMemory(file.GetCBuffer(), file.GetSize(), STBI_default, actualChannels);
 	Format format = Format::UNorm_RGB;
 	switch (actualChannels)
 	{
@@ -24,27 +26,26 @@ Handle<Texture> Texture::LoadFromDisk(const std::string& aPath)
 	default: ASSERT(false);
 	}
 
-	Handle<Texture> textureHandle = new Texture();
-	Texture* texture = textureHandle.Get();
 	texture->SetFormat(format);
-	texture->SetHeight(height);
-	texture->SetWidth(width);
-	texture->SetPixels(data);
-	texture->myIsSTBIBuffer = true;
+	texture->myRawSource = file.ConsumeBuffer();
+
+	// preserve extension
+	size_t ind = aPath.rfind('.');
+	if (ind != std::string::npos)
+	{
+		texture->myImgExtension = aPath.substr(ind + 1);
+	}
+
 	return textureHandle;
 }
 
-Handle<Texture> Texture::LoadFromMemory(const unsigned char* aBuffer, size_t aLength)
+Handle<Texture> Texture::LoadFromMemory(const char* aBuffer, size_t aLength)
 {
-	int width = 0;
-	int height = 0;
-	int actualChannels = 0;
-	int desiredChannels = STBI_default;
-	ASSERT_STR(aLength > std::numeric_limits<int>::max(),
-		"Bbuffer too large, STBI can't parse it!");
-	unsigned char* data = stbi_load_from_memory(aBuffer, static_cast<int>(aLength), &width, &height, &actualChannels, STBI_default);
-	ASSERT_STR(data, "Failed to load texture from memory!");
+	Handle<Texture> textureHandle = new Texture();
+	Texture* texture = textureHandle.Get();
 
+	int actualChannels = 0;
+	texture->LoadFromMemory(aBuffer, aLength, STBI_default, actualChannels);
 	Format format = Format::UNorm_RGB;
 	switch (actualChannels)
 	{
@@ -54,14 +55,10 @@ Handle<Texture> Texture::LoadFromMemory(const unsigned char* aBuffer, size_t aLe
 	case STBI_rgb_alpha: format = Format::UNorm_RGBA; break;
 	default: ASSERT(false);
 	}
-
-	Handle<Texture> textureHandle = new Texture();
-	Texture* texture = textureHandle.Get();
+	
 	texture->SetFormat(format);
-	texture->SetHeight(height);
-	texture->SetWidth(width);
-	texture->SetPixels(data);
-	texture->myIsSTBIBuffer = true;
+	texture->myRawSource.resize(aLength);
+	std::memcpy(texture->myRawSource.data(), aBuffer, aLength);
 	return textureHandle;
 }
 
@@ -108,33 +105,14 @@ void Texture::FreePixels()
 	myPixels = nullptr;
 }
 
-bool Texture::UsesDescriptor() const
+void Texture::LoadFromMemory(const char* aData, size_t aLength, int aDesiredChannels, int& aActualChannels)
 {
-	const std::string& path = GetPath();
-	ASSERT_STR(path.length() >= 4, "Invalid name passed!");
-	std::string_view pathExt(path);
-	pathExt = pathExt.substr(path.length() - 4);
-	return pathExt.compare("desc") == 0;
-}
-
-void Texture::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
-{
-	const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(aBuffer.data());
-	int desiredChannels = STBI_default;
-	switch (myFormat)
-	{
-	case Format::UNorm_R: desiredChannels = STBI_grey; break;
-	case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
-	case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
-	case Format::UNorm_RGBA: // fallthrough
-	case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
-	default: ASSERT_STR(false, "STBI doesn't support this format!");
-	}
-
 	int actualChannels = 0;
-	myPixels = stbi_load_from_memory(buffer, static_cast<int>(aBuffer.size()),
-						reinterpret_cast<int*>(&myWidth), reinterpret_cast<int*>(&myHeight),
-						&actualChannels, desiredChannels);
+	ASSERT_STR(myRawSource.size() < std::numeric_limits<int>::max(),
+		"Buffer too large, STBI can't parse it!");
+	myPixels = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(aData), static_cast<int>(myRawSource.size()),
+		reinterpret_cast<int*>(&myWidth), reinterpret_cast<int*>(&myHeight),
+		&actualChannels, aDesiredChannels);
 	if (!myPixels)
 	{
 		SetErrMsg("Failed to load texture");
@@ -147,39 +125,41 @@ void Texture::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 
 void Texture::Serialize(Serializer& aSerializer)
 {
-	aSerializer.Serialize("format", myFormat);
-	aSerializer.Serialize("wrapMode", myWrapMode);
-	aSerializer.Serialize("minFilter", myMinFilter);
-	aSerializer.Serialize("magFilter", myMagFilter);
-	aSerializer.Serialize("enableMipMaps", myEnableMipmaps);
+	aSerializer.Serialize("myFormat", myFormat);
+	aSerializer.Serialize("myWrapMode", myWrapMode);
+	aSerializer.Serialize("myMinFilter", myMinFilter);
+	aSerializer.Serialize("myMagFilter", myMagFilter);
+	aSerializer.Serialize("myEnableMipMaps", myEnableMipmaps);
 
-	std::string texturePath;
-	aSerializer.Serialize("path", texturePath);
-	if (!texturePath.length())
-	{
-		SetErrMsg("Texture missing 'path'!");
-		return;
-	}
+	std::string oldExt = myImgExtension;
+	aSerializer.Serialize("myImgExtension", myImgExtension);
 
-	std::string relPath = GetPath();
-	size_t pos = relPath.find_last_of('/');
-	if (pos != std::string::npos)
-	{
-		// incl last /
-		relPath = relPath.substr(0, pos + 1);
-	}
-	else
-	{
-		relPath = std::string();
-	}
-	File file(relPath + texturePath);
-	if (!file.Read())
-	{
-		SetErrMsg("Failed to find texture file!");
-		return;
-	}
+	bool shouldLoadImg = aSerializer.IsReading() && (!myPixels || oldExt != myImgExtension);
 
-	// TODO: look to simply this
-	AssetTracker dummy;
-	OnLoad(file.GetBuffer(), dummy);
+	std::string imgFile = GetPath();
+	imgFile = imgFile.replace(imgFile.size() - 3, 3, myImgExtension);
+	aSerializer.SerializeExternal(imgFile, myRawSource);
+
+	if (shouldLoadImg)
+	{
+		if (myPixels)
+		{
+			FreePixels();
+		}
+
+		const stbi_uc* buffer = reinterpret_cast<const stbi_uc*>(myRawSource.data());
+		int desiredChannels = STBI_default;
+		switch (myFormat)
+		{
+		case Format::UNorm_R: desiredChannels = STBI_grey; break;
+		case Format::UNorm_RG: desiredChannels = STBI_grey_alpha; break;
+		case Format::UNorm_RGB:	desiredChannels = STBI_rgb; break;
+		case Format::UNorm_RGBA: // fallthrough
+		case Format::UNorm_BGRA: desiredChannels = STBI_rgb_alpha; break;
+		default: ASSERT_STR(false, "STBI doesn't support this format!");
+		}
+
+		int actualChannels;
+		LoadFromMemory(myRawSource.data(), myRawSource.size(), desiredChannels, actualChannels);
+	}
 }

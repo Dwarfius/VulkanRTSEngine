@@ -125,8 +125,7 @@ namespace glTF
 				const BufferView& view = aInputs.myBufferViews[image.myBufferView];
 				ASSERT_STR(view.myByteStride == 0, "Bad assumption, expected that pixel data is packed!");
 				const char* bufferStart = aInputs.myBuffers[view.myBuffer].data() + view.myByteOffset;
-				const unsigned char* dataPtr = reinterpret_cast<const unsigned char*>(bufferStart);
-				texture = ::Texture::LoadFromMemory(dataPtr, view.myBufferLength);
+				texture = ::Texture::LoadFromMemory(bufferStart, view.myBufferLength);
 			}
 			else
 			{
@@ -135,8 +134,7 @@ namespace glTF
 				if (IsDataURI(image.myUri))
 				{
 					std::vector<char> dataBuffer = ParseDataURI(image.myUri);
-					const unsigned char* dataPtr = reinterpret_cast<const unsigned char*>(dataBuffer.data());
-					texture = ::Texture::LoadFromMemory(dataPtr, dataBuffer.size());
+					texture = ::Texture::LoadFromMemory(dataBuffer.data(), dataBuffer.size());
 				}
 				else
 				{

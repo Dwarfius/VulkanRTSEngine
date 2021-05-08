@@ -122,7 +122,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		}
 		else
 		{
-			vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.png"));
+			vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.img"));
 		}
 
 		if(myGLTFImporter.GetSkeletonCount() > 0)
