@@ -26,16 +26,16 @@
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/whale.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/riggedFigure.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("AnimTest/RiggedSimple.gltf");
-	//myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("Boombox/BoomBox.gltf");
-	myGLTFImporter = aGame.GetAssetTracker().GetOrCreate<GLTFImporter>("sparse.gltf");
-	myGLTFImporter->ExecLambdaOnLoad([&](Resource* aRes) {
-		GLTFImporter* importer = static_cast<GLTFImporter*>(aRes);
-		Handle<Model> model = importer->GetModel(0);
-		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.bin", model);
-	});
+
+	/*StaticString resPath = Resource::kAssetsFolder + "AnimTest/whale.gltf";
+	StaticString resPath = Resource::kAssetsFolder + "AnimTest/riggedFigure.gltf";
+	StaticString resPath = Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf";
+	StaticString resPath = Resource::kAssetsFolder + "Boombox/BoomBox.gltf";*/
+	StaticString resPath = Resource::kAssetsFolder + "sparse.gltf";
+	bool res = myGLTFImporter.Load(resPath.CStr());
+	ASSERT(res);
+	Handle<Model> model = myGLTFImporter.GetModel(0);
+	aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.bin", model);
 
 	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("TestGameObject/testGO.json");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){
@@ -100,13 +100,12 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
 	}
 
-	if (myGLTFImporter->GetState() == Resource::State::Ready
-		&& Input::GetMouseBtnPressed(2))
+	if (Input::GetMouseBtnPressed(2))
 	{
 		AssetTracker& assetTracker = aGame.GetAssetTracker();
 		AnimationSystem& animSystem = aGame.GetAnimationSystem();
 
-		Transform objTransf = myGLTFImporter->GetTransform(0);
+		Transform objTransf = myGLTFImporter.GetTransform(0);
 		objTransf.SetPos(objTransf.GetPos() +  camTransf.GetPos());
 		Handle<GameObject> newGO = new GameObject(objTransf);
 		
@@ -114,28 +113,28 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		VisualObject* vo = new VisualObject(*go);
 		go->SetVisualObject(vo);
 
-		Handle<Model> model = myGLTFImporter->GetModel(0);
+		Handle<Model> model = myGLTFImporter.GetModel(0);
 
 		vo->SetModel(model);
-		if (myGLTFImporter->GetTextureCount() > 0)
+		if (myGLTFImporter.GetTextureCount() > 0)
 		{
-			vo->SetTexture(myGLTFImporter->GetTexture(0));
+			vo->SetTexture(myGLTFImporter.GetTexture(0));
 		}
 		else
 		{
 			vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.png"));
 		}
 
-		if(myGLTFImporter->GetSkeletonCount() > 0)
+		if(myGLTFImporter.GetSkeletonCount() > 0)
 		{
 			PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(0);
-			*testSkeleton.Get() = myGLTFImporter->GetSkeleton(0);
+			*testSkeleton.Get() = myGLTFImporter.GetSkeleton(0);
 			go->SetSkeleton(std::move(testSkeleton));
 
-			if (myGLTFImporter->GetClipCount() > 0)
+			if (myGLTFImporter.GetClipCount() > 0)
 			{
 				PoolPtr<AnimationController> animController = animSystem.AllocateController(go->GetSkeleton());
-				animController.Get()->PlayClip(myGLTFImporter->GetAnimClip(0).Get());
+				animController.Get()->PlayClip(myGLTFImporter.GetAnimClip(0).Get());
 				go->SetAnimController(std::move(animController));
 			}
 			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));

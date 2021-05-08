@@ -1,18 +1,20 @@
 #pragma once
 
-#include <Core/Resources/Resource.h>
+#include <Core/RefCounted.h>
 #include "Animation/Skeleton.h"
 
 class Model;
 class AnimationClip;
 class Texture;
+class File;
 
 // Imports all shapes declared in the .gltf file as a single Model
-class GLTFImporter : public Resource
+class GLTFImporter
 {
 public:
-	using Resource::Resource;
-	GLTFImporter(Id anId, const std::string& aPath);
+	bool Load(const std::string& aPath);
+	bool Load(const File& aFile);
+	bool Load(const std::vector<char>& aBuffer, const std::string& aDir);
 
 	size_t GetModelCount() const { return myModels.size(); }
 	Handle<Model> GetModel(size_t anIndex) const { return myModels[anIndex]; }
@@ -28,10 +30,6 @@ public:
 	Handle<Texture> GetTexture(size_t anIndex) const { return myTextures[anIndex]; }
 
 private:
-	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
-	bool UsesDescriptor() const final { return false; };
-	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) final;
-
 	std::vector<Handle<Model>> myModels;
 	std::vector<Transform> myTransforms;
 	std::vector<Handle<AnimationClip>> myAnimClips;

@@ -5,6 +5,7 @@
 #include "../Animation/AnimationController.h"
 #include "../Animation/AnimationClip.h"
 #include <Core/Pool.h>
+#include "../Resources/GLTFImporter.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -12,7 +13,6 @@ class PhysicsShapeBase;
 class Transform;
 class Game;
 class AnimationSystem;
-class GLTFImporter;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -40,7 +40,7 @@ private:
 	
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::vector<GameObject*> myGOs;
-	Handle<GLTFImporter> myGLTFImporter;
+	GLTFImporter myGLTFImporter;
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;

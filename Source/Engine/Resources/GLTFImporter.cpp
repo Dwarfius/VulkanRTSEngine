@@ -33,43 +33,15 @@ namespace glTF
 	}
 }
 
-GLTFImporter::GLTFImporter(Id anId, const std::string& aPath)
-	: Resource(anId, aPath)
+bool GLTFImporter::Load(const std::string& aPath)
 {
+	File file(aPath);
+	return file.Read() && Load(file);
 }
 
-void GLTFImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
+bool GLTFImporter::Load(const File& aFile)
 {
-	// time to start learning glTF!
-	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
-	nlohmann::json gltfJson = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
-	if (!gltfJson.is_object())
-	{
-		SetErrMsg("Failed to parse file!");
-		return;
-	}
-
-	{
-		std::string version;
-		if (!glTF::FindVersion(gltfJson, version))
-		{
-			SetErrMsg("Failed to find asset version, unsupported version!");
-			return;
-		}
-
-		if (version.compare("2.0"))
-		{
-			SetErrMsg("Found asset version unsupported: " + version);
-			return;
-		}
-	}
-
-	// TODO: at the moment we don't do full fledged scene reconstruction,
-	// only exposing the related models, animation clips, mesh skins
-	// as a result, we're ignoring scenes and just grabbing
-	// the raw resources. To expand later!
-
-	std::string relPath = GetPath();
+	std::string relPath = aFile.GetPath();
 	size_t pos = relPath.find_last_of('/');
 	if (pos != std::string::npos)
 	{
@@ -81,10 +53,44 @@ void GLTFImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 		relPath = std::string();
 	}
 
+	return Load(aFile.GetBuffer(), relPath);
+}
+
+bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDir)
+{
+	// time to start learning glTF!
+	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
+	nlohmann::json gltfJson = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
+	if (!gltfJson.is_object())
+	{
+		printf("Failed to parse file!");
+		return false;
+	}
+
+	{
+		std::string version;
+		if (!glTF::FindVersion(gltfJson, version))
+		{
+			printf("Failed to find asset version, unsupported version!");
+			return false;
+		}
+
+		if (version.compare("2.0"))
+		{
+			printf("Found asset version unsupported: %s", version.c_str());
+			return false;
+		}
+	}
+
+	// TODO: at the moment we don't do full fledged scene reconstruction,
+	// only exposing the related models, animation clips, mesh skins
+	// as a result, we're ignoring scenes and just grabbing
+	// the raw resources. To expand later!
+
 	std::vector<glTF::Node> nodes = glTF::Parse<glTF::Node>(gltfJson, "nodes");
 	glTF::Node::UpdateWorldTransforms(nodes);
 
-	std::vector<glTF::Buffer> buffers = glTF::Parse<glTF::Buffer>(gltfJson, "buffers", relPath);
+	std::vector<glTF::Buffer> buffers = glTF::Parse<glTF::Buffer>(gltfJson, "buffers", aDir);
 	std::vector<glTF::BufferView> bufferViews = glTF::Parse<glTF::BufferView>(gltfJson, "bufferViews");
 	std::vector<glTF::Accessor> accessors = glTF::Parse<glTF::Accessor>(gltfJson, "accessors");
 	for (glTF::Accessor& accessor : accessors)
@@ -153,7 +159,8 @@ void GLTFImporter::OnLoad(const std::vector<char>& aBuffer, AssetTracker&)
 			samplers,
 			textures
 		};
-		glTF::Texture::ConstructTextures(input, myTextures, relPath);
+		glTF::Texture::ConstructTextures(input, myTextures, aDir);
 	}
+	return true;
 }
 
