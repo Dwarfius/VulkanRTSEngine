@@ -67,16 +67,18 @@ void Model::Serialize(Serializer& aSerializer)
 	if (Serializer::Scope vertsScope = aSerializer.SerializeObject("myVertices"))
 	{
 		VertexDescriptor descriptor;
+		VertexDescriptor oldDescriptor;
 		if (myVertices)
 		{
 			descriptor = GetVertexDescriptor();
+			oldDescriptor = descriptor;
 		}
 		if (Serializer::Scope descriptorScope = aSerializer.SerializeObject("myDescriptor"))
 		{
 			descriptor.Serialize(aSerializer);
 		}
 
-		if (aSerializer.IsReading())
+		if (aSerializer.IsReading() && (oldDescriptor != descriptor || !myVertices))
 		{
 			if (myVertices)
 			{
