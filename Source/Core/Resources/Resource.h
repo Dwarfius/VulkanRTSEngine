@@ -70,6 +70,8 @@ private:
 	// Loads a raw resource (png, obj, etc)
 	virtual void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); };
 	virtual void OnSave(std::vector<char>& aBuffer, AssetTracker&) { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); }
+
+	virtual bool PrefersBinarySerialization() const { return false; }
 	// Loads a resource descriptor. Returns true if an actual resource 
 	// load is needed, false otherwise.
 	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };

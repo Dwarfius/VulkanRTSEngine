@@ -4,6 +4,7 @@
 #include "JsonSerializer.h"
 #include "File.h"
 #include "../Profiler.h"
+#include "BinarySerializer.h"
 
 tbb::task* AssetTracker::LoadTask::execute()
 {
@@ -13,8 +14,17 @@ tbb::task* AssetTracker::LoadTask::execute()
 	// so can skip it and destroy it implicitly
 	if (!myRes.IsLastHandle())
 	{
-		Serializer& serializer = *myAssetTracker.myReadSerializers.local();
-		myRes->Load(myAssetTracker, serializer);
+		Serializer* serializer = nullptr;
+		BinarySerializer binSerializer(myAssetTracker, true);
+		if (myRes->PrefersBinarySerialization())
+		{
+			serializer = &binSerializer;
+		}
+		else
+		{
+			serializer = myAssetTracker.myReadSerializers.local();
+		}
+		myRes->Load(myAssetTracker, *serializer);
 		ASSERT_STR(myRes->GetState() == Resource::State::Ready
 			|| myRes->GetState() == Resource::State::Error,
 			"Found a resource that didn't change it's state after Load!");
@@ -55,8 +65,17 @@ void AssetTracker::SaveAndTrack(const std::string& aPath, Handle<Resource> aRes)
 	aRes->myPath = Resource::kAssetsFolder.CStr() + aPath;
 
 	// dump to disk
-	Serializer& serializer = *myWriteSerializers.local();
-	aRes->Save(*this, serializer);
+	Serializer* serializer = nullptr;
+	BinarySerializer binSerializer(*this, false);
+	if (aRes->PrefersBinarySerialization())
+	{
+		serializer = &binSerializer;
+	}
+	else
+	{
+		serializer = myWriteSerializers.local();
+	}
+	aRes->Save(*this, *serializer);
 
 	// if it's a newly generated object - give it an id for tracking
 	if (aRes->GetId() == Resource::InvalidId)
