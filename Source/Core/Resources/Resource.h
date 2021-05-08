@@ -65,16 +65,9 @@ private:
 	void Save(AssetTracker& anAssetTracker, Serializer& aSerializer);
 	// ============================
 
-	// Determines whether this resource loads a descriptor via Serializer or a raw resorce
-	virtual bool UsesDescriptor() const { return true; };
-	// Loads a raw resource (png, obj, etc)
-	virtual void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); };
-	virtual void OnSave(std::vector<char>& aBuffer, AssetTracker&) { ASSERT_STR(false, "Either UsesDescriptor is wrong, or this should be implemented!"); }
-
+	// Controls whether it should be using textual serialization or binary
 	virtual bool PrefersBinarySerialization() const { return false; }
-	// Loads a resource descriptor. Returns true if an actual resource 
-	// load is needed, false otherwise.
-	virtual void Serialize(Serializer& aSerializer) { ASSERT_STR(false, "Either Uses Descriptor is wrong, or this should be implemented!"); };
+	virtual void Serialize(Serializer& aSerializer) = 0;
 
 #ifdef _DEBUG
 	// used for tracking what went wrong

@@ -67,15 +67,8 @@ void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 		return;
 	}
 	const std::vector<char>& buffer = file.GetBuffer();
-	if (UsesDescriptor())
-	{
-		aSerializer.ReadFrom(buffer);
-		Serialize(aSerializer);
-	}
-	else
-	{
-		OnLoad(buffer, anAssetTracker);
-	}
+	aSerializer.ReadFrom(buffer);
+	Serialize(aSerializer);
 
 	if (myState == State::Error)
 	{
@@ -102,16 +95,11 @@ void Resource::Save(AssetTracker& anAssetTracker, Serializer& aSerializer)
 	ASSERT_STR(myPath.size(), "Empty path during resource save!");
 	ASSERT_STR(myState == State::Ready, "Must be fully loaded in to save!");
 
+	Serialize(aSerializer);
+
 	std::vector<char> buffer;
-	if (UsesDescriptor())
-	{
-		Serialize(aSerializer);
-		aSerializer.WriteTo(buffer);
-	}
-	else
-	{
-		OnSave(buffer, anAssetTracker);
-	}
+	aSerializer.WriteTo(buffer);
+	
 	File file(myPath, std::move(buffer));
 	bool success = file.Write();
 	ASSERT_STR(success, "Failed to write a file!");
