@@ -1,8 +1,8 @@
 {  
 	"type":0,
 	"shaders":[
-		"Engine/imgui.vert",
-		"Engine/imgui.frag"
+		"Engine/imguiVert.shd",
+		"Engine/imguiFrag.shd"
 	],
 	"descriptors":[  
 		{

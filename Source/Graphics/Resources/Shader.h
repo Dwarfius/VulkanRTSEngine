@@ -11,15 +11,14 @@ public:
 	Shader(Resource::Id anId, const std::string& aPath);
 
 	IShader::Type GetType() const { return myType; }
-	const std::string& GetBuffer() const { return myFileContents; }
+	void SetType(IShader::Type aType) { myType = aType; }
+
+	const std::vector<char>& GetBuffer() const { return myFileContents; }
 
 protected:
 	IShader::Type myType;
-	std::string myFileContents;
-
-	static IShader::Type DetermineType(const std::string& aPath);
+	std::vector<char> myFileContents;
 
 private:
-	bool UsesDescriptor() const override final { return false; }
-	void OnLoad(const std::vector<char>& aBuffer, AssetTracker&) override;
+	void Serialize(Serializer& aSerializer) final;
 };

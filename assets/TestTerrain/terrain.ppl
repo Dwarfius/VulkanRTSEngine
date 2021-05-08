@@ -1,10 +1,10 @@
 {  
 	"type":0,
 	"shaders":[
-		"TestTerrain/terrain.vert",
-		"TestTerrain/terrain.frag",
-		"Engine/tess-control.tctr",
-		"Engine/tess-eval.tevl"
+		"TestTerrain/terrainVert.shd",
+		"TestTerrain/terrainFrag.shd",
+		"Engine/tessCtrl.shd",
+		"Engine/tessEval.shd"
 	],
 	"descriptors":[  
 		{  

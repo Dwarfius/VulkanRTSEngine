@@ -34,7 +34,7 @@ bool ShaderGL::OnUpload(Graphics& aGraphics)
 	ASSERT_STR(myGLShader, "Shader missing!");
 
 	const Shader* shader = myResHandle.Get<const Shader>();
-	const std::string& shaderBuffer = shader->GetBuffer();
+	const std::vector<char>& shaderBuffer = shader->GetBuffer();
 
 	const char* dataPtrs[] = {						shaderBuffer.data()   };
 	int dataSizes[] = {			static_cast<GLint>(	shaderBuffer.size() ) };

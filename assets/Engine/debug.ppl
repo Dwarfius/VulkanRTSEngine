@@ -1,8 +1,8 @@
 {  
 	"type":0,
 	"shaders":[
-		"Engine/debug.vert",
-		"Engine/debug.frag"
+		"Engine/debugVert.shd",
+		"Engine/debugFrag.shd"
 	],
 	"descriptors":[]
 }

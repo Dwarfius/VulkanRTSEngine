@@ -1,8 +1,8 @@
 {  
 	"type":0,
 	"shaders":[
-		"AnimTest/skinned.vert",
-		"Engine/base.frag"
+		"AnimTest/skinnedVert.shd",
+		"Engine/baseFrag.shd"
 	],
 	"descriptors":[  
 		{  
