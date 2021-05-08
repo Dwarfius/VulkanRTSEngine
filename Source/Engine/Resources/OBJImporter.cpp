@@ -9,7 +9,7 @@
 bool OBJImporter::Load(const std::string& aPath)
 {
 	File file(aPath);
-	return Load(file);
+	return file.Read() && Load(file);
 }
 
 bool OBJImporter::Load(const File& aFile)
