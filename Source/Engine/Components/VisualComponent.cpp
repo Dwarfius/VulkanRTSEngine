@@ -47,14 +47,30 @@ void VisualComponent::Serialize(Serializer& aSerializer)
 	{
 		myTransf.Serialize(aSerializer);
 	}
-	aSerializer.Serialize("myModel", myModelRes);
-	aSerializer.Serialize("myPipeline", myPipelineRes);
+
+	bool modelChanged = false;
+	{
+		std::string oldModel = myModelRes;
+		aSerializer.Serialize("myModel", myModelRes);
+		modelChanged = myModelRes != oldModel;
+	}
+
+	bool pipelineChanged = false;
+	{
+		std::string oldPipeline = myPipelineRes;
+		aSerializer.Serialize("myPipeline", myPipelineRes);
+		pipelineChanged = myPipelineRes != oldPipeline;
+	}
+
+	bool textureChanged = false;
 	if(Serializer::Scope texturesScope = aSerializer.SerializeArray("myTextures", myTextureResources))
 	{
 		ASSERT_STR(myTextureResources.size() == 1, "Multi-texture support mising from VisualObject!");
 		for (size_t i = 0; i < myTextureResources.size(); i++)
 		{
+			std::string oldTexture = myTextureResources[i];
 			aSerializer.Serialize(i, myTextureResources[i]);
+			textureChanged = myTextureResources[i] != oldTexture;
 		}
 	}
 
@@ -62,15 +78,15 @@ void VisualComponent::Serialize(Serializer& aSerializer)
 	{
 		CreateVOIfNeeded();
 		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
-		if (!myModelRes.empty())
+		if (!myModelRes.empty() && modelChanged)
 		{
 			myVisualObject->SetModel(assetTracker.GetOrCreate<Model>(myModelRes));
 		}
-		if (!myPipelineRes.empty())
+		if (!myPipelineRes.empty() && pipelineChanged)
 		{
 			myVisualObject->SetPipeline(assetTracker.GetOrCreate<Pipeline>(myPipelineRes));
 		}
-		if (!myTextureResources.empty())
+		if (!myTextureResources.empty() && textureChanged)
 		{
 			myVisualObject->SetTexture(assetTracker.GetOrCreate<Texture>(myTextureResources[0]));
 		}

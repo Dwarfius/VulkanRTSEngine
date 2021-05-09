@@ -108,6 +108,7 @@ set(SRC_GRAPHICS_ADAPTERS
 
 set(SRC_RESOURCES
 	"Resources/GLTFImporter.cpp" "Resources/GLTFImporter.h"
+	"Resources/ImGUISerializer.cpp" "Resources/ImGUISerializer.h"
 	"Resources/OBJImporter.cpp" "Resources/OBJImporter.h"
 )
 
@@ -134,6 +135,7 @@ set(SRC_SYSTEMS_IMGUI
 )
 
 set(SRC_UIWIDGETS
+	"UIWidgets/EntitiesWidget.cpp" "UIWidgets/EntitiesWidget.h"
 	"UIWidgets/FileDialog.cpp" "UIWidgets/FileDialog.h"
 )
 

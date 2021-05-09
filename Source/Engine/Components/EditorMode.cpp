@@ -23,6 +23,8 @@
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
 
+#include "UIWidgets/EntitiesWidget.h"
+
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
@@ -152,6 +154,9 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 
 	myProfilerUI.Draw();
+
+	EntitiesWidget widget;
+	widget.DrawDialog(aGame);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)

@@ -57,6 +57,8 @@ public:
 	void DetachChild(size_t aInd);
 	void DetachChild(const Handle<GameObject>& aGO);
 
+	void Serialize(Serializer& aSerializer) final;
+
 	// IPhysControllable impl
 private:
 	void SetPhysTransform(const glm::mat4& aTransf) override final;
@@ -64,8 +66,6 @@ private:
 
 private:
 	void UpdateHierarchy();
-
-	void Serialize(Serializer& aSerializer) final;
 
 	UID myUID;
 	

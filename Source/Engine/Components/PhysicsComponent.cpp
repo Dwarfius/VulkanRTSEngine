@@ -77,12 +77,10 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 
 	float mass = myEntity && myEntity->IsDynamic() ? myEntity->GetMass() : 0;
 	aSerializer.Serialize("myMass", mass);
+
+	// TODO: This entire if can be simplified
 	if (aSerializer.IsReading())
 	{
-		if (myEntity)
-		{
-			DeletePhysicsEntity();
-		}
 		std::shared_ptr<PhysicsShapeBase> shape;
 		switch (shapeType)
 		{
@@ -109,10 +107,22 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 			shape = std::make_shared<PhysicsShapeCapsule>(radius, height);
 			break;
 		}
+		case PhysicsShapeBase::Type::Heightfield:
+		{
+			// TODO: to implement!
+			break;
+		}
 		default:
 			ASSERT(false);
 		}
-		CreatePhysicsEntity(mass, shape);
+		if (shape)
+		{
+			if (myEntity)
+			{
+				DeletePhysicsEntity();
+			}
+			CreatePhysicsEntity(mass, shape);
+		}
 	}
 	else
 	{

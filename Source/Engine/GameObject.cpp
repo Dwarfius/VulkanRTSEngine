@@ -207,7 +207,7 @@ void GameObject::UpdateHierarchy()
 
 void GameObject::Serialize(Serializer& aSerializer)
 {
-	// Checking if we're serializing a child GameObject
+	// Checking if we're deserializing a child GameObject
 	// If so - we can abort read serialization if child is the only holder of
 	// parent handle
 	const bool isReading = aSerializer.IsReading();
@@ -215,7 +215,7 @@ void GameObject::Serialize(Serializer& aSerializer)
 	{
 		// it is - break the circular reference and early out
 		// this will avoid zombie objects,
-		// save time and prevent further hierarchy serialization
+		// save time and prevent further hierarchy deserialization
 		myParent = Handle<GameObject>();
 		return;
 	}
@@ -261,10 +261,29 @@ void GameObject::Serialize(Serializer& aSerializer)
 				if (isReading)
 				{
 					std::string compType;
+					std::string_view oldCompName;
+					if (myComponents[i])
+					{
+						compType = myComponents[i]->GetName();
+						oldCompName = myComponents[i]->GetName();
+					}
 					aSerializer.Serialize("myCompType", compType);
-					ComponentBase* comp = ComponentRegister::Get().Create(compType);
-					comp->Init(this);
-					myComponents[i] = comp;
+					if (!compType.empty())
+					{
+						if (compType != oldCompName)
+						{
+							if (myComponents[i])
+							{
+								delete myComponents[i];
+							}
+							myComponents[i] = ComponentRegister::Get().Create(compType);
+							myComponents[i]->Init(this);
+						}
+					}
+					else
+					{
+						myComponents[i] = nullptr;
+					}
 				}
 				else
 				{

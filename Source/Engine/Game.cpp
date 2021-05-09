@@ -181,6 +181,7 @@ void Game::Init()
 
 		task = GameTask(GameTask::RemoveGameObjects, [this]() { RemoveGameObjects(); });
 		task.AddDependency(GameTask::GameUpdate);
+		task.AddDependency(GameTask::EditorUpdate);
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::UpdateEnd, [this]() { UpdateEnd(); });
@@ -409,6 +410,7 @@ void Game::AddGameObjects()
 	// TODO: find a better place for this call
 	myDebugDrawer.BeginFrame();
 
+	AssertWriteLock assertLock(myGOMutex);
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	while (myAddQueue.size())
 	{
@@ -451,6 +453,7 @@ void Game::Update()
 
 	// TODO: get rid of this and switch to ECS style synchronization via task
 	// dependency management
+	AssertReadLock assertLock(myGOMutex);
 	for (std::pair<const UID, Handle<GameObject>>& pair : myGameObjects)
 	{
 		pair.second->Update(myDeltaTime);
@@ -488,6 +491,7 @@ void Game::Render()
 	Profiler::ScopedMark profile(__func__);
 	// TODO: get rid of single map, and use a separate vector for Renderables
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
+	AssertReadLock assertLock(myGOMutex);
 	for (std::pair<const UID, Handle<GameObject>>& elem : myGameObjects)
 	{
 		VisualObject* visObj = elem.second->GetVisualObject();
@@ -539,6 +543,7 @@ void Game::RemoveGameObjects()
 {
 	Profiler::ScopedMark profile(__func__);
 	ourGODeleteEnabled = true;
+	AssertWriteLock assertLock(myGOMutex);
 	tbb::spin_mutex::scoped_lock spinlock(myRemoveLock);
 	while (myRemoveQueue.size())
 	{

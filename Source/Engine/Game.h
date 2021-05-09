@@ -52,6 +52,8 @@ public:
 	GLFWwindow* GetWindow() const;
 
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
+	template<class TFunc>
+	void ForEach(TFunc aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
 	const Terrain* GetTerrain(glm::vec3 pos) const;
@@ -115,4 +117,15 @@ private:
 	bool myShouldEnd;
 	bool myIsPaused;
 	bool myIsInFocus;
+	mutable AssertRWMutex myGOMutex;
 };
+
+template<class TFunc>
+void Game::ForEach(TFunc aFunc)
+{
+	AssertReadLock assertLock(myGOMutex);
+	for (auto& [id, go] : myGameObjects)
+	{
+		aFunc(*go.Get());
+	}
+}
