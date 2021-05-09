@@ -54,6 +54,6 @@ void Utils::StringFormat(char(&aBuffer)[Length], const char* aFormat, const TArg
 #if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
 	sprintf_s(aBuffer, aFormat, aArgs...);
 #else
-	sprintf(aBuffer, aFormat, aArgs...);
+	std::snprintf(aBuffer, Length, aFormat, aArgs...);
 #endif
 }
