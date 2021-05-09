@@ -178,7 +178,7 @@ Serializer::Scope Serializer::SerializeArray(std::string_view aName, std::vector
 	bool isValid = true;
 	if (myIsReading)
 	{
-		size_t vecSize = 0;
+		size_t vecSize = aVec.size();
 		isValid = BeginDeserializeArrayImpl(aName, vecSize);
 		aVec.resize(vecSize);
 	}
@@ -198,7 +198,7 @@ Serializer::Scope Serializer::SerializeArray(size_t anIndex, std::vector<T>& aVe
 	bool isValid = true;
 	if (myIsReading)
 	{
-		size_t vecSize = 0;
+		size_t vecSize = aVec.size();
 		isValid = BeginDeserializeArrayImpl(anIndex, vecSize);
 		aVec.resize(vecSize);
 	}
