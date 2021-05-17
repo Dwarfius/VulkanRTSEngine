@@ -42,8 +42,5 @@ private:
 	// controls how much texture should be scaled "vertically"
 	float myYScale;
 
-	// TODO: this is wasting 1 allocation, should be able to route
-	// through myTexture instead
-	// height cache for physics heightfield
-	std::vector<float> myHeightCache;
+	std::shared_ptr<PhysicsShapeHeightfield> myHeightfield;
 };

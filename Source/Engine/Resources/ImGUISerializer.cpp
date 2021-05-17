@@ -18,7 +18,7 @@ void ImGUISerializer::WriteTo(std::vector<char>&) const
 
 void ImGUISerializer::SerializeExternal(std::string_view, std::vector<char>&)
 {
-	// NOOP
+	// NOOP for now
 }
 
 void ImGUISerializer::SerializeImpl(std::string_view, const VariantType&)
@@ -75,7 +75,7 @@ bool ImGUISerializer::BeginDeserializeObjectImpl(std::string_view aName) const
 bool ImGUISerializer::BeginDeserializeObjectImpl(size_t anIndex) const
 {
 	char indexLbl[16] = { 0 };
-	Utils::StringFormat(indexLbl, "%llu", anIndex);
+	Utils::StringFormat(indexLbl, "%zu", anIndex);
 	return ImGui::TreeNode(indexLbl);
 }
 
@@ -111,6 +111,12 @@ void ImGUISerializer::EndSerializeArrayImpl(size_t anIndex)
 
 bool ImGUISerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const
 {
+	if (aCount >= kArrayTooBigLimit)
+	{
+		ImGui::LabelText(aName.data(), "Large array[%zu]", aCount);
+		return false;
+	}
+
 	const bool isOpen = ImGui::TreeNode(aName.data());
 	if (isOpen)
 	{
@@ -131,7 +137,14 @@ bool ImGUISerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& 
 bool ImGUISerializer::BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const
 {
 	char indexLbl[16] = { 0 };
-	Utils::StringFormat(indexLbl, "%ull", anIndex);
+	Utils::StringFormat(indexLbl, "%zu", anIndex);
+
+	if (aCount >= kArrayTooBigLimit)
+	{
+		ImGui::LabelText(indexLbl, "Large array[%zu]", aCount);
+		return false;
+	}
+	
 	const bool isOpen = ImGui::TreeNode(indexLbl);
 	if (isOpen)
 	{

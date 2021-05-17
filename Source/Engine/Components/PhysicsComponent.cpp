@@ -9,12 +9,6 @@
 #include <Physics/PhysicsShapes.h>
 #include <Core/Resources/Serializer.h>
 
-PhysicsComponent::PhysicsComponent()
-	: myEntity(nullptr)
-	, myOrigin(0, 0, 0)
-{
-}
-
 PhysicsComponent::~PhysicsComponent()
 {
 	if (myEntity)
@@ -23,11 +17,23 @@ PhysicsComponent::~PhysicsComponent()
 	}
 }
 
-void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape)
+void PhysicsComponent::SetOrigin(glm::vec3 anOrigin)
+{
+	ASSERT_STR(myEntity, "Missing entity!");
+	myEntity->SetOffset(anOrigin);
+}
+
+glm::vec3 PhysicsComponent::GetOrigin() const
+{
+	ASSERT_STR(myEntity, "Missing entity!");
+	return myEntity->GetOffset();
+}
+
+void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, glm::vec3 anOrigin)
 {
 	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
 	ASSERT_STR(!myEntity, "About to leak entity!");
-	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, myOrigin);
+	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, anOrigin);
 }
 
 void PhysicsComponent::DeletePhysicsEntity()
@@ -57,7 +63,7 @@ bool PhysicsComponent::IsInWorld() const
 
 	if (IsInitialized())
 	{
-		isInWorld = myEntity->GetState() == PhysicsEntity::InWorld;
+		isInWorld = myEntity->GetState() == PhysicsEntity::State::InWorld;
 	}
 
 	return isInWorld;
@@ -71,93 +77,12 @@ void PhysicsComponent::RequestAddToWorld(PhysicsWorld& aWorld) const
 
 void PhysicsComponent::Serialize(Serializer& aSerializer)
 {
-	PhysicsShapeBase::Type shapeType = myEntity ? 
-		myEntity->GetShape().GetType() : PhysicsShapeBase::Type::Invalid;
-	aSerializer.Serialize("myShape", shapeType);
-
-	float mass = myEntity && myEntity->IsDynamic() ? myEntity->GetMass() : 0;
-	aSerializer.Serialize("myMass", mass);
-
-	// TODO: This entire if can be simplified
-	if (aSerializer.IsReading())
+	if (Serializer::Scope entityScope = aSerializer.SerializeObject("myPhysEntity"))
 	{
-		std::shared_ptr<PhysicsShapeBase> shape;
-		switch (shapeType)
+		if (!myEntity)
 		{
-		case PhysicsShapeBase::Type::Box:
-		{
-			glm::vec3 halfExtents;
-			aSerializer.Serialize("myHalfExtents", halfExtents);
-			shape = std::make_shared<PhysicsShapeBox>(halfExtents);
-			break;
+			myEntity = new PhysicsEntity();
 		}
-		case PhysicsShapeBase::Type::Sphere:
-		{
-			float radius = 0;
-			aSerializer.Serialize("myRadius", radius);
-			shape = std::make_shared<PhysicsShapeSphere>(radius);
-			break;
-		}
-		case PhysicsShapeBase::Type::Capsule:
-		{
-			float radius = 0;
-			aSerializer.Serialize("myRadius", radius);
-			float height = 0;
-			aSerializer.Serialize("myHeight", height);
-			shape = std::make_shared<PhysicsShapeCapsule>(radius, height);
-			break;
-		}
-		case PhysicsShapeBase::Type::Heightfield:
-		{
-			// TODO: to implement!
-			break;
-		}
-		default:
-			ASSERT(false);
-		}
-		if (shape)
-		{
-			if (myEntity)
-			{
-				DeletePhysicsEntity();
-			}
-			CreatePhysicsEntity(mass, shape);
-		}
+		myEntity->Serialize(aSerializer, myOwner);
 	}
-	else
-	{
-		if (myEntity)
-		{
-			const PhysicsShapeBase& baseShape = myEntity->GetShape();
-			switch (shapeType)
-			{
-			case PhysicsShapeBase::Type::Box:
-			{
-				const PhysicsShapeBox& shape = static_cast<const PhysicsShapeBox&>(baseShape);
-				aSerializer.Serialize("myHalfExtents", shape.GetHalfExtents());
-				break;
-			}
-			case PhysicsShapeBase::Type::Sphere:
-			{
-				const PhysicsShapeSphere& shape = static_cast<const PhysicsShapeSphere&>(baseShape);
-				float radius = shape.GetRadius();
-				aSerializer.Serialize("myRadius", radius);
-				break;
-			}
-			case PhysicsShapeBase::Type::Capsule:
-			{
-				const PhysicsShapeCapsule& shape = static_cast<const PhysicsShapeCapsule&>(baseShape);
-				float radius = shape.GetRadius();
-				aSerializer.Serialize("myRadius", radius);
-				float height = shape.GetHeight();
-				aSerializer.Serialize("myHeight", height);
-				break;
-			}
-			default:
-				ASSERT(false);
-			}
-		}
-	}
-
-	aSerializer.Serialize("myOrigin", myOrigin);
 }

@@ -1,17 +1,17 @@
 #include "Precomp.h"
 #include "PhysicsShapes.h"
 
+#include <Core/Resources/Serializer.h>
+
 // ====================================================
 PhysicsShapeBase::PhysicsShapeBase()
 	: myShape(nullptr)
 	, myType(Type::Invalid)
-	, myRefCount(0) // TODO: currently does nothing, need to implement or remove
 {
 }
 
 PhysicsShapeBase::~PhysicsShapeBase()
 { 
-	ASSERT(myRefCount == 0); 
 	ASSERT_STR(myShape, "Don't create blank shapes if you don't need them"); 
 	delete myShape;
 }
@@ -59,6 +59,14 @@ PhysicsShapeBox::PhysicsShapeBox(glm::vec3 aHalfExtents)
 	myType = Type::Box;
 }
 
+void PhysicsShapeBox::SetHalfExtents(glm::vec3 aHalfExtents)
+{
+	btBoxShape* boxShape = static_cast<btBoxShape*>(myShape);
+	const float margin = boxShape->getMargin();
+	glm::vec3 halfExtentsWithoutMargin = aHalfExtents - glm::vec3(margin);
+	boxShape->setImplicitShapeDimensions(Utils::ConvertToBullet(halfExtentsWithoutMargin));
+}
+
 glm::vec3 PhysicsShapeBox::GetHalfExtents() const
 {
 	const btBoxShape* boxShape = static_cast<const btBoxShape*>(myShape);
@@ -72,6 +80,12 @@ PhysicsShapeSphere::PhysicsShapeSphere(float aRadius)
 {
 	myShape = new btSphereShape(aRadius);
 	myType = Type::Sphere;
+}
+
+void PhysicsShapeSphere::SetRadius(float aRadius)
+{
+	btSphereShape* shape = static_cast<btSphereShape*>(myShape);
+	shape->setUnscaledRadius(aRadius);
 }
 
 float PhysicsShapeSphere::GetRadius() const
@@ -88,10 +102,27 @@ PhysicsShapeCapsule::PhysicsShapeCapsule(float aRadius, float aHeight)
 	myType = Type::Capsule;
 }
 
+void PhysicsShapeCapsule::SetRadius(float aRadius)
+{
+	btCapsuleShape* shape = static_cast<btCapsuleShape*>(myShape);
+	shape->setMargin(aRadius);
+	float halfHeight = shape->getHalfHeight();
+	btVector3 dimensions(aRadius, halfHeight, aRadius);
+	shape->setImplicitShapeDimensions(dimensions);
+}
+
 float PhysicsShapeCapsule::GetRadius() const
 {
 	const btCapsuleShape* shape = static_cast<const btCapsuleShape*>(myShape);
 	return shape->getRadius();
+}
+
+void PhysicsShapeCapsule::SetHeight(float aHeight)
+{
+	btCapsuleShape* shape = static_cast<btCapsuleShape*>(myShape);
+	float radius = shape->getRadius();
+	btVector3 dimensions(radius, aHeight / 2.f, radius);
+	shape->setImplicitShapeDimensions(dimensions);
 }
 
 float PhysicsShapeCapsule::GetHeight() const
@@ -102,7 +133,6 @@ float PhysicsShapeCapsule::GetHeight() const
 
 // ====================================================
 PhysicsShapeConvexHull::PhysicsShapeConvexHull(const std::vector<float>& aVertBuffer)
-	: PhysicsShapeBase()
 {
 	ASSERT_STR(aVertBuffer.size() % 3 == 0, "Convex hull shape requires XYZ-form vertices");
 	int pointCount = static_cast<int>(aVertBuffer.size() / 3);
@@ -111,11 +141,14 @@ PhysicsShapeConvexHull::PhysicsShapeConvexHull(const std::vector<float>& aVertBu
 }
 
 // ====================================================
-PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aLength, const float* aHeightBuffer, float aMinHeight, float aMaxHeight)
-	: PhysicsShapeBase()
+PhysicsShapeHeightfield::PhysicsShapeHeightfield(int aWidth, int aDepth, std::vector<float>&& aHeightBuffer, float aMinHeight, float aMaxHeight)
+	: myHeights(std::move(aHeightBuffer))
 	, myMinHeight(aMinHeight)
+	, myMaxHeight(aMaxHeight)
+	, myWidth(aWidth)
+	, myDepth(aDepth)
 {
-	btHeightfieldTerrainShape* shape = new btHeightfieldTerrainShape(aWidth, aLength, aHeightBuffer, 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
+	btHeightfieldTerrainShape* shape = new btHeightfieldTerrainShape(aWidth, aDepth, myHeights.data(), 1.f, aMinHeight, aMaxHeight, 1, PHY_FLOAT, false);
 	shape->buildAccelerator();
 	myShape = shape;
 	myType = Type::Heightfield;

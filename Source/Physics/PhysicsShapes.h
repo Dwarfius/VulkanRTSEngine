@@ -1,6 +1,7 @@
 #pragma once
 
 class btCollisionShape;
+class Serializer;
 
 // TODO: move them to common module
 // ====================
@@ -48,15 +49,14 @@ protected:
 private:
 	friend class PhysicsEntity;
 	btCollisionShape* GetShape() const { return myShape; }
-
-	friend class PhysicsShapeManager;
-	int myRefCount;
 };
 
 class PhysicsShapeBox : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeBox(glm::vec3 aHalfExtents);
+	
+	void SetHalfExtents(glm::vec3 aHalfExtents);
 	glm::vec3 GetHalfExtents() const;
 };
 
@@ -64,6 +64,8 @@ class PhysicsShapeSphere : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeSphere(float aRadius);
+
+	void SetRadius(float aRadius);
 	float GetRadius() const;
 };
 
@@ -71,7 +73,11 @@ class PhysicsShapeCapsule : public PhysicsShapeBase
 {
 public:
 	PhysicsShapeCapsule(float aRadius, float aHeight);
+	
+	void SetRadius(float aRadius);
 	float GetRadius() const;
+
+	void SetHeight(float aHeight);
 	float GetHeight() const;
 };
 
@@ -88,14 +94,26 @@ class PhysicsShapeHeightfield : public PhysicsShapeBase
 public:
 	// Constructs a heightfield of aWidth x aLength of heights from aHeightBuffer
 	// aMinHeight and aMaxHeight are used for fast calculating AABB
-	PhysicsShapeHeightfield(int aWidth, int aLength, const float* aHeightBuffer, float aMinHeight, float aMaxHeight);
+	PhysicsShapeHeightfield(int aWidth, int aDepth, std::vector<float>&& aHeigths, float aMinHeight, float aMaxHeight);
 
 	// Moves aPos vertically to adjust for Bullet's
 	// heightfield recentering of this terrain shape
 	glm::vec3 AdjustPositionForRecenter(const glm::vec3& aPos) const;
 
+	int GetWidth() const { return myWidth; }
+	int GetDepth() const { return myDepth; }
+	float GetMinHeight() const { return myMinHeight; }
+	float GetMaxHeight() const { return myMaxHeight; }
+
+	const std::vector<float>& GetHeights() const { return myHeights; }
+	std::vector<float>& GetHeights() { return myHeights; }
+
 private:
+	std::vector<float> myHeights;
 	// we store minHeight in order to be able to adjust the vertical
 	// offset of the heightfield
 	float myMinHeight;
+	float myMaxHeight;
+	int myWidth;
+	int myDepth;
 };

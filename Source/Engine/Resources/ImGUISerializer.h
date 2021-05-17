@@ -13,6 +13,7 @@ public:
 	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) final;
 
 private:
+	static constexpr size_t kArrayTooBigLimit = 100;
 	void SerializeImpl(std::string_view aName, const VariantType& aValue) final;
 	void SerializeImpl(size_t anIndex, const VariantType& aValue) final;
 	void DeserializeImpl(std::string_view aName, VariantType& aValue) const final;

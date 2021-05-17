@@ -14,10 +14,12 @@
 		{
 			"myCompType": "PhysicsComponent",
 			"myCompData": {
-				"myMass": 0,
-				"myShape": 1,
-				"myHalfExtents": [0.5, 0.5, 0.5],
-				"myOrigin": [0, 0, 0]
+				"myPhysEntity": {
+					"myShape": 1,
+					"myMass": 0,
+					"myOrigin": [0, 0, 0],
+					"myHalfExtents": [0.5, 0.5, 0.5]
+				}
 			}
 		},
         {

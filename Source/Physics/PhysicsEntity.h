@@ -14,6 +14,8 @@ class PhysicsWorld;
 class PhysicsShapeBase;
 class btRigidBody;
 class btCollisionObject;
+class btMotionState;
+class Serializer;
 
 class IPhysControllable
 {
@@ -27,13 +29,16 @@ private:
 class PhysicsEntity
 {
 public:
-	enum State
+	enum class State
 	{
 		NotInWorld,
 		PendingAddition,
 		InWorld,
 		PendingRemoval,
 	};
+	// Creates an entity that is pending initialization. Requires setting up a shape
+	// before adding to the physics world
+	PhysicsEntity() = default;
 	// Creates an entity that is not linked to any game object, and has it's own transform
 	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
 	// Creates an entity that is linked to a game object, 
@@ -81,27 +86,36 @@ public:
 
 	const PhysicsShapeBase& GetShape() const { return *myShape; }
 
+	void SetOffset(glm::vec3 anOffset);
+	glm::vec3 GetOffset() const { return myOffset; }
+
 	// Method to schedule deletion of this entity
 	// after the world has finished simulating it and removes
 	// it from tracking
 	void DeferDelete();
 
+	void Serialize(Serializer& aSerializer, IPhysControllable* anEntity);
+
 private:
 	friend class PhysicsWorld;
 
 	void ApplyForces();
+	void CreateBody(float aMass, IPhysControllable* anEntity, const glm::mat4& aTransf);
+	void SetMass(float aMass);
 
 	std::shared_ptr<PhysicsShapeBase> myShape;
-	btCollisionObject* myBody;
-	PhysicsWorld* myWorld;
-	State myState;
+	btCollisionObject* myBody = nullptr;
+	PhysicsWorld* myWorld = nullptr;
+	State myState = State::NotInWorld;
 
 #ifdef ASSERT_MUTEX
 	AssertMutex myAccumForcesMutex;
 #endif
-	glm::vec3 myAccumForces;
-	glm::vec3 myAccumTorque;
+	glm::vec3 myAccumForces{0};
+	glm::vec3 myAccumTorque{0};
+	glm::vec3 myOffset{0};
 
-	bool myIsFrozen, myIsSleeping;
-	bool myIsStatic;
+	bool myIsFrozen = false;
+	bool myIsSleeping = false;
+	bool myIsStatic = true;
 };

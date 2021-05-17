@@ -38,7 +38,8 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 		myWidth = texture->GetWidth();
 		myHeight = texture->GetHeight();
 
-		myHeightCache.resize(myWidth * myHeight);
+		std::vector<float> heights;
+		heights.resize(myWidth * myHeight);
 		const PixelType* pixels = texture->GetPixels();
 		for (uint32_t y = 0; y < myHeight; y++)
 		{
@@ -48,9 +49,12 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 				const float scaledHeight = pixel * anYScale;
 				myMinHeight = glm::min(scaledHeight, myMinHeight);
 				myMaxHeight = glm::max(scaledHeight, myMaxHeight);
-				myHeightCache[y * myWidth + x] = scaledHeight;
+				heights[y * myWidth + x] = scaledHeight;
 			}
 		}
+
+		myHeightfield = std::make_shared<PhysicsShapeHeightfield>
+			(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 	});
 }
 
@@ -66,10 +70,11 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 	myStep = aStep;
 
 	const size_t gridSize = std::max<size_t>(myWidth, myHeight) + 1;
-	myHeightCache.resize(gridSize * gridSize);
+	std::vector<float> heights;
+	heights.resize(gridSize * gridSize);
 	
 	DiamondSquareAlgo dsAlgo(0, static_cast<uint32_t>(gridSize), 0.f, myYScale);
-   	dsAlgo.Generate(myHeightCache.data());
+   	dsAlgo.Generate(heights.data());
 
 	{
 		myTexture = new Texture();
@@ -87,7 +92,7 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		{
 			for (uint32_t x = 0; x < myWidth; x++)
 			{
-				const float floatHeight = myHeightCache[y * gridSize + x];
+				const float floatHeight = heights[y * gridSize + x];
 				myMinHeight = glm::min(floatHeight, myMinHeight);
 				myMaxHeight = glm::max(floatHeight, myMaxHeight);
 				const PixelType charHeight = static_cast<PixelType>(
@@ -98,11 +103,14 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		}
 		myTexture->SetPixels(pixels);
 	}
+
+	myHeightfield = std::make_shared<PhysicsShapeHeightfield>
+		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
 
 float Terrain::GetHeight(glm::vec3 pos) const
 {
-	ASSERT_STR(!myHeightCache.empty(), "Terrain hasn't finished initalizing!");
+	ASSERT_STR(!myHeightfield, "Terrain hasn't finished initalizing!");
 
 	// finding the relative position
 	float x = pos.x / myStep;
@@ -141,14 +149,11 @@ void Terrain::AddPhysicsEntity(GameObject& aGO, PhysicsWorld& aPhysWorld)
 {
 	myTexture->ExecLambdaOnLoad([this, &aGO, &aPhysWorld](const Resource* aRes) {
 		PhysicsComponent* physComp = aGO.AddComponent<PhysicsComponent>();
-		std::shared_ptr<PhysicsShapeHeightfield> terrShape = std::make_shared<PhysicsShapeHeightfield>
-			(myWidth, myHeight, myHeightCache.data(), myMinHeight, myMaxHeight);
-
+		
 		glm::vec3 pos = aGO.GetWorldTransform().GetPos();
-		pos = terrShape->AdjustPositionForRecenter(pos);
-		physComp->SetOrigin(pos);
+		pos = myHeightfield->AdjustPositionForRecenter(pos);
 
-		physComp->CreatePhysicsEntity(0, terrShape);
+		physComp->CreatePhysicsEntity(0, myHeightfield, pos);
 		physComp->GetPhysicsEntity().SetCollisionFlags(
 			physComp->GetPhysicsEntity().GetCollisionFlags()
 			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
@@ -160,5 +165,5 @@ void Terrain::AddPhysicsEntity(GameObject& aGO, PhysicsWorld& aPhysWorld)
 
 float Terrain::GetHeightAtVert(uint32_t x, uint32_t y) const
 {
-	return myHeightCache[y * myHeight + x];
+	return myHeightfield->GetHeights()[y * myHeight + x];
 }
