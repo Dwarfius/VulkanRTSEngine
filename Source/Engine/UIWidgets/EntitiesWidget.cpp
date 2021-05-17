@@ -5,6 +5,8 @@
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Resources/ImGUISerializer.h"
 
+#include <Core/Utils.h>
+
 void EntitiesWidget::Draw(Game& aGame)
 {
 	aGame.ForEach([&](GameObject& aGo) {

@@ -13,6 +13,7 @@
 #include "Resources/GLTFImporter.h"
 
 #include <Core/Resources/AssetTracker.h>
+#include <Core/Utils.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Model.h>

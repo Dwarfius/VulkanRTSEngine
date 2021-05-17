@@ -3,6 +3,7 @@
 
 #include <Core/Resources/BinarySerializer.h>
 #include <Core/Resources/JsonSerializer.h>
+#include <Core/Utils.h>
 
 void glfwErrorReporter(int code, const char* desc)
 {

@@ -5,6 +5,7 @@
 #include "Systems/ImGUI/ImGUISystem.h"
 
 #include <Core/Resources/Resource.h>
+#include <Core/Utils.h>
 
 #include <filesystem>
 
