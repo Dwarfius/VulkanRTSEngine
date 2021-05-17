@@ -44,6 +44,9 @@ public:
 	Serializer(AssetTracker& anAssetTracker, bool aIsReading);
 	virtual ~Serializer() = default;
 
+	virtual void ReadFrom(const std::vector<char>& aBuffer) = 0;
+	virtual void WriteTo(std::vector<char>& aBuffer) const = 0;
+
 	template<class T, std::enable_if_t<SupportedTypes::Contains<T> || SupportedTypes::Matches<T, IsImplicitlyPromotable>, bool> SFINAE = true>
 	void Serialize(std::string_view aName, T& aValue);
 
@@ -94,9 +97,6 @@ public:
 
 	bool IsReading() const { return myIsReading; }
 
-	virtual void ReadFrom(const std::vector<char>& aBuffer) = 0;
-	virtual void WriteTo(std::vector<char>& aBuffer) const = 0;
-	
 private:
 	virtual void SerializeImpl(std::string_view aName, const VariantType& aValue) = 0;
 	virtual void SerializeImpl(size_t anIndex, const VariantType& aValue) = 0;

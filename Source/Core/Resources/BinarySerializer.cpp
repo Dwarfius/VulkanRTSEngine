@@ -23,9 +23,8 @@ void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<cha
 		aBlob.resize(size);
 		for (size_t i = 0; i < size; i++)
 		{
-			aBlob[i] = myBuffer[myIndex + i];
+			Read(aBlob[i]);
 		}
-		myIndex += size;
 	}
 	else
 	{
@@ -33,7 +32,7 @@ void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<cha
 		myBuffer.resize(myBuffer.size() + size);
 		for (size_t i = 0; i < size; i++)
 		{
-			myBuffer[currPos + i] = aBlob[i];
+			Write(aBlob[i]);
 		}
 	}
 }
