@@ -491,13 +491,15 @@ void Game::Render()
 	Profiler::ScopedMark profile(__func__);
 	// TODO: get rid of single map, and use a separate vector for Renderables
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
-	AssertReadLock assertLock(myGOMutex);
-	for (std::pair<const UID, Handle<GameObject>>& elem : myGameObjects)
 	{
-		VisualObject* visObj = elem.second->GetVisualObject();
-		if (visObj)
+		AssertReadLock assertLock(myGOMutex);
+		for (std::pair<const UID, Handle<GameObject>>& elem : myGameObjects)
 		{
-			myRenderThread->AddRenderable(visObj);
+			VisualObject* visObj = elem.second->GetVisualObject();
+			if (visObj)
+			{
+				myRenderThread->AddRenderable(visObj);
+			}
 		}
 	}
 

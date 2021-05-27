@@ -1,8 +1,8 @@
 {
 	"myUID": {
-		"myMac": 0,
-		"myTime": 0,
-		"myRndNum": 0
+		"myMac": 198112243456228,
+		"myTime": 929075547,
+		"myRndNum": 3310556358
 	},
 	"myLocalTransf": {
 		"myPos": [0, 0, 0],
