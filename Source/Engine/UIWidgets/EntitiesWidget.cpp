@@ -28,11 +28,13 @@ void EntitiesWidget::Draw(Game& aGame)
 	});
 }
 
-void EntitiesWidget::DrawDialog(Game& aGame)
+void EntitiesWidget::DrawDialog(Game& aGame, bool& aIsOpen)
 {
 	tbb::mutex::scoped_lock imguiLock(aGame.GetImGUISystem().GetMutex());
-	ImGui::Begin("Entities");
-	Draw(aGame);
+	if (ImGui::Begin("Entities", &aIsOpen))
+	{
+		Draw(aGame);
+	}
 	ImGui::End();
 }
 

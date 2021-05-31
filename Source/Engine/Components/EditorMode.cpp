@@ -24,8 +24,6 @@
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
 
-#include "UIWidgets/EntitiesWidget.h"
-
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
@@ -47,6 +45,11 @@ EditorMode::EditorMode(Game& aGame)
 
 		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/goSaveTest.go", go);
 	});
+
+	myTopBar.Register("Widgets/Demo", [&] { myDemoWindowVisible = true; });
+	myTopBar.Register("Widgets/Camera Info", [&] { myShowCameraInfo = true; });
+	myTopBar.Register("Widgets/Profiler", [&] { myShowProfiler = true; });
+	myTopBar.Register("Widgets/Entities View", [&] { myShowEntitiesView = true; });
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -57,32 +60,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	if (Input::GetMouseBtn(1))
 	{
 		HandleCamera(camTransf, aDeltaTime);
-	}
-
-	if (Input::GetKeyPressed(Input::Keys::F1))
-	{
-		myDemoWindowVisible = !myDemoWindowVisible;
-	}
-	{
-		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
-		if (myDemoWindowVisible)
-		{
-			ImGui::ShowDemoWindow(&myDemoWindowVisible);
-		}
-		else
-		{
-			ImGui::SetNextWindowPos({ 0,0 });
-			ImGui::Begin("Info");
-			ImGui::Text("Press F1 to bring the ImGUIDebugWindow");
-			ImGui::End();
-		}
-	}
-
-	{
-		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
-		ImGui::Begin("Camera");
-		ImGui::Text("Pos: %f %f %f", camTransf.GetPos().x, camTransf.GetPos().y, camTransf.GetPos().z);
-		ImGui::End();
 	}
 
 	if (Input::GetMouseBtnPressed(0))
@@ -154,10 +131,34 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 
-	myProfilerUI.Draw();
+	myTopBar.Draw();
 
-	EntitiesWidget widget;
-	widget.DrawDialog(aGame);
+	{
+		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
+		if (myDemoWindowVisible)
+		{
+			ImGui::ShowDemoWindow(&myDemoWindowVisible);
+		}
+
+		if (myShowCameraInfo)
+		{
+			if (ImGui::Begin("Camera", &myShowCameraInfo))
+			{
+				ImGui::Text("Pos: %f %f %f", camTransf.GetPos().x, camTransf.GetPos().y, camTransf.GetPos().z);
+			}
+			ImGui::End();
+		}
+	}
+
+	if (myShowProfiler)
+	{
+		myProfilerUI.Draw(myShowProfiler);
+	}
+
+	if (myShowEntitiesView)
+	{
+		myEntitiesView.DrawDialog(aGame, myShowEntitiesView);
+	}
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)

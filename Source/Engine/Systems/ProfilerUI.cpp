@@ -38,73 +38,64 @@ namespace
 	}
 }
 
-void ProfilerUI::Draw()
+void ProfilerUI::Draw(bool& aIsOpen)
 {
-	if (Input::GetKeyPressed(Input::Keys::F2))
-	{
-		myShouldDraw = !myShouldDraw;
-	}
-
-	if (!myShouldDraw)
-	{
-		return;
-	}
-
 	tbb::mutex::scoped_lock lock(Game::GetInstance()->GetImGUISystem().GetMutex());
-	ImGui::Begin("Profiler", &myShouldDraw);
-
-	if (ImGui::Button("Buffer Init Frame"))
+	if (ImGui::Begin("Profiler", &aIsOpen))
 	{
-		const auto& frameData = Profiler::GetInstance().GrabInitFrame();
-		for (const Profiler::FrameProfile& frameProfile : frameData)
+		if (ImGui::Button("Buffer Init Frame"))
 		{
-			myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
-		}
-	}
-
-	if (ImGui::Button("Buffer captures"))
-	{
-		const auto& frameData = Profiler::GetInstance().GetBufferedFrameData();
-		for (const Profiler::FrameProfile& frameProfile : frameData)
-		{
-			myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
-		}
-	}
-	if (ImGui::Button("Clear captures"))
-	{
-		myFramesToRender.clear();
-	}
-
-	bool plotWindowHovered = false;
-	char nodeName[64];
-	for (const FrameData& frameData : myFramesToRender)
-	{
-		Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
-		if (ImGui::TreeNode(nodeName))
-		{
-			// Precalculate the whole height
-			float totalHeight = kMarkHeight;
-			for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
+			const auto& frameData = Profiler::GetInstance().GrabInitFrame();
+			for (const Profiler::FrameProfile& frameProfile : frameData)
 			{
-				totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
+				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
 			}
-			totalHeight += ImGui::GetStyle().ScrollbarSize;
-
-			ImGui::BeginChild(nodeName, { 0,totalHeight });
-			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
-
-			DrawThreadColumn(frameData, totalHeight);
-			ImGui::SameLine();
-			DrawMarksColumn(frameData, totalHeight);
-
-			ImGui::EndChild();
-			ImGui::TreePop();
 		}
-	}
-	if (plotWindowHovered)
-	{
-		myWidthScale += Input::GetMouseWheelDelta() * 0.1f;
-		myWidthScale = std::max(myWidthScale, 1.0f);
+
+		if (ImGui::Button("Buffer captures"))
+		{
+			const auto& frameData = Profiler::GetInstance().GetBufferedFrameData();
+			for (const Profiler::FrameProfile& frameProfile : frameData)
+			{
+				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
+			}
+		}
+		if (ImGui::Button("Clear captures"))
+		{
+			myFramesToRender.clear();
+		}
+
+		bool plotWindowHovered = false;
+		char nodeName[64];
+		for (const FrameData& frameData : myFramesToRender)
+		{
+			Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
+			if (ImGui::TreeNode(nodeName))
+			{
+				// Precalculate the whole height
+				float totalHeight = kMarkHeight;
+				for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
+				{
+					totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
+				}
+				totalHeight += ImGui::GetStyle().ScrollbarSize;
+
+				ImGui::BeginChild(nodeName, { 0,totalHeight });
+				plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+
+				DrawThreadColumn(frameData, totalHeight);
+				ImGui::SameLine();
+				DrawMarksColumn(frameData, totalHeight);
+
+				ImGui::EndChild();
+				ImGui::TreePop();
+			}
+		}
+		if (plotWindowHovered)
+		{
+			myWidthScale += Input::GetMouseWheelDelta() * 0.1f;
+			myWidthScale = std::max(myWidthScale, 1.0f);
+		}
 	}
 
 	ImGui::End();

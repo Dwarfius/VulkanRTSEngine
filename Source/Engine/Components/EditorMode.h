@@ -6,6 +6,8 @@
 #include "../Animation/AnimationClip.h"
 #include <Core/Pool.h>
 #include "../Resources/GLTFImporter.h"
+#include "../UIWidgets/TopBar.h"
+#include "../UIWidgets/EntitiesWidget.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -28,9 +30,14 @@ private:
 	const float myMouseSensitivity = 0.1f;
 	float myFlightSpeed = 2.f;
 	bool myDemoWindowVisible = false;
+	bool myShowCameraInfo = false;
+	bool myShowProfiler = false;
+	bool myShowEntitiesView = false;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
+	TopBar myTopBar;
 	ProfilerUI myProfilerUI;
+	EntitiesWidget myEntitiesView;
 
 	// Testing
 	void AddTestSkeleton(Game& aGame);
