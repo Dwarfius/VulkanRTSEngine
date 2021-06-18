@@ -28,6 +28,7 @@ public:
 		size_t GetCount() const { return myCount; }
 		VertexDescriptor GetVertexDescriptor() const { return myVertDesc; }
 		virtual void Serialize(Serializer& aSerializer) = 0;
+		virtual ~BaseStorage() = default;
 
 	protected:
 		void* myData = nullptr;
