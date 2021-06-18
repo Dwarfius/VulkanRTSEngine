@@ -42,7 +42,7 @@ void TopBar::Draw()
 	if (ImGui::BeginMainMenuBar())
 	{
 		constexpr size_t kMaxPath = 250;
-		char currentMenu[kMaxPath];
+		char currentMenu[kMaxPath]{};
 		char menuCount = 0;
 		for (const MenuItem& item : myMenuItems)
 		{
