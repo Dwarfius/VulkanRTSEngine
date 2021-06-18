@@ -10,8 +10,6 @@
 #include "VisualObject.h"
 #include "GameObject.h"
 #include "Game.h"
-#include "Resources/GLTFImporter.h"
-#include "Resources/OBJImporter.h"
 
 void VisualComponent::SetModel(Handle<Model> aModel)
 {
