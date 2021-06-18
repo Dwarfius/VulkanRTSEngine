@@ -143,6 +143,9 @@ namespace glTF
 		for (const auto& animationJson : *animationsJsonIter)
 		{
 			Animation animation;
+
+			animation.myName = ReadOptional(animationJson, "name", std::string{});
+
 			const nlohmann::json& samplersJson = animationJson["samplers"];
 			for (const nlohmann::json& samplerJson : samplersJson)
 			{
@@ -165,7 +168,9 @@ namespace glTF
 		return animations;
 	}
 
-	void Animation::ConstructAnimationClips(const AnimationClipInput& aInputs, std::vector<Handle<AnimationClip>>& aClips)
+	void Animation::ConstructAnimationClips(const AnimationClipInput& aInputs, 
+		std::vector<Handle<AnimationClip>>& aClips, 
+		std::vector<std::string>& aNames)
 	{
 		for (const Animation& animation : aInputs.myAnimations)
 		{
@@ -202,6 +207,7 @@ namespace glTF
 				channel.ConstructTrack(input, clip);
 			}
 			aClips.push_back(std::move(clip));
+			aNames.push_back(animation.myName);
 		}
 	}
 }

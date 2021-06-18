@@ -44,6 +44,7 @@ namespace glTF
 
 		std::vector<Sampler> mySamplers;
 		std::vector<Channel> myChannels;
+		std::string myName;
 		
 		static std::vector<Animation> Parse(const nlohmann::json& aRootJson);
 
@@ -53,6 +54,8 @@ namespace glTF
 			const std::vector<Animation>& myAnimations;
 			const std::unordered_map<uint32_t, AnimationClip::BoneIndex>& myIndexMap;
 		};
-		static void ConstructAnimationClips(const AnimationClipInput& aInputs, std::vector<Handle<AnimationClip>>& aClips);
+		static void ConstructAnimationClips(const AnimationClipInput& aInputs, 
+			std::vector<Handle<AnimationClip>>& aClips, 
+			std::vector<std::string>& aNames);
 	};
 }

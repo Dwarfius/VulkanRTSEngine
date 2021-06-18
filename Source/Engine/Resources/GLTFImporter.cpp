@@ -114,7 +114,7 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 			nodes,
 			meshes
 		};
-		glTF::Mesh::ConstructModels(input, myModels, myTransforms);
+		glTF::Mesh::ConstructModels(input, myModels, myTransforms, myModelNames);
 	}
 	
 	if (!skins.empty())
@@ -131,7 +131,7 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 			nodes,
 			skins
 		};
-		glTF::Skin::ConstructSkeletons(skinInput, mySkeletons, nodeBoneMap, myTransforms);
+		glTF::Skin::ConstructSkeletons(skinInput, mySkeletons, nodeBoneMap, myTransforms, mySkeletonNames);
 		
 		std::vector<glTF::Animation> animations = glTF::Animation::Parse(gltfJson);
 		glTF::Animation::AnimationClipInput animInput
@@ -143,7 +143,7 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 			animations,
 			nodeBoneMap
 		};
-		glTF::Animation::ConstructAnimationClips(animInput, myAnimClips);
+		glTF::Animation::ConstructAnimationClips(animInput, myAnimClips, myClipNames);
 	}
 
 	if (!textures.empty())
@@ -157,9 +157,10 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 			accessors,
 			images,
 			samplers,
-			textures
+			textures,
+			aDir
 		};
-		glTF::Texture::ConstructTextures(input, myTextures, aDir);
+		glTF::Texture::ConstructTextures(input, myTextures, myTextureNames);
 	}
 	return true;
 }

@@ -46,9 +46,10 @@ namespace glTF
 			const std::vector<Image>& myImages;
 			const std::vector<Sampler>& mySamplers;
 			const std::vector<Texture>& myTextures;
+			const std::string& aRelPath;
 		};
 		static void ConstructTextures(const TextureInputs& aInputs,
 			std::vector<Handle<::Texture>>& aTextures,
-			const std::string& aRelPath);
+			std::vector<std::string>& aNames);
 	};
 }

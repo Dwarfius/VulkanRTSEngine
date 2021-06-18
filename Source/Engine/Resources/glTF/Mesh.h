@@ -29,6 +29,7 @@ namespace glTF
 			uint8_t mySet;
 		};
 
+		std::string myName;
 		std::vector<Attribute> myAttributes;
 		uint32_t myIndexAccessor : 31;
 		uint32_t myHasIndices : 1;
@@ -41,7 +42,10 @@ namespace glTF
 			const std::vector<Node>& myNodes;
 			const std::vector<Mesh>& myMeshes;
 		};
-		static void ConstructModels(const ModelInputs& aInputs, std::vector<Handle<Model>>& aModels, std::vector<Transform>& aTransforms);
+		static void ConstructModels(const ModelInputs& aInputs, 
+			std::vector<Handle<Model>>& aModels, 
+			std::vector<Transform>& aTransforms, 
+			std::vector<std::string>& aNames);
 
 	private:
 		template<class T>

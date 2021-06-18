@@ -108,7 +108,7 @@ namespace glTF
 
 	void Texture::ConstructTextures(const TextureInputs& aInputs,
 		std::vector<Handle<::Texture>>& aTextures,
-		const std::string& aRelPath)
+		std::vector<std::string>& aNames)
 	{
 		for (const Texture& gltfTexture : aInputs.myTextures)
 		{
@@ -138,7 +138,7 @@ namespace glTF
 				}
 				else
 				{
-					std::string amendedPath = aRelPath + image.myUri;
+					std::string amendedPath = aInputs.aRelPath + image.myUri;
 					texture = ::Texture::LoadFromDisk(amendedPath);
 				}
 
@@ -146,6 +146,7 @@ namespace glTF
 			ASSERT_STR(texture.IsValid(), "Missing texture!");
 
 			aTextures.push_back(std::move(texture));
+			aNames.push_back(gltfTexture.myName);
 		}
 	}
 }

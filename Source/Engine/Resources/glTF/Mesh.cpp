@@ -9,6 +9,7 @@ namespace glTF
 {
 	void Mesh::ParseItem(const nlohmann::json& aMeshJson, Mesh& aMesh)
 	{
+		aMesh.myName = ReadOptional(aMeshJson, "name", std::string{});
 		const nlohmann::json& primitivesJson = aMeshJson["primitives"];
 		ASSERT_STR(primitivesJson.size() == 1, "At the moment we're assuming"
 			" 1 primitive set per mesh!");
@@ -96,7 +97,8 @@ namespace glTF
 
 	void Mesh::ConstructModels(const ModelInputs& aInputs, 
 		std::vector<Handle<Model>>& aModels,
-		std::vector<Transform>& aTransforms)
+		std::vector<Transform>& aTransforms,
+		std::vector<std::string>& aNames)
 	{
 		for (const Mesh& mesh : aInputs.myMeshes)
 		{
@@ -126,6 +128,7 @@ namespace glTF
 			);
 			aTransforms.push_back(nodeIter->myWorldTransform);
 			aModels.push_back(std::move(model));
+			aNames.push_back(mesh.myName);
 		}
 	}
 

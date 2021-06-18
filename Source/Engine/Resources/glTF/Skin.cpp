@@ -17,7 +17,8 @@ namespace glTF
 	void Skin::ConstructSkeletons(const SkeletonInput& aInputs, 
 		std::vector<Skeleton>& aSkeletons, 
 		std::unordered_map<uint32_t, Skeleton::BoneIndex>& anIndexMap,
-		std::vector<Transform>& aTransforms)
+		std::vector<Transform>& aTransforms,
+		std::vector<std::string>& aNames)
 	{
 		aSkeletons.reserve(aInputs.mySkins.size());
 		std::vector<uint32_t> sortedJoints;
@@ -104,6 +105,7 @@ namespace glTF
 			}
 
 			aSkeletons.push_back(skeleton);
+			aNames.push_back(skin.myName);
 		}
 	}
 }
