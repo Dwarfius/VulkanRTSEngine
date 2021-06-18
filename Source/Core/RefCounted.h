@@ -213,6 +213,9 @@ private:
 	template<class T1, class T2>
 	friend bool operator==(const Handle<T1>& aLeft, const Handle<T2>& aRight);
 
+	template<class TOther>
+	friend class Handle;
+
 	RefCounted* myObject;
 #ifdef HANDLE_HEAVY_DEBUG
 	mutable AssertRWMutex myDebugMutex;
