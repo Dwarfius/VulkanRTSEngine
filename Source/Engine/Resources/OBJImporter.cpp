@@ -102,7 +102,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 			{
 				// update the bounds
 				aabbMin = glm::min(aabbMin, vertex.myPos);
-				aabbMax = glm::max(aabbMax, vertex.myPos.x);
+				aabbMax = glm::max(aabbMax, vertex.myPos);
 
 				// update radius by finding the furthest away vert
 				sphereRadius = glm::max(sphereRadius, glm::length2(vertex.myPos));
@@ -113,7 +113,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 				// might be a slowdown cause bad hint). Need to come back later and reread implementation
 				// marking that new vertex is at this index
 				iter = uniqueVerts.insert(uniqueVerts.begin(), { vertex, static_cast<Model::IndexType>(vertsFound) });
-				modelVertices[vertsFound] = vertex; // adding it at the marked position
+				modelVertices.push_back(vertex); // adding it at the marked position
 				vertsFound++;
 			}
 
