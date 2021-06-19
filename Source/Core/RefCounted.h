@@ -83,32 +83,6 @@ public:
 		aHandle.myObject = nullptr;
 	}
 
-	// TODO: replace with concepts!
-	// Allow copies from subclasses of T
-	template<class TOther, typename std::enable_if_t<
-		std::is_base_of_v<T, TOther>, int> = 0>
-	Handle(const Handle<TOther>& aHandle)
-	{
-#ifdef HANDLE_HEAVY_DEBUG
-		AssertReadLock theirLock(aHandle.myDebugMutex);
-#endif
-		myObject = aHandle.myObject;
-		if (myObject)
-		{
-			myObject->AddRef();
-		}
-	}
-
-	// TODO: replace with concepts!
-	// Allow moves from subclasses of T
-	template<class TOther, typename std::enable_if_t<
-		std::is_base_of_v<T, TOther>, int> = 0>
-	Handle(Handle<TOther>&& aHandle)
-	{
-		myObject = aHandle.myObject;
-		aHandle.myObject = nullptr;
-	}
-
 	~Handle()
 	{
 		if (myObject)
