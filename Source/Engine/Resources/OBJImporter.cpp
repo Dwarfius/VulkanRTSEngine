@@ -42,18 +42,6 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 		printf("[Warning] Model loading warning: %s\n", err.c_str());
 	}
 
-	// quickly count indices
-	size_t indexCount = 0;
-	for (const tinyobj::shape_t& shape : shapes)
-	{
-		indexCount += shape.mesh.indices.size();
-	}
-	std::vector<Model::IndexType> modelIndices;
-	modelIndices.resize(indexCount);
-
-	std::vector<Vertex> modelVertices;
-	modelVertices.resize(attrib.vertices.size());
-
 	auto vertEq = [](const Vertex& aLeft, const Vertex& aRight) {
 		return aLeft.myPos == aRight.myPos
 			&& aLeft.myUv == aRight.myUv
@@ -61,15 +49,21 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 	};
 	using VertMap = std::unordered_map<Vertex, Model::IndexType, std::hash<Vertex>, decltype(vertEq)>;
 	VertMap uniqueVerts(0, std::hash<Vertex>(), vertEq);
-	size_t vertsFound = 0;
-	indexCount = 0;
 
-	glm::vec3 aabbMin(std::numeric_limits<float>::max());
-	glm::vec3 aabbMax(std::numeric_limits<float>::min());
-	float sphereRadius = 0.f;
-
+	std::vector<Model::IndexType> modelIndices;
+	std::vector<Vertex> modelVertices;
+	modelVertices.resize(attrib.vertices.size());
+	myModels.clear();
 	for (const tinyobj::shape_t& shape : shapes)
 	{
+		glm::vec3 aabbMin(std::numeric_limits<float>::max());
+		glm::vec3 aabbMax(std::numeric_limits<float>::min());
+		float sphereRadius = 0.f;
+
+		size_t indexCount = 0;
+		size_t vertsFound = 0;
+		uniqueVerts.clear();
+		modelIndices.resize(shape.mesh.indices.size());
 		for (const tinyobj::index_t& index : shape.mesh.indices)
 		{
 			Vertex vertex;
@@ -120,22 +114,25 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 			// reusing the vertex
 			modelIndices[indexCount++] = iter->second;
 		}
+
+		Model::VertStorage<Vertex>* storage = new Model::VertStorage<Vertex>(modelVertices.size());
+		Handle<Model> model = new Model(PrimitiveType::Triangles, storage, true);
+
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = modelVertices.data();
+		uploadDesc.myVertCount = vertsFound;
+		uploadDesc.myIndices = modelIndices.data();
+		uploadDesc.myIndCount = modelIndices.size();
+		uploadDesc.myNextDesc = nullptr;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndOwned = false;
+		model->Update(uploadDesc);
+
+		model->SetAABB(aabbMin, aabbMax);
+		model->SetSphereRadius(sphereRadius);
+
+		myModels.push_back(model);
+		myModelNames.push_back(shape.name);
 	}
-
-	Model::VertStorage<Vertex>* storage = new Model::VertStorage<Vertex>(modelVertices.size());
-	myModel = new Model(PrimitiveType::Triangles, storage, true);
-
-	Model::UploadDescriptor<Vertex> uploadDesc;
-	uploadDesc.myVertices = modelVertices.data();
-	uploadDesc.myVertCount = modelVertices.size();
-	uploadDesc.myIndices = modelIndices.data();
-	uploadDesc.myIndCount = modelIndices.size();
-	uploadDesc.myNextDesc = nullptr;
-	uploadDesc.myVertsOwned = false;
-	uploadDesc.myIndOwned = false;
-	myModel->Update(uploadDesc);
-
-	myModel->SetAABB(aabbMin, aabbMax);
-	myModel->SetSphereRadius(sphereRadius);
 	return true;
 }

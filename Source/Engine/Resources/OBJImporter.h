@@ -5,7 +5,6 @@
 class Model;
 class File;
 
-// TODO: keep shapes as separate instead of pushing in the same one
 // Imports all shapes declared in the .obj file as a single Model
 class OBJImporter
 {
@@ -14,8 +13,11 @@ public:
 	bool Load(const File& aFile);
 	bool Load(const std::vector<char>& aBuffer);
 
-	const Handle<Model>& GetModel() { return myModel; }
+	size_t GetModelCount() const { return myModels.size(); }
+	Handle<Model> GetModel(size_t aIndex) const { return myModels[aIndex]; }
+	const std::string& GetModelName(size_t aIndex) const { return myModelNames[aIndex]; }
 
 private:
-	Handle<Model> myModel;
+	std::vector<Handle<Model>> myModels;
+	std::vector<std::string> myModelNames;
 };
