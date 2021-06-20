@@ -183,6 +183,13 @@ public:
 		return Get<typename TOther>();
 	}
 
+	template<class TOther, typename std::enable_if_t<
+		std::is_base_of_v<TOther, T>, int> = 0>
+		operator const Handle<TOther>() const
+	{
+		return Handle{ *this };
+	}
+
 private:
 	template<class T1, class T2>
 	friend bool operator==(const Handle<T1>& aLeft, const Handle<T2>& aRight);
