@@ -36,7 +36,7 @@ EditorMode::EditorMode(Game& aGame)
 	bool res = myGLTFImporter.Load(resPath.CStr());
 	ASSERT(res);
 	Handle<Model> model = myGLTFImporter.GetModel(0);
-	aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.bin", model);
+	aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.model", model);
 
 	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("TestGameObject/testGO.go");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){

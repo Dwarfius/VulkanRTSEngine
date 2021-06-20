@@ -11,6 +11,8 @@ class UniformAdapter;
 class Pipeline : public Resource, public IPipeline
 {
 public:
+	constexpr static StaticString kExtension = ".ppl";
+
 	Pipeline();
 	Pipeline(Resource::Id anId, const std::string& aPath);
 

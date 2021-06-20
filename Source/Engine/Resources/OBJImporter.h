@@ -14,7 +14,7 @@ public:
 	bool Load(const std::vector<char>& aBuffer);
 
 	size_t GetModelCount() const { return myModels.size(); }
-	Handle<Model> GetModel(size_t aIndex) const { return myModels[aIndex]; }
+	const Handle<Model>& GetModel(size_t aIndex) const { return myModels[aIndex]; }
 	const std::string& GetModelName(size_t aIndex) const { return myModelNames[aIndex]; }
 
 private:

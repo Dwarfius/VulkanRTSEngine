@@ -9,6 +9,8 @@ class File;
 class Model : public Resource, public IModel
 {
 public:
+	constexpr static StaticString kExtension = ".model";
+
 	template<class T>
 	struct UploadDescriptor
 	{

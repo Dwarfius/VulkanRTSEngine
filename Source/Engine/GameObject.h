@@ -14,6 +14,8 @@ class ComponentBase;
 class GameObject : public Resource, public IPhysControllable
 {
 public:
+	constexpr static StaticString kExtension = ".go";
+
 	GameObject(const Transform& aTransform);
 	GameObject(Id anId, const std::string& aPath);
 	~GameObject();

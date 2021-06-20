@@ -7,6 +7,8 @@
 class Shader : public Resource, public IShader
 {
 public:
+	constexpr static StaticString kExtension = ".shd";
+
 	Shader();
 	Shader(Resource::Id anId, const std::string& aPath);
 

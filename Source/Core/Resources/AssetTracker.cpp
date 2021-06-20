@@ -58,16 +58,15 @@ AssetTracker::~AssetTracker()
 	}
 }
 
-void AssetTracker::SaveAndTrack(const std::string& aPath, Handle<Resource> aRes)
+void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 {
 	// change the handle's path
-	ASSERT_STR(aRes.IsValid(), "Invalid handle - nothing to save!");
-	aRes->myPath = Resource::kAssetsFolder.CStr() + aPath;
+	aRes.myPath = Resource::kAssetsFolder.CStr() + aPath;
 
 	// dump to disk
 	Serializer* serializer = nullptr;
 	BinarySerializer binSerializer(*this, false);
-	if (aRes->PrefersBinarySerialization())
+	if (aRes.PrefersBinarySerialization())
 	{
 		serializer = &binSerializer;
 	}
@@ -75,23 +74,23 @@ void AssetTracker::SaveAndTrack(const std::string& aPath, Handle<Resource> aRes)
 	{
 		serializer = myWriteSerializers.local();
 	}
-	aRes->Save(*this, *serializer);
+	aRes.Save(*this, *serializer);
 
 	// if it's a newly generated object - give it an id for tracking
-	if (aRes->GetId() == Resource::InvalidId)
+	if (aRes.GetId() == Resource::InvalidId)
 	{
-		aRes->myId = ++myCounter;
+		aRes.myId = ++myCounter;
 	}
 
 	// register for tracking
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-		myRegister[aPath] = aRes->GetId();
+		myRegister[aPath] = aRes.GetId();
 	}
 
 	{
 		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-		myAssets[aRes->GetId()] = aRes.Get();
+		myAssets[aRes.GetId()] = &aRes;
 	}
 }
 
@@ -103,4 +102,24 @@ void AssetTracker::RemoveResource(const Resource* aRes)
 		tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
 		myAssets.erase(aRes->GetId());
 	}
+}
+
+Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
+{
+	Resource::Id resourceId = Resource::InvalidId;
+
+	tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
+	std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(aPath);
+	if (pair != myRegister.end())
+	{
+		resourceId = pair->second;
+	}
+	else
+	{
+		// we don't have one, so register one
+		resourceId = ++myCounter;
+		myRegister[aPath] = resourceId;
+	}
+
+	return resourceId;
 }

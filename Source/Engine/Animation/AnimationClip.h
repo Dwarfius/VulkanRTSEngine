@@ -5,6 +5,8 @@
 class AnimationClip : public Resource
 {
 public:
+	constexpr static StaticString kExtension = ".animclip";
+
 	using BoneIndex = uint16_t; // must be in sync with Skeleton::BoneIndex!
 
 	enum class Property : uint8_t

@@ -34,7 +34,7 @@
                 "myTextures": [
                     "CubeUnwrap.img"
                 ],
-                "myModel": "TestGameObject/modelTest.bin"
+                "myModel": "TestGameObject/modelTest.model"
             }
         }
 	],
