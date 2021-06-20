@@ -97,31 +97,32 @@ namespace glTF
 			case Accessor::ComponentType::Byte:
 			{
 				const int8_t data = aJson.get<int8_t>();
-				std::memcpy(&anElem, &data, sizeof(int8_t));
+				uint8_t bitCopy; // TODO: C++20 bitcast
+				std::memcpy(&bitCopy, &data, sizeof(int8_t));
+				anElem = bitCopy;
 				break;
 			}
 			case Accessor::ComponentType::UnsignedByte:
 			{
-				const uint8_t data = aJson.get<uint8_t>();
-				std::memcpy(&anElem, &data, sizeof(uint8_t));
+				anElem = aJson.get<uint8_t>();
 				break;
 			}
 			case Accessor::ComponentType::Short:
 			{
 				const int16_t data = aJson.get<int16_t>();
-				std::memcpy(&anElem, &data, sizeof(int16_t));
+				uint16_t bitCopy;
+				std::memcpy(&bitCopy, &data, sizeof(int16_t));
+				anElem = bitCopy;
 				break;
 			}
 			case Accessor::ComponentType::UnsignedShort:
 			{
-				const uint16_t data = aJson.get<uint16_t>();
-				std::memcpy(&anElem, &data, sizeof(uint16_t));
+				anElem = aJson.get<uint16_t>();
 				break;
 			}
 			case Accessor::ComponentType::UnsignedInt:
 			{
-				const uint32_t data = aJson.get<uint32_t>();
-				std::memcpy(&anElem, &data, sizeof(uint32_t));
+				anElem = aJson.get<uint32_t>();
 				break;
 			}
 			case Accessor::ComponentType::Float:
