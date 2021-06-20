@@ -50,7 +50,16 @@ bool GLTFImporter::Load(const File& aFile)
 	}
 	else
 	{
-		relPath = std::string();
+		pos = relPath.find_last_of('\\');
+		if (pos != std::string::npos)
+		{
+			// incl last '\'
+			relPath = relPath.substr(0, pos + 1);
+		}
+		else
+		{
+			relPath = std::string();
+		}
 	}
 
 	return Load(aFile.GetBuffer(), relPath);
@@ -58,6 +67,16 @@ bool GLTFImporter::Load(const File& aFile)
 
 bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDir)
 {
+	myModels.clear();
+	myModelNames.clear();
+	myTransforms.clear();
+	myAnimClips.clear();
+	myClipNames.clear();
+	mySkeletons.clear();
+	mySkeletonNames.clear();
+	myTextures.clear();
+	myTextureNames.clear();
+
 	// time to start learning glTF!
 	// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
 	nlohmann::json gltfJson = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);

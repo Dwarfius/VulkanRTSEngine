@@ -19,6 +19,9 @@ bool OBJImporter::Load(const File& aFile)
 
 bool OBJImporter::Load(const std::vector<char>& aBuffer)
 {
+	myModels.clear();
+	myModelNames.clear();
+
 	// TODO: extend Model to support more than 1 Vertex type loading
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
