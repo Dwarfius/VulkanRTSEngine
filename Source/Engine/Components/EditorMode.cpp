@@ -50,6 +50,8 @@ EditorMode::EditorMode(Game& aGame)
 	myTopBar.Register("Widgets/Camera Info", [&] { myShowCameraInfo = true; });
 	myTopBar.Register("Widgets/Profiler", [&] { myShowProfiler = true; });
 	myTopBar.Register("Widgets/Entities View", [&] { myShowEntitiesView = true; });
+	myTopBar.Register("File/Import OBJ", [&] { myShowObjImport = true; });
+	myTopBar.Register("File/Import Gltf", [&] { myShowGltfImport = true; });
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -158,6 +160,16 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	if (myShowEntitiesView)
 	{
 		myEntitiesView.DrawDialog(aGame, myShowEntitiesView);
+	}
+
+	if (myShowObjImport)
+	{
+		myObjImport.Draw(myShowObjImport);
+	}
+
+	if (myShowGltfImport)
+	{
+		myGltfImport.Draw(myShowGltfImport);
 	}
 }
 

@@ -8,6 +8,8 @@
 #include "../Resources/GLTFImporter.h"
 #include "../UIWidgets/TopBar.h"
 #include "../UIWidgets/EntitiesWidget.h"
+#include "../UIWidgets/ObjImportDialog.h"
+#include "../UIWidgets/GltfImportDialog.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -33,11 +35,15 @@ private:
 	bool myShowCameraInfo = false;
 	bool myShowProfiler = false;
 	bool myShowEntitiesView = false;
+	bool myShowObjImport = false;
+	bool myShowGltfImport = false;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 	TopBar myTopBar;
 	ProfilerUI myProfilerUI;
 	EntitiesWidget myEntitiesView;
+	ObjImportDialog myObjImport;
+	GltfImportDialog myGltfImport;
 
 	// Testing
 	void AddTestSkeleton(Game& aGame);

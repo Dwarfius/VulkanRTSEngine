@@ -137,6 +137,8 @@ set(SRC_SYSTEMS_IMGUI
 set(SRC_UIWIDGETS
 	"UIWidgets/EntitiesWidget.cpp" "UIWidgets/EntitiesWidget.h"
 	"UIWidgets/FileDialog.cpp" "UIWidgets/FileDialog.h"
+	"UIWidgets/GltfImportDialog.cpp" "UIWidgets/GltfImportDialog.h"
+	"UIWidgets/ObjImportDialog.cpp" "UIWidgets/ObjImportDialog.h"
 	"UIWidgets/TopBar.cpp" "UIWidgets/TopBar.h"
 )
 
