@@ -107,12 +107,11 @@ void Texture::FreePixels()
 
 void Texture::LoadFromMemory(const char* aData, size_t aLength, int aDesiredChannels, int& aActualChannels)
 {
-	int actualChannels = 0;
-	ASSERT_STR(myRawSource.size() < std::numeric_limits<int>::max(),
+	ASSERT_STR(aLength < std::numeric_limits<int>::max(),
 		"Buffer too large, STBI can't parse it!");
-	myPixels = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(aData), static_cast<int>(myRawSource.size()),
+	myPixels = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(aData), static_cast<int>(aLength),
 		reinterpret_cast<int*>(&myWidth), reinterpret_cast<int*>(&myHeight),
-		&actualChannels, aDesiredChannels);
+		&aActualChannels, aDesiredChannels);
 	if (!myPixels)
 	{
 		SetErrMsg("Failed to load texture");
