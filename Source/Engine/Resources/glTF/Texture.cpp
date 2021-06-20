@@ -146,7 +146,18 @@ namespace glTF
 			ASSERT_STR(texture.IsValid(), "Missing texture!");
 
 			aTextures.push_back(std::move(texture));
-			aNames.push_back(gltfTexture.myName);
+			if (!gltfTexture.myName.empty())
+			{
+				aNames.push_back(gltfTexture.myName);
+			}
+			else if(!image.myName.empty())
+			{
+				aNames.push_back(image.myName);
+			}
+			else
+			{
+				aNames.push_back(image.myUri);
+			}
 		}
 	}
 }
