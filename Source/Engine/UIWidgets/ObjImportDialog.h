@@ -11,8 +11,8 @@ private:
 	
 	void DrawObj();
 
-	bool DrawSourceInput(std::string& aPath);
-	void DrawSaveInput(std::string& aPath);
+	static void DrawSourceInput(std::string& aPath);
+	static void DrawSaveInput(std::string& aPath);
 
 	OBJImporter myImporter;
 	std::string mySourceFile;

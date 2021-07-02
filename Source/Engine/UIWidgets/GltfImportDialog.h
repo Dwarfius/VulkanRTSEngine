@@ -15,8 +15,8 @@ private:
 	void DrawTexture(size_t anIndex);
 	void DrawSkeleton(size_t anIndex);
 
-	bool DrawSourceInput(std::string& aPath);
-	void DrawSaveInput(std::string& aPath);
+	static void DrawSourceInput(std::string& aPath);
+	static void DrawSaveInput(std::string& aPath);
 
 	GLTFImporter myImporter;
 	std::string mySourceFile;

@@ -15,9 +15,11 @@ void GltfImportDialog::Draw(bool& aIsOpen)
 
 	if (ImGui::Begin("Import Model", &aIsOpen))
 	{
-		const bool changed = DrawSourceInput(mySourceFile);
+		DrawSourceInput(mySourceFile);
+		ImGui::SameLine();
+		const bool load = ImGui::Button("Load");
 
-		if (changed && !mySourceFile.empty())
+		if (load && !mySourceFile.empty())
 		{
 			myIsLoaded = ValidPath(mySourceFile) && myImporter.Load(mySourceFile);
 			if (myIsLoaded)
@@ -212,10 +214,10 @@ void GltfImportDialog::DrawSkeleton(size_t anIndex)
 	ImGui::PopID();
 }
 
-bool GltfImportDialog::DrawSourceInput(std::string& aPath)
+void GltfImportDialog::DrawSourceInput(std::string& aPath)
 {
 	std::string tempInput = aPath;
-	bool changed = ImGui::InputText("Source", tempInput.data(), tempInput.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+	const bool changed = ImGui::InputText("Source", tempInput.data(), tempInput.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
 		[](ImGuiInputTextCallbackData* aData)
 	{
 		std::string* valueStr = static_cast<std::string*>(aData->UserData);
@@ -236,14 +238,11 @@ bool GltfImportDialog::DrawSourceInput(std::string& aPath)
 			tempInput = tempInput.substr(1, tempInput.size() - 2);
 		}
 
-		changed = false;
 		if (tempInput != aPath)
 		{
-			changed = true;
 			aPath = tempInput;
 		}
 	}
-	return changed;
 }
 
 void GltfImportDialog::DrawSaveInput(std::string& aPath)
