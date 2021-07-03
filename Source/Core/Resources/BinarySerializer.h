@@ -23,6 +23,11 @@ private:
 	void DeserializeImpl(std::string_view aName, VariantType& aValue) const final;
 	void DeserializeImpl(size_t anIndex, VariantType& aValue) const final;
 
+	void SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) final;
+	void SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) final;
+	void DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const final;
+	void DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const final;
+
 	void BeginSerializeObjectImpl(std::string_view aName) final;
 	void BeginSerializeObjectImpl(size_t anIndex) final;
 	void EndSerializeObjectImpl(std::string_view aName) final;

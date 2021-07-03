@@ -32,6 +32,17 @@ public:
 		Heightfield,
 		Count
 	};
+	constexpr static const char* const kTypeNames[]
+	{
+		"Invalid",
+		"Box",
+		"Sphere",
+		"Capsule",
+		"ConvexHull",
+		"Heightfield",
+		"Count"
+	};
+
 public:
 	PhysicsShapeBase();
 	~PhysicsShapeBase();

@@ -16,7 +16,6 @@ class Serializer;
 class Descriptor
 {
 public:
-	// TODO: add nested descriptor support!
 	enum class UniformType : char
 	{
 		Int,
@@ -25,6 +24,15 @@ public:
 		Vec3,
 		Vec4,
 		Mat4
+	};
+	constexpr static const char* const kUniformTypeNames[]
+	{
+		"Int",
+		"Float",
+		"Vec2",
+		"Vec3",
+		"Vec4",
+		"Mat4"
 	};
 
 private:

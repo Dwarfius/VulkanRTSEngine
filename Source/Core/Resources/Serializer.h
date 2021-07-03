@@ -59,27 +59,11 @@ public:
 	template<class T>
 	void Serialize(size_t anIndex, Handle<T>& aValue);
 
-	template<class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
-	void Serialize(std::string_view aName, T& aValue)
-	{
-		ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
-		// if reading, it'll update enumVal with correct value
-		// if writing, it'll read from enumVal
-		uint64_t enumVal = static_cast<uint64_t>(aValue);
-		Serialize(aName, enumVal);
-		aValue = static_cast<T>(enumVal);
-	}
+	template<class T, size_t N>
+	void SerializeEnum(std::string_view aName, T& aValue, const char* const (&aNames)[N]);
 
-	template<class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
-	void Serialize(size_t anIndex, T& aValue)
-	{
-		ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
-		// if reading, it'll update enumVal with correct value
-		// if writing, it'll read from enumVal
-		uint64_t enumVal = static_cast<uint64_t>(aValue);
-		Serialize(anIndex, enumVal);
-		aValue = static_cast<T>(enumVal);
-	}
+	template<class T, size_t N>
+	void SerializeEnum(size_t anIndex, T& aValue, const char* const (&aNames)[N]);
 
 	Scope SerializeObject(std::string_view aName);
 	Scope SerializeObject(size_t anIndex);
@@ -102,6 +86,11 @@ private:
 	virtual void SerializeImpl(size_t anIndex, const VariantType& aValue) = 0;
 	virtual void DeserializeImpl(std::string_view aName, VariantType& aValue) const = 0;
 	virtual void DeserializeImpl(size_t anIndex, VariantType& aValue) const = 0;
+
+	virtual void SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) = 0;
+	virtual void SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) = 0;
+	virtual void DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const = 0;
+	virtual void DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const = 0;
 
 	virtual void BeginSerializeObjectImpl(std::string_view aName) = 0;
 	virtual void BeginSerializeObjectImpl(size_t anIndex) = 0;
@@ -167,6 +156,44 @@ void Serializer::Serialize(size_t anIndex, Handle<T>& aValue)
 	{
 		VariantType variant = ResourceProxy{ aValue->GetPath() };
 		SerializeImpl(anIndex, variant);
+	}
+}
+
+template<class T, size_t N>
+void Serializer::SerializeEnum(std::string_view aName, T& aValue, const char* const (&aNames)[N])
+{
+	static_assert(std::is_enum_v<T>, "T must be an enum!");
+
+	ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
+
+	if (myIsReading)
+	{
+		size_t enumValue = static_cast<size_t>(aValue);
+		DeserializeEnumImpl(aName, enumValue, aNames, N);
+		aValue = static_cast<T>(enumValue);
+	}
+	else
+	{
+		SerializeEnumImpl(aName, static_cast<size_t>(aValue), aNames, N);
+	}
+}
+
+template<class T, size_t N>
+void Serializer::SerializeEnum(size_t anIndex, T& aValue, const char* const (&aNames)[N])
+{
+	static_assert(std::is_enum_v<T>, "T must be an enum!");
+
+	ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
+	
+	if (myIsReading)
+	{
+		size_t enumValue = static_cast<size_t>(aValue);
+		DeserializeEnumImpl(anIndex, enumVal, aNames, N);
+		aValue = static_cast<T>(enumVal);
+	}
+	else
+	{
+		SerializeEnumImpl(anIndex, static_cast<size_t>(aValue), aNames, N);
 	}
 }
 

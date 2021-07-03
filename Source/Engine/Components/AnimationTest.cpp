@@ -219,7 +219,7 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 	}
 
 	Model::VertStorage<SkinnedVertex>* storage = new Model::VertStorage<SkinnedVertex>(verts.size());
-	Model* model = new Model(PrimitiveType::Triangles, storage, true);
+	Model* model = new Model(Model::PrimitiveType::Triangles, storage, true);
 
 	Model::UploadDescriptor<SkinnedVertex> uploadDesc;
 	uploadDesc.myVertices = verts.data();

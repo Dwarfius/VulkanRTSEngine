@@ -74,7 +74,7 @@ void Descriptor::Serialize(Serializer& aSerializer)
 		{
 			if (Serializer::Scope entryScope = aSerializer.SerializeObject(i))
 			{
-				aSerializer.Serialize("myUniformType", myEntries[i].myUniformType);
+				aSerializer.SerializeEnum("myUniformType", myEntries[i].myUniformType, kUniformTypeNames);
 				aSerializer.Serialize("myArraySize", myEntries[i].myArraySize);
 			}
 		}

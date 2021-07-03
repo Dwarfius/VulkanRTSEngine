@@ -16,6 +16,13 @@ public:
 		Scale,
 		Weights // for morph targets, NYI
 	};
+	constexpr static const char* const kPropertyNames[]
+	{
+		"Position",
+		"Rotation",
+		"Scale",
+		"Weights"
+	};
 
 	// http://paulbourke.net/miscellaneous/interpolation/
 	enum class Interpolation : uint8_t
@@ -23,6 +30,12 @@ public:
 		Step,
 		Linear,
 		Cubic
+	};
+	constexpr static const char* const kInterpolationNames[]
+	{
+		"Step",
+		"Linear",
+		"Cubic"
 	};
 
 	struct Mark

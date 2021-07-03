@@ -47,6 +47,28 @@ void ImGUISerializer::DeserializeImpl(size_t anIndex, VariantType& aValue) const
 	}, aValue);
 }
 
+void ImGUISerializer::SerializeEnumImpl(std::string_view, size_t, const char* const*, size_t)
+{
+	// NOOP - this serializer is always reading!
+}
+
+void ImGUISerializer::SerializeEnumImpl(size_t, size_t, const char* const*, size_t)
+{
+	// NOOP - this serializer is always reading!
+}
+
+void ImGUISerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t) const
+{
+	ImGui::LabelText(aName.data(), aNames[anEnumValue]);
+}
+
+void ImGUISerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const* aNames, size_t)  const
+{
+	char indexLbl[16] = { 0 };
+	Utils::StringFormat(indexLbl, "%llu", anIndex);
+	ImGui::LabelText(indexLbl, aNames[anEnumValue]);
+}
+
 void ImGUISerializer::BeginSerializeObjectImpl(std::string_view)
 {
 	// NOOP - this serializer is always reading!

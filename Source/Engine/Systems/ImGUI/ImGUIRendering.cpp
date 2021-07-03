@@ -21,7 +21,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline);
 	Model::BaseStorage* vertexStorage = new Model::VertStorage<ImGUIVertex>(0);
-	Handle<Model> model = new Model(PrimitiveType::Triangles, vertexStorage, true);
+	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
 	// TODO: Extend to pass in the settings of the model to create - this
 	// currently creates a STATIC_DRAW buffer, while we need DYNAMIC_DRAW
 	myModel = aGraphics.GetOrCreate(model, true);

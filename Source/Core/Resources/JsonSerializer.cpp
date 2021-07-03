@@ -71,6 +71,34 @@ void JsonSerializer::DeserializeImpl(size_t anIndex, VariantType& aValue) const
     }, aValue);
 }
 
+void JsonSerializer::SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const*, size_t)
+{
+    myCurrObj[std::string(aName)] = anEnumValue;
+}
+
+void JsonSerializer::SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const*, size_t)
+{
+    myCurrObj[anIndex] = anEnumValue;
+}
+
+void JsonSerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const*, size_t) const
+{
+    const nlohmann::json& jsonElem = myCurrObj[std::string(aName)];
+    if (!jsonElem.is_null())
+    {
+        anEnumValue = jsonElem.get<size_t>();
+    }
+}
+
+void JsonSerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const*, size_t) const
+{
+    const nlohmann::json& jsonElem = myCurrObj[anIndex];
+    if (!jsonElem.is_null())
+    {
+        anEnumValue = jsonElem.get<size_t>();
+    }
+}
+
 void JsonSerializer::BeginSerializeObjectImpl(std::string_view /*aName*/)
 {
     ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");

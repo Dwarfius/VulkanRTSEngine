@@ -119,7 +119,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 		}
 
 		Model::VertStorage<Vertex>* storage = new Model::VertStorage<Vertex>(modelVertices.size());
-		Handle<Model> model = new Model(PrimitiveType::Triangles, storage, true);
+		Handle<Model> model = new Model(Model::PrimitiveType::Triangles, storage, true);
 
 		Model::UploadDescriptor<Vertex> uploadDesc;
 		uploadDesc.myVertices = modelVertices.data();

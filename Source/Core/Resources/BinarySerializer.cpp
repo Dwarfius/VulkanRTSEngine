@@ -71,6 +71,26 @@ void BinarySerializer::DeserializeImpl(size_t, VariantType& aValue) const
 	}, aValue);
 }
 
+void BinarySerializer::SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const*, size_t)
+{
+	Write(anEnumValue);
+}
+
+void BinarySerializer::SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const*, size_t)
+{
+	Write(anEnumValue);
+}
+
+void BinarySerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const*, size_t) const
+{
+	Read(anEnumValue);
+}
+
+void BinarySerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const*, size_t) const
+{
+	Read(anEnumValue);
+}
+
 void BinarySerializer::BeginSerializeObjectImpl(std::string_view)
 {
 	// NOOP
