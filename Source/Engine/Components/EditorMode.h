@@ -10,6 +10,7 @@
 #include "../UIWidgets/EntitiesWidget.h"
 #include "../UIWidgets/ObjImportDialog.h"
 #include "../UIWidgets/GltfImportDialog.h"
+#include "../UIWidgets/TextureImportDialog.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -37,6 +38,7 @@ private:
 	bool myShowEntitiesView = false;
 	bool myShowObjImport = false;
 	bool myShowGltfImport = false;
+	bool myShowTextureImport = false;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 	TopBar myTopBar;
@@ -44,6 +46,7 @@ private:
 	EntitiesWidget myEntitiesView;
 	ObjImportDialog myObjImport;
 	GltfImportDialog myGltfImport;
+	TextureImportDialog myTextureImport;
 
 	// Testing
 	void AddTestSkeleton(Game& aGame);
