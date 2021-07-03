@@ -95,7 +95,7 @@ void GltfImportDialog::DrawGltf()
 void GltfImportDialog::DrawModel(size_t anIndex)
 {
 	ImGui::PushID("Model");
-	ImGui::PushID(anIndex);
+	ImGui::PushID(static_cast<int>(anIndex));
 
 	ImGui::Separator();
 	ImGui::Text("Model");
@@ -137,7 +137,7 @@ void GltfImportDialog::DrawModel(size_t anIndex)
 void GltfImportDialog::DrawClip(size_t anIndex)
 {
 	ImGui::PushID("Clip");
-	ImGui::PushID(anIndex);
+	ImGui::PushID(static_cast<int>(anIndex));
 
 	ImGui::Separator();
 	ImGui::Text("Animation Clip");
@@ -162,7 +162,7 @@ void GltfImportDialog::DrawClip(size_t anIndex)
 void GltfImportDialog::DrawTexture(size_t anIndex)
 {
 	ImGui::PushID("Texture");
-	ImGui::PushID(anIndex);
+	ImGui::PushID(static_cast<int>(anIndex));
 
 	ImGui::Separator();
 	ImGui::Text("Texture");
@@ -199,7 +199,7 @@ void GltfImportDialog::DrawTexture(size_t anIndex)
 void GltfImportDialog::DrawSkeleton(size_t anIndex)
 {
 	ImGui::PushID("Skeleton");
-	ImGui::PushID(anIndex);
+	ImGui::PushID(static_cast<int>(anIndex));
 
 	ImGui::Separator();
 	ImGui::Text("Skeleton");

@@ -51,7 +51,7 @@ void ObjImportDialog::DrawObj()
 {
 	for (size_t i = 0; i < myImporter.GetModelCount(); i++)
 	{
-		ImGui::PushID(i);
+		ImGui::PushID(static_cast<int>(i));
 
 		ImGui::Separator();
 		ImGui::Text("Model");
