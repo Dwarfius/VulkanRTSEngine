@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
 	bullet3
 	GIT_REPOSITORY	https://github.com/bulletphysics/bullet3
-	GIT_TAG			2.89
+	GIT_TAG			3.17
 )
 
 FetchContent_GetProperties(bullet3)
