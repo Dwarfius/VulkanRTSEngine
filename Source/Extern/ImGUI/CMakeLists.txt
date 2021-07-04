@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
 	ImGUI
 	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG        v1.76
+	GIT_TAG        v1.83
 )
 
 FetchContent_GetProperties(ImGUI)
@@ -24,6 +24,7 @@ set(SRC
 	${imgui_SOURCE_DIR}/imgui_demo.cpp 
 	${imgui_SOURCE_DIR}/imgui_draw.cpp 
 	${imgui_SOURCE_DIR}/imgui_widgets.cpp
+	${imgui_SOURCE_DIR}/imgui_tables.cpp
 	# adding headers for reading convienience
 	${imgui_SOURCE_DIR}/imgui.h
 	${imgui_SOURCE_DIR}/imgui_internal.h
