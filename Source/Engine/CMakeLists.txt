@@ -14,7 +14,7 @@ find_package(OpenGL REQUIRED)
 FetchContent_Declare(
 	glew
 	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake
-	GIT_TAG        glew-cmake-2.1.0
+	GIT_TAG        glew-cmake-2.2.0
 )
 
 FetchContent_GetProperties(glew)
