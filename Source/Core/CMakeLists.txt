@@ -7,29 +7,21 @@ include(FetchContent)
 
 FetchContent_Declare(
 	tbb
-	GIT_REPOSITORY	https://github.com/01org/tbb
-	GIT_TAG			2019_U3	
+	GIT_REPOSITORY	https://github.com/oneapi-src/oneTBB
+	GIT_TAG			v2021.3.0
 )
 
 FetchContent_GetProperties(tbb)
 if(NOT tbb_POPULATED)
 	FetchContent_Populate(tbb)
 
-	# Intel doesn't provide a proper CMakeLists, only TBBBuild.cmake script
-	# which requires us to have gmake on win32... to avoid requiring it
-	# we provide our own CMakeLists.txt
-	file(COPY ../../cmake/TBB-CMakeLists.txt
-		DESTINATION ${tbb_SOURCE_DIR}
-	)
-	file(RENAME ${tbb_SOURCE_DIR}/TBB-CMakeLists.txt
-		${tbb_SOURCE_DIR}/CMakeLists.txt
-	)
-
 	set(TBB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 	set(TBB_BUILD_STATIC ON CACHE BOOL "" FORCE)
 	set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL "" FORCE)
 	set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL "" FORCE)
-	set(TBB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+	
+	set(TBB_TEST OFF CACHE BOOL "" FORCE)
+	set(TBB_BENCH OFF CACHE BOOL "" FORCE)
 
 	set(CMAKE_FOLDER Extern/ThreadBuildingBlocks)
 	add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
@@ -177,7 +169,7 @@ target_link_libraries(${PROJECT_NAME}
 	${EXTRA_LIBS}
 	glm
 	nlohmann_json::nlohmann_json
-	tbb_static # TODO: will need to generalize it
+	tbb
 	glfw
 )
 

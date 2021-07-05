@@ -30,7 +30,7 @@ void EntitiesWidget::Draw(Game& aGame)
 
 void EntitiesWidget::DrawDialog(Game& aGame, bool& aIsOpen)
 {
-	tbb::mutex::scoped_lock imguiLock(aGame.GetImGUISystem().GetMutex());
+	std::lock_guard imguiLock(aGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Entities", &aIsOpen))
 	{
 		Draw(aGame);

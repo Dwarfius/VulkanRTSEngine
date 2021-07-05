@@ -6,36 +6,6 @@
 #include "../Profiler.h"
 #include "BinarySerializer.h"
 
-tbb::task* AssetTracker::LoadTask::execute()
-{
-	Profiler::ScopedMark profile("AssetTracker::LoadTask");
-
-	// if we're holding the last handle, means noone needs this anymore,
-	// so can skip it and destroy it implicitly
-	if (!myRes.IsLastHandle())
-	{
-		Serializer* serializer = nullptr;
-		BinarySerializer binSerializer(myAssetTracker, true);
-		if (myRes->PrefersBinarySerialization())
-		{
-			serializer = &binSerializer;
-		}
-		else
-		{
-			serializer = myAssetTracker.myReadSerializers.local();
-		}
-		myRes->Load(myAssetTracker, *serializer);
-		ASSERT_STR(myRes->GetState() == Resource::State::Ready
-			|| myRes->GetState() == Resource::State::Error,
-			"Found a resource that didn't change it's state after Load!");
-	}
-	
-	// we return nullptr here because there's no continuation (dependent task)
-	// from completion a file load. If this change, will need to adjust
-	// to avoid an extra task allocation
-	return nullptr;
-}
-
 AssetTracker::AssetTracker()
 	: myCounter(Resource::InvalidId)
 	, myReadSerializers([this]() {	return new JsonSerializer(*this, true);	})
@@ -122,4 +92,40 @@ Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
 	}
 
 	return resourceId;
+}
+
+void AssetTracker::StartLoading(Handle<Resource> aRes)
+{
+	struct LoadTask
+	{
+		void operator()() const
+		{
+			Profiler::ScopedMark profile("AssetTracker::LoadTask");
+
+			// if we're holding the last handle, means noone needs this anymore,
+			// so can skip it and destroy it implicitly
+			if (!myRes.IsLastHandle())
+			{
+				Serializer* serializer = nullptr;
+				BinarySerializer binSerializer(myAssetTracker, true);
+				if (myRes->PrefersBinarySerialization())
+				{
+					serializer = &binSerializer;
+				}
+				else
+				{
+					serializer = myAssetTracker.myReadSerializers.local();
+				}
+				myRes->Load(myAssetTracker, *serializer);
+				ASSERT_STR(myRes->GetState() == Resource::State::Ready
+					|| myRes->GetState() == Resource::State::Error,
+					"Found a resource that didn't change it's state after Load!");
+			}
+		}
+
+		mutable Handle<Resource> myRes;
+		AssetTracker& myAssetTracker;
+	};
+
+	myLoadTaskGroup.run(LoadTask{ aRes, *this });
 }

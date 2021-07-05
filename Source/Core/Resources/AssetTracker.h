@@ -14,22 +14,6 @@ private:
 	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
 	using TLSSerializers = tbb::enumerable_thread_specific<Serializer*>;
 
-	class LoadTask : public tbb::task
-	{
-	public:
-		LoadTask(AssetTracker& anAssetTracker, Handle<Resource> aRes)
-			: myAssetTracker(anAssetTracker)
-			, myRes(aRes)
-		{
-		}
-
-		tbb::task* execute() override final;
-
-	private:
-		AssetTracker& myAssetTracker;
-		Handle<Resource> myRes;
-	};
-
 public:
 	AssetTracker();
 	~AssetTracker();
@@ -74,6 +58,8 @@ private:
 	template<class TAsset>
 	bool GetOrCreateResource(Resource::Id anId, const std::string& aPath, TAsset*& aRes);
 
+	void StartLoading(Handle<Resource> aRes);
+
 	tbb::spin_mutex myRegisterMutex;
 	tbb::spin_mutex myAssetMutex;
 	std::atomic<Resource::Id> myCounter;
@@ -82,6 +68,7 @@ private:
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
+	oneapi::tbb::task_group myLoadTaskGroup;
 
 	TLSSerializers myReadSerializers;
 	TLSSerializers myWriteSerializers;
@@ -144,9 +131,8 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 	asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
 
 	// adding it to the queue of loading, since we know that it'll be loaded from file
-	Handle<TAsset> assetHandle = Handle<TAsset>(asset);
-	LoadTask* loadTask = new (tbb::task::allocate_root()) LoadTask(*this, assetHandle);
-	tbb::task::enqueue(*loadTask);
+	Handle<TAsset> assetHandle{ asset };
+	StartLoading(assetHandle);
 
 	return assetHandle;
 }

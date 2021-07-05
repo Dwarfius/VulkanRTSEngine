@@ -12,15 +12,19 @@ GameTask::GameTask(Type aType, std::function<void()> aCallback)
 {
 }
 
-GameTaskManager::ExternalDependencyScope::ExternalDependencyScope(GameTaskManager::TaskNodeType& aTaskNode)
-	: myTaskNode(aTaskNode)
+GameTaskManager::ExternalDependencyScope::ExternalDependencyScope(std::shared_ptr<StartNodeType> aStartNode, TaskNodeType& aTaskNode)
+	: myStartNode(aStartNode)
+	, myTaskNode(aTaskNode)
 {
-	myTaskNode.register_predecessor(DummySender());
+	aStartNode->register_successor(myTaskNode);
 }
 
 GameTaskManager::ExternalDependencyScope::~ExternalDependencyScope()
 {
-	myTaskNode.try_put({});
+	if (std::shared_ptr<StartNodeType> startNode = myStartNode.lock())
+	{
+		startNode->try_put({});
+	}
 }
 
 GameTaskManager::GameTaskManager()
@@ -45,16 +49,19 @@ GameTaskManager::ExternalDependencyScope GameTaskManager::AddExternalDependency(
 		"Can't add dependencies for starting node of a graph!");
 	ASSERT_STR(!myIsRunning, "Can't add an external dependency while"
 		" the task graph is already executing! This is a race condition!");
+
 	auto iter = myTaskNodes.find(aType);
 	ASSERT_STR(iter != myTaskNodes.end(), "Failed to find a task!");
 	TaskNodeType& task = static_cast<TaskNodeType&>(*iter->second);
-	myExternalDepsResetQueue.push(&task);
-	return { task };
+
+	std::shared_ptr<StartNodeType> startNode = std::make_shared<StartNodeType>(*myTaskGraph.get());
+	myExternalDepsResetQueue.push({ startNode, task });
+	return { startNode, task };
 }
 
 void GameTaskManager::ResolveDependencies()
 {
-	myTaskGraph = std::make_shared<tbb::flow::graph>();
+	myTaskGraph = std::make_unique<tbb::flow::graph>();
 	
 	// first construct all the graph nodes
 	myTaskNodes[GameTask::Type::GraphBroadcast] = std::make_shared<StartNodeType>(*myTaskGraph);
@@ -101,8 +108,8 @@ void GameTaskManager::Wait()
 	myTaskGraph->wait_for_all();
 	while (!myExternalDepsResetQueue.empty())
 	{
-		TaskNodeType* taskNode = myExternalDepsResetQueue.front();
-		taskNode->remove_predecessor(DummySender{});
+		ExternalDepPair& pair = myExternalDepsResetQueue.front();
+		pair.myExternDep->remove_successor(pair.myTask);
 		myExternalDepsResetQueue.pop();
 	}
 	myIsRunning = false;

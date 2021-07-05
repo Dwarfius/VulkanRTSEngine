@@ -17,7 +17,7 @@ bool FileDialog::Draw(std::string& aPath)
 	ASSERT_STR(!errorCode, "Unexpected, opening %s got error code %d", 
 		rootDirPath.c_str(), errorCode.value());
 
-	tbb::mutex::scoped_lock lock(Game::GetInstance()->GetImGUISystem().GetMutex());
+	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
 	ImGui::Begin("File Dialog");
 	if (ImGui::InputText("Regex Filter", myFilter, kRegexSize))
 	{

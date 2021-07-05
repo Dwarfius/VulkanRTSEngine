@@ -87,7 +87,7 @@ private:
     std::stack<Mark> myMarkStack;
     std::vector<Mark> myMarks;
     tbb::spin_mutex myStackMutex;
-    tbb::mutex myMarksMutex;
+    std::mutex myMarksMutex;
     std::atomic<int>& myIdCounter;
 };
 

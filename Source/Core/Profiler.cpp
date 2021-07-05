@@ -104,7 +104,7 @@ void Profiler::Storage::EndMark()
 
     {
         // same as above
-        tbb::mutex::scoped_lock lock(myMarksMutex);
+        std::lock_guard lock(myMarksMutex);
         myMarks.push_back(lastMark);
     }
 }
@@ -115,7 +115,7 @@ void Profiler::Storage::NewFrame(std::vector<Mark>& aBuffer)
         // Because some tasks can be cross-frame, it's possible that
         // a thread will end the mark in the middle of us preparing for
         // a new frame
-        tbb::mutex::scoped_lock lock(myMarksMutex);
+        std::lock_guard lock(myMarksMutex);
         aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
         myMarks.clear();
     }

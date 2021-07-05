@@ -16,11 +16,11 @@ public:
 	void NewFrame(float aDeltaTime);
 	void Render();
 
-	tbb::mutex& GetMutex() { return myMutex; }
+	std::mutex& GetMutex() { return myMutex; }
 
 private:
 	Game& myGame;
-	tbb::mutex myMutex;
+	std::mutex myMutex;
 	ImGUIGLFWImpl myGLFWImpl;
 	ImGUIRenderPass* myRenderPass;
 };

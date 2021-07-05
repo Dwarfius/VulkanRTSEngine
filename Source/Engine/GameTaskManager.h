@@ -45,7 +45,6 @@ class GameTaskManager
 	using BaseTaskNodeType = tbb::flow::graph_node;
 	using StartNodeType = tbb::flow::broadcast_node<tbb::flow::continue_msg>;
 	using TaskNodeType = tbb::flow::continue_node<tbb::flow::continue_msg>;
-	class DummySender;
 
 public:
 	// RAII style wrapper to add an extra dependency
@@ -54,10 +53,11 @@ public:
 	class ExternalDependencyScope
 	{
 	public:
-		ExternalDependencyScope(TaskNodeType& aTaskNode);
+		ExternalDependencyScope(std::shared_ptr<StartNodeType> aStartNode, TaskNodeType& aTaskNode);
 		~ExternalDependencyScope();
 
 	private:
+		std::weak_ptr<StartNodeType> myStartNode;
 		TaskNodeType& myTaskNode;
 	};
 
@@ -75,14 +75,12 @@ public:
 private:
 	std::unordered_map<GameTask::Type, GameTask> myTasks;
 	std::unordered_map<GameTask::Type, std::shared_ptr<BaseTaskNodeType>> myTaskNodes;
-	std::shared_ptr<tbb::flow::graph> myTaskGraph;
-	std::queue<TaskNodeType*> myExternalDepsResetQueue;
+	std::unique_ptr<tbb::flow::graph> myTaskGraph;
+	struct ExternalDepPair
+	{
+		std::shared_ptr<StartNodeType> myExternDep;
+		TaskNodeType& myTask;
+	};
+	std::queue<ExternalDepPair> myExternalDepsResetQueue;
 	std::atomic<bool> myIsRunning;
-};
-
-class GameTaskManager::DummySender : public tbb::flow::sender<tbb::flow::continue_msg>
-{
-public:
-	bool register_successor(successor_type&) override final { return false; };
-	bool remove_successor(successor_type&) override final { return false; };
 };

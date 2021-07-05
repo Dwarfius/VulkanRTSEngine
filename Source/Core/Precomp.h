@@ -17,6 +17,7 @@
 #include <chrono>
 #include <memory>
 #include <variant>
+#include <mutex>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

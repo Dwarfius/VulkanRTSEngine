@@ -40,7 +40,7 @@ namespace
 
 void ProfilerUI::Draw(bool& aIsOpen)
 {
-	tbb::mutex::scoped_lock lock(Game::GetInstance()->GetImGUISystem().GetMutex());
+	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Profiler", &aIsOpen))
 	{
 		if (ImGui::Button("Buffer Init Frame"))

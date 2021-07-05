@@ -137,7 +137,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	myTopBar.Draw();
 
 	{
-		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
+		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
 		if (myDemoWindowVisible)
 		{
 			ImGui::ShowDemoWindow(&myDemoWindowVisible);
@@ -269,7 +269,7 @@ void EditorMode::UpdateTestSkeleton(Game& aGame, float aDeltaTime)
 
 	if(myShowSkeletonUI)
 	{
-		tbb::mutex::scoped_lock lock(aGame.GetImGUISystem().GetMutex());
+		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Skeleton Settings"))
 		{
 			ImGui::InputInt("Skeleton Add Count", &myAddSkeletonCount);

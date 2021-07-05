@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <atomic>
+#include <mutex>
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
