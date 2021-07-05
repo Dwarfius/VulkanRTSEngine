@@ -12,7 +12,7 @@ SET(BENCHTABLE_GenSkeleton FALSE CACHE BOOL "Should BenchTable include Skeleton 
 FetchContent_Declare(
 	googleBench
 	GIT_REPOSITORY https://github.com/google/benchmark
-	GIT_TAG        v1.5.1
+	GIT_TAG        v1.5.5
 )
 FetchContent_GetProperties(googleBench)
 if(NOT googlebench_POPULATED)

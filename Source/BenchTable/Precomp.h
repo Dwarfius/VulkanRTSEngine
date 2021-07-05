@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <iterator>
+#include <mutex>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
