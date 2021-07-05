@@ -188,8 +188,8 @@ void Serializer::SerializeEnum(size_t anIndex, T& aValue, const char* const (&aN
 	if (myIsReading)
 	{
 		size_t enumValue = static_cast<size_t>(aValue);
-		DeserializeEnumImpl(anIndex, enumVal, aNames, N);
-		aValue = static_cast<T>(enumVal);
+		DeserializeEnumImpl(anIndex, enumValue, aNames, N);
+		aValue = static_cast<T>(enumValue);
 	}
 	else
 	{

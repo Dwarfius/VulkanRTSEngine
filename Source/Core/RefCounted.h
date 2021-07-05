@@ -180,7 +180,7 @@ public:
 		std::is_base_of_v<TOther, T>, int> = 0>
 	operator Handle<TOther>()
 	{
-		return Get<typename TOther>();
+		return Get<TOther>();
 	}
 
 	template<class TOther, typename std::enable_if_t<

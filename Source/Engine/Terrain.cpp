@@ -33,7 +33,7 @@ void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 		ASSERT_STR(texture->GetFormat() == Texture::Format::UNorm_R, "Texture must have single channel format!");
 
 		using PixelType = unsigned char;
-		constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
+		constexpr float kMaxPixelVal = std::numeric_limits<PixelType>::max();
 
 		myWidth = texture->GetWidth();
 		myHeight = texture->GetHeight();

@@ -63,7 +63,7 @@ const VariantMap::Variant& VariantMap::GetVariant(size_t anIndex) const
 {
 	ASSERT_STR(anIndex < myVariants.size(), "Out of bounds access!");
 	auto variantIter = myVariants.begin();
-	std::advance(myVariants.begin(), anIndex);
+	std::advance(variantIter, anIndex);
 	return variantIter->second;
 }
 

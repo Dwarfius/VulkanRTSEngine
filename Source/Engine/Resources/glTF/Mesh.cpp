@@ -1,7 +1,6 @@
 #include "Precomp.h"
 #include "Mesh.h"
 
-#include <Graphics/Resources/Model.h>
 #include <charconv>
 #include "../../Animation/SkinnedVerts.h"
 

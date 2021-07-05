@@ -312,7 +312,7 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	const GLchar* aMessage,
 	const void* aUserParam)
 {
-	char* source;
+	const char* source;
 	switch (aSource)
 	{
 	case GL_DEBUG_SOURCE_API:             source = "API"; break;
@@ -323,7 +323,7 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	case GL_DEBUG_SOURCE_OTHER:           source = "Other"; break;
 	}
 
-	char* type;
+	const char* type;
 	switch (aType)
 	{
 	case GL_DEBUG_TYPE_ERROR:               type = "Error"; break;
@@ -338,7 +338,7 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	}
 
 	bool shouldAssert = false;
-	char* severity;
+	const char* severity;
 	switch (aSeverity)
 	{
 	case GL_DEBUG_SEVERITY_HIGH:         severity = "high"; shouldAssert = true; break;

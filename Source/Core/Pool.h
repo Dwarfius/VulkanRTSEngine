@@ -34,6 +34,13 @@ class Pool
 		const T* Get() const;
 
 	protected:
+		void Reset()
+		{
+			if (IsValid())
+			{
+				myPool->Free(myIndex);
+			}
+		}
 		Pool<T>* myPool = nullptr; // not owned
 		size_t myIndex = 0;
 		GenerationType myGeneration = 0;
@@ -53,10 +60,7 @@ public:
 
 		~Ptr() noexcept
 		{
-			if (IsValid())
-			{
-				myPool->Free(myIndex);
-			}
+			this->Reset();
 		}
 	
 	private:
@@ -160,13 +164,10 @@ const T* Pool<T>::PtrBase::Get() const
 template<class T>
 typename Pool<T>::Ptr& Pool<T>::Ptr::operator=(Ptr&& aPtr) noexcept
 {
-	if (IsValid())
-	{
-		myPool->Free(myIndex);
-	}
-	myPool = aPtr.myPool;
-	myIndex = aPtr.myIndex;
-	myGeneration = aPtr.myGeneration;
+	this->Reset();
+	this->myPool = aPtr.myPool;
+	this->myIndex = aPtr.myIndex;
+	this->myGeneration = aPtr.myGeneration;
 	aPtr.myPool = nullptr;
 	aPtr.myIndex = 0;
 	aPtr.myGeneration = 0;

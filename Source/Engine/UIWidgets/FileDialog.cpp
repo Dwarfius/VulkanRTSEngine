@@ -25,7 +25,7 @@ bool FileDialog::Draw(std::string& aPath)
 	}
 
 	const std::filesystem::path& absRootPath = std::filesystem::absolute(rootDir.path(), errorCode);
-	const std::string& rootDirU8Path = absRootPath.u8string();
+	const std::string& rootDirU8Path = absRootPath.string();
 	bool picked = false;
 	if (!errorCode && ImGui::TreeNodeEx(rootDirU8Path.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -80,10 +80,10 @@ void FileDialog::UpdateFilteredPaths(const std::filesystem::directory_entry& aRo
 		std::error_code errorCode;
 		const std::filesystem::path& filename = std::filesystem::relative(entry.path(), aRoot.path(), errorCode);
 		ASSERT(!errorCode);
-		const std::string& utf8Name = filename.u8string();
+		const std::string& utf8Name = filename.string();
 		if (Utils::Matches(utf8Name, myFilter))
 		{
-			myFilteredPaths.push_back(filename.u8string());
+			myFilteredPaths.push_back(filename.string());
 		}
 	});
 }
@@ -122,7 +122,7 @@ bool FileDialog::DrawHierarchy(const std::filesystem::directory_entry& aRoot, st
 		if (entry.is_directory())
 		{
 			const std::filesystem::path& filename = entry.path().filename();
-			const std::string& dirU8Path = filename.u8string();
+			const std::string& dirU8Path = filename.string();
 			if (ImGui::TreeNode(dirU8Path.c_str()))
 			{
 				if (DrawFolder(entry, aPath))
@@ -172,7 +172,7 @@ bool FileDialog::DrawFolder(const std::filesystem::directory_entry& aDir, std::s
 			continue;
 		}
 
-		const std::string& filename = file.path().filename().u8string();
+		const std::string& filename = file.path().filename().string();
 		const ImGuiStyle& style = ImGui::GetStyle();
 		ImVec2 textSize = ImGui::CalcTextSize(filename.c_str());
 		textSize.x += style.FramePadding.x * 2.0f;
@@ -188,7 +188,7 @@ bool FileDialog::DrawFolder(const std::filesystem::directory_entry& aDir, std::s
 		{
 			const std::filesystem::path& absPath = std::filesystem::absolute(file.path(), errCode);
 			picked = true;
-			aPath = absPath.u8string();
+			aPath = absPath.string();
 		}
 
 		// this will advance the cursor to the updated position, 

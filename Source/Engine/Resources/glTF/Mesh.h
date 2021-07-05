@@ -2,9 +2,8 @@
 
 #include "Accessor.h"
 #include "Node.h"
+#include <Graphics/Resources/Model.h>
 
-template<class T> class Handle;
-class Model;
 struct SkinnedVertex;
 struct Vertex;
 
