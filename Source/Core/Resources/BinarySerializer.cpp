@@ -228,9 +228,7 @@ void BinarySerializer::Read(uint32_t& aValue) const
 
 void BinarySerializer::Write(int32_t aValue)
 {
-	// TODO: C++20 std::bitcast
-	uint32_t value;
-	std::memcpy(&value, &aValue, sizeof(aValue));
+	uint32_t value = std::bit_cast<uint32_t>(aValue);
 	Write(value);
 }
 
@@ -238,8 +236,7 @@ void BinarySerializer::Read(int32_t& aValue) const
 {
 	uint32_t value;
 	Read(value);
-	// TODO: C++20 std::bitcast
-	std::memcpy(&aValue, &value, sizeof(value));
+	aValue = std::bit_cast<int32_t>(value);
 }
 
 void BinarySerializer::Write(uint64_t aValue)
@@ -269,9 +266,7 @@ void BinarySerializer::Read(uint64_t& aValue) const
 
 void BinarySerializer::Write(int64_t aValue)
 {
-	// TODO: C++20 std::bitcast
-	uint64_t value;
-	std::memcpy(&value, &aValue, sizeof(aValue));
+	uint64_t value = std::bit_cast<uint64_t>(aValue);
 	Write(value);
 }
 
@@ -279,15 +274,12 @@ void BinarySerializer::Read(int64_t& aValue) const
 {
 	uint64_t value;
 	Read(value);
-	// TODO: C++20 std::bitcast
-	std::memcpy(&aValue, &value, sizeof(value));
+	aValue = std::bit_cast<int64_t>(value);
 }
 
 void BinarySerializer::Write(float aValue)
 {
-	// TODO: C++20 std::bitcast
-	uint32_t value;
-	std::memcpy(&value, &aValue, sizeof(aValue));
+	uint32_t value = std::bit_cast<uint32_t>(aValue);
 	Write(value);
 }
 
@@ -295,8 +287,7 @@ void BinarySerializer::Read(float& aValue) const
 {
 	uint32_t value;
 	Read(value);
-	// TODO: C++20 std::bitcast
-	std::memcpy(&aValue, &value, sizeof(value));
+	aValue = std::bit_cast<float>(value);
 }
 
 void BinarySerializer::Write(const std::string& aValue)

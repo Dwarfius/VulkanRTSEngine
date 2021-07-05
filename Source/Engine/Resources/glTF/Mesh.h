@@ -115,8 +115,8 @@ namespace glTF
 				}
 				break;
 			}
-			case Accessor::ComponentType::UnsignedByte: // TODO: C++20 [[fallthrough]]
-			case Accessor::ComponentType::UnsignedShort:
+			case Accessor::ComponentType::UnsignedByte: [[fallthrough]];
+			case Accessor::ComponentType::UnsignedShort: [[fallthrough]];
 			case Accessor::ComponentType::UnsignedInt:
 			{
 				for (uint8_t i = 0; i < 3; i++)
@@ -130,9 +130,8 @@ namespace glTF
 			{
 				for (uint8_t i = 0; i < 3; i++)
 				{
-					// TODO: C++20 replace with bitcast
-					std::memcpy(&min[i], &accessors[posAccessor].myMin[i], sizeof(uint32_t));
-					std::memcpy(&max[i], &accessors[posAccessor].myMax[i], sizeof(uint32_t));
+					min[i] = std::bit_cast<float>(accessors[posAccessor].myMin[i]);
+					max[i] = std::bit_cast<float>(accessors[posAccessor].myMax[i]);
 				}
 				break;
 			}

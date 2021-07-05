@@ -97,9 +97,7 @@ namespace glTF
 			case Accessor::ComponentType::Byte:
 			{
 				const int8_t data = aJson.get<int8_t>();
-				uint8_t bitCopy; // TODO: C++20 bitcast
-				std::memcpy(&bitCopy, &data, sizeof(int8_t));
-				anElem = bitCopy;
+				anElem = std::bit_cast<uint8_t>(data);
 				break;
 			}
 			case Accessor::ComponentType::UnsignedByte:
@@ -110,9 +108,7 @@ namespace glTF
 			case Accessor::ComponentType::Short:
 			{
 				const int16_t data = aJson.get<int16_t>();
-				uint16_t bitCopy;
-				std::memcpy(&bitCopy, &data, sizeof(int16_t));
-				anElem = bitCopy;
+				anElem = std::bit_cast<uint16_t>(data);
 				break;
 			}
 			case Accessor::ComponentType::UnsignedShort:
@@ -128,7 +124,7 @@ namespace glTF
 			case Accessor::ComponentType::Float:
 			{
 				const float data = aJson.get<float>();
-				std::memcpy(&anElem, &data, sizeof(float));
+				anElem = std::bit_cast<uint32_t>(data);
 				break;
 			}
 			default: ASSERT(false);

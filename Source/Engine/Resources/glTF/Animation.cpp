@@ -184,9 +184,7 @@ namespace glTF
 					"Time accessor must be Scalar!");
 
 				// According to docs, for time accessor min/max must be defined!
-				float newLength = 0;
-				// TODO: C++20 - replace with std::bit_cast
-				std::memcpy(&newLength, &timeAccessor.myMax[0], sizeof(float));
+				const float newLength = std::bit_cast<float>(timeAccessor.myMax[0]);
 				length = std::max(length, newLength);
 			}
 			ASSERT_STR(length > 0, "Failed to find the length of animation!");
