@@ -1,5 +1,5 @@
 # by Daniel Prihodko
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.12)
 project(VEngine LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 
