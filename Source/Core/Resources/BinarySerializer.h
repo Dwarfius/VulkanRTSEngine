@@ -68,8 +68,6 @@ private:
 	void Read(float& aValue) const;
 	void Write(const std::string& aValue);
 	void Read(std::string& aValue) const;
-	void Write(const VariantMap& aValue);
-	void Read(VariantMap& aValue) const;
 	void Write(const ResourceProxy& aValue);
 	void Read(ResourceProxy& aValue) const;
 	void Write(const glm::vec2& aValue);

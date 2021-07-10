@@ -320,16 +320,6 @@ void BinarySerializer::Read(std::string& aValue) const
 	myIndex += size;
 }
 
-void BinarySerializer::Write(const VariantMap& aValue)
-{
-	ASSERT_STR(false, "NYI");
-}
-
-void BinarySerializer::Read(VariantMap& aValue) const
-{
-	ASSERT_STR(false, "NYI");
-}
-
 void BinarySerializer::Write(const ResourceProxy& aValue)
 {
 	Write(aValue.myPath);

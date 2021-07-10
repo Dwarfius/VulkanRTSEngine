@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../VariantMap.h"
 #include "AssetTracker.h"
 #include "../VariantUtils.h"
 
@@ -18,7 +17,7 @@ class Serializer
 protected:
 	struct ResourceProxy { std::string myPath; };
 	using SupportedTypes = VariantUtil<bool, uint64_t, int64_t, float, 
-		std::string, VariantMap, ResourceProxy,
+		std::string, ResourceProxy,
 		glm::vec2, glm::vec3, glm::vec4, glm::quat, glm::mat4
 	>;
 	using VariantType = SupportedTypes::VariantType;

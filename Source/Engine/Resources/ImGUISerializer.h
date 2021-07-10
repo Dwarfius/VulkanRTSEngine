@@ -52,7 +52,6 @@ private:
 	void Display(std::string_view aLabel, int64_t& aValue) const;
 	void Display(std::string_view aLabel, float& aValue) const;
 	void Display(std::string_view aLabel, std::string& aValue) const;
-	void Display(std::string_view aLabel, VariantMap& aValue) const;
 	void Display(std::string_view aLabel, ResourceProxy& aValue) const;
 	void Display(std::string_view aLabel, glm::vec2& aValue) const;
 	void Display(std::string_view aLabel, glm::vec3& aValue) const;

@@ -49,5 +49,4 @@ private:
 	mutable std::stack<nlohmann::json> myObjStack;
 
 	friend struct nlohmann::adl_serializer<ResourceProxy>;
-	friend struct nlohmann::adl_serializer<VariantMap>;
 };

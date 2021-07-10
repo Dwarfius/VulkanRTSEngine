@@ -232,8 +232,6 @@ template void Serializer::Serialize(std::string_view, float&);
 template void Serializer::Serialize(size_t, float&);
 template void Serializer::Serialize(std::string_view, std::string&);
 template void Serializer::Serialize(size_t, std::string&);
-template void Serializer::Serialize(std::string_view, VariantMap&);
-template void Serializer::Serialize(size_t, VariantMap&);
 
 template void Serializer::Serialize(std::string_view, glm::vec2&);
 template void Serializer::Serialize(size_t, glm::vec2&);

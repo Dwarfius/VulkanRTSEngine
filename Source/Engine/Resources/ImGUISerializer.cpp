@@ -229,11 +229,6 @@ void ImGUISerializer::Display(std::string_view aLabel, std::string& aValue) cons
 	}, &aValue);
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, VariantMap& aValue) const
-{
-	ASSERT_STR(false, "NYI");
-}
-
 void ImGUISerializer::Display(std::string_view aLabel, ResourceProxy& aValue) const
 {
 	// TODO: expand this
