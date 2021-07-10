@@ -42,3 +42,5 @@ add_subdirectory(Source/Executable)
 if(VENGINE_GENERATE_BENCHTABLE)
 	add_subdirectory(Source/BenchTable)
 endif()
+
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VEngineExe)
