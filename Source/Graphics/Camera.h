@@ -61,6 +61,10 @@ private:
 class Camera
 {
 public:
+	constexpr static float kNearPlane = 0.1f;
+	constexpr static float kFarPlane = 10000.f;
+	constexpr static float kFOV = 45;
+
 	Camera(float aWidth, float aHeight, bool anOrthoMode = false);
 	~Camera() {}
 
@@ -69,7 +73,7 @@ public:
 	const Transform& GetTransform() const { return myTransform; }
 	Transform& GetTransform() { return myTransform; }
 
-	void Recalculate();
+	void Recalculate(float aWidth, float aHeight);
 	glm::mat4 GetView() const { return myViewMatrix; }
 	glm::mat4 GetProj() const { return myProjMatrix; }
 	void InvertProj() { myProjMatrix[1][1] *= -1; }

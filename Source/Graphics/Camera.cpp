@@ -13,17 +13,27 @@ Camera::Camera(float aWidth, float aHeight, bool anOrthoMode /* =false */)
 	}
 	else
 	{
-		SetProjPersp(45, aWidth / aHeight, 0.1f, 10000.f);
+		SetProjPersp(kFOV, aWidth / aHeight, kNearPlane, kFarPlane);
 	}
 }
 
-void Camera::Recalculate()
+void Camera::Recalculate(float aWidth, float aHeight)
 {
 	glm::vec3 pos = myTransform.GetPos();
 	glm::vec3 right = myTransform.GetRight();
 	glm::vec3 up = myTransform.GetUp();
 	glm::vec3 forward = myTransform.GetForward();
 	myViewMatrix = glm::lookAt(pos, pos + forward, up);
+	
+	if (myOrthoMode)
+	{
+		myProjMatrix = glm::ortho(0.f, aWidth, 0.f, aHeight);
+	}
+	else
+	{
+		myProjMatrix = glm::perspective(kFOV, aWidth / aHeight, kNearPlane, kFarPlane);
+	}
+	
 	myVP = myProjMatrix * myViewMatrix;
 	myFrustum.UpdateFrustumPlanes(myVP);
 }
@@ -34,7 +44,7 @@ void Camera::SetProjPersp(float aFov, float aRatio, float aNearPlane, float fFar
 	
 	myProjMatrix = glm::perspective(aFov, aRatio, aNearPlane, fFarPlane);
 	myVP = myProjMatrix * myViewMatrix;
-	myFrustum.UpdateFrustumPlanes(myProjMatrix);
+	myFrustum.UpdateFrustumPlanes(myVP);
 }
 
 void Camera::SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop)

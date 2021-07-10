@@ -129,7 +129,7 @@ void RenderThread::SubmitRenderables()
 #endif // USE_VULKAN
 
 	// update the mvp
-	Game::GetInstance()->GetCamera()->Recalculate();
+	Game::GetInstance()->GetCamera()->Recalculate(myGraphics->GetWidth(), myGraphics->GetHeight());
 
 	// the current render queue has been used up, we can fill it up again
 	myGraphics->BeginGather();

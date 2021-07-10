@@ -15,6 +15,7 @@ protected:
 	void PrepareContext(RenderContext& aContext) const override;
 	Category GetCategory() const override { return Category::Renderables; }
 	void Process(RenderJob& aJob, const IParams& aParams) const override;
+	bool HasDynamicRenderContext() const override { return true; }
 };
 
 struct TerrainRenderParams : public IRenderPass::IParams

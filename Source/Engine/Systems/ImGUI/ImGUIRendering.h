@@ -70,7 +70,7 @@ public:
 		glm::mat4 myOrthoProj;
 	};
 
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override final;
+	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const final;
 };
 
 class ImGUIRenderPass : public IRenderPass
@@ -87,14 +87,14 @@ class ImGUIRenderPass : public IRenderPass
 public:
 	ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics);
 
-	bool HasResources(const RenderJob& aJob) const override final
+	bool HasResources(const RenderJob& aJob) const final
 	{
 		// we only have a couple resources, so instead of
 		// querying the same ones all the time, we only do it
 		// once during ImGUISystem::NewFrame scheduling
 		return true;
 	}
-	uint32_t Id() const override final { return PassId; }
+	uint32_t Id() const final { return PassId; }
 
 	void SetProj(const glm::mat4& aMatrix);
 
@@ -105,20 +105,21 @@ public:
 	bool IsReady() const;
 
 protected:
-	void PrepareContext(RenderContext& aContext) const override final;
+	void PrepareContext(RenderContext& aContext) const final;
 
-	void AddRenderable(RenderJob& aJob, const IParams& aParams) override final;
+	void AddRenderable(RenderJob& aJob, const IParams& aParams) final;
 
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
-	void BeginPass(Graphics& aGraphics) override final;
+	void BeginPass(Graphics& aGraphics) final;
 
-	void SubmitJobs(Graphics& anInterface) override final
+	void SubmitJobs(Graphics& anInterface) final
 	{
 		// Do nothing because we already scheduled everything 
 		// part of the BeginPass call
 	}
 
-	Category GetCategory() const override final { return Category::ImGUI; }
+	Category GetCategory() const final { return Category::ImGUI; }
 
-	void Process(RenderJob& aJob, const IParams& aParams) const override final;
+	void Process(RenderJob& aJob, const IParams& aParams) const final;
+	bool HasDynamicRenderContext() const final { return true; }
 };
