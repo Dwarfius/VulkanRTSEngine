@@ -98,6 +98,7 @@ set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.h"
 	"CRC32.h"
+	"DataEnum.h"
 	"File.cpp" "File.h"
 	"LazyVector.h"
 	"Pool.h"
