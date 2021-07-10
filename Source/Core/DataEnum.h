@@ -58,9 +58,13 @@
 			return DATA_ENUM_EXPAND(DATA_ENUM_NUM_ARGS(__VA_ARGS__)); \
 		} \
 		\
+		constexpr Name() = default; \
 		constexpr Name(Values aValue) : myValue(aValue) {} \
         constexpr explicit Name(UnderlyingType aValue) : myValue(aValue) {} \
 		constexpr explicit operator UnderlyingType() const { return myValue; } \
+		\
+		constexpr bool operator==(const Name& aOther) const { return myValue == aOther.myValue; } \
+		constexpr bool operator!=(const Name& aOther) const { return myValue != aOther.myValue; } \
 	private: \
 		UnderlyingType myValue; \
 	}
