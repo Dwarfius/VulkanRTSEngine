@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/Resources/Resource.h>
+#include <Core/DataEnum.h>
 
 class AnimationClip : public Resource
 {
@@ -9,34 +10,19 @@ public:
 
 	using BoneIndex = uint16_t; // must be in sync with Skeleton::BoneIndex!
 
-	enum class Property : uint8_t
-	{
+	DATA_ENUM(Property, uint8_t,
 		Position,
 		Rotation,
 		Scale,
-		Weights // for morph targets, NYI
-	};
-	constexpr static const char* const kPropertyNames[]
-	{
-		"Position",
-		"Rotation",
-		"Scale",
-		"Weights"
-	};
+		Weights
+	);
 
 	// http://paulbourke.net/miscellaneous/interpolation/
-	enum class Interpolation : uint8_t
-	{
+	DATA_ENUM(Interpolation, uint8_t,
 		Step,
 		Linear,
 		Cubic
-	};
-	constexpr static const char* const kInterpolationNames[]
-	{
-		"Step",
-		"Linear",
-		"Cubic"
-	};
+	);
 
 	struct Mark
 	{

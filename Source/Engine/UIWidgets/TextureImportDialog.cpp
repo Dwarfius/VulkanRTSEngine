@@ -86,18 +86,14 @@ void TextureImportDialog::DrawTexture()
 
 	// change-able
 	{
-		const char* const enumNames[]{ 
-			"Clamp", 
-			"Repeat", 
-			"MirroredRepeat" 
-		};
-		size_t selectedInd = static_cast<size_t>(myTexture->GetWrapMode());
-		if (ImGui::BeginCombo("WrapMode", enumNames[selectedInd]))
+		using IndType = Texture::WrapMode::UnderlyingType;
+		IndType selectedInd = static_cast<IndType>(myTexture->GetWrapMode());
+		if (ImGui::BeginCombo("WrapMode", Texture::WrapMode::kNames[selectedInd]))
 		{
-			for (size_t i = 0; i < std::extent_v<decltype(enumNames)>; i++)
+			for (IndType i = 0; i < Texture::WrapMode::GetSize(); i++)
 			{
 				bool selected = selectedInd == i;
-				if (ImGui::Selectable(enumNames[i], &selected))
+				if (ImGui::Selectable(Texture::WrapMode::kNames[i], &selected))
 				{
 					selectedInd = i;
 					myTexture->SetWrapMode(static_cast<Texture::WrapMode>(i));
@@ -109,21 +105,14 @@ void TextureImportDialog::DrawTexture()
 	}
 
 	{
-		const char* const enumNames[]{ 
-			"Nearest", 
-			"Linear", 
-			"Nearest-MipMapNearest",
-			"Linear-MipMapNearest",
-			"Nearest-MipMapLinear",
-			"Linear-MipMapLinear"
-		};
-		size_t selectedInd = static_cast<size_t>(myTexture->GetMinFilter());
-		if (ImGui::BeginCombo("MinFilter", enumNames[selectedInd]))
+		using IndType = Texture::Filter::UnderlyingType;
+		IndType selectedInd = static_cast<IndType>(myTexture->GetMinFilter());
+		if (ImGui::BeginCombo("MinFilter", Texture::Filter::kNames[selectedInd]))
 		{
-			for (size_t i = 0; i < std::extent_v<decltype(enumNames)>; i++)
+			for (IndType i = 0; i < Texture::Filter::GetSize(); i++)
 			{
 				bool selected = selectedInd == i;
-				if (ImGui::Selectable(enumNames[i], &selected))
+				if (ImGui::Selectable(Texture::Filter::kNames[i], &selected))
 				{
 					selectedInd = i;
 					myTexture->SetMinFilter(static_cast<Texture::Filter>(i));
@@ -135,17 +124,14 @@ void TextureImportDialog::DrawTexture()
 	}
 
 	{
-		const char* const enumNames[]{
-			"Nearest",
-			"Linear"
-		};
-		size_t selectedInd = static_cast<size_t>(myTexture->GetMagFilter());
-		if (ImGui::BeginCombo("MagFilter", enumNames[selectedInd]))
+		using IndType = Texture::Filter::UnderlyingType;
+		IndType selectedInd = static_cast<IndType>(myTexture->GetMagFilter());
+		if (ImGui::BeginCombo("MagFilter", Texture::Filter::kNames[selectedInd]))
 		{
-			for (size_t i = 0; i < std::extent_v<decltype(enumNames)>; i++)
+			for (IndType i = Texture::Filter::Nearest; i <= Texture::Filter::Linear; i++)
 			{
 				bool selected = selectedInd == i;
-				if (ImGui::Selectable(enumNames[i], &selected))
+				if (ImGui::Selectable(Texture::Filter::kNames[i], &selected))
 				{
 					selectedInd = i;
 					myTexture->SetMagFilter(static_cast<Texture::Filter>(i));

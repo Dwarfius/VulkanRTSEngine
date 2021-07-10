@@ -1,11 +1,12 @@
 #pragma once
 
+#include "DataEnum.h"
+
 class Serializer;
 
 struct VertexDescriptor
 {
-	enum class MemberType : uint8_t
-	{
+	DATA_ENUM(MemberType, uint8_t, 
 		Bool,
 		U8,
 		S8,
@@ -16,20 +17,7 @@ struct VertexDescriptor
 		F16,
 		F32,
 		F64
-	};
-	constexpr static const char* const kMemberTypeNames[]
-	{
-		"Bool",
-		"U8",
-		"S8",
-		"U16",
-		"S16",
-		"U32",
-		"S32",
-		"F16",
-		"F32",
-		"F64"
-	};
+	);
 
 	struct MemberDescriptor
 	{

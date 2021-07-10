@@ -1,11 +1,12 @@
 #pragma once
 
+#include <Core/DataEnum.h>
+
 class ITexture
 {
 public:
 	// TODO: split this into SourceFormat and DestFormat
-	enum class Format
-	{
+	DATA_ENUM(Format, char,
 		// Generic
 		// 8 byte per component
 		SNorm_R,
@@ -20,37 +21,15 @@ public:
 
 		// Special
 		UNorm_BGRA // VK relies on this for swapchain initialization
-	};
-	constexpr static const char* const kFormatNames[]
-	{
-		"SNorm_R",
-		"SNorm_RG",
-		"SNorm_RGB",
-		"SNorm_RGBA",
-		
-		"UNorm_R",
-		"UNorm_RG",
-		"UNorm_RGB",
-		"UNorm_RGBA",
+	);
 
-		"UNorm_BGRA" 
-	};
-
-	enum class WrapMode
-	{
+	DATA_ENUM(WrapMode, char,
 		Clamp,
 		Repeat,
 		MirroredRepeat
-	};
-	constexpr static const char* const kWrapModeNames[]
-	{
-		"Clamp",
-		"Repeat",
-		"MirroredRepeat"
-	};
+	);
 
-	enum class Filter
-	{
+	DATA_ENUM(Filter, char,
 		// Mag/Min
 		Nearest,
 		Linear,
@@ -60,15 +39,5 @@ public:
 		Linear_MipMapNearest,
 		Nearest_MipMapLinear,
 		Linear_MipMapLinear
-	};
-	constexpr static const char* const kFilterNames[]
-	{
-		"Nearest",
-		"Linear",
-
-		"Nearest_MipMapNearest",
-		"Linear_MipMapNearest",
-		"Nearest_MipMapLinear",
-		"Linear_MipMapLinear"
-	};
+	);
 };

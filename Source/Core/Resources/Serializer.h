@@ -4,6 +4,9 @@
 #include "AssetTracker.h"
 #include "../VariantUtils.h"
 
+template<class T>
+concept DataEnum = T::kIsEnum;
+
 class Serializer
 {
 	enum class State : uint8_t
@@ -59,11 +62,11 @@ public:
 	template<class T>
 	void Serialize(size_t anIndex, Handle<T>& aValue);
 
-	template<class T, size_t N>
-	void SerializeEnum(std::string_view aName, T& aValue, const char* const (&aNames)[N]);
+	template<DataEnum T>
+	void SerializeEnum(std::string_view aName, T& aValue);
 
-	template<class T, size_t N>
-	void SerializeEnum(size_t anIndex, T& aValue, const char* const (&aNames)[N]);
+	template<DataEnum T>
+	void SerializeEnum(size_t anIndex, T& aValue);
 
 	Scope SerializeObject(std::string_view aName);
 	Scope SerializeObject(size_t anIndex);
@@ -159,41 +162,37 @@ void Serializer::Serialize(size_t anIndex, Handle<T>& aValue)
 	}
 }
 
-template<class T, size_t N>
-void Serializer::SerializeEnum(std::string_view aName, T& aValue, const char* const (&aNames)[N])
+template<DataEnum T>
+void Serializer::SerializeEnum(std::string_view aName, T& aValue)
 {
-	static_assert(std::is_enum_v<T>, "T must be an enum!");
-
 	ASSERT_STR(myState == State::Object, "Invalid call, currently working with an object!");
 
 	if (myIsReading)
 	{
-		size_t enumValue = static_cast<size_t>(aValue);
-		DeserializeEnumImpl(aName, enumValue, aNames, N);
-		aValue = static_cast<T>(enumValue);
+		size_t enumValue = static_cast<T::UnderlyingType>(aValue);
+		DeserializeEnumImpl(aName, enumValue, T::kNames, T::GetSize());
+		aValue = T(static_cast<T::UnderlyingType>(enumValue));
 	}
 	else
 	{
-		SerializeEnumImpl(aName, static_cast<size_t>(aValue), aNames, N);
+		SerializeEnumImpl(aName, static_cast<T::UnderlyingType>(aValue), T::kNames, T::GetSize());
 	}
 }
 
-template<class T, size_t N>
-void Serializer::SerializeEnum(size_t anIndex, T& aValue, const char* const (&aNames)[N])
+template<DataEnum T>
+void Serializer::SerializeEnum(size_t anIndex, T& aValue)
 {
-	static_assert(std::is_enum_v<T>, "T must be an enum!");
-
 	ASSERT_STR(myState == State::Array, "Invalid call, currently working with an array!");
 	
 	if (myIsReading)
 	{
-		size_t enumValue = static_cast<size_t>(aValue);
-		DeserializeEnumImpl(anIndex, enumValue, aNames, N);
-		aValue = static_cast<T>(enumValue);
+		size_t enumValue = static_cast<T::UnderlyingType>(aValue);
+		DeserializeEnumImpl(anIndex, enumValue, T::kNames, T::GetSize());
+		aValue = T(static_cast<T::UnderlyingType>(enumValue));
 	}
 	else
 	{
-		SerializeEnumImpl(anIndex, static_cast<size_t>(aValue), aNames, N);
+		SerializeEnumImpl(anIndex, static_cast<T::UnderlyingType>(aValue), T::kNames, T::GetSize());
 	}
 }
 

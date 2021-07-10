@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/DataEnum.h>
+
 class btCollisionShape;
 class Serializer;
 
@@ -22,8 +24,7 @@ struct Sphere
 class PhysicsShapeBase
 {
 public:
-	enum class Type
-	{
+	DATA_ENUM(Type, char,
 		Invalid,
 		Box,
 		Sphere,
@@ -31,17 +32,7 @@ public:
 		ConvexHull,
 		Heightfield,
 		Count
-	};
-	constexpr static const char* const kTypeNames[]
-	{
-		"Invalid",
-		"Box",
-		"Sphere",
-		"Capsule",
-		"ConvexHull",
-		"Heightfield",
-		"Count"
-	};
+	);
 
 public:
 	PhysicsShapeBase();

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <Core/DataEnum.h>
+
 class IShader
 {
 public:
-	enum class Type
-	{
+	DATA_ENUM(Type, char,
 		Invalid,
 		Vertex,
 		Fragment,
@@ -12,16 +13,5 @@ public:
 		TessControl,
 		TessEval,
 		Compute
-	};
-
-	constexpr static const char* const kTypeNames[]
-	{
-		"Invalid",
-		"Vertex",
-		"Fragment",
-		"Geometry",
-		"TessControl",
-		"TessEval",
-		"Compute"
-	};
+	);
 };

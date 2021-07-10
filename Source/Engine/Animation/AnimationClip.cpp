@@ -140,8 +140,8 @@ void AnimationClip::Serialize(Serializer& aSerializer)
 				aSerializer.Serialize("myTrackStart", track.myTrackStart);
 				aSerializer.Serialize("myMarkCount", track.myMarkCount);
 				aSerializer.Serialize("myBone", track.myBone);
-				aSerializer.SerializeEnum("myAffectedProperty", track.myAffectedProperty, AnimationClip::kPropertyNames);
-				aSerializer.SerializeEnum("myInterpolation", track.myInterpolation, AnimationClip::kInterpolationNames);
+				aSerializer.SerializeEnum("myAffectedProperty", track.myAffectedProperty);
+				aSerializer.SerializeEnum("myInterpolation", track.myInterpolation);
 			}
 		}
 	}

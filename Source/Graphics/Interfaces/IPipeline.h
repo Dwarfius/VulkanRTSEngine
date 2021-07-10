@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/DataEnum.h>
+
 class Descriptor;
 template<class T> class Handle;
 class UniformAdapter;
@@ -7,16 +9,10 @@ class UniformAdapter;
 class IPipeline
 {
 public:
-	enum class Type
-	{
+	DATA_ENUM(Type, char,
 		Graphics,
 		Compute
-	};
-	constexpr static const char* const kTypeNames[]
-	{
-		"Graphics",
-		"Compute"
-	};
+	);
 
 	virtual size_t GetDescriptorCount() const = 0;
 	virtual const Descriptor& GetDescriptor(size_t) const = 0;

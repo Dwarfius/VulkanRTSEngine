@@ -155,8 +155,8 @@ void PhysicsEntity::DeferDelete()
 void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEntity)
 {
 	PhysicsShapeBase::Type shapeType = myShape ?
-		myShape->GetType() : PhysicsShapeBase::Type::Invalid;
-	aSerializer.SerializeEnum("myShape", shapeType, PhysicsShapeBase::kTypeNames);
+		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
+	aSerializer.SerializeEnum("myShape", shapeType);
 	
 	float mass = myBody && !myIsStatic ? static_cast<btRigidBody*>(myBody)->getMass() : 0;
 	float oldMass = mass;

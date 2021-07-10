@@ -61,10 +61,9 @@
 		constexpr Name() = default; \
 		constexpr Name(Values aValue) : myValue(aValue) {} \
         constexpr explicit Name(UnderlyingType aValue) : myValue(aValue) {} \
-		constexpr explicit operator UnderlyingType() const { return myValue; } \
 		\
-		constexpr bool operator==(const Name& aOther) const { return myValue == aOther.myValue; } \
-		constexpr bool operator!=(const Name& aOther) const { return myValue != aOther.myValue; } \
+		constexpr operator Values() const { return static_cast<Values>(myValue); } \
+		constexpr explicit operator UnderlyingType() const { return myValue; } \
 	private: \
 		UnderlyingType myValue; \
 	}

@@ -112,7 +112,7 @@ void Model::Serialize(Serializer& aSerializer)
 	myCenter = (myAABBMin + myAABBMax) / 2.f;
 
 	aSerializer.Serialize("mySphereRadius", mySphereRadius);
-	aSerializer.SerializeEnum("myPrimitiveType", myPrimitiveType, kPrimitiveTypeNames);
+	aSerializer.SerializeEnum("myPrimitiveType", myPrimitiveType);
 }
 
 void Serialize(Serializer& aSerializer, Vertex& aVert)

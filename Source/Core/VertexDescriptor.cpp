@@ -5,7 +5,7 @@
 
 void VertexDescriptor::MemberDescriptor::Serialize(Serializer& aSerializer)
 {
-	aSerializer.SerializeEnum("myType", myType, kMemberTypeNames);
+	aSerializer.SerializeEnum("myType", myType);
 	aSerializer.Serialize("myElemCount", myElemCount);
 	aSerializer.Serialize("myOffset", myOffset);
 }

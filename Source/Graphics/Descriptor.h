@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/DataEnum.h>
+
 class Serializer;
 
 // TODO: might be a good idea to use unpack-CRTP to write a fully static-compiled descriptors
@@ -16,24 +18,14 @@ class Serializer;
 class Descriptor
 {
 public:
-	enum class UniformType : char
-	{
+	DATA_ENUM(UniformType, char,
 		Int,
 		Float,
 		Vec2,
 		Vec3,
 		Vec4,
 		Mat4
-	};
-	constexpr static const char* const kUniformTypeNames[]
-	{
-		"Int",
-		"Float",
-		"Vec2",
-		"Vec3",
-		"Vec4",
-		"Mat4"
-	};
+	);
 
 private:
 	struct Entry

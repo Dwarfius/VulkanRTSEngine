@@ -24,7 +24,7 @@ void Pipeline::AddDescriptor(const Descriptor& aDescriptor)
 
 void Pipeline::Serialize(Serializer& aSerializer)
 {
-	aSerializer.SerializeEnum("type", myType, kTypeNames);
+	aSerializer.SerializeEnum("type", myType);
 	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline needs implementing!");
 
 	if (Serializer::Scope shadersScope = aSerializer.SerializeArray("shaders", myShaders))
