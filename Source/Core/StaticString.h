@@ -80,10 +80,10 @@ public:
 		{
 			myBuffer[i] = aBuffer[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
-	template<int M, class = std::enable_if_t<M <= N>>
+	template<int M> requires (M < N)
 	constexpr StaticString(const char(&aBuffer)[M])
 		: myBuffer{0} // constexpr requires members to be initialized
 		, myLength(M)
@@ -92,10 +92,10 @@ public:
 		{
 			myBuffer[i] = aBuffer[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
-	template<int M, class = std::enable_if_t<M <= N>>
+	template<int M> requires (M < N)
 	constexpr StaticString(const StaticString<M>& aOther)
 		: myBuffer{0}
 		, myLength(M)

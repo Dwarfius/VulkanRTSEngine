@@ -176,16 +176,14 @@ public:
 
 	// TODO: replace with concepts!
 	// Allow conversions to super-classes of T
-	template<class TOther, typename std::enable_if_t<
-		std::is_base_of_v<TOther, T>, int> = 0>
+	template<class TOther> requires std::is_base_of_v<TOther, T>
 	operator Handle<TOther>()
 	{
 		return Get<TOther>();
 	}
 
-	template<class TOther, typename std::enable_if_t<
-		std::is_base_of_v<TOther, T>, int> = 0>
-		operator const Handle<TOther>() const
+	template<class TOther>
+	operator const Handle<TOther>() const
 	{
 		return Handle{ *this };
 	}

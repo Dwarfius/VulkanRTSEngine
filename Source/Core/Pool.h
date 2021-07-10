@@ -85,25 +85,17 @@ public:
 	template<class... TArgs>
 	Ptr Allocate(TArgs&&... aConstrArgs);
 
-	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>
-		>
-		void ForEach(TUnaryFunc aFunc);
+	template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
+	void ForEach(TUnaryFunc aFunc);
 
-	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>
-		>
-		void ForEach(TUnaryFunc aFunc) const;
+	template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
+	void ForEach(TUnaryFunc aFunc) const;
 
-	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>
-	>
-		void ParallelForEach(TUnaryFunc aFunc);
+	template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
+	void ParallelForEach(TUnaryFunc aFunc);
 
-	template<class TUnaryFunc,
-		class = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>
-	>
-		void ParallelForEach(TUnaryFunc aFunc) const;
+	template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
+	void ParallelForEach(TUnaryFunc aFunc) const;
 
 	size_t GetCapacity() const { return myElements.capacity(); }
 	size_t GetSize() const { return mySize; }
@@ -210,8 +202,8 @@ typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 }
 
 template<class T>
-template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>*/>
-void Pool<T>::ForEach(TUnaryFunc aFunc)
+template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
+void Pool<T>::ForEach(TUnaryFunc aFunc) 
 {
 #ifdef ASSERT_MUTEX
 	// iterating prohibits allocating/freeing!
@@ -230,8 +222,8 @@ void Pool<T>::ForEach(TUnaryFunc aFunc)
 }
 
 template<class T>
-template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>*/>
-void Pool<T>::ForEach(TUnaryFunc aFunc) const
+template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
+void Pool<T>::ForEach(TUnaryFunc aFunc) const 
 {
 #ifdef ASSERT_MUTEX
 	// iterating prohibits allocating/freeing!
@@ -253,8 +245,8 @@ void Pool<T>::ForEach(TUnaryFunc aFunc) const
 }
 
 template<class T>
-template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, T&>>*/>
-void Pool<T>::ParallelForEach(TUnaryFunc aFunc)
+template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
+void Pool<T>::ParallelForEach(TUnaryFunc aFunc) 
 {
 #ifdef ASSERT_MUTEX
 	// iterating prohibits allocating/freeing!
@@ -283,8 +275,8 @@ void Pool<T>::ParallelForEach(TUnaryFunc aFunc)
 }
 
 template<class T>
-template<class TUnaryFunc, class /* = std::enable_if_t<std::is_invocable_v<TUnaryFunc, const T&>>*/>
-void Pool<T>::ParallelForEach(TUnaryFunc aFunc) const
+template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
+void Pool<T>::ParallelForEach(TUnaryFunc aFunc) const 
 {
 #ifdef ASSERT_MUTEX
 	// iterating prohibits allocating/freeing!
