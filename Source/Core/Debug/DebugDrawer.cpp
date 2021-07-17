@@ -51,7 +51,6 @@ void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, 
 		else
 		{
 			ASSERT_STR(false, "There wasn't enough storage for debug timed lines, increase size!");
-			return;
 		}
 	}
 }

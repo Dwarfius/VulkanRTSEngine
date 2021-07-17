@@ -78,7 +78,7 @@ public:
 
 private:
 	void AddGameObjects();
-	void UpdateInput();
+	void BeginFrame();
 	void Update();
 	void EditorUpdate();
 	void PhysicsUpdate();

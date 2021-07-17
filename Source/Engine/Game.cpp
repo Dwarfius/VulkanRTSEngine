@@ -155,7 +155,7 @@ void Game::Init()
 	// setting up a task tree
 	{
 		Profiler::ScopedMark profile("Game::SetupTaskTree");
-		GameTask task(GameTask::UpdateInput, [this]() { UpdateInput(); });
+		GameTask task(GameTask::BeginFrame, [this]() { BeginFrame(); });
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::AddGameObjects, [this]() { AddGameObjects(); });
@@ -169,13 +169,13 @@ void Game::Init()
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::EditorUpdate, [this]() { EditorUpdate(); });
-		task.AddDependency(GameTask::UpdateInput);
+		task.AddDependency(GameTask::BeginFrame);
 		task.AddDependency(GameTask::PhysicsUpdate);
 		task.AddDependency(GameTask::AnimationUpdate);
 		myTaskManager->AddTask(task);
 
 		task = GameTask(GameTask::GameUpdate, [this]() { Update(); });
-		task.AddDependency(GameTask::UpdateInput);
+		task.AddDependency(GameTask::BeginFrame);
 		task.AddDependency(GameTask::AddGameObjects);
 		myTaskManager->AddTask(task);
 
@@ -407,9 +407,6 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 
 void Game::AddGameObjects()
 {
-	// TODO: find a better place for this call
-	myDebugDrawer.BeginFrame();
-
 	AssertWriteLock assertLock(myGOMutex);
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	while (myAddQueue.size())
@@ -420,11 +417,14 @@ void Game::AddGameObjects()
 	}
 }
 
-void Game::UpdateInput()
+void Game::BeginFrame()
 {
 	Profiler::ScopedMark profile(__func__);
 	Input::Update();
+	
 	myImGUISystem->NewFrame(myDeltaTime);
+
+	myDebugDrawer.BeginFrame();
 }
 
 void Game::Update()

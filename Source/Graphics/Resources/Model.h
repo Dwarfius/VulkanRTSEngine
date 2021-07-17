@@ -27,7 +27,11 @@ public:
 	{
 	public:
 		const void* GetRawData() const { return myData; }
+
+		void SetCount(size_t aCount) { myCount = aCount; }
 		size_t GetCount() const { return myCount; }
+
+		size_t GetCapacity() const { return myCapacity; }
 		VertexDescriptor GetVertexDescriptor() const { return myVertDesc; }
 		virtual void Serialize(Serializer& aSerializer) = 0;
 		virtual ~BaseStorage() = default;
@@ -35,6 +39,7 @@ public:
 	protected:
 		void* myData = nullptr;
 		size_t myCount = 0;
+		size_t myCapacity = 0;
 		VertexDescriptor myVertDesc;
 	};
 	template<class T>
@@ -45,9 +50,10 @@ public:
 		{
 			myVertDesc = T::GetDescriptor();
 			myCount = aCount;
+			myCapacity = myCount;
 			if (myCount)
 			{
-				myData = new T[myCount];
+				myData = new T[myCapacity];
 			}
 		}
 
@@ -155,6 +161,7 @@ void Model::Update(const UploadDescriptor<T> & aDescChain)
 		}
 		myVertices = new VertStorage<T>(vertCount);
 	}
+	myVertices->SetCount(vertCount);
 	myIndices.resize(indexCount);
 	myHasIndices = indexCount > 0;
 

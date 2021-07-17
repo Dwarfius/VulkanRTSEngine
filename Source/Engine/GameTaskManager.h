@@ -10,8 +10,8 @@ public:
 		GraphBroadcast, // special reserved type for kicking off the graph execution
 		/* ^^^ RESERVED ^^^ */
 		AddGameObjects,
+		BeginFrame,
 		EditorUpdate,
-		UpdateInput,
 		GameUpdate,
 		Render,
 		PhysicsUpdate,
