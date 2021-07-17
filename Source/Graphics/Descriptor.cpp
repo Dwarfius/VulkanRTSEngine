@@ -12,6 +12,16 @@ void Descriptor::SetUniformType(uint32_t aSlot, UniformType aType, uint32_t anAr
 	myEntries[aSlot] = { 0, anArraySize, aType };
 }
 
+void Descriptor::AddUniformType(UniformType aType /* = UniformType::Int*/, uint32_t anArraySize /* = 1 */)
+{
+	myEntries.push_back({ 0, anArraySize, aType });
+}
+
+void Descriptor::RemoveUniformType(uint32_t aSlot)
+{
+	myEntries.erase(myEntries.begin() + aSlot);
+}
+
 void Descriptor::RecomputeSize()
 {
 	const size_t size = myEntries.size();

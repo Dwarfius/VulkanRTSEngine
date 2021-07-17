@@ -17,6 +17,7 @@ public:
 
 	const std::vector<char>& GetBuffer() const { return myFileContents; }
 
+	void Upload(const char* aData, size_t aSize);
 protected:
 	IShader::Type myType;
 	std::vector<char> myFileContents;

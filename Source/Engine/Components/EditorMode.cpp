@@ -53,6 +53,8 @@ EditorMode::EditorMode(Game& aGame)
 	myTopBar.Register("File/Import OBJ", [&] { myShowObjImport = true; });
 	myTopBar.Register("File/Import Gltf", [&] { myShowGltfImport = true; });
 	myTopBar.Register("File/Import Texture", [&] { myShowTextureImport = true; });
+	myTopBar.Register("File/Create Shader", [&] { myShowShaderCreate = true; });
+	myTopBar.Register("File/Create Pipeline", [&] { myShowPipelineCreate = true; });
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
@@ -176,6 +178,16 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 	if (myShowTextureImport)
 	{
 		myTextureImport.Draw(myShowTextureImport);
+	}
+
+	if (myShowShaderCreate)
+	{
+		myShaderCreate.Draw(myShowShaderCreate);
+	}
+
+	if (myShowPipelineCreate)
+	{
+		myPipelineCreate.Draw(myShowPipelineCreate);
 	}
 }
 

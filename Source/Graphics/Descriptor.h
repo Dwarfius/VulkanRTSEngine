@@ -38,6 +38,8 @@ private:
 public:
 	// Marks the slot to be used storing a uniform of specific type
 	void SetUniformType(uint32_t aSlot, UniformType aType, uint32_t anArraySize);
+	void AddUniformType(UniformType aType = UniformType::Int, uint32_t anArraySize = 1);
+	void RemoveUniformType(uint32_t aSlot);
 
 	// Goes through the accumulated types and calculates the total size
 	// Follows the std140 layout specification
@@ -56,10 +58,11 @@ public:
 	UniformType GetType(uint32_t aSlot) const { return myEntries[aSlot].myUniformType; }
 
 	size_t GetSlotSize(uint32_t aSlot) const;
-	size_t GetArraySize(uint32_t aSlot) const { return myEntries[aSlot].myArraySize; }
+	uint32_t GetArraySize(uint32_t aSlot) const { return myEntries[aSlot].myArraySize; }
 	
 	// Name of the adapter that is related to the Uniform Buffer Object
 	const std::string& GetUniformAdapter() const { return myUniformAdapter; }
+	void SetUniformAdapter(const std::string& anAdapter) { myUniformAdapter = anAdapter; }
 
 	void Serialize(Serializer& aSerializer);
 

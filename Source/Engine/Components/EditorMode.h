@@ -11,6 +11,8 @@
 #include "../UIWidgets/ObjImportDialog.h"
 #include "../UIWidgets/GltfImportDialog.h"
 #include "../UIWidgets/TextureImportDialog.h"
+#include "../UIWidgets/ShaderCreateDialog.h"
+#include "../UIWidgets/PipelineCreateDialog.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -39,6 +41,8 @@ private:
 	bool myShowObjImport = false;
 	bool myShowGltfImport = false;
 	bool myShowTextureImport = false;
+	bool myShowShaderCreate = false;
+	bool myShowPipelineCreate = false;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
 	TopBar myTopBar;
@@ -47,6 +51,8 @@ private:
 	ObjImportDialog myObjImport;
 	GltfImportDialog myGltfImport;
 	TextureImportDialog myTextureImport;
+	ShaderCreateDialog myShaderCreate;
+	PipelineCreateDialog myPipelineCreate;
 
 	// Testing
 	void AddTestSkeleton(Game& aGame);

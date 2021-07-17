@@ -22,3 +22,9 @@ void Shader::Serialize(Serializer& aSerializer)
 	shaderSrcFile = shaderSrcFile.replace(shaderSrcFile.size() - 3, 3, "txt");
 	aSerializer.SerializeExternal(shaderSrcFile, myFileContents);
 }
+
+void Shader::Upload(const char* aData, size_t aSize)
+{
+	myFileContents.resize(aSize);
+	std::memcpy(myFileContents.data(), aData, aSize);
+}

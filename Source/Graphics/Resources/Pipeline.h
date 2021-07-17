@@ -16,6 +16,9 @@ public:
 	Pipeline();
 	Pipeline(Resource::Id anId, const std::string& aPath);
 
+	Type GetType() const { return myType; }
+	void SetType(Type aType) { myType = aType; }
+
 	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
 	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
 	const UniformAdapter& GetAdapter(size_t anIndex) const override final { return myAdapters[anIndex]; }
@@ -33,7 +36,8 @@ private:
 	void AddAdapter(const Descriptor& aDescriptor);
 	void AssignAdapters();
 
-	IPipeline::Type myType;
+	Type myType;
+	// TODO: explore storing adapters only, instead of Descriptors and Adapters
 	std::vector<Descriptor> myDescriptors;
 	std::vector<std::reference_wrapper<const UniformAdapter>> myAdapters;
 	std::vector<std::string> myShaders;
