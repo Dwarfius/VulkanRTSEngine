@@ -1,11 +1,6 @@
 #include "Precomp.h"
 #include "GameTaskManager.h"
 
-GameTask::GameTask()
-	: myType(Uninitialised)
-{
-}
-
 GameTask::GameTask(Type aType, std::function<void()> aCallback)
 	: myType(aType)
 	, myCallback(aCallback)
@@ -33,19 +28,16 @@ GameTaskManager::GameTaskManager()
 {
 }
 
-GameTaskManager::~GameTaskManager()
-{
-	Reset();
-}
-
 void GameTaskManager::AddTask(const GameTask& aTask)
 {
-	myTasks[aTask.GetType()] = aTask;
+	ASSERT_STR(!myTasks.contains(aTask.GetType()), "Task id %hu is already in use!", aTask.GetType());
+
+	myTasks.insert({ aTask.GetType(), aTask });
 }
 
 GameTaskManager::ExternalDependencyScope GameTaskManager::AddExternalDependency(GameTask::Type aType)
 {
-	ASSERT_STR(aType != GameTask::Type::GraphBroadcast, 
+	ASSERT_STR(aType != static_cast<GameTask::Type>(GameTask::ReservedTypes::GraphBroadcast),
 		"Can't add dependencies for starting node of a graph!");
 	ASSERT_STR(!myIsRunning, "Can't add an external dependency while"
 		" the task graph is already executing! This is a race condition!");
@@ -64,24 +56,23 @@ void GameTaskManager::ResolveDependencies()
 	myTaskGraph = std::make_unique<tbb::flow::graph>();
 	
 	// first construct all the graph nodes
-	myTaskNodes[GameTask::Type::GraphBroadcast] = std::make_shared<StartNodeType>(*myTaskGraph);
-	for (const std::pair<GameTask::Type, GameTask>& pair : myTasks)
+	constexpr GameTask::Type startType = static_cast<GameTask::Type>(GameTask::ReservedTypes::GraphBroadcast);
+	myTaskNodes[startType] = std::make_shared<StartNodeType>(*myTaskGraph);
+	for (const auto [taskType, gameTask] : myTasks)
 	{
-		const GameTask::Type taskType = pair.first;
-		myTaskNodes[taskType] = std::make_shared<TaskNodeType>(*myTaskGraph, myTasks[taskType]);;
+		myTaskNodes[taskType] = std::make_shared<TaskNodeType>(*myTaskGraph, gameTask);
 	}
 
 	// then we can make the graph edges
-	for (auto iter = myTasks.cbegin(); iter != myTasks.cend(); iter++)
+	for (const auto [taskType, gameTask] : myTasks)
 	{
-		const GameTask::Type taskType = (*iter).first;
-		const GameTask& gameTask = (*iter).second;
-		if (size_t count = gameTask.GetDependencyCount())
+		const std::vector<GameTask::Type>& dependencies = gameTask.GetDependencies();
+		if (size_t count = dependencies.size())
 		{
 			for(size_t i=0; i<count; i++)
 			{
 				// edge from dependent on to depending
-				TaskNodeType* from = static_cast<TaskNodeType*>(myTaskNodes[gameTask.GetDependency(i)].get());
+				TaskNodeType* from = static_cast<TaskNodeType*>(myTaskNodes[dependencies[i]].get());
 				TaskNodeType* to = static_cast<TaskNodeType*>(myTaskNodes[taskType].get());
 				tbb::flow::make_edge(*from, *to);
 			}
@@ -89,7 +80,7 @@ void GameTaskManager::ResolveDependencies()
 		else
 		{
 			// with no dependencies we can kick it off at the start
-			StartNodeType* from = static_cast<StartNodeType*>(myTaskNodes[GameTask::Type::GraphBroadcast].get());
+			StartNodeType* from = static_cast<StartNodeType*>(myTaskNodes[startType].get());
 			TaskNodeType* to = static_cast<TaskNodeType*>(myTaskNodes[taskType].get());
 			tbb::flow::make_edge(*from, *to);
 		}
@@ -99,7 +90,8 @@ void GameTaskManager::ResolveDependencies()
 void GameTaskManager::Run()
 {
 	myIsRunning = true;
-	StartNodeType* from = static_cast<StartNodeType*>(myTaskNodes[GameTask::Type::GraphBroadcast].get());
+	constexpr GameTask::Type startType = static_cast<GameTask::Type>(GameTask::ReservedTypes::GraphBroadcast);
+	StartNodeType* from = static_cast<StartNodeType*>(myTaskNodes[startType].get());
 	from->try_put(tbb::flow::continue_msg());
 }
 
@@ -113,10 +105,4 @@ void GameTaskManager::Wait()
 		myExternalDepsResetQueue.pop();
 	}
 	myIsRunning = false;
-}
-
-void GameTaskManager::Reset()
-{
-	myTaskNodes.clear();
-	myTasks.clear();
 }

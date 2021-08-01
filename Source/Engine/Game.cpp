@@ -154,48 +154,47 @@ void Game::Init()
 
 	// setting up a task tree
 	{
-		Profiler::ScopedMark profile("Game::SetupTaskTree");
-		GameTask task(GameTask::BeginFrame, [this]() { BeginFrame(); });
+		GameTask task(Tasks::BeginFrame, [this]() { BeginFrame(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::AddGameObjects, [this]() { AddGameObjects(); });
+		task = GameTask(Tasks::AddGameObjects, [this]() { AddGameObjects(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::PhysicsUpdate, [this]() { PhysicsUpdate(); });
+		task = GameTask(Tasks::PhysicsUpdate, [this]() { PhysicsUpdate(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::AnimationUpdate, [this]() { AnimationUpdate(); });
-		task.AddDependency(GameTask::PhysicsUpdate);
+		task = GameTask(Tasks::AnimationUpdate, [this]() { AnimationUpdate(); });
+		task.AddDependency(Tasks::PhysicsUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::EditorUpdate, [this]() { EditorUpdate(); });
-		task.AddDependency(GameTask::BeginFrame);
-		task.AddDependency(GameTask::PhysicsUpdate);
-		task.AddDependency(GameTask::AnimationUpdate);
+		task = GameTask(Tasks::EditorUpdate, [this]() { EditorUpdate(); });
+		task.AddDependency(Tasks::BeginFrame);
+		task.AddDependency(Tasks::PhysicsUpdate);
+		task.AddDependency(Tasks::AnimationUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::GameUpdate, [this]() { Update(); });
-		task.AddDependency(GameTask::BeginFrame);
-		task.AddDependency(GameTask::AddGameObjects);
+		task = GameTask(Tasks::GameUpdate, [this]() { Update(); });
+		task.AddDependency(Tasks::BeginFrame);
+		task.AddDependency(Tasks::AddGameObjects);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::RemoveGameObjects, [this]() { RemoveGameObjects(); });
-		task.AddDependency(GameTask::GameUpdate);
-		task.AddDependency(GameTask::EditorUpdate);
+		task = GameTask(Tasks::RemoveGameObjects, [this]() { RemoveGameObjects(); });
+		task.AddDependency(Tasks::GameUpdate);
+		task.AddDependency(Tasks::EditorUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::UpdateEnd, [this]() { UpdateEnd(); });
-		task.AddDependency(GameTask::RemoveGameObjects);
-		task.AddDependency(GameTask::EditorUpdate);
+		task = GameTask(Tasks::UpdateEnd, [this]() { UpdateEnd(); });
+		task.AddDependency(Tasks::RemoveGameObjects);
+		task.AddDependency(Tasks::EditorUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(GameTask::Render, [this]() { Render(); });
-		task.AddDependency(GameTask::UpdateEnd);
+		task = GameTask(Tasks::Render, [this]() { Render(); });
+		task.AddDependency(Tasks::UpdateEnd);
 		myTaskManager->AddTask(task);
 
 		// TODO: will need to fix up audio
-		task = GameTask(GameTask::UpdateAudio, [this]() { UpdateAudio(); });
-		task.AddDependency(GameTask::UpdateEnd);
+		task = GameTask(Tasks::UpdateAudio, [this]() { UpdateAudio(); });
+		task.AddDependency(Tasks::UpdateEnd);
 		myTaskManager->AddTask(task);
 	}
 
@@ -224,7 +223,7 @@ void Game::RunMainThread()
 		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
 
 		{
-			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(GameTask::Type::Render);
+			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(Tasks::Render);
 			myTaskManager->Run();
 
 			Profiler::ScopedMark renderablesProfile("Game::SubmitRenderables");

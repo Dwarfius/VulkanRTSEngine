@@ -25,6 +25,24 @@ class Transform;
 class Game
 {
 public:
+	struct Tasks
+	{
+		enum Type : uint16_t
+		{
+			BeginFrame = (uint16_t)(GameTask::ReservedTypes::GraphBroadcast)+1,
+			AddGameObjects,
+			PhysicsUpdate,
+			AnimationUpdate,
+			EditorUpdate,
+			GameUpdate,
+			RemoveGameObjects,
+			UpdateEnd,
+			Render,
+			UpdateAudio
+		};
+	};
+
+public:
 	typedef void (*ReportError)(int, const char*);
 
 	Game(ReportError aReporterFunc);

@@ -3,36 +3,23 @@
 class GameTask
 {
 public:
-	enum Type
+	enum class ReservedTypes : uint8_t
 	{
-		/* vvv RESERVED vvv */
-		Uninitialised,
-		GraphBroadcast, // special reserved type for kicking off the graph execution
-		/* ^^^ RESERVED ^^^ */
-		AddGameObjects,
-		BeginFrame,
-		EditorUpdate,
-		GameUpdate,
-		Render,
-		PhysicsUpdate,
-		AnimationUpdate,
-		UpdateAudio,
-		UpdateEnd,
-		RemoveGameObjects
+		GraphBroadcast = 0, // special reserved type for kicking off the graph execution
 	};
 
+	using Type = uint16_t;
+
 public:
-	GameTask();
 	GameTask(Type aType, std::function<void()> aCallback);
 	void operator()(tbb::flow::continue_msg) const { myCallback(); }
 
 	void AddDependency(Type aType) { myDependencies.push_back(aType); }
-	size_t GetDependencyCount() const { return myDependencies.size(); }
-	Type GetDependency(size_t anIndex) const { return myDependencies[anIndex]; }
+	const std::vector<Type>& GetDependencies() const { return myDependencies; }
 
 private:
 	friend class GameTaskManager;
-	Type GetType() const { return myType; }
+	uint16_t GetType() const { return myType; }
 
 	std::function<void()> myCallback;
 	Type myType;
@@ -62,7 +49,6 @@ public:
 	};
 
 	GameTaskManager();
-	~GameTaskManager();
 
 	void AddTask(const GameTask& aTask);
 	ExternalDependencyScope AddExternalDependency(GameTask::Type aType);
@@ -70,12 +56,12 @@ public:
 	void ResolveDependencies();
 	void Run();
 	void Wait();
-	void Reset();
 
 private:
+	// It appears first in decl to be destroyed last
+	std::unique_ptr<tbb::flow::graph> myTaskGraph;
 	std::unordered_map<GameTask::Type, GameTask> myTasks;
 	std::unordered_map<GameTask::Type, std::shared_ptr<BaseTaskNodeType>> myTaskNodes;
-	std::unique_ptr<tbb::flow::graph> myTaskGraph;
 	struct ExternalDepPair
 	{
 		std::shared_ptr<StartNodeType> myExternDep;
