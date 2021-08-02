@@ -45,19 +45,20 @@ public:
 
 	private:
 		std::weak_ptr<StartNodeType> myStartNode;
-		TaskNodeType& myTaskNode;
 	};
 
 	GameTaskManager();
 
 	void AddTask(const GameTask& aTask);
+	GameTask& GetTask(GameTask::Type anId);
 	ExternalDependencyScope AddExternalDependency(GameTask::Type aType);
 
-	void ResolveDependencies();
 	void Run();
 	void Wait();
 
 private:
+	void ResolveDependencies();
+
 	// It appears first in decl to be destroyed last
 	std::unique_ptr<tbb::flow::graph> myTaskGraph;
 	std::unordered_map<GameTask::Type, GameTask> myTasks;
@@ -65,8 +66,9 @@ private:
 	struct ExternalDepPair
 	{
 		std::shared_ptr<StartNodeType> myExternDep;
-		TaskNodeType& myTask;
+		const GameTask::Type myTaskType;
 	};
 	std::queue<ExternalDepPair> myExternalDepsResetQueue;
 	std::atomic<bool> myIsRunning;
+	std::atomic<bool> myNeedsResolve = true;
 };

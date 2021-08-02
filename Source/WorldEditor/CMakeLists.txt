@@ -1,8 +1,12 @@
 # by Daniel Prihodko
 cmake_minimum_required (VERSION 3.16)
-project (VEngineExe LANGUAGES CXX)
+project (WorldEditor LANGUAGES CXX)
 
-file(GLOB SRC "*.cpp" "*.h")
+set(SRC "Precomp.h"
+	"main.cpp"
+	"EditorMode.cpp" "EditorMode.h"
+)
+
 source_group("" FILES ${SRC})
 
 add_executable(${PROJECT_NAME} ${SRC})

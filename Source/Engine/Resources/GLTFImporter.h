@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/RefCounted.h>
-#include "Animation/Skeleton.h"
+#include "../Animation/Skeleton.h"
 
 class Model;
 class AnimationClip;

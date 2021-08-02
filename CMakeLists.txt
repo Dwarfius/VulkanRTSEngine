@@ -37,7 +37,7 @@ add_subdirectory(Source/Core)
 add_subdirectory(Source/Physics)
 add_subdirectory(Source/Graphics)
 add_subdirectory(Source/Engine)
-add_subdirectory(Source/Executable)
+add_subdirectory(Source/WorldEditor)
 
 if(VENGINE_GENERATE_BENCHTABLE)
 	add_subdirectory(Source/BenchTable)

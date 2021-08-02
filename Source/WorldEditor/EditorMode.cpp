@@ -1,16 +1,16 @@
 #include "Precomp.h"
 #include "EditorMode.h"
 
-#include "Game.h"
-#include "Input.h"
-#include "Components/PhysicsComponent.h"
-#include "Components/VisualComponent.h"
-#include "GameObject.h"
-#include "VisualObject.h"
-#include "Animation/AnimationController.h"
-#include "Animation/AnimationSystem.h"
-#include "Systems/ImGUI/ImGUISystem.h"
-#include "Resources/GLTFImporter.h"
+#include <Engine/Game.h>
+#include <Engine/Input.h>
+#include <Engine/Components/PhysicsComponent.h>
+#include <Engine/Components/VisualComponent.h>
+#include <Engine/GameObject.h>
+#include <Engine/VisualObject.h>
+#include <Engine/Animation/AnimationController.h>
+#include <Engine/Animation/AnimationSystem.h>
+#include <Engine/Systems/ImGUI/ImGUISystem.h>
+#include <Engine/Resources/GLTFImporter.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Utils.h>
@@ -57,7 +57,7 @@ EditorMode::EditorMode(Game& aGame)
 	myTopBar.Register("File/Create Pipeline", [&] { myShowPipelineCreate = true; });
 }
 
-void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
+void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 {
 	Camera* cam = aGame.GetCamera();
 	Transform& camTransf = cam->GetTransform();
@@ -67,13 +67,13 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld)
 		HandleCamera(camTransf, aDeltaTime);
 	}
 
-	if (Input::GetMouseBtnPressed(0))
+	if (aWorld && Input::GetMouseBtnPressed(0))
 	{
 		glm::vec3 from = camTransf.GetPos();
 		glm::vec3 dir = camTransf.GetForward();
 
 		PhysicsEntity* physEntity;
-		if (aWorld.RaycastClosest(from, dir, 100.f, physEntity)
+		if (aWorld->RaycastClosest(from, dir, 100.f, physEntity)
 			&& !physEntity->IsStatic())
 		{
 			physEntity->AddForce(dir * 100.f);

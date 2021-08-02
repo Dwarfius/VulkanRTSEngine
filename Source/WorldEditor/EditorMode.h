@@ -1,18 +1,18 @@
 #pragma once
 
-#include "../Systems/ProfilerUI.h"
-#include "../Animation/Skeleton.h"
-#include "../Animation/AnimationController.h"
-#include "../Animation/AnimationClip.h"
+#include <Engine/Systems/ProfilerUI.h>
+#include <Engine/Animation/Skeleton.h>
+#include <Engine/Animation/AnimationController.h>
+#include <Engine/Animation/AnimationClip.h>
 #include <Core/Pool.h>
-#include "../Resources/GLTFImporter.h"
-#include "../UIWidgets/TopBar.h"
-#include "../UIWidgets/EntitiesWidget.h"
-#include "../UIWidgets/ObjImportDialog.h"
-#include "../UIWidgets/GltfImportDialog.h"
-#include "../UIWidgets/TextureImportDialog.h"
-#include "../UIWidgets/ShaderCreateDialog.h"
-#include "../UIWidgets/PipelineCreateDialog.h"
+#include <Engine/Resources/GLTFImporter.h>
+#include <Engine/UIWidgets/TopBar.h>
+#include <Engine/UIWidgets/EntitiesWidget.h>
+#include <Engine/UIWidgets/ObjImportDialog.h>
+#include <Engine/UIWidgets/GltfImportDialog.h>
+#include <Engine/UIWidgets/TextureImportDialog.h>
+#include <Engine/UIWidgets/ShaderCreateDialog.h>
+#include <Engine/UIWidgets/PipelineCreateDialog.h>
 
 class PhysicsWorld;
 class GameObject;
@@ -27,7 +27,7 @@ class EditorMode
 public:
 	EditorMode(Game& aGame);
 
-	void Update(Game& aGame, float aDeltaTime, PhysicsWorld& aWorld);
+	void Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld);
 
 private:
 	void HandleCamera(Transform& aCamTransf, float aDeltaTime);

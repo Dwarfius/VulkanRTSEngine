@@ -7,7 +7,6 @@
 #include "Terrain.h"
 #include "VisualObject.h"
 #include "Components/AnimationTest.h"
-#include "Components/EditorMode.h"
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
@@ -50,7 +49,6 @@ Game::Game(ReportError aReporterFunc)
 	, myShouldEnd(false)
 	, myIsPaused(false)
 	, myIsInFocus(false)
-	, myEditorMode(nullptr)
 {
 	Profiler::ScopedMark profile("Game::Ctor");
 	ourInstance = this;
@@ -149,62 +147,49 @@ void Game::Init()
 	myTerrains[0]->AddPhysicsEntity(*go.Get(), *myPhysWorld);
 	AddGameObject(go);
 
-	myEditorMode = new EditorMode(*this);
 	myAnimTest = new AnimationTest(*this);
 
 	// setting up a task tree
 	{
-		GameTask task(Tasks::BeginFrame, [this]() { BeginFrame(); });
+		GameTask task(Tasks::BeginFrame, [this] { BeginFrame(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::AddGameObjects, [this]() { AddGameObjects(); });
+		task = GameTask(Tasks::AddGameObjects, [this] { AddGameObjects(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::PhysicsUpdate, [this]() { PhysicsUpdate(); });
+		task = GameTask(Tasks::PhysicsUpdate, [this] { PhysicsUpdate(); });
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::AnimationUpdate, [this]() { AnimationUpdate(); });
+		task = GameTask(Tasks::AnimationUpdate, [this] { AnimationUpdate(); });
 		task.AddDependency(Tasks::PhysicsUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::EditorUpdate, [this]() { EditorUpdate(); });
-		task.AddDependency(Tasks::BeginFrame);
-		task.AddDependency(Tasks::PhysicsUpdate);
-		task.AddDependency(Tasks::AnimationUpdate);
-		myTaskManager->AddTask(task);
-
-		task = GameTask(Tasks::GameUpdate, [this]() { Update(); });
+		task = GameTask(Tasks::GameUpdate, [this] { Update(); });
 		task.AddDependency(Tasks::BeginFrame);
 		task.AddDependency(Tasks::AddGameObjects);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::RemoveGameObjects, [this]() { RemoveGameObjects(); });
+		task = GameTask(Tasks::RemoveGameObjects, [this] { RemoveGameObjects(); });
 		task.AddDependency(Tasks::GameUpdate);
-		task.AddDependency(Tasks::EditorUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::UpdateEnd, [this]() { UpdateEnd(); });
+		task = GameTask(Tasks::UpdateEnd, [this] { UpdateEnd(); });
 		task.AddDependency(Tasks::RemoveGameObjects);
-		task.AddDependency(Tasks::EditorUpdate);
 		myTaskManager->AddTask(task);
 
-		task = GameTask(Tasks::Render, [this]() { Render(); });
+		task = GameTask(Tasks::Render, [this] { Render(); });
 		task.AddDependency(Tasks::UpdateEnd);
 		myTaskManager->AddTask(task);
 
 		// TODO: will need to fix up audio
-		task = GameTask(Tasks::UpdateAudio, [this]() { UpdateAudio(); });
+		task = GameTask(Tasks::UpdateAudio, [this] { UpdateAudio(); });
 		task.AddDependency(Tasks::UpdateEnd);
 		myTaskManager->AddTask(task);
 	}
 
-	{
-		Profiler::ScopedMark profile("Game::ResolveTaskTreeAndRun");
-		// TODO: need to add functionality to draw out the task tree ingame
-		myTaskManager->ResolveDependencies();
-		myTaskManager->Run();
-		myTaskManager->Wait();
-	}
+	// TODO: need to add functionality to draw out the task tree ingame
+	myTaskManager->Run();
+	myTaskManager->Wait();
 }
 
 void Game::RunMainThread()
@@ -244,7 +229,6 @@ void Game::CleanUp()
 
 	myImGUISystem->Shutdown();
 
-	delete myEditorMode;
 	delete myAnimTest;
 
 	// physics clear
@@ -457,14 +441,6 @@ void Game::Update()
 	{
 		pair.second->Update(myDeltaTime);
 	}
-}
-
-void Game::EditorUpdate()
-{
-	Profiler::ScopedMark profile(__func__);
-	ASSERT(myEditorMode);
-	myEditorMode->Update(*this, myDeltaTime, *myPhysWorld);
-	myAnimTest->Update(myDeltaTime);
 }
 
 void Game::PhysicsUpdate()

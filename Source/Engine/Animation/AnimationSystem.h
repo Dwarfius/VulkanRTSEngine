@@ -5,8 +5,8 @@
 #include <Core/Threading/AssertMutex.h>
 #endif
 
-#include "Animation/AnimationController.h"
-#include "Animation/Skeleton.h"
+#include "../Animation/AnimationController.h"
+#include "../Animation/Skeleton.h"
 
 class DebugDrawer;
 

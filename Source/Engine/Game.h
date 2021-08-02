@@ -7,7 +7,6 @@
 #include "GameObject.h"
 
 class Camera;
-class EditorMode;
 class Graphics;
 class Terrain;
 class PhysicsWorld;
@@ -33,12 +32,12 @@ public:
 			AddGameObjects,
 			PhysicsUpdate,
 			AnimationUpdate,
-			EditorUpdate,
 			GameUpdate,
 			RemoveGameObjects,
 			UpdateEnd,
 			Render,
-			UpdateAudio
+			UpdateAudio,
+			Last = UpdateAudio
 		};
 	};
 
@@ -55,16 +54,19 @@ public:
 	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
 	ImGUISystem& GetImGUISystem();
 	AnimationSystem& GetAnimationSystem();
+	GameTaskManager& GetTaskManager() { return *myTaskManager.get(); }
 
 	void Init();
 	void RunMainThread();
 	void CleanUp();
 
+	float GetLastFrameDeltaTime() const { return myDeltaTime; }
 	bool IsRunning() const;
 	void EndGame() { myShouldEnd = true; }
 	bool IsPaused() const { return myIsPaused; }
 	// Returns whether the window is in focus thread safe way
 	bool IsWindowInFocus() const { return myIsInFocus; }
+
 	// Returns the pointer to the window. Querying things from the window
 	// might not be threadsafe!
 	GLFWwindow* GetWindow() const;
@@ -98,7 +100,6 @@ private:
 	void AddGameObjects();
 	void BeginFrame();
 	void Update();
-	void EditorUpdate();
 	void PhysicsUpdate();
 	void AnimationUpdate();
 	void Render();
@@ -116,7 +117,6 @@ private:
 	float myFrameStart;
 	float myDeltaTime;
 
-	EditorMode* myEditorMode;
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
 	std::unordered_map<UID, Handle<GameObject>> myGameObjects;
