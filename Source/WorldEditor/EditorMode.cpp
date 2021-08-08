@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "EditorMode.h"
 
+#include "AnimationTest.h"
+
 #include <Engine/Game.h>
 #include <Engine/Input.h>
 #include <Engine/Terrain.h>
@@ -70,6 +72,13 @@ EditorMode::EditorMode(Game& aGame)
 		Handle<Pipeline> terrainPipeline = aGame.GetAssetTracker().GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
 		aGame.AddTerrain(terrain, terrainPipeline);
 	}
+
+	myAnimTest = new AnimationTest(aGame);
+}
+
+EditorMode::~EditorMode()
+{
+	delete myAnimTest;
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
@@ -150,6 +159,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	}
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
+	myAnimTest->Update(aGame.IsPaused() ? 0 : aDeltaTime);
 
 	myTopBar.Draw();
 

@@ -1,16 +1,16 @@
 #include "Precomp.h"
 #include "AnimationTest.h"
 
-#include "../Game.h"
-#include "../VisualObject.h"
+#include <Engine/Game.h>
+#include <Engine/VisualObject.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Texture.h>
-#include "../Animation/AnimationSystem.h"
-#include "../Animation/AnimationClip.h"
-#include "../Resources/GLTFImporter.h"
-#include "../Animation/SkinnedVerts.h"
+#include <Engine/Animation/AnimationSystem.h>
+#include <Engine/Animation/AnimationClip.h>
+#include <Engine/Resources/GLTFImporter.h>
+#include <Engine/Animation/SkinnedVerts.h>
 
 AnimationTest::AnimationTest(Game& aGame)
 	: myGame(aGame)

@@ -4,6 +4,7 @@ project (WorldEditor LANGUAGES CXX)
 
 set(SRC "Precomp.h"
 	"main.cpp"
+	"AnimationTest.cpp" "AnimationTest.h"
 	"EditorMode.cpp" "EditorMode.h"
 )
 

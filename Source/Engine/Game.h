@@ -18,7 +18,6 @@ class AnimationSystem;
 class RenderThread;
 class AssetTracker;
 struct GLFWwindow;
-class AnimationTest;
 class Transform;
 
 class Game
@@ -140,7 +139,7 @@ private:
 	DebugDrawer myDebugDrawer;
 	ImGUISystem* myImGUISystem;
 	AnimationSystem* myAnimationSystem;
-	AnimationTest* myAnimTest;
+	
 
 	bool myIsRunning;
 	bool myShouldEnd;

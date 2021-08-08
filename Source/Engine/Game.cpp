@@ -6,7 +6,6 @@
 #include "Terrain.h"
 #include "Terrain.h"
 #include "VisualObject.h"
-#include "Components/AnimationTest.h"
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
@@ -115,10 +114,6 @@ void Game::Init()
 	// TODO: has implicit dependency on window initialized - make explicit!
 	myImGUISystem->Init();
 
-	// ==========================
-
-	myAnimTest = new AnimationTest(*this);
-
 	// setting up a task tree
 	{
 		GameTask task(Tasks::BeginFrame, [this] { BeginFrame(); });
@@ -198,8 +193,6 @@ void Game::CleanUp()
 	}
 
 	myImGUISystem->Shutdown();
-
-	delete myAnimTest;
 
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;

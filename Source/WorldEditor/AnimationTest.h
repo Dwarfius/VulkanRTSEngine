@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../GameObject.h"
 
 class Game;
 class Skeleton;
 class AnimationClip;
-class GLTFImporter;
+class GameObject;
+template<class T> class Handle;
 
 class AnimationTest
 {

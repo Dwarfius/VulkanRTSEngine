@@ -20,12 +20,14 @@ class PhysicsShapeBase;
 class Transform;
 class Game;
 class AnimationSystem;
+class AnimationTest;
 
 // Class used for testing and prototyping the engine
 class EditorMode
 {
 public:
 	EditorMode(Game& aGame);
+	~EditorMode();
 
 	void Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld);
 
@@ -66,6 +68,7 @@ private:
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;
+	AnimationTest* myAnimTest;
 
 	Handle<GameObject> myGO;
 };
