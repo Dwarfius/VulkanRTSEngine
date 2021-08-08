@@ -34,6 +34,7 @@
 #include <Core/Pool.h>
 
 #include <memory_resource>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 
 Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
@@ -73,9 +74,9 @@ Game::Game(ReportError aReporterFunc)
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
 		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.img");
 		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
-		constexpr uint32_t kTerrCells = 64;
+		//constexpr uint32_t kTerrCells = 64;
 		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
-		myTerrains.push_back(terr);
+		myTerrains.push_back({ terr, nullptr, nullptr });
 	}
 
 	myRenderThread = new RenderThread();
@@ -126,26 +127,37 @@ void Game::Init()
 	// TODO: has implicit dependency on window initialized - make explicit!
 	myImGUISystem->Init();
 
-	Handle<GameObject> go; 
-	VisualObject* vo;
-
 	// ==========================
 	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
 
-	// TODO: replace heap allocation with using 
-	// a continuous allocated storage of VisualObjects
-
 	// terrain
-	go = new GameObject(Transform{});
-	{
-		vo = new VisualObject(*go.Get());
-		vo->SetPipeline(terrainPipeline);
-		vo->SetTexture(myTerrains[0]->GetTextureHandle());
-		vo->SetCategory(VisualObject::Category::Terrain);
-		go->SetVisualObject(vo);
-	}
-	myTerrains[0]->AddPhysicsEntity(*go.Get(), *myPhysWorld);
-	AddGameObject(go);
+	TerrainEntity& terrainEntity = myTerrains[0];
+	Terrain* terrain = terrainEntity.myTerrain;
+	Handle<Texture> terrainTexture = terrain->GetTextureHandle();
+	terrainEntity.myVisualObject = new VisualObject();
+	terrainEntity.myVisualObject->SetPipeline(terrainPipeline);
+	terrainEntity.myVisualObject->SetTexture(terrainTexture);
+	
+	terrainTexture->ExecLambdaOnLoad([physWorld = myPhysWorld, entity = &terrainEntity](const Resource* aRes) {
+		Terrain* terrain = entity->myTerrain;
+		VisualObject* visObject = entity->myVisualObject;
+		Transform transf = visObject->GetTransform();
+		glm::vec3 pos = terrain->GetPhysShape()->AdjustPositionForRecenter(transf.GetPos());
+		transf.SetPos(pos);
+
+		PhysicsComponent* physComp = new PhysicsComponent();
+		physComp->CreateOwnerlessPhysicsEntity(0,
+			terrain->GetPhysShape(),
+			transf.GetMatrix()
+		);
+		physComp->GetPhysicsEntity().SetCollisionFlags(
+			physComp->GetPhysicsEntity().GetCollisionFlags()
+			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
+		);
+
+		physComp->RequestAddToWorld(*physWorld);
+		entity->myPhysComponent = physComp;
+	});
 
 	myAnimTest = new AnimationTest(*this);
 
@@ -231,9 +243,6 @@ void Game::CleanUp()
 
 	delete myAnimTest;
 
-	// physics clear
-	delete myPhysWorld;
-
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
 	// get rid of pending objects
@@ -250,11 +259,19 @@ void Game::CleanUp()
 	RemoveGameObjects();
 	ASSERT_STR(myGameObjects.empty(), "All objects should've been cleaned up!");
 
-	for (Terrain* terrain : myTerrains)
+	for (TerrainEntity terrain : myTerrains)
 	{
-		delete terrain;
+		delete terrain.myTerrain;
+		delete terrain.myVisualObject;
+		if (terrain.myPhysComponent)
+		{
+			delete terrain.myPhysComponent;
+		}
 	}
 	myTerrains.clear();
+
+	// physics clear
+	delete myPhysWorld;
 
 	delete myCamera;
 }
@@ -267,11 +284,6 @@ bool Game::IsRunning() const
 GLFWwindow* Game::GetWindow() const
 {
 	return myRenderThread->GetWindow();
-}
-
-const Terrain* Game::GetTerrain(glm::vec3 pos) const
-{
-	return myTerrains[0];
 }
 
 float Game::GetTime() const
@@ -428,19 +440,6 @@ void Game::Update()
 	{
 		myRenderThread->RequestSwitch();
 	}
-
-	if (myIsPaused)
-	{
-		return;
-	}
-
-	// TODO: get rid of this and switch to ECS style synchronization via task
-	// dependency management
-	AssertReadLock assertLock(myGOMutex);
-	for (std::pair<const UID, Handle<GameObject>>& pair : myGameObjects)
-	{
-		pair.second->Update(myDeltaTime);
-	}
 }
 
 void Game::PhysicsUpdate()
@@ -468,18 +467,38 @@ void Game::Render()
 	// TODO: fill out the renderables vector not per frame, but after new ones are created
 	{
 		AssertReadLock assertLock(myGOMutex);
-		for (std::pair<const UID, Handle<GameObject>>& elem : myGameObjects)
+		for (auto& [uid, gameObjHandle] : myGameObjects)
 		{
-			VisualObject* visObj = elem.second->GetVisualObject();
-			if (visObj)
+			VisualObject* visObj = gameObjHandle->GetVisualObject();
+			if (!visObj)
 			{
-				myRenderThread->AddRenderable(visObj);
+				continue;
+			}
+
+			if (visObj->IsResolved() || visObj->Resolve())
+			{
+				myRenderThread->AddRenderable(*visObj, *gameObjHandle.Get());
 			}
 		}
 	}
 
+	// rendering terrains
+	for(TerrainEntity& entity : myTerrains)
+	{
+		VisualObject* visObj = entity.myVisualObject;
+		if (!visObj)
+		{
+			continue;
+		}
+
+		if (visObj->IsResolved() || visObj->Resolve())
+		{
+			myRenderThread->AddTerrainRenderable(*visObj, *entity.myTerrain);
+		}
+	}
+
 	// adding axis for world navigation
-	const Terrain* terrain = myTerrains[0];
+	const Terrain* terrain = myTerrains[0].myTerrain;
 	const float halfW = terrain->GetWidth() / 2.f;
 	const float halfH = 2;
 	const float halfD = terrain->GetDepth() / 2.f;
@@ -488,8 +507,8 @@ void Game::Render()
 	myDebugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
 	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 
-	myRenderThread->AddDebugRenderable(&myDebugDrawer);
-	myRenderThread->AddDebugRenderable(&myPhysWorld->GetDebugDrawer());
+	myRenderThread->AddDebugRenderable(myDebugDrawer);
+	myRenderThread->AddDebugRenderable(myPhysWorld->GetDebugDrawer());
 
 	myImGUISystem->Render();
 

@@ -63,28 +63,28 @@ GLFWwindow* RenderThread::GetWindow() const
 	return myGraphics->GetWindow();
 }
 
-void RenderThread::AddRenderable(VisualObject* aVO)
+void RenderThread::AddRenderable(const VisualObject& aVO, const GameObject& aGO)
 {
-	// TODO: [[likely]]
-	if (!aVO->IsResolved())
-	{
-		myResolveQueue.emplace(aVO);
-	}
-	else
-	{
-		std::vector<const VisualObject*>& buffer = myRenderables.GetWrite();
-		buffer.push_back(aVO);
-	}
+	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
+	std::vector<GameObjectRenderable>& buffer = myRenderables.GetWrite();
+	buffer.push_back({ aVO, aGO });
 }
 
-void RenderThread::AddDebugRenderable(const DebugDrawer* aDebugDrawer)
+void RenderThread::AddTerrainRenderable(const VisualObject& aVO, const Terrain& aTerrain)
 {
-	if (!aDebugDrawer->GetCurrentVertexCount())
+	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
+	std::vector<TerrainRenderable>& buffer = myTerrainRenderables.GetWrite();
+	buffer.push_back({ aVO, aTerrain });
+}
+
+void RenderThread::AddDebugRenderable(const DebugDrawer& aDebugDrawer)
+{
+	if (!aDebugDrawer.GetCurrentVertexCount())
 	{
 		return;
 	}
 
-	myDebugDrawers.GetWrite().push_back(aDebugDrawer);
+	myDebugDrawers.GetWrite().push_back({ aDebugDrawer });
 }
 
 void RenderThread::SubmitRenderables()
@@ -134,132 +134,137 @@ void RenderThread::SubmitRenderables()
 	// the current render queue has been used up, we can fill it up again
 	myGraphics->BeginGather();
 
-	{
-		Profiler::ScopedMark resolveProfile("RenderThread::ResolveVisualObj");
-		std::queue<VisualObject*> delayQueue;
-		// try to resolve all the pending VisualObjects
-		while (!myResolveQueue.empty())
-		{
-			VisualObject* vo = myResolveQueue.front();
-			myResolveQueue.pop();
-			if (vo->Resolve())
-			{
-				myRenderables.GetWrite().push_back(vo);
-			}
-			else
-			{
-				delayQueue.emplace(vo);
-			}
-		}
-
-		while (!delayQueue.empty())
-		{
-			myResolveQueue.emplace(delayQueue.front());
-			delayQueue.pop();
-		}
-	}
-
-	// processing our renderables
-	myRenderables.Advance();
-	const std::vector<const VisualObject*>& currRenderables = myRenderables.GetRead();
-	myRenderables.GetWrite().clear();
-
+	// TODO: Camera needs to be passed in rather than grabbed like this
 	const Camera& cam = *Game::GetInstance()->GetCamera();
-	{
-		Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleVORender");
-		// TODO: this is most probably overkill considering that Render call is lightweight
-		// need to look into batching those
-		/*tbb::parallel_for_each(myRenderables.begin(), myRenderables.end(),
-			[&](const VisualObject* aVO)*/
-		for (const VisualObject* aVO : currRenderables)
-		{
-			// building a render job
-			RenderJob renderJob(
-				aVO->GetPipeline(),
-				aVO->GetModel(),
-				{ aVO->GetTexture() }
-			);
-			IRenderPass::Category jobCategory = [aVO] {
-				// TODO: get rid of this double category.
-				// The VO has a category only to support rendering at the
-				// moment, and there's no need for duplicating the enum!
-				switch (aVO->GetCategory())
-				{
-				case VisualObject::Category::GameObject:
-					return IRenderPass::Category::Renderables;
-				case VisualObject::Category::Terrain:
-					return IRenderPass::Category::Terrain;
-				default:
-					ASSERT(false);
-					return static_cast<IRenderPass::Category>(0);
-				}
-			}();
-
-			if (!myGraphics->CanRender(jobCategory, renderJob))
-			{
-				continue;
-			}
-
-			if (aVO->GetModel().IsValid()
-				&& !cam.CheckSphere(aVO->GetTransform().GetPos(), aVO->GetRadius()))
-			{
-				continue;
-			}
-
-			// updating the uniforms - grabbing game state!
-			UniformAdapterSource source{
-				cam,
-				aVO->GetLinkedGO(),
-				*aVO
-			};
-			const GPUPipeline* gpuPipeline = aVO->GetPipeline().Get<const GPUPipeline>();
-			const size_t uboCount = gpuPipeline->GetDescriptorCount();
-			for (size_t i = 0; i < uboCount; i++)
-			{
-				UniformBlock& uniformBlock = aVO->GetUniformBlock(i);
-				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
-				adapter.FillUniformBlock(source, uniformBlock);
-			}
-			renderJob.SetUniformSet(aVO->GetUniforms());
-
-			switch (jobCategory)
-			{
-			case IRenderPass::Category::Renderables:
-			{
-				IRenderPass::IParams params;
-				params.myDistance = 0; // TODO: implement it
-				myGraphics->Render(jobCategory, renderJob, params);
-			}
-			break;
-			case IRenderPass::Category::Terrain:
-			{
-				const Terrain* terrain = Game::GetInstance()->GetTerrain(glm::vec3());
-				TerrainRenderParams params;
-				params.myDistance = 0;
-				const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-				params.myTileCount = gridTiles.x * gridTiles.y;
-				myGraphics->Render(jobCategory, renderJob, params);
-			}
-			break;
-			}
-		}//);
-	}
-
-	// schedule drawing out our debug drawings
-	myDebugDrawers.Advance();
-	const std::vector<const DebugDrawer*>& debugDrawers = myDebugDrawers.GetRead();
-	myDebugDrawers.GetWrite().clear();
-
-	{
-		Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
-		myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
-		for (const DebugDrawer* drawer : debugDrawers)
-		{
-			myGraphics->RenderDebug(cam, *drawer);
-		}
-	}
+	ScheduleGORenderables(cam);
+	ScheduleTerrainRenderables(cam);
+	ScheduleDebugRenderables(cam);
 
 	myGraphics->Display();
 
 	myHasWorkPending = false;
+}
+
+void RenderThread::ScheduleGORenderables(const Camera& aCam)
+{
+	myRenderables.Advance();
+	const std::vector<GameObjectRenderable>& currRenderables = myRenderables.GetRead();
+	myRenderables.GetWrite().clear();
+
+	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleGORender");
+	for (const GameObjectRenderable& renderable : currRenderables)
+	{
+		// building a render job
+		const VisualObject& visualObj = renderable.myVisualObject;
+		RenderJob renderJob(
+			visualObj.GetPipeline(),
+			visualObj.GetModel(),
+			{ visualObj.GetTexture() }
+		);
+		constexpr IRenderPass::Category jobCategory = IRenderPass::Category::Renderables;
+		if (!myGraphics->CanRender(jobCategory, renderJob))
+		{
+			continue;
+		}
+
+		if (visualObj.GetModel().IsValid()
+			&& !aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+		{
+			continue;
+		}
+
+		// updating the uniforms - grabbing game state!
+		UniformAdapterSource source{
+			aCam,
+			&renderable.myGameObject,
+			visualObj
+		};
+		const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetDescriptorCount();
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+			const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
+			adapter.FillUniformBlock(source, uniformBlock);
+		}
+		renderJob.SetUniformSet(visualObj.GetUniforms());
+
+		IRenderPass::IParams params;
+		params.myDistance = glm::distance(
+			aCam.GetTransform().GetPos(), 
+			renderable.myGameObject.GetWorldTransform().GetPos()
+		);
+		myGraphics->Render(jobCategory, renderJob, params);
+	}
+}
+
+void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
+{
+	myTerrainRenderables.Advance();
+	const std::vector<TerrainRenderable>& currRenderables = myTerrainRenderables.GetRead();
+	myTerrainRenderables.GetWrite().clear();
+
+	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleTerrainRender");
+	for (const TerrainRenderable& renderable : currRenderables)
+	{
+		// building a render job
+		const VisualObject& visualObj = renderable.myVisualObject;
+		RenderJob renderJob(
+			visualObj.GetPipeline(),
+			visualObj.GetModel(),
+			{ visualObj.GetTexture() }
+		);
+		constexpr IRenderPass::Category jobCategory = IRenderPass::Category::Terrain;
+
+		if (!myGraphics->CanRender(jobCategory, renderJob))
+		{
+			continue;
+		}
+
+		if (visualObj.GetModel().IsValid()
+			&& !aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+		{
+			continue;
+		}
+
+		// updating the uniforms - grabbing game state!
+		TerrainUniformAdapterSource source{
+			aCam,
+			nullptr,
+			visualObj,
+			renderable.myTerrain,
+		};
+		const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetDescriptorCount();
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+			const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
+			adapter.FillUniformBlock(source, uniformBlock);
+		}
+		renderJob.SetUniformSet(visualObj.GetUniforms());
+
+		TerrainRenderParams params;
+		params.myDistance = glm::distance(
+			aCam.GetTransform().GetPos(),
+			visualObj.GetTransform().GetPos()
+		);
+		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(renderable.myTerrain);
+		params.myTileCount = gridTiles.x * gridTiles.y;
+		myGraphics->Render(jobCategory, renderJob, params);
+	}
+}
+
+void RenderThread::ScheduleDebugRenderables(const Camera& aCam)
+{
+	myDebugDrawers.Advance();
+	const std::vector<DebugRenderable>& debugDrawers = myDebugDrawers.GetRead();
+	myDebugDrawers.GetWrite().clear();
+
+	Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
+	myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
+	for (const DebugRenderable& renderable : debugDrawers)
+	{
+		myGraphics->RenderDebug(aCam, renderable.myDebugDrawer);
+	}
 }

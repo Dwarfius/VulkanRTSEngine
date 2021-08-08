@@ -23,6 +23,7 @@ public:
 
 	// A mass of 0 denotes a static phys entity!
 	void CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, glm::vec3 anOrigin);
+	void CreateOwnerlessPhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
 	void DeletePhysicsEntity();
 
 	bool IsInWorld() const;

@@ -4,7 +4,6 @@
 #include <Core/RefCounted.h>
 
 class UniformBlock;
-class GameObject;
 class UniformAdapter;
 class Model;
 class Texture;
@@ -15,16 +14,6 @@ class GPUResource;
 class VisualObject
 {
 public:
-	// TODO: replace with OOP inheritance classes
-	enum class Category : char
-	{
-		GameObject,
-		Terrain
-	};
-
-public:
-	VisualObject(const GameObject& aGO);
-
 	void SetModel(Handle<Model> aModel);
 	Handle<GPUResource> GetModel() const { return myModel; }
 
@@ -46,13 +35,7 @@ public:
 	UniformBlock& GetUniformBlock(size_t anIndex) const { return *myUniforms[anIndex]; }
 	const std::vector<std::shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
 
-	void SetCategory(Category aCategory) { myCategory = aCategory; }
-	Category GetCategory() const { return myCategory; }
-
 	bool Resolve();
-
-	// TODO: this is temp until I rework how we store gameobjects and visual objects
-	const GameObject& GetLinkedGO() const { return myGameObject; }
 
 private:
 	Transform myTransf;
@@ -63,7 +46,5 @@ private:
 	// TODO: rework this to use a index-based Handle into
 	// a pool of UniformBlocks
 	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
-	const GameObject& myGameObject;
-	Category myCategory;
-	bool myIsResolved;
+	bool myIsResolved = false;
 };

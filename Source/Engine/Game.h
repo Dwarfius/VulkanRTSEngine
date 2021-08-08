@@ -76,7 +76,6 @@ public:
 	void ForEach(TFunc aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
-	const Terrain* GetTerrain(glm::vec3 pos) const;
 	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
 
 	// utility method for accessing the time across game
@@ -122,7 +121,14 @@ private:
 	std::unordered_map<UID, Handle<GameObject>> myGameObjects;
 	std::queue<Handle<GameObject>> myAddQueue;
 	std::queue<Handle<GameObject>> myRemoveQueue;
-	std::vector<Terrain*> myTerrains;
+
+	struct TerrainEntity
+	{
+		Terrain* myTerrain; // owning
+		VisualObject* myVisualObject; // owning
+		PhysicsComponent* myPhysComponent; // owning
+	};
+	std::vector<TerrainEntity> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker* myAssetTracker;
 	// TODO: explore thread-local drawers!

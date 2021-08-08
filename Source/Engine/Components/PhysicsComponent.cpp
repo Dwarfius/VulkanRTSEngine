@@ -36,6 +36,12 @@ void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsS
 	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, anOrigin);
 }
 
+void PhysicsComponent::CreateOwnerlessPhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
+{
+	ASSERT_STR(!myEntity, "About to leak entity!");
+	myEntity = new PhysicsEntity(aMass, aShape, aTransf);
+}
+
 void PhysicsComponent::DeletePhysicsEntity()
 {
 	ASSERT(myEntity);

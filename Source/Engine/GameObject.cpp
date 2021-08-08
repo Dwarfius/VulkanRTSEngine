@@ -46,15 +46,6 @@ GameObject::~GameObject()
 	}
 }
 
-void GameObject::Update(float aDeltaTime)
-{
-	// TODO: get rid of this in Update
-	if (myVisualObject)
-	{
-		myVisualObject->SetTransform(myWorldTransf);
-	}
-}
-
 void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren /* = true */)
 {
 	AssertLock lock(myPhysMutex);
@@ -72,6 +63,11 @@ void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren 
 		if (aMoveChildren)
 		{
 			UpdateHierarchy();
+		}
+
+		if (myVisualObject)
+		{
+			myVisualObject->SetTransform(myWorldTransf);
 		}
 	}
 }
@@ -94,7 +90,18 @@ void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren 
 		{
 			UpdateHierarchy();
 		}
+
+		if (myVisualObject)
+		{
+			myVisualObject->SetTransform(myWorldTransf);
+		}
 	}
+}
+
+void GameObject::SetVisualObject(VisualObject* aVisualObject)
+{
+	myVisualObject = aVisualObject;
+	myVisualObject->SetTransform(myWorldTransf);
 }
 
 void GameObject::Die()
@@ -154,25 +161,12 @@ void GameObject::DetachChild(const Handle<GameObject>& aGO)
 
 void GameObject::SetPhysTransform(const glm::mat4& aTransf)
 {
-	AssertLock lock(myPhysMutex);
 	// because Bullet doesn't support scaled transforms, 
 	// we can safely split the mat4 into mat3 rot and pos
 	Transform newTransf;
 	newTransf.SetPos(aTransf[3]);
 	newTransf.SetRotation(glm::quat_cast(aTransf));
-	if (newTransf != myWorldTransf)
-	{
-		myWorldTransf = newTransf;
-
-		Transform parentTransf;
-		if (myParent.IsValid())
-		{
-			parentTransf = myParent->GetWorldTransform();
-		}
-		myLocalTransf = parentTransf * myWorldTransf.GetInverted();
-
-		UpdateHierarchy();
-	}
+	SetWorldTransform(newTransf);
 }
 
 void GameObject::GetPhysTransform(glm::mat4& aTransf) const

@@ -2,14 +2,10 @@
 #include "Terrain.h"
 
 #include "GameObject.h"
-#include "Components/PhysicsComponent.h"
 
 #include <Core/Algos/DiamondSquareAlgo.h>
 #include <Physics/PhysicsShapes.h>
 #include <Graphics/Resources/Texture.h>
-
-// TODO: write own header for collision object flags
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 
 Terrain::Terrain()
 	: myWidth(0)
@@ -108,62 +104,38 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
 
-float Terrain::GetHeight(glm::vec3 pos) const
+float Terrain::GetHeight(glm::vec3 aLocalPos) const
 {
 	ASSERT_STR(!myHeightfield, "Terrain hasn't finished initalizing!");
 
 	// finding the relative position
-	float x = pos.x / myStep;
-	float y = pos.z / myStep;
+	float x = aLocalPos.x / myStep;
+	float z = aLocalPos.z / myStep;
 
-	ASSERT_STR(x >= 0 && x <= myWidth - 1 && y >= 0 && y <= myHeight - 1, 
+	ASSERT_STR(x >= 0 && x < myWidth && z >= 0 && z < myHeight, 
 		"Incorrect coords passed! Were they world space?");
 
 	// getting the actual vert indices
-	uint32_t xMin = static_cast<uint32_t>(glm::floor(x));
-	uint32_t xMax = glm::min(xMin + 1, myWidth - 1);
-	uint32_t yMin = static_cast<uint32_t>(glm::floor(y));
-	uint32_t yMax = glm::min(yMin + 1, myHeight - 1);
+	const uint32_t xMin = static_cast<uint32_t>(glm::floor(x));
+	const uint32_t xMax = glm::min(xMin + 1, myWidth - 1);
+	const uint32_t zMin = static_cast<uint32_t>(glm::floor(z));
+	const uint32_t zMax = glm::min(zMin + 1, myHeight - 1);
 
 	// getting vertices for lerping
-	float v0 = GetHeightAtVert(xMin, yMin);
-	float v1 = GetHeightAtVert(xMin, yMax);
-	float v2 = GetHeightAtVert(xMax, yMin);
-	float v3 = GetHeightAtVert(xMax, yMax);
+	float v0 = GetHeightAtVert(xMin, zMin);
+	float v1 = GetHeightAtVert(xMin, zMax);
+	float v2 = GetHeightAtVert(xMax, zMin);
+	float v3 = GetHeightAtVert(xMax, zMax);
 
 	// getting the height
 	x -= xMin;
-	y -= yMin;
-	float botHeight = glm::mix(v0, v2, x);
-	float topHeight = glm::mix(v1, v3, x);
-	return glm::mix(botHeight, topHeight, y);
+	z -= zMin;
+	const float botHeight = glm::mix(v0, v2, x);
+	const float topHeight = glm::mix(v1, v3, x);
+	return glm::mix(botHeight, topHeight, z);
 }
 
-glm::vec3 Terrain::GetNormal(glm::vec3 pos) const
+float Terrain::GetHeightAtVert(uint32_t aX, uint32_t aY) const
 {
-	ASSERT_STR(false, "To be implemented");
-	return glm::vec3();
-}
-
-void Terrain::AddPhysicsEntity(GameObject& aGO, PhysicsWorld& aPhysWorld)
-{
-	myTexture->ExecLambdaOnLoad([this, &aGO, &aPhysWorld](const Resource* aRes) {
-		PhysicsComponent* physComp = aGO.AddComponent<PhysicsComponent>();
-		
-		glm::vec3 pos = aGO.GetWorldTransform().GetPos();
-		pos = myHeightfield->AdjustPositionForRecenter(pos);
-
-		physComp->CreatePhysicsEntity(0, myHeightfield, pos);
-		physComp->GetPhysicsEntity().SetCollisionFlags(
-			physComp->GetPhysicsEntity().GetCollisionFlags()
-			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
-		);
-
-		physComp->RequestAddToWorld(aPhysWorld);
-	});
-}
-
-float Terrain::GetHeightAtVert(uint32_t x, uint32_t y) const
-{
-	return myHeightfield->GetHeights()[y * myHeight + x];
+	return myHeightfield->GetHeights()[aY * myHeight + aX];
 }

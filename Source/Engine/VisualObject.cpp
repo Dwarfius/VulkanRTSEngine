@@ -2,7 +2,6 @@
 #include "VisualObject.h"
 
 #include "Game.h"
-#include "GameObject.h"
 
 #include <Graphics/GPUResource.h>
 #include <Graphics/UniformBlock.h>
@@ -11,13 +10,6 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
-
-VisualObject::VisualObject(const GameObject& aGO)
-	: myGameObject(aGO)
-	, myCategory(Category::GameObject)
-	, myIsResolved(false)
-{
-}
 
 void VisualObject::SetModel(Handle<Model> aModel)
 {

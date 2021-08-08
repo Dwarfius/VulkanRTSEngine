@@ -4,7 +4,7 @@
 #include <Graphics/Camera.h>
 #include <Graphics/UniformBlock.h>
 
-#include "../../GameObject.h"
+#include "../../VisualObject.h"
 #include "AdapterSourceData.h"
 
 void ObjectMatricesAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
@@ -15,12 +15,11 @@ void ObjectMatricesAdapter::FillUniformBlock(const SourceData& aData, UniformBlo
 
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	const glm::mat4& model = source.myGO.GetWorldTransform().GetMatrix();
+	const glm::mat4& model = source.myVO.GetTransform().GetMatrix();
 	const glm::mat4& view = camera.GetView();
-	const glm::mat4 modelView = view * model;
 	const glm::mat4& vp = camera.Get();
 
 	aUB.SetUniform(0, 0, model);
-	aUB.SetUniform(1, 0, modelView);
+	aUB.SetUniform(1, 0, view * model);
 	aUB.SetUniform(2, 0, vp * model);
 }

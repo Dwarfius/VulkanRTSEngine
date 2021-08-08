@@ -100,6 +100,6 @@ void VisualComponent::CreateVOIfNeeded()
 
 	ASSERT_STR(myOwner->GetVisualObject() == nullptr, "Multi VisualObject not supported yet!");
 
-	myVisualObject = new VisualObject(*myOwner);
+	myVisualObject = new VisualObject();
 	myOwner->SetVisualObject(myVisualObject);
 }

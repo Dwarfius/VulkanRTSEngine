@@ -20,8 +20,6 @@ public:
 	GameObject(Id anId, const std::string& aPath);
 	~GameObject();
 
-	void Update(float aDeltaTime);
-
 	const Transform& GetLocalTransform() const { return myLocalTransf; }
 	const Transform& GetWorldTransform() const { return myWorldTransf; }
 	void SetLocalTransform(const Transform& aTransf, bool aMoveChildren = true);
@@ -35,7 +33,7 @@ public:
 	template<class TComp>
 	TComp* GetComponent() const;
 
-	void SetVisualObject(VisualObject* aVisualObject) { myVisualObject = aVisualObject; }
+	void SetVisualObject(VisualObject* aVisualObject);
 	const VisualObject* GetVisualObject() const { return myVisualObject; }
 	VisualObject* GetVisualObject() { return myVisualObject; }
 

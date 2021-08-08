@@ -95,7 +95,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 		Handle<GameObject> newGO = new GameObject(objTransf);
 		
 		GameObject* go = newGO.Get();
-		VisualObject* vo = new VisualObject(*go);
+		VisualObject* vo = new VisualObject();
 		go->SetVisualObject(vo);
 
 		Handle<Model> model = myGLTFImporter.GetModel(0);
