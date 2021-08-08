@@ -3,8 +3,8 @@
 	"shaders":[
 		"TestTerrain/terrainVert.shd",
 		"TestTerrain/terrainFrag.shd",
-		"Engine/tessCtrl.shd",
-		"Engine/tessEval.shd"
+		"TestTerrain/tessCtrl.shd",
+		"TestTerrain/tessEval.shd"
 	],
 	"descriptors":[  
 		{  
