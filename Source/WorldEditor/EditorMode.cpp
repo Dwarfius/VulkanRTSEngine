@@ -3,6 +3,7 @@
 
 #include <Engine/Game.h>
 #include <Engine/Input.h>
+#include <Engine/Terrain.h>
 #include <Engine/Components/PhysicsComponent.h>
 #include <Engine/Components/VisualComponent.h>
 #include <Engine/GameObject.h>
@@ -55,6 +56,20 @@ EditorMode::EditorMode(Game& aGame)
 	myTopBar.Register("File/Import Texture", [&] { myShowTextureImport = true; });
 	myTopBar.Register("File/Create Shader", [&] { myShowShaderCreate = true; });
 	myTopBar.Register("File/Create Pipeline", [&] { myShowPipelineCreate = true; });
+
+	{
+		constexpr float kTerrSize = 18000; // meters
+		constexpr float kResolution = 928; // pixels
+		Terrain* terrain = new Terrain();
+		// Heightmaps generated via https://tangrams.github.io/heightmapper/
+		Handle<Texture> terrainText = aGame.GetAssetTracker().GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.img");
+		terrain->Load(terrainText, kTerrSize / kResolution, 1000.f);
+		//constexpr uint32_t kTerrCells = 64;
+		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
+
+		Handle<Pipeline> terrainPipeline = aGame.GetAssetTracker().GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
+		aGame.AddTerrain(terrain, terrainPipeline);
+	}
 }
 
 void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
@@ -189,6 +204,16 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	{
 		myPipelineCreate.Draw(myShowPipelineCreate);
 	}
+
+	const Terrain* terrain = aGame.GetTerrain(0);
+	const float halfW = terrain->GetWidth() / 2.f;
+	const float halfH = 2;
+	const float halfD = terrain->GetDepth() / 2.f;
+
+	DebugDrawer& debugDrawer = aGame.GetDebugDrawer();
+	debugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	debugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)

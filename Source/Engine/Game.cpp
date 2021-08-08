@@ -67,18 +67,6 @@ Game::Game(ReportError aReporterFunc)
 	myImGUISystem = new ImGUISystem(*this);
 	myAnimationSystem = new AnimationSystem();
 
-	{
-		constexpr float kTerrSize = 18000; // meters
-		constexpr float kResolution = 928; // pixels
-		Terrain* terr = new Terrain();
-		// Heightmaps generated via https://tangrams.github.io/heightmapper/
-		Handle<Texture> terrainText = myAssetTracker->GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.img");
-		terr->Load(terrainText, kTerrSize / kResolution, 1000.f);
-		//constexpr uint32_t kTerrCells = 64;
-		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
-		myTerrains.push_back({ terr, nullptr, nullptr });
-	}
-
 	myRenderThread = new RenderThread();
 
 	myCamera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
@@ -128,36 +116,6 @@ void Game::Init()
 	myImGUISystem->Init();
 
 	// ==========================
-	Handle<Pipeline> terrainPipeline = myAssetTracker->GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
-
-	// terrain
-	TerrainEntity& terrainEntity = myTerrains[0];
-	Terrain* terrain = terrainEntity.myTerrain;
-	Handle<Texture> terrainTexture = terrain->GetTextureHandle();
-	terrainEntity.myVisualObject = new VisualObject();
-	terrainEntity.myVisualObject->SetPipeline(terrainPipeline);
-	terrainEntity.myVisualObject->SetTexture(terrainTexture);
-	
-	terrainTexture->ExecLambdaOnLoad([physWorld = myPhysWorld, entity = &terrainEntity](const Resource* aRes) {
-		Terrain* terrain = entity->myTerrain;
-		VisualObject* visObject = entity->myVisualObject;
-		Transform transf = visObject->GetTransform();
-		glm::vec3 pos = terrain->GetPhysShape()->AdjustPositionForRecenter(transf.GetPos());
-		transf.SetPos(pos);
-
-		PhysicsComponent* physComp = new PhysicsComponent();
-		physComp->CreateOwnerlessPhysicsEntity(0,
-			terrain->GetPhysShape(),
-			transf.GetMatrix()
-		);
-		physComp->GetPhysicsEntity().SetCollisionFlags(
-			physComp->GetPhysicsEntity().GetCollisionFlags()
-			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
-		);
-
-		physComp->RequestAddToWorld(*physWorld);
-		entity->myPhysComponent = physComp;
-	});
 
 	myAnimTest = new AnimationTest(*this);
 
@@ -400,6 +358,40 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 	}
 }
 
+void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
+{
+	myTerrains.push_back({ aTerrain, nullptr, nullptr });
+	TerrainEntity& terrainEntity = myTerrains[myTerrains.size() - 1];
+	Handle<Texture> terrainTexture = aTerrain->GetTextureHandle();
+	terrainEntity.myVisualObject = new VisualObject();
+	terrainEntity.myVisualObject->SetPipeline(aPipeline);
+	terrainEntity.myVisualObject->SetTexture(terrainTexture);
+
+	terrainTexture->ExecLambdaOnLoad([
+		physWorld = myPhysWorld, 
+		entity = &terrainEntity
+	](const Resource* aRes) {
+		Terrain* terrain = entity->myTerrain;
+		VisualObject* visObject = entity->myVisualObject;
+		Transform transf = visObject->GetTransform();
+		glm::vec3 pos = terrain->GetPhysShape()->AdjustPositionForRecenter(transf.GetPos());
+		transf.SetPos(pos);
+
+		PhysicsComponent* physComp = new PhysicsComponent();
+		physComp->CreateOwnerlessPhysicsEntity(0,
+			terrain->GetPhysShape(),
+			transf.GetMatrix()
+		);
+		physComp->GetPhysicsEntity().SetCollisionFlags(
+			physComp->GetPhysicsEntity().GetCollisionFlags()
+			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
+		);
+
+		physComp->RequestAddToWorld(*physWorld);
+		entity->myPhysComponent = physComp;
+	});
+}
+
 void Game::AddGameObjects()
 {
 	AssertWriteLock assertLock(myGOMutex);
@@ -498,14 +490,7 @@ void Game::Render()
 	}
 
 	// adding axis for world navigation
-	const Terrain* terrain = myTerrains[0].myTerrain;
-	const float halfW = terrain->GetWidth() / 2.f;
-	const float halfH = 2;
-	const float halfD = terrain->GetDepth() / 2.f;
 	
-	myDebugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	myDebugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 
 	myRenderThread->AddDebugRenderable(myDebugDrawer);
 	myRenderThread->AddDebugRenderable(myPhysWorld->GetDebugDrawer());

@@ -92,6 +92,11 @@ public:
 	// If GameObject has a parent, it's retained in the world
 	void RemoveGameObject(Handle<GameObject> aGOHandle);
 
+	void AddTerrain(Terrain* aTerrain /* owning */, Handle<Pipeline> aPipeline);
+	void RemoveTerrain(size_t anIndex) { myTerrains.erase(myTerrains.begin() + anIndex); }
+	Terrain* GetTerrain(size_t anIndex) { return myTerrains[anIndex].myTerrain; }
+	size_t GetTerrainCount() const { return myTerrains.size(); }
+
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
 	static bool ourGODeleteEnabled;
 
