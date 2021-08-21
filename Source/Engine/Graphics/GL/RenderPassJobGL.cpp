@@ -1,18 +1,18 @@
 #include "Precomp.h"
 #include "RenderPassJobGL.h"
 
-#include "PipelineGL.h"
+#include "Graphics/GL/UniformBufferGL.h"
+#include "Graphics/GL/GraphicsGL.h"
 #include "ModelGL.h"
+#include "PipelineGL.h"
 #include "TextureGL.h"
+#include "Terrain.h"
 
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/UniformBlock.h>
 #include <Graphics/Resources/Texture.h>
 
 #include <Core/Profiler.h>
-
-#include "Graphics/GL/UniformBufferGL.h"
-#include "../../Terrain.h"
 
 void RenderPassJobGL::Add(const RenderJob& aJob)
 {
@@ -32,6 +32,13 @@ bool RenderPassJobGL::HasWork() const
 void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 {
 	// do nothing explicitly
+}
+
+void RenderPassJobGL::BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext)
+{
+	GraphicsGL& graphics = static_cast<GraphicsGL&>(aGraphics);
+	FrameBufferGL& frameBuffer = graphics.GetFrameBufferGL(aContext.myFrameBuffer);
+	frameBuffer.Bind();
 }
 
 void RenderPassJobGL::Clear(const RenderContext& aContext)

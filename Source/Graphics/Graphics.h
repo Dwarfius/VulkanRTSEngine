@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Core/Vertex.h>
-#include "UniformBlock.h"
+#include "FrameBuffer.h"
 #include "RenderPass.h"
+#include "UniformBlock.h"
+
 #include <Core/Resources/Resource.h> // needed for Resource::Id
 
 struct GLFWwindow;
@@ -52,6 +53,9 @@ public:
 	[[nodiscard]] 
 	virtual RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) = 0;
 
+	virtual void AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBvuffer);
+	const FrameBuffer& GetNamedFrameBuffer(const std::string& aName) const;
+
 	// Notifies the rendering system about how many threads will access it
 	virtual void SetMaxThreads(uint32_t aMaxThreadCount) {}
 
@@ -78,6 +82,7 @@ protected:
 	GLFWwindow* myWindow;
 	uint32_t myRenderCalls;
 	std::vector<IRenderPass*> myRenderPasses;
+	std::unordered_map<std::string, FrameBuffer> myNamedFrameBuffers;
 
 	void ProcessUnloadQueue();
 	bool AreResourcesEmpty() const { return myResources.empty(); }

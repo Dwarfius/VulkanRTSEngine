@@ -1,0 +1,8 @@
+{  
+    "type":0,
+    "shaders":[
+        "Engine/compositeVert.shd",
+        "Engine/compositeFrag.shd"
+    ],
+    "descriptors":[]
+}

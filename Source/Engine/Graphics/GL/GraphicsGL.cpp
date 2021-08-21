@@ -10,8 +10,6 @@
 #include "UniformBufferGL.h"
 #include "RenderPassJobGL.h"
 
-#include <sstream>
-
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Profiler.h>
@@ -87,12 +85,8 @@ void GraphicsGL::Init()
 	}
 #endif
 
-	{
-		Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl");
-		myDebugPipeline = GetOrCreate(debugPipeline).Get<PipelineGL>();
-	}
-
 	CreateLineCache();
+	CreateFrameQuad();
 
 	// TEST
 	glGenQueries(1, &myGPUQuery);
@@ -116,7 +110,7 @@ void GraphicsGL::Display()
 		const RenderPassJobMap& jobs = myRenderPassJobs.GetRead();
 		for (const auto& pair : jobs)
 		{
-			pair.second->Execute();
+			pair.second->Execute(*this);
 		}
 	}
 
@@ -165,6 +159,24 @@ void GraphicsGL::Display()
 		}
 	}
 
+	if(myCompositePipeline->GetState() == GPUResource::State::Valid)
+	{
+		// TODO: make it a renderpass
+		// performing final compose
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		myCompositePipeline->Bind();
+		myFrameQuad->Bind();
+
+		FrameBufferGL& buffer = GetFrameBufferGL("Default");
+		uint32_t texture = buffer.GetColorTexture(0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		GLsizei count = static_cast<GLsizei>(myFrameQuad->GetVertexCount());
+		glDrawArrays(myFrameQuad->GetDrawMode(), 0, count);
+	}
+
 	{
 		Profiler::ScopedMark swapProfile("GraphicsGL::SwapBuffers");
 		glfwSwapBuffers(myWindow);
@@ -177,6 +189,9 @@ void GraphicsGL::CleanUp()
 
 	myDebugPipeline = Handle<PipelineGL>();
 	myLineCache.myBuffer = Handle<ModelGL>();
+
+	myFrameQuad = Handle<ModelGL>();
+	myCompositePipeline = Handle<PipelineGL>();
 
 	constexpr uint32_t kMaxExtraDescriptors = 32;
 	LineCache::UploadDesc* descriptors[kMaxExtraDescriptors];
@@ -266,6 +281,21 @@ void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 	((GraphicsGL*)ourActiveGraphics)->OnResize(aWidth, aHeight);
 }
 
+void GraphicsGL::AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBuffer)
+{
+	Graphics::AddNamedFrameBuffer(aName, aBuffer);
+
+	myFrameBuffers.emplace(aName, FrameBufferGL(*this, aBuffer));
+}
+
+FrameBufferGL& GraphicsGL::GetFrameBufferGL(const std::string& aName)
+{
+	auto iter = myFrameBuffers.find(aName);
+	ASSERT_STR(iter != myFrameBuffers.end(), 
+		"FrameBuffer with name %s doesn't exist!", aName.c_str());
+	return iter->second;
+}
+
 RenderPassJob& GraphicsGL::GetRenderPassJob(uint32_t anId, const RenderContext& renderContext)
 {
 	RenderPassJob* foundJob;
@@ -288,10 +318,18 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 {
 	ourWidth = aWidth;
 	ourHeight = aHeight;
+
+	for (auto& [key, frameBuffer] : myFrameBuffers)
+	{
+		frameBuffer.OnResize(*this);
+	}
 }
 
 void GraphicsGL::CreateLineCache()
 {
+	Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl");
+	myDebugPipeline = GetOrCreate(debugPipeline).Get<PipelineGL>();
+
 	myLineCache.myBuffer = new ModelGL(
 		Model::PrimitiveType::Lines, 
 		GPUResource::UsageType::Dynamic, 
@@ -301,6 +339,57 @@ void GraphicsGL::CreateLineCache()
 	Model::VertStorage<PosColorVertex>* buffer = new Model::VertStorage<PosColorVertex>(0);
 	Handle<Model> cpuBuffer = new Model(Model::PrimitiveType::Lines, buffer, false);
 	myLineCache.myBuffer->Create(*this, cpuBuffer, true);
+}
+
+void GraphicsGL::CreateFrameQuad()
+{
+	Handle<Pipeline> pipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/composite.ppl");
+	myCompositePipeline = GetOrCreate(pipeline).Get<PipelineGL>();
+
+	struct PosUVVertex
+	{
+		glm::vec2 myPos;
+		glm::vec2 myUV;
+
+		PosUVVertex() = default;
+		constexpr PosUVVertex(glm::vec2 aPos, glm::vec2 aUV)
+			: myPos(aPos)
+			, myUV(aUV)
+		{
+		}
+
+		static constexpr VertexDescriptor GetDescriptor()
+		{
+			using ThisType = PosUVVertex; // for copy-paste convenience
+			return {
+				sizeof(ThisType),
+				2,
+				{
+					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myPos) },
+					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUV) }
+				}
+			};
+		}
+	};
+
+	myFrameQuad = new ModelGL(
+		Model::PrimitiveType::Triangles,
+		GPUResource::UsageType::Static,
+		PosUVVertex::GetDescriptor(),
+		false
+	);
+	PosUVVertex vertices[] = {
+		{ { -1.f,  1.f }, { 0.f, 1.f } },
+		{ { -1.f, -1.f }, { 0.f, 0.f } },
+		{ {  1.f, -1.f }, { 1.f, 0.f } },
+
+		{ { -1.f,  1.f }, { 0.f, 1.f } },
+		{ {  1.f, -1.f }, { 1.f, 0.f } },
+		{ {  1.f,  1.f }, { 1.f, 1.f } }
+	};
+	Model::VertStorage<PosUVVertex>* buffer = new Model::VertStorage<PosUVVertex>(6, vertices);
+	Handle<Model> cpuModel = new Model(Model::PrimitiveType::Triangles, buffer, false);
+	myFrameQuad->Create(*this, cpuModel, false);
 }
 
 #ifdef DEBUG_GL_CALLS

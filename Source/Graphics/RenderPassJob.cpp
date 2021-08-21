@@ -46,8 +46,9 @@ bool RenderJob::HasLastHandles() const
 
 //================================================
 
-void RenderPassJob::Execute()
+void RenderPassJob::Execute(Graphics& aGraphics)
 {
+	BindFrameBuffer(aGraphics, myContext);
 	Clear(myContext);
 
 	if (HasWork())

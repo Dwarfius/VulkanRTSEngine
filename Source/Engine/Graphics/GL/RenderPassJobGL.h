@@ -9,21 +9,17 @@ class TextureGL;
 class RenderPassJobGL : public RenderPassJob
 {
 public:
-	void Add(const RenderJob& aJob) override final;
-	void AddRange(std::vector<RenderJob>&& aJobs) override final;
-	void Clear() override final { myJobs.clear(); };
-	operator std::vector<RenderJob>() && override final { return myJobs; }
+	void Add(const RenderJob& aJob) final;
+	void AddRange(std::vector<RenderJob>&& aJobs) final;
+	void Clear() final { myJobs.clear(); };
+	operator std::vector<RenderJob>() && final { return myJobs; }
 
 private:
-	// returns whether there's any work in this job
-	bool HasWork() const override final;
-	// called immediatelly after creating a job
-	void OnInitialize(const RenderContext& aContext) override final;
-	// called if context requests clearing
-	void Clear(const RenderContext& aContext) override final;
-	// called just before executing the jobs
-	void SetupContext(const RenderContext& aContext) override final;
-	// called last to submit render jobs
+	bool HasWork() const final;
+	void OnInitialize(const RenderContext& aContext) final;
+	void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) final;
+	void Clear(const RenderContext& aContext) final;
+	void SetupContext(const RenderContext& aContext) final;
 	void RunJobs() override final;
 
 	constexpr static uint32_t ConvertBlendMode(RenderContext::Blending aBlendMode);

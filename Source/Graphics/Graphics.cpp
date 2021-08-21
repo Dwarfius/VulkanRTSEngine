@@ -72,6 +72,21 @@ void Graphics::CleanUp()
 	}
 }
 
+void Graphics::AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBuffer)
+{
+	ASSERT_STR(myNamedFrameBuffers.find(aName) == myNamedFrameBuffers.end(),
+		"FrameBuffer named %s is already registered!", aName.c_str());
+	myNamedFrameBuffers.insert({ aName, aBuffer });
+}
+
+const FrameBuffer& Graphics::GetNamedFrameBuffer(const std::string& aName) const
+{
+	auto iter = myNamedFrameBuffers.find(aName);
+	ASSERT_STR(iter != myNamedFrameBuffers.end(), 
+		"Couldn't find a FrameBuffer named %s", aName.c_str());
+	return iter->second;
+}
+
 void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames

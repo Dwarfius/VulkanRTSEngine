@@ -15,6 +15,7 @@
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/UniformAdapter.h>
+#include <Graphics/FrameBuffer.h>
 
 #include <Core/Profiler.h>
 
@@ -50,6 +51,15 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	myGraphics->Init();
 	myGraphics->AddRenderPass(new DefaultRenderPass());
 	myGraphics->AddRenderPass(new TerrainRenderPass());
+
+	// the engine provides a default render buffer, that
+	// generic render passes output to
+	FrameBuffer defaultBuffer{
+		{ { FrameBuffer::AttachmentType::Texture, ITexture::Format::UNorm_RGBA } },
+		{ FrameBuffer::AttachmentType::RenderBuffer, ITexture::Format::Depth32F }
+	};
+	myGraphics->AddNamedFrameBuffer("Default", defaultBuffer);
+
 	Input::SetWindow(myGraphics->GetWindow());
 }
 

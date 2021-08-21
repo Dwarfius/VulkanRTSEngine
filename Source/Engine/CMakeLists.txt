@@ -87,7 +87,9 @@ set(SRC_GRAPHICS_RENDERPASSES
 	"Graphics/RenderPasses/GenericRenderPasses.cpp" "Graphics/RenderPasses/GenericRenderPasses.h"
 )
 
-set(SRC_GRAPHICS_GL "Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
+set(SRC_GRAPHICS_GL 
+	"Graphics/GL/FrameBufferGL.cpp" "Graphics/GL/FrameBufferGL.h"
+	"Graphics/GL/GraphicsGL.cpp" "Graphics/GL/GraphicsGL.h"
 	"Graphics/GL/ModelGL.cpp" "Graphics/GL/ModelGL.h"
 	"Graphics/GL/PipelineGL.cpp" "Graphics/GL/PipelineGL.h"
 	"Graphics/GL/RenderPassJobGL.cpp" "Graphics/GL/RenderPassJobGL.h"

@@ -57,6 +57,8 @@ bool ImGUIRenderPass::IsReady() const
 
 void ImGUIRenderPass::PrepareContext(RenderContext& aContext) const
 {
+	aContext.myFrameBuffer = "Default";
+
 	aContext.myEnableBlending = true;
 	aContext.myBlendingEq = RenderContext::BlendingEq::Add;
 	aContext.mySourceBlending = RenderContext::Blending::SourceAlpha;

@@ -6,6 +6,7 @@
 
 class GPUResource;
 class UniformBlock;
+class Graphics;
 
 struct RenderJob
 {
@@ -104,7 +105,7 @@ public:
 	// reclaim memory, if possible
 	virtual operator std::vector<RenderJob>() && = 0;
 
-	void Execute();
+	void Execute(Graphics& aGraphics);
 
 	void Initialize(const RenderContext& aContext);
 
@@ -116,7 +117,9 @@ private:
 	virtual bool HasWork() const = 0;
 	// called immediatelly after creating a job
 	virtual void OnInitialize(const RenderContext& aContext) = 0;
-	// called if context requests clearing
+	// called first before running jobs
+	virtual void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) = 0;
+	// always called before running jobs
 	virtual void Clear(const RenderContext& aContext) = 0;
 	// called just before executing the jobs
 	virtual void SetupContext(const RenderContext& aContext) = 0;

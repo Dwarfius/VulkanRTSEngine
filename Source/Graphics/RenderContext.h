@@ -66,6 +66,8 @@ public:
 		PerObject
 	};
 public:
+	std::string myFrameBuffer;
+
 	// Taking defaults from OpenGL
 	// Constant color for blending, RGBA
 	float myBlendColor[4] = { 0, 0, 0, 0 };

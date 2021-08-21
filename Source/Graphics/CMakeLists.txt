@@ -5,6 +5,7 @@ project (Graphics LANGUAGES CXX)
 set(SRC "Precomp.cpp" "Precomp.h"
 	"Camera.cpp" "Camera.h"
 	"Descriptor.cpp" "Descriptor.h"
+	"FrameBuffer.h"
 	"GPUResource.cpp" "GPUResource.h"
 	"Graphics.cpp" "Graphics.h"
 	"RenderContext.h"
