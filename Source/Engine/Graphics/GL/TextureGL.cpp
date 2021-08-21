@@ -3,18 +3,82 @@
 
 #include <Graphics/Resources/Texture.h>
 
-TextureGL::TextureGL()
-	: myGLTexture(0)
-	, myWrapMode(static_cast<Texture::WrapMode>(-1))
-	, myMinFilter(static_cast<Texture::Filter>(-1))
-	, myMagFilter(static_cast<Texture::Filter>(-1))
-{
-}
-
 void TextureGL::Bind()
 {
 	ASSERT_STR(myGLTexture, "Missing GL texture to bind!");
 	glBindTexture(GL_TEXTURE_2D, myGLTexture);
+}
+
+uint32_t TextureGL::TranslateInternalFormat(Format aFormat)
+{
+	switch (aFormat)
+	{
+	case Texture::Format::SNorm_R:		return GL_R8;
+	case Texture::Format::UNorm_R:		return GL_R8;
+	case Texture::Format::SNorm_RG:		return GL_RG8_SNORM;
+	case Texture::Format::UNorm_RG:		return GL_RG8;
+	case Texture::Format::SNorm_RGB:	return GL_RGB8_SNORM;
+	case Texture::Format::UNorm_RGB:	return GL_RGB8;
+	case Texture::Format::SNorm_RGBA:	return GL_RGBA8_SNORM;
+	case Texture::Format::UNorm_RGBA:	return GL_RGBA8;
+	case Texture::Format::UNorm_BGRA:	return GL_RGBA8;
+	case Texture::Format::Depth16:		return GL_DEPTH_COMPONENT16;
+	case Texture::Format::Depth24:		return GL_DEPTH_COMPONENT24;
+	case Texture::Format::Depth32F:		return GL_DEPTH_COMPONENT32F;
+	case Texture::Format::Stencil8:		return GL_STENCIL_INDEX8;
+	case Texture::Format::Depth24_Stencil8:		return GL_DEPTH24_STENCIL8;
+	case Texture::Format::Depth32F_Stencil8:	return GL_DEPTH32F_STENCIL8;
+	default: ASSERT(false);
+	}
+	return 0;
+}
+
+uint32_t TextureGL::TranslateFormat(Format aFormat)
+{
+	switch (aFormat)
+	{
+	case Texture::Format::SNorm_R:
+	case Texture::Format::UNorm_R:		return GL_RED;
+	case Texture::Format::SNorm_RG:
+	case Texture::Format::UNorm_RG:		return GL_RG;
+	case Texture::Format::SNorm_RGB:
+	case Texture::Format::UNorm_RGB:	return GL_RGB;
+	case Texture::Format::SNorm_RGBA:
+	case Texture::Format::UNorm_RGBA:	return GL_RGBA;
+	case Texture::Format::UNorm_BGRA:	return GL_BGRA;
+	case Texture::Format::Depth16:
+	case Texture::Format::Depth24:
+	case Texture::Format::Depth32F:		return GL_DEPTH_COMPONENT;
+	case Texture::Format::Stencil8:		return GL_STENCIL_INDEX;
+	case Texture::Format::Depth24_Stencil8:
+	case Texture::Format::Depth32F_Stencil8:	return GL_DEPTH_STENCIL;
+	default: ASSERT(false);
+	}
+	return 0;
+}
+
+uint32_t TextureGL::DeterminePixelDataType(Format aFormat)
+{
+	switch (aFormat)
+	{
+	case Texture::Format::SNorm_R:
+	case Texture::Format::SNorm_RG:
+	case Texture::Format::SNorm_RGB:
+	case Texture::Format::SNorm_RGBA:	return GL_BYTE;
+	case Texture::Format::UNorm_R:		
+	case Texture::Format::UNorm_RG:		
+	case Texture::Format::UNorm_RGB:	
+	case Texture::Format::UNorm_RGBA:	
+	case Texture::Format::UNorm_BGRA:	return GL_UNSIGNED_BYTE;
+	case Texture::Format::Depth16:		return GL_UNSIGNED_SHORT;
+	case Texture::Format::Depth24:		return GL_UNSIGNED_INT;
+	case Texture::Format::Depth32F:		return GL_FLOAT;
+	case Texture::Format::Stencil8:		return GL_UNSIGNED_BYTE;
+	case Texture::Format::Depth24_Stencil8:		return GL_UNSIGNED_INT_24_8;
+	case Texture::Format::Depth32F_Stencil8:	return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+	default: ASSERT(false);
+	}
+	return 0;
 }
 
 void TextureGL::OnCreate(Graphics& aGraphics)
@@ -34,37 +98,16 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 	const Texture* texture = myResHandle.Get<const Texture>();
 	UpdateTexParams(texture);
 
-	GLenum format;
-	switch (texture->GetFormat())
-	{
-	case Texture::Format::SNorm_R:		//[[fallthrough]]
-	case Texture::Format::UNorm_R:		format = GL_RED; break;
-	case Texture::Format::SNorm_RG:		//[[fallthrough]]
-	case Texture::Format::UNorm_RG:		format = GL_RG; break;
-	case Texture::Format::SNorm_RGB:	//[[fallthrough]]
-	case Texture::Format::UNorm_RGB:	format = GL_RGB; break;
-	case Texture::Format::SNorm_RGBA:	//[[fallthrough]]
-	case Texture::Format::UNorm_RGBA:	//[[fallthrough]]
-	case Texture::Format::UNorm_BGRA:	format = GL_RGBA; break;
-	default: ASSERT(false);
-	}
-
-	GLint internFormat;
-	switch (format)
-	{
-	case GL_RED:	internFormat = GL_R8; break;
-	case GL_RG:		internFormat = GL_RG8; break;
-	case GL_RGB:	internFormat = GL_RGB8; break;
-	case GL_RGBA:	internFormat = GL_RGBA8; break;
-	default: ASSERT(false);
-	}
+	const GLenum format = TranslateFormat(texture->GetFormat());
+	const GLint internFormat = TranslateInternalFormat(texture->GetFormat());
+	const GLenum pixelType = DeterminePixelDataType(texture->GetFormat());
 
 	// TODO: hook into internal format preferences
 	// glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format)
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internFormat,
 		texture->GetWidth(), texture->GetHeight(), 
-		0, format, GL_UNSIGNED_BYTE, texture->GetPixels());
+		0, format, pixelType, texture->GetPixels());
 
 	if (texture->IsUsingMipMaps())
 	{
@@ -101,6 +144,8 @@ void TextureGL::UpdateTexParams(const Texture* aTexture)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 			break;
+		default:
+			ASSERT(false);
 		}
 	}
 
