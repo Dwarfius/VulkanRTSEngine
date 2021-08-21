@@ -150,6 +150,11 @@ public:
 		return myBuffer;
 	}
 
+	constexpr operator std::string_view() const
+	{
+		return std::string_view(myBuffer, myLength);
+	}
+
 private:
 	char myBuffer[N];
 	int myLength;

@@ -5,6 +5,7 @@
 #include <Graphics/GPUResource.h>
 #include <Graphics/Resources/GPUModel.h>
 
+#include "Graphics/NamedFrameBuffers.h"
 #include "Terrain.h"
 
 bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
@@ -20,7 +21,7 @@ bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
 
 void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
 {
-	aContext.myFrameBuffer = "Default";
+	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
@@ -57,7 +58,7 @@ bool TerrainRenderPass::HasResources(const RenderJob& aJob) const
 
 void TerrainRenderPass::PrepareContext(RenderContext& aContext) const
 {
-	aContext.myFrameBuffer = "Default";
+	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());

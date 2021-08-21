@@ -81,6 +81,7 @@ set(SRC_COMP
 )
 
 set(SRC_GRAPHICS 
+	"Graphics/NamedFrameBuffers.h"
 )
 
 set(SRC_GRAPHICS_RENDERPASSES

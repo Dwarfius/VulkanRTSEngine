@@ -71,18 +71,18 @@ void Graphics::CleanUp()
 	}
 }
 
-void Graphics::AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBuffer)
+void Graphics::AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBuffer)
 {
 	ASSERT_STR(myNamedFrameBuffers.find(aName) == myNamedFrameBuffers.end(),
-		"FrameBuffer named %s is already registered!", aName.c_str());
+		"FrameBuffer named %s is already registered!", aName.data());
 	myNamedFrameBuffers.insert({ aName, aBuffer });
 }
 
-const FrameBuffer& Graphics::GetNamedFrameBuffer(const std::string& aName) const
+const FrameBuffer& Graphics::GetNamedFrameBuffer(std::string_view aName) const
 {
 	auto iter = myNamedFrameBuffers.find(aName);
 	ASSERT_STR(iter != myNamedFrameBuffers.end(), 
-		"Couldn't find a FrameBuffer named %s", aName.c_str());
+		"Couldn't find a FrameBuffer named %s", aName.data());
 	return iter->second;
 }
 

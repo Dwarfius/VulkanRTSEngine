@@ -4,6 +4,8 @@
 #include <Graphics/Graphics.h>
 #include <Graphics/GPUResource.h>
 
+#include "Graphics/NamedFrameBuffers.h"
+
 void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
 {
 	const ImGUIData& data = static_cast<const ImGUIData&>(aData);
@@ -57,7 +59,7 @@ bool ImGUIRenderPass::IsReady() const
 
 void ImGUIRenderPass::PrepareContext(RenderContext& aContext) const
 {
-	aContext.myFrameBuffer = "Default";
+	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myEnableBlending = true;
 	aContext.myBlendingEq = RenderContext::BlendingEq::Add;

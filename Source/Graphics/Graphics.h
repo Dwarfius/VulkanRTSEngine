@@ -53,8 +53,8 @@ public:
 	[[nodiscard]] 
 	virtual RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) = 0;
 
-	virtual void AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBvuffer);
-	const FrameBuffer& GetNamedFrameBuffer(const std::string& aName) const;
+	virtual void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer);
+	const FrameBuffer& GetNamedFrameBuffer(std::string_view aName) const;
 
 	// Notifies the rendering system about how many threads will access it
 	virtual void SetMaxThreads(uint32_t aMaxThreadCount) {}
@@ -81,7 +81,7 @@ protected:
 	GLFWwindow* myWindow;
 	uint32_t myRenderCalls;
 	std::vector<IRenderPass*> myRenderPasses;
-	std::unordered_map<std::string, FrameBuffer> myNamedFrameBuffers;
+	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
 
 	void ProcessUnloadQueue();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
@@ -106,4 +106,3 @@ private:
 
 	IRenderPass* GetRenderPass(IRenderPass::Category aCategory) const;
 };
-

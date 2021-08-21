@@ -24,9 +24,9 @@ public:
 	// TODO: get rid of the static method by using a bound functor object
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 
-	void AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBvuffer) final;
+	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) final;
 	[[nodiscard]]
-	FrameBufferGL& GetFrameBufferGL(const std::string& aName);
+	FrameBufferGL& GetFrameBufferGL(std::string_view aName);
 
 	[[nodiscard]]
 	RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) final;
@@ -64,7 +64,7 @@ private:
 	GPUResource* Create(Texture*) const final;
 	GPUResource* Create(Shader*) const final;
 
-	std::unordered_map<std::string, FrameBufferGL> myFrameBuffers;
+	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	Handle<ModelGL> myFrameQuad;
 	Handle<PipelineGL> myCompositePipeline;
 	void CreateFrameQuad();

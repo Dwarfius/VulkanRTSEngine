@@ -9,6 +9,7 @@
 #include "TextureGL.h"
 #include "UniformBufferGL.h"
 #include "RenderPassJobGL.h"
+#include "Graphics/NamedFrameBuffers.h"
 
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
@@ -166,8 +167,8 @@ void GraphicsGL::Display()
 		myCompositePipeline->Bind();
 		myFrameQuad->Bind();
 
-		FrameBufferGL& buffer = GetFrameBufferGL("Default");
-		uint32_t texture = buffer.GetColorTexture(0);
+		FrameBufferGL& buffer = GetFrameBufferGL(DefaultFrameBuffer::kName);
+		uint32_t texture = buffer.GetColorTexture(DefaultFrameBuffer::kColorInd);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -279,18 +280,18 @@ void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 	graphics->OnResize(aWidth, aHeight);
 }
 
-void GraphicsGL::AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBuffer)
+void GraphicsGL::AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBuffer)
 {
 	Graphics::AddNamedFrameBuffer(aName, aBuffer);
 
 	myFrameBuffers.emplace(aName, FrameBufferGL(*this, aBuffer));
 }
 
-FrameBufferGL& GraphicsGL::GetFrameBufferGL(const std::string& aName)
+FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 {
 	auto iter = myFrameBuffers.find(aName);
 	ASSERT_STR(iter != myFrameBuffers.end(), 
-		"FrameBuffer with name %s doesn't exist!", aName.c_str());
+		"FrameBuffer with name %s doesn't exist!", aName.data());
 	return iter->second;
 }
 

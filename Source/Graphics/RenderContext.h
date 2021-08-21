@@ -66,7 +66,7 @@ public:
 		PerObject
 	};
 public:
-	std::string myFrameBuffer;
+	std::string_view myFrameBuffer;
 
 	// Taking defaults from OpenGL
 	// Constant color for blending, RGBA
