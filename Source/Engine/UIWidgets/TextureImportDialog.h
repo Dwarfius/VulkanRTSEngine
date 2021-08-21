@@ -1,7 +1,8 @@
 #pragma once
 
+#include <Core/RefCounted.h>
+
 class Texture;
-template<class T> class Handle;
 
 class TextureImportDialog
 {

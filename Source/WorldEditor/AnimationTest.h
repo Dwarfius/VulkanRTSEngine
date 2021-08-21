@@ -1,11 +1,12 @@
 #pragma once
 
+#include <Core/RefCounted.h>
 
 class Game;
 class Skeleton;
 class AnimationClip;
 class GameObject;
-template<class T> class Handle;
+class Model;
 
 class AnimationTest
 {

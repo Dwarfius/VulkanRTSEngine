@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/Pool.h>
-#include "Animation/Skeleton.h"
+#include "Skeleton.h"
 
 class AnimationClip;
 
