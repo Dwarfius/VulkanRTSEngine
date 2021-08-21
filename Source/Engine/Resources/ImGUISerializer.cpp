@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "ImGUISerializer.h"
 
+#include <Core/Utils.h>
+
 ImGUISerializer::ImGUISerializer(AssetTracker& anAssetTracker)
 	: Serializer(anAssetTracker, true)
 {
