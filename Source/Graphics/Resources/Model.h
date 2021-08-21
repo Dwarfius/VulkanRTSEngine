@@ -57,6 +57,15 @@ public:
 			}
 		}
 
+		VertStorage(size_t aCount, const T* const aSource)
+			: VertStorage(aCount)
+		{
+			if (myCount)
+			{
+				std::memcpy(myData, aSource, aCount * sizeof(T));
+			}
+		}
+
 		~VertStorage()
 		{
 			if (myData)
