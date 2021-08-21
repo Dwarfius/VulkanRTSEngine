@@ -5,7 +5,6 @@
 class ITexture
 {
 public:
-	// TODO: split this into SourceFormat and DestFormat
 	DATA_ENUM(Format, char,
 		// Generic
 		// 8 byte per component
@@ -18,6 +17,18 @@ public:
 		UNorm_RG,
 		UNorm_RGB,
 		UNorm_RGBA,
+
+		// Depth
+		Depth16,
+		Depth24,
+		Depth32F,
+
+		// Stencil
+		Stencil8,
+
+		// Merged Depth+Stencil
+		Depth24_Stencil8,
+		Depth32F_Stencil8,
 
 		// Special
 		UNorm_BGRA // VK relies on this for swapchain initialization
