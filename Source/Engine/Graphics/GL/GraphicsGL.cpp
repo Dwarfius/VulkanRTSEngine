@@ -39,8 +39,6 @@ GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 
 void GraphicsGL::Init()
 {
-	ourActiveGraphics = this;
-
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
@@ -50,8 +48,8 @@ void GraphicsGL::Init()
 #endif
 
 	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - GL", nullptr, nullptr);
-	//glfwSetInputMode(myWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetWindowSizeCallback(myWindow, GraphicsGL::OnWindowResized);
+	glfwSetWindowUserPointer(myWindow, this);
 	
 	glfwMakeContextCurrent(myWindow);
 	glfwSwapInterval(0); // turning off vsync
@@ -221,7 +219,6 @@ void GraphicsGL::CleanUp()
 	ASSERT_STR(AreResourcesEmpty(), "Leak! Everything should've been cleaned up!");
 
 	glfwDestroyWindow(myWindow);
-	ourActiveGraphics = nullptr;
 }
 
 GPUResource* GraphicsGL::Create(Model*) const
@@ -278,7 +275,8 @@ void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 		return;
 	}
 
-	((GraphicsGL*)ourActiveGraphics)->OnResize(aWidth, aHeight);
+	GraphicsGL* graphics = static_cast<GraphicsGL*>(glfwGetWindowUserPointer(aWindow));
+	graphics->OnResize(aWidth, aHeight);
 }
 
 void GraphicsGL::AddNamedFrameBuffer(const std::string& aName, const FrameBuffer& aBuffer)

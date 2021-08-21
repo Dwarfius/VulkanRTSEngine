@@ -73,7 +73,6 @@ public:
 
 protected:
 	static int ourWidth, ourHeight;
-	static Graphics* ourActiveGraphics;
 
 	void TriggerUpload(GPUResource* aGPUResource);
 
