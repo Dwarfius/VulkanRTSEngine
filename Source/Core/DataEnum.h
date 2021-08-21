@@ -15,12 +15,25 @@
 #define DATA_ENUM_FUNC8(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC7(Func, __VA_ARGS__))
 #define DATA_ENUM_FUNC9(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC8(Func, __VA_ARGS__))
 #define DATA_ENUM_FUNC10(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC9(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC11(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC10(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC12(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC11(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC13(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC12(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC14(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC13(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC15(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC14(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC16(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC15(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC17(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC16(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC18(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC17(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC19(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC18(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC20(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC19(Func, __VA_ARGS__))
 
-#define DATA_ENUM_PICK_11TH(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+#define DATA_ENUM_PICK_21TH(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, \
+	_11, _12, _13, _14, _15, _16, _17, _18, _19, _20, N, ...) N
 // Determines the size of __VA_ARGS__ by sliding the correct responce to the
 // "answer window" that DATA_ENUM_PICK_11TH provides
 #define DATA_ENUM_NUM_ARGS(...) \
-	DATA_ENUM_EXPAND(DATA_ENUM_PICK_11TH(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+	DATA_ENUM_EXPAND(DATA_ENUM_PICK_21TH(__VA_ARGS__, \
+	20, 19, 18, 17, 16, 15, 14, 13, 12, 11, \
+	10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 
 // Macro token pasting, needs 2 levels to process results of arguments rather
 // their tokens
