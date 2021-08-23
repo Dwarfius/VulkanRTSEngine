@@ -8,6 +8,7 @@ This is a hobby project to practice developing a mutltithreaded engine. The engi
 * an Animation system
 * Physics driven by Bullet
 * a standalone benchmarking executable using Google Benchmark
+
 It is currently written using C++20 in Visual Studio 16.10.3 and tested on Windows.
 
 Project uses CMake(3.17.3). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
