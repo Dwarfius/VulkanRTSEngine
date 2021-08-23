@@ -47,6 +47,8 @@ public:
 	virtual Category GetCategory() const = 0;
 	virtual uint32_t Id() const = 0;
 
+	const std::vector<uint32_t>& GetDependencies() const { return myDependencies; }
+
 protected:
 	// Controls whether every frame the context needs to be recreated
 	// or can it be cached at initialization time and reused
@@ -59,6 +61,7 @@ protected:
 
 	RenderContext myRenderContext;
 	bool myHasValidContext;
+	std::vector<uint32_t> myDependencies;
 };
 
 // RenderPass doesn't accumulate the renderables internally, 

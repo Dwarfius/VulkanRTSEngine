@@ -8,6 +8,11 @@
 #include "Graphics/NamedFrameBuffers.h"
 #include "Terrain.h"
 
+DefaultRenderPass::DefaultRenderPass()
+{
+	myDependencies.push_back(TerrainRenderPass::PassId);
+}
+
 bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
 {
 	constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
@@ -25,9 +30,6 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
 
 	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
-
-	aContext.myShouldClearColor = true;
-	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0;
 
@@ -62,6 +64,9 @@ void TerrainRenderPass::PrepareContext(RenderContext& aContext) const
 
 	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+
+	aContext.myShouldClearColor = true;
+	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0;
 

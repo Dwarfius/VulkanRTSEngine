@@ -75,7 +75,6 @@ public:
 
 class ImGUIRenderPass : public IRenderPass
 {
-	constexpr static uint32_t PassId = Utils::CRC32("ImGUIRenderPass");
 	Handle<GPUResource> myPipeline;
 	Handle<GPUResource> myModel;
 	Handle<GPUResource> myFontAtlas;
@@ -85,6 +84,7 @@ class ImGUIRenderPass : public IRenderPass
 	AssertMutex myRenderJobMutex;
 
 public:
+	constexpr static uint32_t PassId = Utils::CRC32("ImGUIRenderPass");
 	ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics);
 
 	bool HasResources(const RenderJob& aJob) const final

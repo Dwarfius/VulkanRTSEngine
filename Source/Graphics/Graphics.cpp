@@ -90,6 +90,18 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
+	std::sort(myRenderPasses.begin(), myRenderPasses.end(), 
+		[](IRenderPass* aLeft, IRenderPass* aRight) {
+		const uint32_t leftId = aLeft->Id();
+		for (const uint32_t rightId : aRight->GetDependencies())
+		{
+			if (leftId == rightId)
+			{
+				return true;
+			}
+		}
+		return false;
+	});
 }
 
 template<class T>
