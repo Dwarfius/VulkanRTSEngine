@@ -40,7 +40,7 @@ void ImGUISystem::Init()
 
 		fontAtlas->SetWidth(width);
 		fontAtlas->SetHeight(height);
-		fontAtlas->SetFormat(ITexture::Format::SNorm_RGBA);
+		fontAtlas->SetFormat(ITexture::Format::UNorm_RGBA);
 		fontAtlas->SetPixels(pixels, false);
 	}
 
