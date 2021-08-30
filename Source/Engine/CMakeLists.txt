@@ -86,6 +86,7 @@ set(SRC_GRAPHICS
 
 set(SRC_GRAPHICS_RENDERPASSES
 	"Graphics/RenderPasses/GenericRenderPasses.cpp" "Graphics/RenderPasses/GenericRenderPasses.h"
+	"Graphics/RenderPasses/DebugRenderPass.cpp" "Graphics/RenderPasses/DebugRenderPass.h"
 )
 
 set(SRC_GRAPHICS_GL 

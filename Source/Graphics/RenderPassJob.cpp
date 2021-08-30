@@ -9,7 +9,6 @@ RenderJob::RenderJob(Handle<GPUResource> aPipeline, Handle<GPUResource> aModel,
 	, myModel(aModel)
 	, myTextures(aTextures)
 	, myScissorRect{ 0,0,0,0 }
-	, myPriority(0)
 	, myDrawMode(DrawMode::Indexed)
 	, myDrawParams()
 {
@@ -42,6 +41,24 @@ bool RenderJob::HasLastHandles() const
 	return CheckLastHandle(myPipeline)
 		|| CheckLastHandle(myModel)
 		|| std::any_of(myTextures.begin(), myTextures.end(), CheckLastHandle);
+}
+
+void RenderJob::SetDrawParams(const IndexedDrawParams& aParams) 
+{
+	myDrawMode = DrawMode::Indexed;
+	myDrawParams.myIndexedParams = aParams; 
+}
+
+void RenderJob::SetDrawParams(const TesselationDrawParams& aParams)
+{
+	myDrawMode = DrawMode::Tesselated;
+	myDrawParams.myTessParams = aParams;
+}
+
+void RenderJob::SetDrawParams(const ArrayDrawParams& aParams)
+{
+	myDrawMode = DrawMode::Array;
+	myDrawParams.myArrayParams = aParams;
 }
 
 //================================================

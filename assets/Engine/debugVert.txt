@@ -3,12 +3,26 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 
-uniform mat4 vp;
+layout (std140, binding = 0) uniform CameraAdapter
+{
+	mat4 CamViewProj;
+	mat4 CamView;
+	mat4 CamProj;
+	// TODO: add ability to adapters to have arrays
+	vec4 FrustumPlaneLeft;
+	vec4 FrustumPlaneRight;
+	vec4 FrustumPlaneDown;
+	vec4 FrustumPlaneUp;
+	vec4 FrustumPlaneFar;
+	vec4 FrustumPlaneNear;
+	vec3 CamPos;
+	vec2 Viewport;
+};
 
 out vec3 colorOut;
 
 void main()
 {
-	gl_Position = vp * vec4(position, 1.0);
+	gl_Position = CamViewProj * vec4(position, 1.0);
 	colorOut = color;
 }

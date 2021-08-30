@@ -31,13 +31,6 @@ void GLAPIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 	GLsizei, const GLchar*, const void*);
 #endif
 
-GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
-	: Graphics(anAssetTracker)
-	, myDebugPipeline(nullptr)
-{
-	memset(&myLineCache, 0, sizeof(myLineCache));
-}
-
 void GraphicsGL::Init()
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -84,7 +77,6 @@ void GraphicsGL::Init()
 	}
 #endif
 
-	CreateLineCache();
 	CreateFrameQuad();
 
 	// TEST
@@ -113,53 +105,10 @@ void GraphicsGL::Display()
 		}
 	}
 
-	// lastly going to process the debug lines
-	{
-		Profiler::ScopedMark debugProfile("GraphicsGL::DebugRender");
-
-		const bool isPipelineReady = myDebugPipeline->GetState() == GPUResource::State::Valid;
-		const bool hasDebugData = myLineCache.myUploadDesc.myVertCount > 0;
-		if (hasDebugData)
-		{
-			if (isPipelineReady)
-			{
-				// upload the entire chain
-				Model* debugModel = myLineCache.myBuffer->GetResource().Get<Model>();
-				debugModel->Update(myLineCache.myUploadDesc);
-				Graphics::TriggerUpload(myLineCache.myBuffer.Get());
-			}
-
-			// clean up the upload descriptors
-			for (LineCache::UploadDesc* currDesc = &myLineCache.myUploadDesc;
-				currDesc != nullptr;
-				currDesc = currDesc->myNextDesc)
-			{
-				currDesc->myVertCount = 0;
-			}
-		}
-
-		// TODO: replace with a DebugRenderPass
-		if (isPipelineReady && hasDebugData)
-		{
-			glDisable(GL_SCISSOR_TEST);
-
-			// shader first
-			myDebugPipeline->Bind();
-
-			const GLfloat* vp = static_cast<const GLfloat*>(glm::value_ptr(myLineCache.myVp));
-			glUniformMatrix4fv(0, 1, false, vp);
-
-			// then VAO
-			myLineCache.myBuffer->Bind();
-
-			// now just draw em out
-			GLsizei count = static_cast<GLsizei>(myLineCache.myBuffer->GetVertexCount());
-			glDrawArrays(myLineCache.myBuffer->GetDrawMode(), 0, count);
-		}
-	}
-
 	if(myCompositePipeline->GetState() == GPUResource::State::Valid)
 	{
+		glDisable(GL_SCISSOR_TEST);
+
 		// TODO: make it a renderpass
 		// performing final compose
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -186,26 +135,8 @@ void GraphicsGL::CleanUp()
 {
 	Graphics::CleanUp();
 
-	myDebugPipeline = Handle<PipelineGL>();
-	myLineCache.myBuffer = Handle<ModelGL>();
-
 	myFrameQuad = Handle<ModelGL>();
 	myCompositePipeline = Handle<PipelineGL>();
-
-	constexpr uint32_t kMaxExtraDescriptors = 32;
-	LineCache::UploadDesc* descriptors[kMaxExtraDescriptors];
-	uint32_t descInd = 0;
-	for (LineCache::UploadDesc* currDesc = myLineCache.myUploadDesc.myNextDesc;
-		currDesc != nullptr;
-		currDesc = currDesc->myNextDesc)
-	{
-		ASSERT_STR(descInd < kMaxExtraDescriptors, "Descriptor buffer not big enough!");
-		descriptors[descInd++] = currDesc;
-	}
-	while (descInd > 0)
-	{
-		delete descriptors[--descInd];
-	}
 
 	// clean up all render pass jobs
 	for (RenderPassJobMap& map : myRenderPassJobs)
@@ -222,51 +153,24 @@ void GraphicsGL::CleanUp()
 	glfwDestroyWindow(myWindow);
 }
 
-GPUResource* GraphicsGL::Create(Model*) const
+GPUResource* GraphicsGL::Create(Model*, GPUResource::UsageType aUsage) const
 {
-	return new ModelGL();
+	return new ModelGL(aUsage);
 }
 
-GPUResource* GraphicsGL::Create(Pipeline*) const
+GPUResource* GraphicsGL::Create(Pipeline*, GPUResource::UsageType) const
 {
 	return new PipelineGL();
 }
 
-GPUResource* GraphicsGL::Create(Shader*) const
+GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType) const
 {
 	return new ShaderGL();
 }
 
-GPUResource* GraphicsGL::Create(Texture*) const
+GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType) const
 {
 	return new TextureGL();
-}
-
-void GraphicsGL::RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer)
-{
-	// there's always 1 space allocated for debug drawer, but we might need more
-	// if there are more drawers. Look for a slot that's free (doesn't have vertices)
-	// or create one if there isn't one.
-	LineCache::UploadDesc* currDesc;
-	for (currDesc = &myLineCache.myUploadDesc;
-		currDesc->myVertCount != 0; // keep iterating until we find an empty one
-		currDesc = currDesc->myNextDesc)
-	{
-		if (currDesc->myNextDesc == nullptr)
-		{
-			currDesc->myNextDesc = new LineCache::UploadDesc();
-			std::memset(currDesc->myNextDesc, 0, sizeof(LineCache::UploadDesc));
-		}
-	}
-	
-	// we've found a free one - fill it up
-	currDesc->myVertices = aDebugDrawer.GetCurrentVertices();
-	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
-	currDesc->myIndices = nullptr;
-	currDesc->myIndCount = 0;
-
-	// TODO: this is wasteful - refactor to set it once or cache per debug drawer
-	myLineCache.myVp = aCam.Get();
 }
 
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -295,7 +199,7 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 	return iter->second;
 }
 
-RenderPassJob& GraphicsGL::GetRenderPassJob(uint32_t anId, const RenderContext& renderContext)
+RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext)
 {
 	RenderPassJob* foundJob;
 	RenderPassJobMap& map = myRenderPassJobs.GetWrite();
@@ -322,22 +226,6 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 	{
 		frameBuffer.OnResize(*this);
 	}
-}
-
-void GraphicsGL::CreateLineCache()
-{
-	Handle<Pipeline> debugPipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl");
-	myDebugPipeline = GetOrCreate(debugPipeline).Get<PipelineGL>();
-
-	myLineCache.myBuffer = new ModelGL(
-		Model::PrimitiveType::Lines, 
-		GPUResource::UsageType::Dynamic, 
-		PosColorVertex::GetDescriptor(), 
-		false
-	);
-	Model::VertStorage<PosColorVertex>* buffer = new Model::VertStorage<PosColorVertex>(0);
-	Handle<Model> cpuBuffer = new Model(Model::PrimitiveType::Lines, buffer, false);
-	myLineCache.myBuffer->Create(*this, cpuBuffer, true);
 }
 
 void GraphicsGL::CreateFrameQuad()

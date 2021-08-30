@@ -16,8 +16,15 @@ struct RenderJob
 
 	enum class DrawMode : char
 	{
+		Array,
 		Indexed,
 		Tesselated // currently implemented as instanced tesselation
+	};
+
+	struct ArrayDrawParams
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
 	};
 
 	struct IndexedDrawParams
@@ -33,6 +40,7 @@ struct RenderJob
 
 	union DrawParams
 	{
+		ArrayDrawParams myArrayParams;
 		TesselationDrawParams myTessParams;
 		IndexedDrawParams myIndexedParams;
 	};
@@ -53,14 +61,11 @@ public:
 	// Check if this job has any resources which are last handles
 	bool HasLastHandles() const;
 
-	void SetPriority(uint32_t aPriority) { myPriority = aPriority; }
-	uint32_t GetPriority() const { return myPriority; }
-	void SetDrawMode(DrawMode aDrawMode) { myDrawMode = aDrawMode; }
-	DrawMode GetDrawMode() const { return myDrawMode; }
-
-	void SetDrawParams(const IndexedDrawParams& aParams) { myDrawParams.myIndexedParams = aParams; }
-	void SetDrawParams(const TesselationDrawParams& aParams) { myDrawParams.myTessParams = aParams; }
+	void SetDrawParams(const IndexedDrawParams& aParams);
+	void SetDrawParams(const TesselationDrawParams& aParams);
+	void SetDrawParams(const ArrayDrawParams& aParams);
 	const DrawParams& GetDrawParams() const { return myDrawParams; }
+	DrawMode GetDrawMode() const { return myDrawMode; }
 
 	Handle<GPUResource>& GetPipeline() { return myPipeline; }
 	const Handle<GPUResource>& GetPipeline() const { return myPipeline; }
@@ -82,8 +87,6 @@ private:
 	UniformSet myUniforms;
 
 	int myScissorRect[4];
-	// higher value means it'll be rendered sooner
-	uint32_t myPriority;
 	DrawMode myDrawMode;
 	DrawParams myDrawParams;
 };

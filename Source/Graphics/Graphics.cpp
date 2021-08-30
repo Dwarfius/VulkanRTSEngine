@@ -16,7 +16,6 @@ int Graphics::ourHeight = 600;
 
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
-	, myRenderCalls(0)
 	, myWindow(nullptr)
 {
 }
@@ -24,41 +23,25 @@ Graphics::Graphics(AssetTracker& anAssetTracker)
 void Graphics::BeginGather()
 {
 	Profiler::ScopedMark profile("Graphics::BeginGather");
-	myRenderCalls = 0;
 
 	for (IRenderPass* pass : myRenderPasses)
 	{
 		pass->BeginPass(*this);
 	}
-
-	// Doing it after BeginPass because they can generate new
-	// asset updates
-	ProcessGPUQueues();
-}
-
-bool Graphics::CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const
-{
-	IRenderPass* passToUse = GetRenderPass(aCategory);
-	return passToUse->HasResources(aJob);
-}
-
-void Graphics::Render(IRenderPass::Category aCategory, RenderJob& aJob, const IRenderPass::IParams& aParams)
-{
-	IRenderPass* passToUse = GetRenderPass(aCategory);
-
-	passToUse->AddRenderable(aJob, aParams);
-
-	myRenderCalls++;
 }
 
 void Graphics::Display()
 {
 	Profiler::ScopedMark profile("Graphics::Display");
-	// trigger submission of all the jobs
 	for (IRenderPass* pass : myRenderPasses)
 	{
 		pass->SubmitJobs(*this);
 	}
+
+	// Doing it after SubmitJobs because RenderPasses can 
+	// generate new asset updates at any point of their
+	// execution
+	ProcessGPUQueues();
 }
 
 void Graphics::CleanUp()
@@ -92,7 +75,7 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 	myRenderPasses.push_back(aRenderPass);
 	std::sort(myRenderPasses.begin(), myRenderPasses.end(), 
 		[](IRenderPass* aLeft, IRenderPass* aRight) {
-		const uint32_t leftId = aLeft->Id();
+		const uint32_t leftId = aLeft->GetId();
 		for (const uint32_t rightId : aRight->GetDependencies())
 		{
 			if (leftId == rightId)
@@ -105,14 +88,16 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 }
 
 template<class T>
-Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes, bool aShouldKeepRes /*= false*/)
+Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes, 
+	bool aShouldKeepRes /*= false*/,
+	GPUResource::UsageType aUsageType /*= GPUResource::UsageType::Static*/)
 {
 	GPUResource* newGPURes;
 	const Resource::Id resId = aRes->GetId();
 	if (resId == Resource::InvalidId)
 	{
 		// invalid id -> dynamic resource, so no need to track it 
-		newGPURes = Create(aRes.Get());
+		newGPURes = Create(aRes.Get(), aUsageType);
 	}
 	else
 	{
@@ -124,7 +109,7 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes, bool aShouldKeepRes /*
 		}
 		else
 		{
-			newGPURes = Create(aRes.Get());
+			newGPURes = Create(aRes.Get(), aUsageType);
 			myResources[resId] = newGPURes;
 		}
 	}
@@ -133,10 +118,10 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes, bool aShouldKeepRes /*
 	return newGPURes;
 }
 
-template Handle<GPUResource> Graphics::GetOrCreate(Handle<Model>, bool);
-template Handle<GPUResource> Graphics::GetOrCreate(Handle<Pipeline>, bool);
-template Handle<GPUResource> Graphics::GetOrCreate(Handle<Shader>, bool);
-template Handle<GPUResource> Graphics::GetOrCreate(Handle<Texture>, bool);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Model>, bool, GPUResource::UsageType);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Pipeline>, bool, GPUResource::UsageType);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Shader>, bool, GPUResource::UsageType);
+template Handle<GPUResource> Graphics::GetOrCreate(Handle<Texture>, bool, GPUResource::UsageType);
 
 void Graphics::ScheduleCreate(Handle<GPUResource> aGPUResource)
 {
@@ -246,19 +231,15 @@ void Graphics::ProcessGPUQueues()
 	ProcessUnloadQueue();
 }
 
-IRenderPass* Graphics::GetRenderPass(IRenderPass::Category aCategory) const
+IRenderPass* Graphics::GetRenderPass(uint32_t anId) const
 {
-	// TODO: find a better way to match it - through enum ind
-	// find the renderpass fitting the category
-	IRenderPass* renderPassToUse = nullptr;
 	for (IRenderPass* pass : myRenderPasses)
 	{
-		if (pass->GetCategory() == aCategory)
+		if (pass->GetId() == anId)
 		{
-			renderPassToUse = pass;
-			break;
+			return pass;
 		}
 	}
-	ASSERT_STR(renderPassToUse, "Failed to find a render pass for id %d!", static_cast<uint32_t>(aCategory));
-	return renderPassToUse;
+	ASSERT_STR(false, "Failed to find a render pass for id %d!", anId);
+	return nullptr;
 }

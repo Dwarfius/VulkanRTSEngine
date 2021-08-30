@@ -84,42 +84,26 @@ class ImGUIRenderPass : public IRenderPass
 	AssertMutex myRenderJobMutex;
 
 public:
-	constexpr static uint32_t PassId = Utils::CRC32("ImGUIRenderPass");
+	constexpr static uint32_t kId = Utils::CRC32("ImGUIRenderPass");
 	ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics);
 
-	bool HasResources(const RenderJob& aJob) const final
-	{
-		// we only have a couple resources, so instead of
-		// querying the same ones all the time, we only do it
-		// once during ImGUISystem::NewFrame scheduling
-		return true;
-	}
-	uint32_t Id() const final { return PassId; }
+	Id GetId() const final { return kId; }
 
 	void SetProj(const glm::mat4& aMatrix);
-
 	void UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor);
-
 	void AddImGuiRenderJob(const ImGUIRenderParams& aParams);
-
 	bool IsReady() const;
 
 protected:
 	void PrepareContext(RenderContext& aContext) const final;
 
-	void AddRenderable(RenderJob& aJob, const IParams& aParams) final;
-
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
 	void BeginPass(Graphics& aGraphics) final;
-
 	void SubmitJobs(Graphics& anInterface) final
 	{
 		// Do nothing because we already scheduled everything 
 		// part of the BeginPass call
 	}
 
-	Category GetCategory() const final { return Category::ImGUI; }
-
-	void Process(RenderJob& aJob, const IParams& aParams) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 };

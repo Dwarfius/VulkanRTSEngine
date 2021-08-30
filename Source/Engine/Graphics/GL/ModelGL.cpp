@@ -3,8 +3,8 @@
 
 #include <Graphics/Resources/Model.h>
 
-ModelGL::ModelGL()
-	: ModelGL(PrimitiveType::Lines, UsageType::Static, VertexDescriptor::GetEmpty(), false)
+ModelGL::ModelGL(UsageType aUsage)
+	: ModelGL(PrimitiveType::Lines, aUsage, VertexDescriptor::GetEmpty(), false)
 {
 }
 

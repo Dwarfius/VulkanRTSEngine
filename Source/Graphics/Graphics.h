@@ -5,15 +5,14 @@
 #include "UniformBlock.h"
 
 #include <Core/Resources/Resource.h> // needed for Resource::Id
+#include <Graphics/GPUResource.h>
 
 struct GLFWwindow;
 class Camera;
 class Terrain;
 class AssetTracker;
-class DebugDrawer;
 class RenderPassJob;
 class RenderContext;
-class GPUResource;
 class Texture;
 class Pipeline;
 class Model;
@@ -31,18 +30,11 @@ public:
 
 	virtual void Init() = 0;
 	virtual void BeginGather();
-	bool CanRender(IRenderPass::Category aCategory, const RenderJob& aJob) const;
-	void Render(IRenderPass::Category aCategory, RenderJob& aJob, const IRenderPass::IParams& aParams);
 	virtual void Display();
 	virtual void CleanUp();
 	
-	virtual void PrepareLineCache(size_t aCacheSize) = 0;
-	virtual void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) = 0;
-
 	GLFWwindow* GetWindow() const { return myWindow; }
 	
-	uint32_t GetRenderCalls() const { return myRenderCalls; }
-
 	static float GetWidth() { return static_cast<float>(ourWidth); }
 	static float GetHeight() { return static_cast<float>(ourHeight); }
 
@@ -51,7 +43,7 @@ public:
 	// to GetRenderPassJob with same context.
 	// Threadsafe
 	[[nodiscard]] 
-	virtual RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) = 0;
+	virtual RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) = 0;
 
 	virtual void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer);
 	const FrameBuffer& GetNamedFrameBuffer(std::string_view aName) const;
@@ -62,9 +54,22 @@ public:
 	// Adds a render pass to graphics
 	// takes ownership of the renderpass
 	void AddRenderPass(IRenderPass* aRenderPass);
+	template<class T>
+	T* GetRenderPass()
+	{
+		return static_cast<T*>(GetRenderPass(T::kId));
+	}
+	template<class T>
+	const T* GetRenderPass() const
+	{
+		return static_cast<const T*>(GetRenderPass(T::kId));
+	}
 
 	template<class T>
-	Handle<GPUResource> GetOrCreate(Handle<T> aRes, bool aShouldKeepRes = false);
+	Handle<GPUResource> GetOrCreate(Handle<T> aRes, 
+		bool aShouldKeepRes = false, 
+		GPUResource::UsageType aUsageType = GPUResource::UsageType::Static
+	);
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
@@ -79,7 +84,6 @@ protected:
 	AssetTracker& myAssetTracker;
 
 	GLFWwindow* myWindow;
-	uint32_t myRenderCalls;
 	std::vector<IRenderPass*> myRenderPasses;
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
 
@@ -99,10 +103,10 @@ private:
 
 	void ProcessGPUQueues();
 
-	virtual GPUResource* Create(Model*) const = 0;
-	virtual GPUResource* Create(Pipeline*) const = 0;
-	virtual GPUResource* Create(Shader*) const = 0;
-	virtual GPUResource* Create(Texture*) const = 0;
+	virtual GPUResource* Create(Model*, GPUResource::UsageType aUsage) const = 0;
+	virtual GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const = 0;
+	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
+	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
 
-	IRenderPass* GetRenderPass(IRenderPass::Category aCategory) const;
+	IRenderPass* GetRenderPass(uint32_t anId) const;
 };

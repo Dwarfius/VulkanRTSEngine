@@ -66,7 +66,6 @@ public:
 	constexpr static float kFOV = 45;
 
 	Camera(float aWidth, float aHeight, bool anOrthoMode = false);
-	~Camera() {}
 
 	glm::mat4 Get() const { return myVP; }
 

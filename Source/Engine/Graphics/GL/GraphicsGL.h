@@ -11,46 +11,26 @@ class ModelGL;
 class GraphicsGL : public Graphics
 {
 public:
-	GraphicsGL(AssetTracker& anAssetTracker);
+	using Graphics::Graphics;
 
 	void Init() final;
 	void BeginGather() final;
 	void Display() final;
 	void CleanUp() final;
 
-	void PrepareLineCache(size_t aCacheSize) final {}
-	void RenderDebug(const Camera& aCam, const DebugDrawer& aDebugDrawer) final;
-
-	// TODO: get rid of the static method by using a bound functor object
-	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
-
 	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) final;
 	[[nodiscard]]
 	FrameBufferGL& GetFrameBufferGL(std::string_view aName);
 
 	[[nodiscard]]
-	RenderPassJob& GetRenderPassJob(uint32_t anId, const RenderContext& renderContext) final;
+	RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) final;
 
 private:
+	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 	void OnResize(int aWidth, int aHeight);
 
 	using RenderPassJobMap = std::unordered_map<uint32_t, RenderPassJob*>;
 	RWBuffer<RenderPassJobMap, 3> myRenderPassJobs;
-
-	// ================================================
-	// Debug drawing related
-	Handle<PipelineGL> myDebugPipeline;
-	struct LineCache
-	{
-		using VertType = PosColorVertex;
-		using UploadDesc = Model::UploadDescriptor<VertType>;
-
-		glm::mat4 myVp;
-		UploadDesc myUploadDesc;
-		Handle<ModelGL> myBuffer;
-	};
-	LineCache myLineCache;
-	void CreateLineCache();
 
 	// TEST - used to output number of triangles
 	// generated during render calls, specifically
@@ -59,10 +39,10 @@ private:
 	uint32_t myGPUQuery;
 	// ======
 
-	GPUResource* Create(Model*) const final;
-	GPUResource* Create(Pipeline*) const final;
-	GPUResource* Create(Texture*) const final;
-	GPUResource* Create(Shader*) const final;
+	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const final;
+	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const final;
+	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const final;
+	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const final;
 
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	Handle<ModelGL> myFrameQuad;

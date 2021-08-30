@@ -10,7 +10,7 @@
 
 DefaultRenderPass::DefaultRenderPass()
 {
-	myDependencies.push_back(TerrainRenderPass::PassId);
+	myDependencies.push_back(TerrainRenderPass::kId);
 }
 
 bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
@@ -39,7 +39,6 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
 
 void DefaultRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
 {
-	aJob.SetDrawMode(RenderJob::DrawMode::Indexed);
 	RenderJob::IndexedDrawParams drawParams;
 	drawParams.myOffset = aParams.myOffset;
 	const bool hasValidCount = aParams.myCount != uint32_t(-1);
@@ -79,8 +78,6 @@ void TerrainRenderPass::PrepareContext(RenderContext& aContext) const
 
 void TerrainRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
 {
-	aJob.SetDrawMode(RenderJob::DrawMode::Tesselated);
-
 	const TerrainRenderParams& params = static_cast<const TerrainRenderParams&>(aParams);
 	RenderJob::TesselationDrawParams drawParams;
 	drawParams.myInstanceCount = params.myTileCount;

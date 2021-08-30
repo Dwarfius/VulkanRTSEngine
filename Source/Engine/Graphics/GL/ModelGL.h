@@ -6,7 +6,7 @@
 class ModelGL : public GPUModel
 {
 public:
-	ModelGL();
+	ModelGL(UsageType aUsage);
 	ModelGL(PrimitiveType aPrimType, UsageType aUsage, const VertexDescriptor& aVertDesc, bool aIsIndexed);
 
 	// Bind the current GL resources for model drawing

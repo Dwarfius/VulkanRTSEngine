@@ -15,19 +15,12 @@ class Camera;
 // to simplify performance-scaling by running the 
 // renderpasses in parallel, as well as enable use render-pass
 // concept.
-// TODO: investigate static polymorphism benefits
 
 // implementation interface
 class IRenderPass
 {
 public:
-	enum class Category
-	{
-		Renderables, // a pass for rendering objects
-		Terrain, // a pass for rendering terrain
-		ImGUI
-		// TODO: add more (shadows, particle, compute?)
-	};
+	using Id = uint32_t;
 
 	struct IParams
 	{
@@ -40,12 +33,9 @@ public:
 	IRenderPass();
 	virtual ~IRenderPass() = default;
 
-	virtual bool HasResources(const RenderJob& aJob) const = 0;
-	virtual void AddRenderable(RenderJob& aJob, const IParams& aParams) = 0;
 	virtual void BeginPass(Graphics& anInterface);
 	virtual void SubmitJobs(Graphics& anInterface) = 0;
-	virtual Category GetCategory() const = 0;
-	virtual uint32_t Id() const = 0;
+	virtual Id GetId() const = 0;
 
 	const std::vector<uint32_t>& GetDependencies() const { return myDependencies; }
 
@@ -56,8 +46,6 @@ protected:
 	virtual bool HasDynamicRenderContext() const { return false; }
 	// default implementation returns full viewport context
 	virtual void PrepareContext(RenderContext& aContext) const = 0;
-	// updates the renderjob to do with the correct render settings
-	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
 	RenderContext myRenderContext;
 	bool myHasValidContext;
@@ -71,36 +59,15 @@ class RenderPass : public IRenderPass
 public:
 	RenderPass();
 
-	void AddRenderable(RenderJob& aJob, const IParams& aParams) override final;
+	void AddRenderable(RenderJob& aJob, const IParams& aParams);
+
 	void BeginPass(Graphics& anInterface) override final;
 	void SubmitJobs(Graphics& anInterface) override final;
 
 protected:
-	uint32_t Id() const override { return Utils::CRC32("RenderPass"); }
+	// updates the renderjob with the correct render settings
+	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
 private:
 	RenderPassJob* myCurrentJob;
-};
-
-// SortingRenderPass accumualtes renderables internally and discards
-// them if they reached the limit of a lazy vector. It'll regrow
-// on a start of a frame, to accomodate new renderables.
-class SortingRenderPass : public IRenderPass
-{
-public:
-	SortingRenderPass();
-
-	void AddRenderable(RenderJob& aJob, const IParams& aParams) override final;
-	void BeginPass(Graphics& anInterface) override final;
-	void SubmitJobs(Graphics& anInterface) override final;
-
-protected:
-	virtual uint32_t GetPriority(const IParams& aParams) const = 0;
-
-private:
-	uint32_t Id() const override { return Utils::CRC32("SortingRenderPass"); }
-
-	LazyVector<RenderJob, 100> myJobs;
-	RenderPassJob* myCurrentJob;
-	RenderPassJob* myOldJob;
 };

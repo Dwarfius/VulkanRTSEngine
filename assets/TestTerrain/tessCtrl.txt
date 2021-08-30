@@ -21,6 +21,7 @@ layout (std140, binding = 1) uniform TerrainAdapter
 
 layout (std140, binding = 2) uniform CameraAdapter
 {
+	mat4 CamViewProj;
 	mat4 CamView;
 	mat4 CamProj;
 	// TODO: add ability to adapters to have arrays

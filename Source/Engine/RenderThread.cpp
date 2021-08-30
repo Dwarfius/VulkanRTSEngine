@@ -10,6 +10,7 @@
 #include "Graphics/Adapters/AdapterSourceData.h"
 #include "Terrain.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
+#include "Graphics/RenderPasses/DebugRenderPass.h"
 #include "Graphics/NamedFrameBuffers.h"
 
 #include <Graphics/Camera.h>
@@ -52,6 +53,9 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	myGraphics->Init();
 	myGraphics->AddRenderPass(new DefaultRenderPass());
 	myGraphics->AddRenderPass(new TerrainRenderPass());
+	myGraphics->AddRenderPass(new DebugRenderPass(
+		*myGraphics, anAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl")
+	));
 
 	myGraphics->AddNamedFrameBuffer(DefaultFrameBuffer::kName, DefaultFrameBuffer::kDescriptor);
 
@@ -157,6 +161,7 @@ void RenderThread::ScheduleGORenderables(const Camera& aCam)
 	myRenderables.GetWrite().clear();
 
 	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleGORender");
+	DefaultRenderPass* renderPass = myGraphics->GetRenderPass<DefaultRenderPass>();
 	for (const GameObjectRenderable& renderable : currRenderables)
 	{
 		// building a render job
@@ -166,14 +171,13 @@ void RenderThread::ScheduleGORenderables(const Camera& aCam)
 			visualObj.GetModel(),
 			{ visualObj.GetTexture() }
 		);
-		constexpr IRenderPass::Category jobCategory = IRenderPass::Category::Renderables;
-		if (!myGraphics->CanRender(jobCategory, renderJob))
+		
+		if (!renderPass->HasResources(renderJob))
 		{
 			continue;
 		}
 
-		if (visualObj.GetModel().IsValid()
-			&& !aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+		if (!aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
 		{
 			continue;
 		}
@@ -199,7 +203,7 @@ void RenderThread::ScheduleGORenderables(const Camera& aCam)
 			aCam.GetTransform().GetPos(), 
 			renderable.myGameObject.GetWorldTransform().GetPos()
 		);
-		myGraphics->Render(jobCategory, renderJob, params);
+		renderPass->AddRenderable(renderJob, params);
 	}
 }
 
@@ -210,6 +214,7 @@ void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 	myTerrainRenderables.GetWrite().clear();
 
 	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleTerrainRender");
+	TerrainRenderPass* renderPass = myGraphics->GetRenderPass<TerrainRenderPass>();
 	for (const TerrainRenderable& renderable : currRenderables)
 	{
 		// building a render job
@@ -219,9 +224,8 @@ void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 			visualObj.GetModel(),
 			{ visualObj.GetTexture() }
 		);
-		constexpr IRenderPass::Category jobCategory = IRenderPass::Category::Terrain;
 
-		if (!myGraphics->CanRender(jobCategory, renderJob))
+		if (!renderPass->HasResources(renderJob))
 		{
 			continue;
 		}
@@ -256,7 +260,7 @@ void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 		);
 		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(renderable.myTerrain);
 		params.myTileCount = gridTiles.x * gridTiles.y;
-		myGraphics->Render(jobCategory, renderJob, params);
+		renderPass->AddRenderable(renderJob, params);
 	}
 }
 
@@ -267,9 +271,15 @@ void RenderThread::ScheduleDebugRenderables(const Camera& aCam)
 	myDebugDrawers.GetWrite().clear();
 
 	Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
-	myGraphics->PrepareLineCache(0); // TODO: implement PrepareLineCache properly
+	DebugRenderPass* renderPass = myGraphics->GetRenderPass<DebugRenderPass>();
+	if (!renderPass->IsReady())
+	{
+		return;
+	}
+
+	renderPass->SetCamera(0, aCam, *myGraphics);
 	for (const DebugRenderable& renderable : debugDrawers)
 	{
-		myGraphics->RenderDebug(aCam, renderable.myDebugDrawer);
+		renderPass->AddDebugDrawer(0, renderable.myDebugDrawer);
 	}
 }

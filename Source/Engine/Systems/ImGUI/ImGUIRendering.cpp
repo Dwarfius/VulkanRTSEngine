@@ -15,7 +15,7 @@ void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) 
 
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
 {
-	myDependencies.push_back(DefaultRenderPass::PassId);
+	myDependencies.push_back(DefaultRenderPass::kId);
 
 	aPipeline->ExecLambdaOnLoad([&](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
@@ -27,9 +27,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 	myPipeline = aGraphics.GetOrCreate(aPipeline);
 	Model::BaseStorage* vertexStorage = new Model::VertStorage<ImGUIVertex>(0);
 	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
-	// TODO: Extend to pass in the settings of the model to create - this
-	// currently creates a STATIC_DRAW buffer, while we need DYNAMIC_DRAW
-	myModel = aGraphics.GetOrCreate(model, true);
+	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic);
 	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas);
 }
 
@@ -78,19 +76,13 @@ void ImGUIRenderPass::PrepareContext(RenderContext& aContext) const
 	aContext.myTexturesToActivate[0] = 0;
 }
 
-void ImGUIRenderPass::AddRenderable(RenderJob& aJob, const IParams& aParams)
-{
-	Process(aJob, aParams);
-	myCurrentJob->Add(aJob);
-}
-
 // We're using BeginPass to generate all work and schedule updates of assets (model)
 void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 {
 	AssertLock lock(myRenderJobMutex);
 	IRenderPass::BeginPass(aGraphics);
 
-	myCurrentJob = &aGraphics.GetRenderPassJob(Id(), myRenderContext);
+	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();
 
 	for (const ImGUIRenderParams& params : myScheduledImGuiParams)
@@ -101,21 +93,18 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 			{ myFontAtlas }
 		};
 		job.AddUniformBlock(*myUniformBlock);
-		AddRenderable(job, params);
+
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			job.SetScissorRect(i, params.myScissorRect[i]);
+		}
+
+		RenderJob::IndexedDrawParams drawParams;
+		drawParams.myOffset = params.myOffset;
+		drawParams.myCount = params.myCount;
+		job.SetDrawParams(drawParams);
+
+		myCurrentJob->Add(job);
 	}
 	myScheduledImGuiParams.clear();
-}
-
-void ImGUIRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
-{
-	aJob.SetDrawMode(RenderJob::DrawMode::Indexed);
-	const ImGUIRenderParams& params = static_cast<const ImGUIRenderParams&>(aParams);
-	for (uint8_t i = 0; i < 4; i++)
-	{
-		aJob.SetScissorRect(i, params.myScissorRect[i]);
-	}
-	RenderJob::IndexedDrawParams drawParams;
-	drawParams.myOffset = params.myOffset;
-	drawParams.myCount = params.myCount;
-	aJob.SetDrawParams(drawParams);
 }

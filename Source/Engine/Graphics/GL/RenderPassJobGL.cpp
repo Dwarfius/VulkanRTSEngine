@@ -294,6 +294,16 @@ void RenderPassJobGL::RunJobs()
 			glDrawArraysInstanced(GL_PATCHES, 0, 1, instances);
 			break;
 		}
+		case RenderJob::DrawMode::Array:
+		{
+			const uint32_t drawMode = model->GetDrawMode();
+			const RenderJob::ArrayDrawParams& params = r.GetDrawParams().myArrayParams;
+			glDrawArrays(drawMode, params.myOffset, params.myCount);
+			break;
+		}
+		default:
+			ASSERT(false);
+			break;
 		}
 	}
 }
