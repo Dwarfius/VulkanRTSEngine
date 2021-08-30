@@ -65,7 +65,24 @@ public:
 		PerPass,
 		PerObject
 	};
+
+	struct FrameBufferTexture
+	{
+		enum class Type : uint8_t
+		{
+			Color,
+			Depth,
+			Stencil
+		};
+
+		std::string_view myFrameBuffer;
+		uint8_t myTextureInd;
+		Type myType;
+	};
 public:
+	constexpr static uint8_t kFrameBufferReadTextures = 10; // 8 colors, 1 depth, 1 stencil
+	FrameBufferTexture myFrameBufferReadTextures[kFrameBufferReadTextures];
+
 	std::string_view myFrameBuffer;
 
 	// Taking defaults from OpenGL
@@ -79,13 +96,13 @@ public:
 
 	// every pass is alloved an arbitrary limit of
 	// active texture inputs
-	constexpr static int kMaxTextureActivations = 8;
+	constexpr static uint8_t kMaxObjectTextureSlots = 8;
 	// -1 means no texture
-	int myTexturesToActivate[kMaxTextureActivations] = { 
+	int myTexturesToActivate[kMaxObjectTextureSlots] = {
 		-1, -1, -1, -1, 
 		-1, -1, -1, -1 
 	};
-	static_assert(kMaxTextureActivations == 8, "Fix above array if const changed!");
+	static_assert(kMaxObjectTextureSlots == 8, "Fix above array if const changed!");
 
 	int myViewportOrigin[2] = { 0, 0 };
 	int myViewportSize[2] = { 0, 0 };

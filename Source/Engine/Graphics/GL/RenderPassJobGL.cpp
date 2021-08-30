@@ -36,9 +36,16 @@ void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 
 void RenderPassJobGL::BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext)
 {
-	GraphicsGL& graphics = static_cast<GraphicsGL&>(aGraphics);
-	FrameBufferGL& frameBuffer = graphics.GetFrameBufferGL(aContext.myFrameBuffer);
-	frameBuffer.Bind();
+	if (aContext.myFrameBuffer.empty())
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+	else
+	{
+		GraphicsGL& graphics = static_cast<GraphicsGL&>(aGraphics);
+		FrameBufferGL& frameBuffer = graphics.GetFrameBufferGL(aContext.myFrameBuffer);
+		frameBuffer.Bind();
+	}
 }
 
 void RenderPassJobGL::Clear(const RenderContext& aContext)
@@ -84,21 +91,45 @@ void RenderPassJobGL::Clear(const RenderContext& aContext)
 	}
 }
 
-void RenderPassJobGL::SetupContext(const RenderContext& aContext)
+void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aContext)
 {
 	Profiler::ScopedMark profile("RenderPassJobGL::SetupContext");
 	myCurrentPipeline = nullptr;
 	myCurrentModel = nullptr;
 	std::memset(myCurrentTextures, -1, sizeof(myCurrentTextures));
 
-	myTexturesToUse = 0;
-	for (uint32_t i = 0; i < RenderContext::kMaxTextureActivations; i++)
+	myTextureSlotsUsed = 0;
+	for (uint8_t i = 0; i < RenderContext::kFrameBufferReadTextures; i++)
+	{
+		const RenderContext::FrameBufferTexture& fbTexture = aContext.myFrameBufferReadTextures[i];
+		if (!fbTexture.myFrameBuffer.empty())
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			GraphicsGL& graphics = static_cast<GraphicsGL&>(aGraphics);
+			FrameBufferGL& frameBuffer = graphics.GetFrameBufferGL(fbTexture.myFrameBuffer);
+
+			switch (fbTexture.myType)
+			{
+			case RenderContext::FrameBufferTexture::Type::Color:
+				glBindTexture(GL_TEXTURE_2D, frameBuffer.GetColorTexture(fbTexture.myTextureInd));
+				break;
+			case RenderContext::FrameBufferTexture::Type::Depth:
+				glBindTexture(GL_TEXTURE_2D, frameBuffer.GetDepthTexture());
+				break;
+			case RenderContext::FrameBufferTexture::Type::Stencil:
+				glBindTexture(GL_TEXTURE_2D, frameBuffer.GetStencilTexture());
+				break;
+			default:
+				ASSERT(false);
+			}
+			
+			myTextureSlotsUsed++;
+		}
+	}
+
+	for (uint8_t i = 0; i < RenderContext::kMaxObjectTextureSlots; i++)
 	{
 		myTextureSlotsToUse[i] = aContext.myTexturesToActivate[i];
-		if (myTextureSlotsToUse[i] != -1)
-		{
-			myTexturesToUse++;
-		}
 	}
 
 	glViewport(aContext.myViewportOrigin[0], aContext.myViewportOrigin[1], 
@@ -239,7 +270,7 @@ void RenderPassJobGL::RunJobs()
 			TextureGL* texture = textures[textureInd].Get<TextureGL>();
 			if (myCurrentTextures[slotToUse] != texture)
 			{
-				glActiveTexture(GL_TEXTURE0 + slotToUse);
+				glActiveTexture(GL_TEXTURE0 + myTextureSlotsUsed + slotToUse);
 				texture->Bind();
 				myCurrentTextures[slotToUse] = texture;
 			}

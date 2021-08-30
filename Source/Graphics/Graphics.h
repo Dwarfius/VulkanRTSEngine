@@ -65,6 +65,8 @@ public:
 		return static_cast<const T*>(GetRenderPass(T::kId));
 	}
 
+	void AddRenderPassDependency(RenderPass::Id aPassId, RenderPass::Id aNewDependency);
+
 	template<class T>
 	Handle<GPUResource> GetOrCreate(Handle<T> aRes, 
 		bool aShouldKeepRes = false, 
@@ -86,9 +88,11 @@ protected:
 	GLFWwindow* myWindow;
 	std::vector<IRenderPass*> myRenderPasses;
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
+	bool myRenderPassJobsNeedsOrdering = true;
 
 	void ProcessUnloadQueue();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
+	IRenderPass* GetRenderPass(uint32_t anId) const;
 
 private:
 	using ResourceMap = std::unordered_map<Resource::Id, GPUResource*>;
@@ -108,5 +112,5 @@ private:
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
 
-	IRenderPass* GetRenderPass(uint32_t anId) const;
+	virtual void SortRenderPassJobs() = 0;
 };

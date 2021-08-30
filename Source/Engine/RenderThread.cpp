@@ -11,6 +11,7 @@
 #include "Terrain.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
+#include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Graphics/NamedFrameBuffers.h"
 
 #include <Graphics/Camera.h>
@@ -55,6 +56,9 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	myGraphics->AddRenderPass(new TerrainRenderPass());
 	myGraphics->AddRenderPass(new DebugRenderPass(
 		*myGraphics, anAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl")
+	));
+	myGraphics->AddRenderPass(new FinalCompositeRenderPass(
+		*myGraphics, anAssetTracker.GetOrCreate<Pipeline>("Engine/composite.ppl")
 	));
 
 	myGraphics->AddNamedFrameBuffer(DefaultFrameBuffer::kName, DefaultFrameBuffer::kDescriptor);

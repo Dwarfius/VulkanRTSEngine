@@ -38,6 +38,14 @@ void Graphics::Display()
 		pass->SubmitJobs(*this);
 	}
 
+	// doing it after the submit jobs, because by this time
+	// all RenderPassJobs will be created
+	if (myRenderPassJobsNeedsOrdering)
+	{
+		SortRenderPassJobs();
+		myRenderPassJobsNeedsOrdering = false;
+	}
+
 	// Doing it after SubmitJobs because RenderPasses can 
 	// generate new asset updates at any point of their
 	// execution
@@ -73,18 +81,13 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
-	std::sort(myRenderPasses.begin(), myRenderPasses.end(), 
-		[](IRenderPass* aLeft, IRenderPass* aRight) {
-		const uint32_t leftId = aLeft->GetId();
-		for (const uint32_t rightId : aRight->GetDependencies())
-		{
-			if (leftId == rightId)
-			{
-				return true;
-			}
-		}
-		return false;
-	});
+	myRenderPassJobsNeedsOrdering = true;
+}
+
+void Graphics::AddRenderPassDependency(RenderPass::Id aPassId, RenderPass::Id aNewDependency)
+{
+	GetRenderPass(aPassId)->AddDependency(aNewDependency);
+	myRenderPassJobsNeedsOrdering = true;
 }
 
 template<class T>

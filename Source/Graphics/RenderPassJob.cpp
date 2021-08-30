@@ -70,7 +70,7 @@ void RenderPassJob::Execute(Graphics& aGraphics)
 
 	if (HasWork())
 	{
-		SetupContext(myContext);
+		SetupContext(aGraphics, myContext);
 		RunJobs();
 	}
 }

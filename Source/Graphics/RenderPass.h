@@ -37,7 +37,8 @@ public:
 	virtual void SubmitJobs(Graphics& anInterface) = 0;
 	virtual Id GetId() const = 0;
 
-	const std::vector<uint32_t>& GetDependencies() const { return myDependencies; }
+	void AddDependency(Id aOtherPassId) { myDependencies.push_back(aOtherPassId); }
+	const std::vector<Id>& GetDependencies() const { return myDependencies; }
 
 protected:
 	// Controls whether every frame the context needs to be recreated
@@ -49,7 +50,7 @@ protected:
 
 	RenderContext myRenderContext;
 	bool myHasValidContext;
-	std::vector<uint32_t> myDependencies;
+	std::vector<Id> myDependencies;
 };
 
 // RenderPass doesn't accumulate the renderables internally, 

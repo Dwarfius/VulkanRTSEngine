@@ -29,16 +29,20 @@ private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 	void OnResize(int aWidth, int aHeight);
 
-	using RenderPassJobMap = std::unordered_map<uint32_t, RenderPassJob*>;
-	RWBuffer<RenderPassJobMap, 3> myRenderPassJobs;
+	struct IdPasJobPair
+	{
+		RenderPass::Id myId;
+		RenderPassJob* myJob;
+	};
+	using RenderPassJobs = std::vector<IdPasJobPair>;
+	RWBuffer<RenderPassJobs, 3> myRenderPassJobs;
 
 	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const final;
 	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const final;
 	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const final;
 	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const final;
 
+	void SortRenderPassJobs() final;
+
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
-	Handle<ModelGL> myFrameQuad;
-	Handle<PipelineGL> myCompositePipeline;
-	void CreateFrameQuad();
 };

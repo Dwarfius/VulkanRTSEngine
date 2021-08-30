@@ -3,6 +3,7 @@
 
 #include "Game.h"
 #include "Systems/ImGUI/ImGUIRendering.h"
+#include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/Graphics.h>
@@ -46,6 +47,7 @@ void ImGUISystem::Init()
 
 	myRenderPass = new ImGUIRenderPass(imGUIPipeline, fontAtlas, *myGame.GetGraphics());
 	myGame.GetGraphics()->AddRenderPass(myRenderPass);
+	myGame.GetGraphics()->AddRenderPassDependency(FinalCompositeRenderPass::kId, ImGUIRenderPass::kId);
 }
 
 void ImGUISystem::Shutdown()

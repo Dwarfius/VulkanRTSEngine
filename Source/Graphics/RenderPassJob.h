@@ -125,7 +125,7 @@ private:
 	// always called before running jobs
 	virtual void Clear(const RenderContext& aContext) = 0;
 	// called just before executing the jobs
-	virtual void SetupContext(const RenderContext& aContext) = 0;
+	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
 	// called last to submit render jobs
 	virtual void RunJobs() = 0;
 

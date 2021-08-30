@@ -76,8 +76,6 @@ void GraphicsGL::Init()
 			0, nullptr, GL_FALSE);
 	}
 #endif
-
-	CreateFrameQuad();
 }
 
 void GraphicsGL::BeginGather()
@@ -94,31 +92,11 @@ void GraphicsGL::Display()
 
 	{
 		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
-		const RenderPassJobMap& jobs = myRenderPassJobs.GetRead();
-		for (const auto& pair : jobs)
+		const RenderPassJobs& jobs = myRenderPassJobs.GetRead();
+		for (const auto& [id, job] : jobs)
 		{
-			pair.second->Execute(*this);
+			job->Execute(*this);
 		}
-	}
-
-	if(myCompositePipeline->GetState() == GPUResource::State::Valid)
-	{
-		glDisable(GL_SCISSOR_TEST);
-
-		// TODO: make it a renderpass
-		// performing final compose
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		myCompositePipeline->Bind();
-		myFrameQuad->Bind();
-
-		FrameBufferGL& buffer = GetFrameBufferGL(DefaultFrameBuffer::kName);
-		uint32_t texture = buffer.GetColorTexture(DefaultFrameBuffer::kColorInd);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-
-		GLsizei count = static_cast<GLsizei>(myFrameQuad->GetVertexCount());
-		glDrawArrays(myFrameQuad->GetDrawMode(), 0, count);
 	}
 
 	{
@@ -131,11 +109,8 @@ void GraphicsGL::CleanUp()
 {
 	Graphics::CleanUp();
 
-	myFrameQuad = Handle<ModelGL>();
-	myCompositePipeline = Handle<PipelineGL>();
-
 	// clean up all render pass jobs
-	for (RenderPassJobMap& map : myRenderPassJobs)
+	for (RenderPassJobs& map : myRenderPassJobs)
 	{
 		for (auto [key, job] : map)
 		{
@@ -169,6 +144,24 @@ GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType) const
 	return new TextureGL();
 }
 
+void GraphicsGL::SortRenderPassJobs()
+{
+	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
+
+	std::sort(jobs.begin(), jobs.end(),
+		[this](const IdPasJobPair& aLeft, const IdPasJobPair& aRight) {
+		const IRenderPass* rightPass = GetRenderPass(aRight.myId);
+		for (const uint32_t rightId : rightPass->GetDependencies())
+		{
+			if (aLeft.myId == rightId)
+			{
+				return true;
+			}
+		}
+		return false;
+	});
+}
+
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 {
 	if (aWidth == 0 && aHeight == 0)
@@ -198,16 +191,21 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext)
 {
 	RenderPassJob* foundJob;
-	RenderPassJobMap& map = myRenderPassJobs.GetWrite();
-	auto contextIter = map.find(anId);
-	if (contextIter != map.end())
+	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
+	auto contextIter = std::find_if(jobs.begin(), jobs.end(), [anId](IdPasJobPair aPair) {
+		return aPair.myId == anId;
+	});
+
+	if (contextIter != jobs.end())
 	{
-		foundJob = contextIter->second;
+		foundJob = contextIter->myJob;
 	}
 	else
 	{
-		foundJob = new RenderPassJobGL();
-		map[anId] = foundJob;
+		RenderPassJob* job = new RenderPassJobGL();
+		jobs.emplace_back(anId, job);
+		foundJob = job;
+		myRenderPassJobsNeedsOrdering = true;
 	}
 	foundJob->Initialize(renderContext);
 	return *foundJob;
@@ -222,57 +220,6 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 	{
 		frameBuffer.OnResize(*this);
 	}
-}
-
-void GraphicsGL::CreateFrameQuad()
-{
-	Handle<Pipeline> pipeline = myAssetTracker.GetOrCreate<Pipeline>("Engine/composite.ppl");
-	myCompositePipeline = GetOrCreate(pipeline).Get<PipelineGL>();
-
-	struct PosUVVertex
-	{
-		glm::vec2 myPos;
-		glm::vec2 myUV;
-
-		PosUVVertex() = default;
-		constexpr PosUVVertex(glm::vec2 aPos, glm::vec2 aUV)
-			: myPos(aPos)
-			, myUV(aUV)
-		{
-		}
-
-		static constexpr VertexDescriptor GetDescriptor()
-		{
-			using ThisType = PosUVVertex; // for copy-paste convenience
-			return {
-				sizeof(ThisType),
-				2,
-				{
-					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myPos) },
-					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUV) }
-				}
-			};
-		}
-	};
-
-	myFrameQuad = new ModelGL(
-		Model::PrimitiveType::Triangles,
-		GPUResource::UsageType::Static,
-		PosUVVertex::GetDescriptor(),
-		false
-	);
-	PosUVVertex vertices[] = {
-		{ { -1.f,  1.f }, { 0.f, 1.f } },
-		{ { -1.f, -1.f }, { 0.f, 0.f } },
-		{ {  1.f, -1.f }, { 1.f, 0.f } },
-
-		{ { -1.f,  1.f }, { 0.f, 1.f } },
-		{ {  1.f, -1.f }, { 1.f, 0.f } },
-		{ {  1.f,  1.f }, { 1.f, 1.f } }
-	};
-	Model::VertStorage<PosUVVertex>* buffer = new Model::VertStorage<PosUVVertex>(6, vertices);
-	Handle<Model> cpuModel = new Model(Model::PrimitiveType::Triangles, buffer, false);
-	myFrameQuad->Create(*this, cpuModel, false);
 }
 
 #ifdef DEBUG_GL_CALLS
