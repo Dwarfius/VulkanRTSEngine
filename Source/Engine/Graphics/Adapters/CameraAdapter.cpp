@@ -20,13 +20,10 @@ void CameraAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB)
 	aUB.SetUniform(0, 0, viewProj);
 	aUB.SetUniform(1, 0, viewMatrix);
 	aUB.SetUniform(2, 0, projMatrix);
-	// TODO: utilize arrays
-	aUB.SetUniform(3, 0, frustum.myPlanes[0]);
-	aUB.SetUniform(4, 0, frustum.myPlanes[1]);
-	aUB.SetUniform(5, 0, frustum.myPlanes[2]);
-	aUB.SetUniform(6, 0, frustum.myPlanes[3]);
-	aUB.SetUniform(7, 0, frustum.myPlanes[4]);
-	aUB.SetUniform(8, 0, frustum.myPlanes[5]);
-	aUB.SetUniform(9, 0, pos);
-	aUB.SetUniform(10, 0, viewport);
+	for (uint8_t i = 0; i < 6; i++)
+	{
+		aUB.SetUniform(3, i, frustum.myPlanes[i]);
+	}
+	aUB.SetUniform(4, 0, pos);
+	aUB.SetUniform(5, 0, viewport);
 }

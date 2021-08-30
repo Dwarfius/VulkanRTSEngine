@@ -24,13 +24,7 @@ layout (std140, binding = 2) uniform CameraAdapter
 	mat4 CamViewProj;
 	mat4 CamView;
 	mat4 CamProj;
-	// TODO: add ability to adapters to have arrays
-	vec4 FrustumPlaneLeft;
-	vec4 FrustumPlaneRight;
-	vec4 FrustumPlaneDown;
-	vec4 FrustumPlaneUp;
-	vec4 FrustumPlaneFar;
-	vec4 FrustumPlaneNear;
+	vec4 FrustumPlane[6]; // left, right, down, up, far, near
 	vec3 CamPos;
 	vec2 Viewport;
 };
@@ -55,12 +49,12 @@ uniform sampler2D TexHeightmap;
 bool isVisible(vec3 aPos, float aRadius)
 {
     const vec4 pos = vec4(aPos, 1.f);
-	bool isOutside = (dot(pos, FrustumPlaneLeft) + aRadius < 0.0)
-		|| (dot(pos, FrustumPlaneRight) + aRadius < 0.0)
-		|| (dot(pos, FrustumPlaneDown) + aRadius < 0.0)
-		|| (dot(pos, FrustumPlaneUp) + aRadius < 0.0)
-		|| (dot(pos, FrustumPlaneFar) + aRadius < 0.0)
-		|| (dot(pos, FrustumPlaneNear) + aRadius < 0.0);
+	bool isOutside = (dot(pos, FrustumPlane[0]) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlane[1]) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlane[2]) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlane[3]) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlane[4]) + aRadius < 0.0)
+		|| (dot(pos, FrustumPlane[5]) + aRadius < 0.0);
 	return !isOutside;
 }
 

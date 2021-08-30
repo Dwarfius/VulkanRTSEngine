@@ -8,13 +8,7 @@ layout (std140, binding = 0) uniform CameraAdapter
 	mat4 CamViewProj;
 	mat4 CamView;
 	mat4 CamProj;
-	// TODO: add ability to adapters to have arrays
-	vec4 FrustumPlaneLeft;
-	vec4 FrustumPlaneRight;
-	vec4 FrustumPlaneDown;
-	vec4 FrustumPlaneUp;
-	vec4 FrustumPlaneFar;
-	vec4 FrustumPlaneNear;
+	vec4 FrustumPlane[6]; // left, right, down, up, far, near
 	vec3 CamPos;
 	vec2 Viewport;
 };
