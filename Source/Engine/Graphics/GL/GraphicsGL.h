@@ -14,7 +14,6 @@ public:
 	using Graphics::Graphics;
 
 	void Init() final;
-	void BeginGather() final;
 	void Display() final;
 	void CleanUp() final;
 

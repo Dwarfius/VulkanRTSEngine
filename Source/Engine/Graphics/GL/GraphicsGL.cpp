@@ -78,11 +78,6 @@ void GraphicsGL::Init()
 #endif
 }
 
-void GraphicsGL::BeginGather()
-{
-	Graphics::BeginGather();
-}
-
 void GraphicsGL::Display()
 {
 	Profiler::ScopedMark profile("GraphicsGL::Display");
