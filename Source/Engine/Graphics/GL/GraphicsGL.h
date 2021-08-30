@@ -32,13 +32,6 @@ private:
 	using RenderPassJobMap = std::unordered_map<uint32_t, RenderPassJob*>;
 	RWBuffer<RenderPassJobMap, 3> myRenderPassJobs;
 
-	// TEST - used to output number of triangles
-	// generated during render calls, specifically
-	// tesselation of terrain (test detalization and gpu
-	// side culling)
-	uint32_t myGPUQuery;
-	// ======
-
 	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const final;
 	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const final;
 	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const final;

@@ -78,10 +78,6 @@ void GraphicsGL::Init()
 #endif
 
 	CreateFrameQuad();
-
-	// TEST
-	glGenQueries(1, &myGPUQuery);
-	// ===========
 }
 
 void GraphicsGL::BeginGather()
