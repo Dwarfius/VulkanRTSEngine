@@ -5,7 +5,7 @@
 #include <Graphics/GPUResource.h>
 
 #include "Graphics/NamedFrameBuffers.h"
-#include "Graphics/RenderPasses/GenericRenderPasses.h"
+#include "Graphics/RenderPasses/DebugRenderPass.h"
 
 void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
 {
@@ -15,7 +15,7 @@ void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) 
 
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
 {
-	myDependencies.push_back(DefaultRenderPass::kId);
+	myDependencies.push_back(DebugRenderPass::kId);
 
 	aPipeline->ExecLambdaOnLoad([&](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
