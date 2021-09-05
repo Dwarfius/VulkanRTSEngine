@@ -139,7 +139,6 @@ private:
 	DebugDrawer myDebugDrawer;
 	ImGUISystem* myImGUISystem;
 	AnimationSystem* myAnimationSystem;
-	
 
 	bool myIsRunning;
 	bool myShouldEnd;

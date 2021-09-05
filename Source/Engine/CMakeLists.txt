@@ -63,6 +63,7 @@ set(SRC "Precomp.h"
 	"Input.cpp" "Input.h"
 	"RenderThread.cpp" "RenderThread.h"
 	"Terrain.cpp" "Terrain.h"
+	"Tests.cpp" "Tests.h"
 	"VisualObject.cpp" "VisualObject.h"
 )
 

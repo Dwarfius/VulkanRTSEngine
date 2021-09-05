@@ -4,7 +4,7 @@
 #include "Input.h"
 #include "Audio.h"
 #include "Terrain.h"
-#include "Terrain.h"
+#include "Tests.h"
 #include "VisualObject.h"
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
@@ -50,6 +50,11 @@ Game::Game(ReportError aReporterFunc)
 	, myIsPaused(false)
 	, myIsInFocus(false)
 {
+	{
+		Profiler::ScopedMark profile("Tests");
+		Tests::RunTests();
+	}
+
 	Profiler::ScopedMark profile("Game::Ctor");
 	ourInstance = this;
 	UID::Init();
@@ -536,3 +541,4 @@ void Game::RegisterUniformAdapters()
 	adapterRegister.Register<TerrainAdapter>();
 	adapterRegister.Register<SkeletonAdapter>();
 }
+
