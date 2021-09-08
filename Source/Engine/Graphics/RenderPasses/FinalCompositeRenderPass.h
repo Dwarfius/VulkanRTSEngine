@@ -3,7 +3,6 @@
 #include <Graphics/RenderPass.h>
 #include <Core/RefCounted.h>
 
-class GPUModel;
 class Pipeline;
 class GPUPipeline;
 
@@ -20,6 +19,5 @@ private:
 	bool HasDynamicRenderContext() const final { return true; }
 	void PrepareContext(RenderContext& aContext) const final;
 
-	Handle<GPUModel> myFrameQuadModel;
 	Handle<GPUPipeline> myPipeline;
 };

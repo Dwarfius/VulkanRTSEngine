@@ -7,6 +7,7 @@
 #include "Resources/Pipeline.h"
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
+#include "Resources/GPUModel.h"
 
 #include <Core/Profiler.h>
 
@@ -18,6 +19,48 @@ Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 	, myWindow(nullptr)
 {
+}
+
+void Graphics::Init()
+{
+	struct PosUVVertex
+	{
+		glm::vec2 myPos;
+		glm::vec2 myUV;
+
+		PosUVVertex() = default;
+		constexpr PosUVVertex(glm::vec2 aPos, glm::vec2 aUV)
+			: myPos(aPos)
+			, myUV(aUV)
+		{
+		}
+
+		static constexpr VertexDescriptor GetDescriptor()
+		{
+			using ThisType = PosUVVertex; // for copy-paste convenience
+			return {
+				sizeof(ThisType),
+				2,
+				{
+					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myPos) },
+					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUV) }
+				}
+			};
+		}
+	};
+
+	PosUVVertex vertices[] = {
+		{ { -1.f,  1.f }, { 0.f, 1.f } },
+		{ { -1.f, -1.f }, { 0.f, 0.f } },
+		{ {  1.f, -1.f }, { 1.f, 0.f } },
+
+		{ { -1.f,  1.f }, { 0.f, 1.f } },
+		{ {  1.f, -1.f }, { 1.f, 0.f } },
+		{ {  1.f,  1.f }, { 1.f, 1.f } }
+	};
+	Model::VertStorage<PosUVVertex>* buffer = new Model::VertStorage<PosUVVertex>(6, vertices);
+	Handle<Model> cpuModel = new Model(Model::PrimitiveType::Triangles, buffer, false);
+	myFullScrenQuad = GetOrCreate(cpuModel).Get<GPUModel>();
 }
 
 void Graphics::BeginGather()
@@ -60,6 +103,8 @@ void Graphics::CleanUp()
 	{
 		delete pass;
 	}
+
+	myFullScrenQuad = Handle<GPUModel>();
 }
 
 void Graphics::AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBuffer)

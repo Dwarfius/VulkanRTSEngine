@@ -76,6 +76,8 @@ void GraphicsGL::Init()
 			0, nullptr, GL_FALSE);
 	}
 #endif
+
+	Graphics::Init();
 }
 
 void GraphicsGL::Display()

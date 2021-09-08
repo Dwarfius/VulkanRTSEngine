@@ -17,6 +17,7 @@ class Texture;
 class Pipeline;
 class Model;
 class Shader;
+class GPUModel;
 
 class Graphics
 {
@@ -28,7 +29,7 @@ public:
 	Graphics(AssetTracker& anAssetTracker);
 	virtual ~Graphics() = default;
 
-	virtual void Init() = 0;
+	virtual void Init();
 	virtual void BeginGather();
 	virtual void Display();
 	virtual void CleanUp();
@@ -78,6 +79,8 @@ public:
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 
+	Handle<GPUModel> GetFullScreenQuad() const { return myFullScrenQuad; }
+
 protected:
 	static int ourWidth, ourHeight;
 
@@ -104,6 +107,8 @@ private:
 	tbb::concurrent_queue<GPUResource*> myUnloadQueue;
 	ResourceMap myResources;
 	tbb::spin_mutex myResourceMutex;
+
+	Handle<GPUModel> myFullScrenQuad;
 
 	void ProcessGPUQueues();
 
