@@ -38,9 +38,10 @@ add_subdirectory(Source/Physics)
 add_subdirectory(Source/Graphics)
 add_subdirectory(Source/Engine)
 add_subdirectory(Source/WorldEditor)
+add_subdirectory(Source/DungeonEditor)
 
 if(VENGINE_GENERATE_BENCHTABLE)
 	add_subdirectory(Source/BenchTable)
 endif()
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WorldEditor)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT DungeonEditor)

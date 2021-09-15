@@ -4,9 +4,6 @@
 
 class Serializer;
 
-// TODO: might be a good idea to use unpack-CRTP to write a fully static-compiled descriptors
-// might help save on the memory access logic, and let compiler optimize the access better
-
 // A class that describes how uniforms are stored for passing to the GPU.
 // Follows the std140 layout. Only supports AoS layout.
 // Use example:

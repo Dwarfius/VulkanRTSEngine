@@ -8,7 +8,7 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 
-#include "Graphics/RenderPasses/GenericRenderPasses.h"
+#include "../../Graphics/RenderPasses/GenericRenderPasses.h"
 
 struct ImGUIVertex
 {
