@@ -211,6 +211,17 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 	case RenderContext::PolygonMode::Fill:	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); break;
 	default: ASSERT_STR(false, "Unrecognized polygon mode!");
 	}
+
+	if (!aContext.myFrameBuffer.empty())
+	{
+		uint32_t buffers[RenderContext::kMaxFrameBufferDrawSlots];
+		for (uint8_t i = 0; i < RenderContext::kMaxFrameBufferDrawSlots; i++)
+		{
+			buffers[i] = aContext.myFrameBufferDrawSlots[i] == -1 ?
+				GL_NONE : GL_COLOR_ATTACHMENT0 + aContext.myFrameBufferDrawSlots[i];
+		}
+		glDrawBuffers(RenderContext::kMaxFrameBufferDrawSlots, buffers);
+	}
 }
 
 void RenderPassJobGL::RunJobs()

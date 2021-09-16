@@ -42,6 +42,7 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
+	float myBrushRadius = 0.01f;
 	bool myWriteToOther = false;
 };
 
@@ -68,7 +69,10 @@ class PainterAdapter : public UniformAdapter
 public:
 	struct Source : SourceData
 	{
-		Graphics& myGraphics;
+		const glm::vec2 myTexSize;
+		const glm::vec2 myMousePos;
+		const int myPaintMode;
+		const float myBrushRadius;
 	};
 
 	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;

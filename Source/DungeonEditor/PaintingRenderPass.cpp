@@ -39,8 +39,36 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	params.myCount = 6;
 	job.SetDrawParams(params);
 
+	const glm::vec2 texSize(aGraphics.GetWidth(), aGraphics.GetHeight());
+	
+	glm::vec2 mousePos = Input::GetMousePos();
+	mousePos.y = aGraphics.GetHeight() - mousePos.y;
+	
+	int paintMode = 0; // nothing
+	if (Input::GetMouseBtn(0))
+	{
+		paintMode = 1; // paint
+	}
+	else if (Input::GetMouseBtn(1))
+	{
+		paintMode = 2; // erase under mouse
+	}
+	else if (Input::GetKeyPressed(Input::Keys::Space))
+	{
+		paintMode = -1; // erase all
+	}
+
+	myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
+	myBrushRadius = glm::clamp(myBrushRadius, 0.f, 1.f);
+
 	Camera dudCamera(aGraphics.GetWidth(), aGraphics.GetHeight());
-	PainterAdapter::Source source{ dudCamera, aGraphics };
+	PainterAdapter::Source source{ 
+		dudCamera, 
+		texSize,
+		mousePos,
+		paintMode,
+		myBrushRadius
+	};
 	PainterAdapter adapter;
 	adapter.FillUniformBlock(source, *myBlock);
 	job.AddUniformBlock(*myBlock);
@@ -95,7 +123,7 @@ void DisplayRenderPass::PrepareContext(RenderContext& aContext) const
 
 	aContext.myFrameBufferReadTextures[0] = {
 		myPass->GetWriteBuffer(),
-		uint8_t(0),
+		uint8_t(1),
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
@@ -108,24 +136,8 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 {
 	const Source& data = static_cast<const Source&>(aData);
 
-	const glm::vec2 texSize(data.myGraphics.GetWidth(), data.myGraphics.GetHeight());
-	aUB.SetUniform(0, 0, texSize);
-	glm::vec2 mousePos = Input::GetMousePos();
-	mousePos.y = data.myGraphics.GetHeight() - mousePos.y;
-	aUB.SetUniform(1, 0, mousePos);
-
-	int paintMode = 0; // nothing
-	if (Input::GetMouseBtn(0))
-	{
-		paintMode = 1; // paint
-	}
-	else if (Input::GetMouseBtn(1))
-	{
-		paintMode = 2; // erase under mouse
-	}
-	else if(Input::GetKeyPressed(Input::Keys::Space))
-	{
-		paintMode = -1; // erase all
-	}
-	aUB.SetUniform(2, 0, paintMode);
+	aUB.SetUniform(0, 0, data.myTexSize);
+	aUB.SetUniform(1, 0, data.myMousePos);
+	aUB.SetUniform(2, 0, data.myPaintMode);
+	aUB.SetUniform(3, 0, data.myBrushRadius);
 }

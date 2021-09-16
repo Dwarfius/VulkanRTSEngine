@@ -13,19 +13,22 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec2 TexSize;
     vec2 MousePos;
     int IsDrawing;
+    float BrushSize;
 };
 
 void main() 
 {
+    vec2 mouseRel = MousePos / TexSize;
+    mouseRel.x = clamp(mouseRel.x, 0, 1);
+    mouseRel.y = clamp(mouseRel.y, 0, 1);
+    float dist = distance(uvsOut, mouseRel);
+    bool isInside = dist < BrushSize;
+
     vec4 paintColor;
     if(IsDrawing > 0)
     {
         // color pixel under mouse white, otherwise black
-        vec2 mouseRel = MousePos / TexSize;
-        mouseRel.x = clamp(mouseRel.x, 0, 1);
-        mouseRel.y = clamp(mouseRel.y, 0, 1);
-        float dist = distance(uvsOut, mouseRel);
-        paintColor = dist < 0.01f ? 
+        paintColor = isInside ? 
             (IsDrawing == 1 ? vec4(1, 1, 1, 1) : -vec4(1, 1, 1, 0)) : 
             vec4(0, 0, 0, 1);
     }
@@ -42,5 +45,5 @@ void main()
     vec4 baseColor = texture(tex, uvsOut);
     outColor = baseColor + paintColor;
 
-    finalColor = outColor;
+    finalColor = isInside ? vec4(0, 0, 1, 1) : outColor;
 }

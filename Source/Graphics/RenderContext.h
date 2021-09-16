@@ -104,6 +104,13 @@ public:
 	};
 	static_assert(kMaxObjectTextureSlots == 8, "Fix above array if const changed!");
 
+	constexpr static uint8_t kMaxFrameBufferDrawSlots = 8;
+	int myFrameBufferDrawSlots[kMaxFrameBufferDrawSlots] = { 
+		0, 1, 2, 3,
+		4, 5, 6, 7
+	};
+	static_assert(kMaxFrameBufferDrawSlots == 8, "Fix above array if const changed!");
+
 	int myViewportOrigin[2] = { 0, 0 };
 	int myViewportSize[2] = { 0, 0 };
 
