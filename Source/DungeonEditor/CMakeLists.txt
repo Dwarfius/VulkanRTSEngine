@@ -4,6 +4,7 @@ project (DungeonEditor LANGUAGES CXX)
 
 set(SRC "Precomp.h"
 	"main.cpp"
+	"Editor.cpp" "Editor.h"
 	"PaintingRenderPass.cpp" "PaintingRenderPass.h"
 )
 

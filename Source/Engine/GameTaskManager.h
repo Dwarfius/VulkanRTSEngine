@@ -19,7 +19,7 @@ public:
 
 private:
 	friend class GameTaskManager;
-	uint16_t GetType() const { return myType; }
+	Type GetType() const { return myType; }
 
 	std::function<void()> myCallback;
 	Type myType;

@@ -11,6 +11,7 @@
 #include <Core/Resources/JsonSerializer.h>
 #include <Core/Utils.h>
 
+#include "Editor.h"
 #include "PaintingRenderPass.h"
 
 void glfwErrorReporter(int code, const char* desc)
@@ -64,6 +65,21 @@ int main()
 		OtherPaintingFrameBuffer::kDescriptor
 	);
 
+	Editor* editor;
+	{
+		editor = new Editor(*game);
+		constexpr GameTask::Type kEditorTask = Game::Tasks::Last + 1;
+		GameTask task(kEditorTask, [editor]{
+			editor->Run();
+		});
+		task.AddDependency(Game::Tasks::BeginFrame);
+
+		GameTaskManager& taskManager = game->GetTaskManager();
+		taskManager.GetTask(Game::Tasks::UpdateEnd).AddDependency(kEditorTask);
+		taskManager.GetTask(Game::Tasks::RemoveGameObjects).AddDependency(kEditorTask);
+		taskManager.AddTask(task);
+	}
+
 	// start running
 	while (game->IsRunning())
 	{
@@ -72,6 +88,7 @@ int main()
 	
 	game->CleanUp();
 
+	delete editor;
 	delete game;
 
 	return 0;
