@@ -47,7 +47,6 @@ void ImGUISystem::Init()
 
 	myRenderPass = new ImGUIRenderPass(imGUIPipeline, fontAtlas, *myGame.GetGraphics());
 	myGame.GetGraphics()->AddRenderPass(myRenderPass);
-	myGame.GetGraphics()->AddRenderPassDependency(FinalCompositeRenderPass::kId, ImGUIRenderPass::kId);
 }
 
 void ImGUISystem::Shutdown()

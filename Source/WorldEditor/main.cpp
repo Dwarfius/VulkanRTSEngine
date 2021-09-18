@@ -1,11 +1,12 @@
 #include "Precomp.h"
+
+#include "EditorMode.h"
+
 #include <Engine/Game.h>
 
 #include <Core/Resources/BinarySerializer.h>
 #include <Core/Resources/JsonSerializer.h>
 #include <Core/Utils.h>
-
-#include "EditorMode.h"
 
 void glfwErrorReporter(int code, const char* desc)
 {
@@ -19,7 +20,7 @@ int main()
 
 	// initialize the game engine
 	Game* game = new Game(&glfwErrorReporter);
-	game->Init();
+	game->Init(true);
 
 	// setup and inject our editor mode task
 	EditorMode* editor = new EditorMode(*game);

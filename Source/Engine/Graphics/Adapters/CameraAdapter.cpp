@@ -15,7 +15,7 @@ void CameraAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB)
 	const glm::mat4 viewMatrix = camera.GetView();
 	const glm::mat4 projMatrix = camera.GetProj();
 	const Frustum& frustum = camera.GetFrustum();
-	const glm::vec2 viewport(Graphics::GetWidth(), Graphics::GetHeight());
+	const glm::vec2 viewport(aData.myGraphics.GetWidth(), aData.myGraphics.GetHeight());
 
 	aUB.SetUniform(0, 0, viewProj);
 	aUB.SetUniform(1, 0, viewMatrix);

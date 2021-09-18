@@ -26,7 +26,7 @@ public:
 
 private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
-	void OnResize(int aWidth, int aHeight);
+	void OnResize(int aWidth, int aHeight) final;
 
 	struct IdPasJobPair
 	{

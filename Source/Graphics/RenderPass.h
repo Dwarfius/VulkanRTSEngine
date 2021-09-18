@@ -46,7 +46,7 @@ protected:
 	// By default is static render context
 	virtual bool HasDynamicRenderContext() const { return false; }
 	// default implementation returns full viewport context
-	virtual void PrepareContext(RenderContext& aContext) const = 0;
+	virtual void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const = 0;
 
 	RenderContext myRenderContext;
 	bool myHasValidContext;

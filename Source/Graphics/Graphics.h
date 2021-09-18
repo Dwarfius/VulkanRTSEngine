@@ -22,10 +22,6 @@ class GPUModel;
 class Graphics
 {
 public:
-	// TODO: move this to a settings struct
-	static bool ourUseWireframe;
-
-public:
 	Graphics(AssetTracker& anAssetTracker);
 	virtual ~Graphics() = default;
 
@@ -36,8 +32,12 @@ public:
 	
 	GLFWwindow* GetWindow() const { return myWindow; }
 	
-	static float GetWidth() { return static_cast<float>(ourWidth); }
-	static float GetHeight() { return static_cast<float>(ourHeight); }
+	float GetWidth() const { return static_cast<float>(myWidth); }
+	float GetHeight() const { return static_cast<float>(myHeight); }
+
+	// TODO: move this to a settings struct
+	bool IsWireframeActive() const { return myUseWireframe; }
+	void ToggleWireframe() { myUseWireframe = !myUseWireframe; }
 
 	// Graphics will manage the lifetime of the render pass job,
 	// but it guarantees that it will stay valid until the next call
@@ -82,13 +82,11 @@ public:
 	Handle<GPUModel> GetFullScreenQuad() const { return myFullScrenQuad; }
 
 protected:
-	static int ourWidth, ourHeight;
-
 	void TriggerUpload(GPUResource* aGPUResource);
 
 	AssetTracker& myAssetTracker;
 
-	GLFWwindow* myWindow;
+	GLFWwindow* myWindow = nullptr;
 	std::vector<IRenderPass*> myRenderPasses;
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
 	bool myRenderPassJobsNeedsOrdering = true;
@@ -96,6 +94,8 @@ protected:
 	void ProcessUnloadQueue();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
 	IRenderPass* GetRenderPass(uint32_t anId) const;
+
+	virtual void OnResize(int aWidth, int aHeight);
 
 private:
 	using ResourceMap = std::unordered_map<Resource::Id, GPUResource*>;
@@ -117,5 +117,11 @@ private:
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
 
+	void SortRenderPasses();
 	virtual void SortRenderPassJobs() = 0;
+
+	int myWidth = 800;
+	int myHeight = 600;
+	bool myUseWireframe = false;
+	bool myRenderPassesNeedOrdering = false;
 };

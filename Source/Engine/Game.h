@@ -55,7 +55,7 @@ public:
 	AnimationSystem& GetAnimationSystem();
 	GameTaskManager& GetTaskManager() { return *myTaskManager.get(); }
 
-	void Init();
+	void Init(bool aUseDefaultFinalCompositePass);
 	void RunMainThread();
 	void CleanUp();
 

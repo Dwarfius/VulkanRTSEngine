@@ -13,7 +13,7 @@ void IRenderPass::BeginPass(Graphics& anInterface)
 {
 	if (!myHasValidContext || HasDynamicRenderContext())
 	{
-		PrepareContext(myRenderContext);
+		PrepareContext(myRenderContext, anInterface);
 		myHasValidContext = true;
 	}
 }

@@ -14,6 +14,7 @@ void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) 
 }
 
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
+	: myDestFrameBuffer(DefaultFrameBuffer::kName)
 {
 	myDependencies.push_back(DebugRenderPass::kId);
 
@@ -58,9 +59,9 @@ bool ImGUIRenderPass::IsReady() const
 		&& myModel->GetState() == GPUResource::State::Valid;
 }
 
-void ImGUIRenderPass::PrepareContext(RenderContext& aContext) const
+void ImGUIRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
+	aContext.myFrameBuffer = myDestFrameBuffer;
 
 	aContext.myEnableBlending = true;
 	aContext.myBlendingEq = RenderContext::BlendingEq::Add;
@@ -71,8 +72,8 @@ void ImGUIRenderPass::PrepareContext(RenderContext& aContext) const
 	aContext.myEnableDepthTest = false;
 	aContext.myShouldClearColor = false;
 	aContext.myShouldClearDepth = false;
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 	aContext.myTexturesToActivate[0] = 0;
 }
 

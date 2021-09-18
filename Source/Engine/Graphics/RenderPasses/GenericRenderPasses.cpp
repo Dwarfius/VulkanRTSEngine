@@ -24,12 +24,12 @@ bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
 		&& std::all_of(textures.begin(), textures.end(), CheckResource);
 }
 
-void DefaultRenderPass::PrepareContext(RenderContext& aContext) const
+void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 
 	aContext.myTexturesToActivate[0] = 0;
 
@@ -57,19 +57,19 @@ bool TerrainRenderPass::HasResources(const RenderJob& aJob) const
 		&& std::all_of(textures.begin(), textures.end(), CheckResource);
 }
 
-void TerrainRenderPass::PrepareContext(RenderContext& aContext) const
+void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 
 	aContext.myShouldClearColor = true;
 	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0;
 
-	aContext.myPolygonMode = Graphics::ourUseWireframe ? 
+	aContext.myPolygonMode = aGraphics.IsWireframeActive() ? 
 		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;
 
 	aContext.myEnableCulling = true;

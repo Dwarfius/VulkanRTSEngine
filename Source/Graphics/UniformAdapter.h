@@ -2,6 +2,7 @@
 
 class UniformBlock;
 class Camera;
+class Graphics;
 
 // Use this macro to enable registering a uniform adapter 
 // specialization with the adapter register
@@ -18,6 +19,7 @@ class UniformAdapter
 public:
 	struct SourceData 
 	{
+		const Graphics& myGraphics;
 		const Camera& myCam;
 	};
 

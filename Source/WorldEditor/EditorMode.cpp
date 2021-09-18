@@ -106,7 +106,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 
 	if (Input::GetKeyPressed(Input::Keys::K))
 	{
-		Graphics::ourUseWireframe = !Graphics::ourUseWireframe;
+		aGame.GetGraphics()->ToggleWireframe();
 	}
 
 	if (Input::GetMouseBtnPressed(2))

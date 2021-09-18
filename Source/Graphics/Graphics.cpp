@@ -11,13 +11,8 @@
 
 #include <Core/Profiler.h>
 
-bool Graphics::ourUseWireframe = false;
-int Graphics::ourWidth = 800;
-int Graphics::ourHeight = 600;
-
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
-	, myWindow(nullptr)
 {
 }
 
@@ -66,6 +61,12 @@ void Graphics::Init()
 void Graphics::BeginGather()
 {
 	Profiler::ScopedMark profile("Graphics::BeginGather");
+
+	if(myRenderPassesNeedOrdering)
+	{
+		SortRenderPasses();
+		myRenderPassesNeedOrdering = false;
+	}
 
 	for (IRenderPass* pass : myRenderPasses)
 	{
@@ -127,12 +128,14 @@ void Graphics::AddRenderPass(IRenderPass* aRenderPass)
 	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
 	myRenderPassJobsNeedsOrdering = true;
+	myRenderPassesNeedOrdering = true;
 }
 
 void Graphics::AddRenderPassDependency(RenderPass::Id aPassId, RenderPass::Id aNewDependency)
 {
 	GetRenderPass(aPassId)->AddDependency(aNewDependency);
 	myRenderPassJobsNeedsOrdering = true;
+	myRenderPassesNeedOrdering = true;
 }
 
 template<class T>
@@ -290,4 +293,25 @@ IRenderPass* Graphics::GetRenderPass(uint32_t anId) const
 	}
 	ASSERT_STR(false, "Failed to find a render pass for id %d!", anId);
 	return nullptr;
+}
+
+void Graphics::OnResize(int aWidth, int aHeight)
+{
+	myWidth = aWidth;
+	myHeight = aHeight;
+}
+
+void Graphics::SortRenderPasses()
+{
+	std::sort(myRenderPasses.begin(), myRenderPasses.end(),
+		[](const IRenderPass* aLeft, const IRenderPass* aRight) {
+		for (const uint32_t rightId : aRight->GetDependencies())
+		{
+			if (aLeft->GetId() == rightId)
+			{
+				return true;
+			}
+		}
+		return false;
+	});
 }

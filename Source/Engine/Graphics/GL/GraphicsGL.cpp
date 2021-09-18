@@ -41,7 +41,9 @@ void GraphicsGL::Init()
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif
 
-	myWindow = glfwCreateWindow(ourWidth, ourHeight, "VEngine - GL", nullptr, nullptr);
+	int width = static_cast<int>(GetWidth());
+	int height = static_cast<int>(GetHeight());
+	myWindow = glfwCreateWindow(width, height, "VEngine - GL", nullptr, nullptr);
 	glfwSetWindowSizeCallback(myWindow, GraphicsGL::OnWindowResized);
 	glfwSetWindowUserPointer(myWindow, this);
 	
@@ -210,8 +212,7 @@ RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderCo
 
 void GraphicsGL::OnResize(int aWidth, int aHeight)
 {
-	ourWidth = aWidth;
-	ourHeight = aHeight;
+	Graphics::OnResize(aWidth, aHeight);
 
 	for (auto& [key, frameBuffer] : myFrameBuffers)
 	{

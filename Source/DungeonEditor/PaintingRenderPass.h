@@ -6,6 +6,7 @@
 #include <Graphics/UniformAdapter.h>
 
 class GPUPipeline;
+class Pipeline;
 
 struct PaintingFrameBuffer
 {
@@ -18,6 +19,8 @@ struct PaintingFrameBuffer
 			{ FrameBuffer::AttachmentType::Texture, ITexture::Format::UNorm_RGBA }
 		}
 	};
+	constexpr static uint8_t kFinalColor = 0;
+	constexpr static uint8_t kPaintingColor = 1;
 };
 
 struct OtherPaintingFrameBuffer
@@ -38,7 +41,7 @@ private:
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext) const final;
+	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
@@ -51,16 +54,16 @@ class DisplayRenderPass : public IRenderPass
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
 	void SetPipeline(Handle<GPUPipeline> aPipeline) { myPipeline = aPipeline; }
-	void SetPaintingRenderPass(PaintingRenderPass* aPass) { myPass = aPass; }
+	void SetReadBuffer(std::string_view aFrameBuffer) { myReadFrameBuffer = aFrameBuffer; }
 
 private:
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext) const final;
+	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
-	PaintingRenderPass* myPass;
+	std::string_view myReadFrameBuffer;
 };
 
 class PainterAdapter : public UniformAdapter

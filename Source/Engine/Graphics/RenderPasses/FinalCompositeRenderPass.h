@@ -17,7 +17,7 @@ private:
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; }
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext) const final;
+	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
 };

@@ -57,9 +57,6 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	myGraphics->AddRenderPass(new DebugRenderPass(
 		*myGraphics, anAssetTracker.GetOrCreate<Pipeline>("Engine/debug.ppl")
 	));
-	myGraphics->AddRenderPass(new FinalCompositeRenderPass(
-		*myGraphics, anAssetTracker.GetOrCreate<Pipeline>("Engine/composite.ppl")
-	));
 
 	myGraphics->AddNamedFrameBuffer(DefaultFrameBuffer::kName, DefaultFrameBuffer::kDescriptor);
 
@@ -188,6 +185,7 @@ void RenderThread::ScheduleGORenderables(const Camera& aCam)
 
 		// updating the uniforms - grabbing game state!
 		UniformAdapterSource source{
+			*myGraphics,
 			aCam,
 			&renderable.myGameObject,
 			visualObj
@@ -242,6 +240,7 @@ void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 
 		// updating the uniforms - grabbing game state!
 		TerrainUniformAdapterSource source{
+			*myGraphics,
 			aCam,
 			nullptr,
 			visualObj,

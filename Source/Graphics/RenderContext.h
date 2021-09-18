@@ -106,8 +106,8 @@ public:
 
 	constexpr static uint8_t kMaxFrameBufferDrawSlots = 8;
 	int myFrameBufferDrawSlots[kMaxFrameBufferDrawSlots] = { 
-		0, 1, 2, 3,
-		4, 5, 6, 7
+		0, -1, -1, -1,
+		-1, -1, -1, -1
 	};
 	static_assert(kMaxFrameBufferDrawSlots == 8, "Fix above array if const changed!");
 

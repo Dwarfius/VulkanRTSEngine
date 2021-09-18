@@ -96,13 +96,13 @@ void DebugRenderPass::AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDeb
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 }
 
-void DebugRenderPass::PrepareContext(RenderContext& aContext) const
+void DebugRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myScissorMode = RenderContext::ScissorMode::None;
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 }
 
 void DebugRenderPass::BeginPass(Graphics& anInterface)
@@ -158,7 +158,7 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
 		job.SetDrawParams(params);
 
-		UniformAdapter::SourceData source{ perCamModel.myCamera };
+		UniformAdapter::SourceData source{ anInterface, perCamModel.myCamera };
 		adapter.FillUniformBlock(source, *perCamModel.myBlock);
 		job.AddUniformBlock(*perCamModel.myBlock);
 

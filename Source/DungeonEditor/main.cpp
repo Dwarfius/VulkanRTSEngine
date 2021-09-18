@@ -26,7 +26,7 @@ int main()
 
 	// initialize the game engine
 	Game* game = new Game(&glfwErrorReporter);
-	game->Init();
+	game->Init(false);
 
 	Graphics& graphics = *game->GetGraphics();
 	{
@@ -38,7 +38,7 @@ int main()
 
 		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
 			"TerrainPaint/TerrainPaint.ppl"
-			);
+		);
 		pass->SetPipeline(pipeline, graphics);
 	}
 
@@ -46,14 +46,12 @@ int main()
 		DisplayRenderPass* pass = new DisplayRenderPass();
 		graphics.AddRenderPass(pass);
 		graphics.AddRenderPassDependency(DisplayRenderPass::kId, ImGUIRenderPass::kId);
-		graphics.AddRenderPassDependency(DisplayRenderPass::kId, FinalCompositeRenderPass::kId);
 		graphics.AddRenderPassDependency(DisplayRenderPass::kId, PaintingRenderPass::kId);
 
 		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
 			"Engine/composite.ppl"
-			);
+		);
 		pass->SetPipeline(graphics.GetOrCreate(pipeline).Get<GPUPipeline>());
-		pass->SetPaintingRenderPass(graphics.GetRenderPass<PaintingRenderPass>());
 	}
 
 	graphics.AddNamedFrameBuffer(

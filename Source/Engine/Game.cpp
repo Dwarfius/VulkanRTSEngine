@@ -11,7 +11,9 @@
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
 #include "Graphics/Adapters/SkeletonAdapter.h"
+#include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Systems/ImGUI/ImGUISystem.h"
+#include "Systems/ImGUI/ImGUIRendering.h"
 #include "Animation/AnimationSystem.h"
 #include "RenderThread.h"
 
@@ -73,8 +75,6 @@ Game::Game(ReportError aReporterFunc)
 
 	myRenderThread = new RenderThread();
 
-	myCamera = new Camera(Graphics::GetWidth(), Graphics::GetHeight());
-
 	myTaskManager = std::make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
@@ -106,7 +106,7 @@ AnimationSystem& Game::GetAnimationSystem()
 	return *myAnimationSystem; 
 }
 
-void Game::Init()
+void Game::Init(bool aUseDefaultCompositePass)
 {
 	Profiler::ScopedMark profile("Game::Init");
 	RegisterUniformAdapters();
@@ -115,6 +115,18 @@ void Game::Init()
 	myGameObjects.reserve(kInitReserve);
 
 	myRenderThread->Init(BootWithVK, *myAssetTracker);
+
+	{
+		Graphics* graphics = myRenderThread->GetGraphics();
+		if (aUseDefaultCompositePass)
+		{
+			graphics->AddRenderPass(new FinalCompositeRenderPass(
+				*graphics, myAssetTracker->GetOrCreate<Pipeline>("Engine/composite.ppl")
+			));
+			graphics->AddRenderPassDependency(FinalCompositeRenderPass::kId, ImGUIRenderPass::kId);
+		}
+		myCamera = new Camera(graphics->GetWidth(), graphics->GetHeight());
+	}
 
 	// TODO: has implicit dependency on window initialized - make explicit!
 	myImGUISystem->Init();

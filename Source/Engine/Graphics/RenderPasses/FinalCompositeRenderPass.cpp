@@ -38,7 +38,7 @@ void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
 	passJob.Add(job);
 }
 
-void FinalCompositeRenderPass::PrepareContext(RenderContext& aContext) const
+void FinalCompositeRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = "";
 	aContext.myFrameBufferReadTextures[0] = {
@@ -47,6 +47,6 @@ void FinalCompositeRenderPass::PrepareContext(RenderContext& aContext) const
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 }

@@ -93,9 +93,10 @@ public:
 	void UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor);
 	void AddImGuiRenderJob(const ImGUIRenderParams& aParams);
 	bool IsReady() const;
+	void SetDestFrameBuffer(std::string_view aFrameBuffer) { myDestFrameBuffer = aFrameBuffer; }
 
 protected:
-	void PrepareContext(RenderContext& aContext) const final;
+	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
 	void BeginPass(Graphics& aGraphics) final;
@@ -106,4 +107,6 @@ protected:
 	}
 
 	bool HasDynamicRenderContext() const final { return true; }
+
+	std::string_view myDestFrameBuffer;
 };

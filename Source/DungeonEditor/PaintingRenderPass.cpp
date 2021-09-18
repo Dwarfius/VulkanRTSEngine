@@ -1,12 +1,14 @@
 #include "Precomp.h"
 #include "PaintingRenderPass.h"
 
+#include <Engine/Input.h>
+#include <Engine/Systems/ImGUI/ImGUIRendering.h>
+
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Camera.h>
-#include <Engine/Input.h>
 
 void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
 {
@@ -63,6 +65,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 
 	Camera dudCamera(aGraphics.GetWidth(), aGraphics.GetHeight());
 	PainterAdapter::Source source{ 
+		aGraphics,
 		dudCamera, 
 		texSize,
 		mousePos,
@@ -80,20 +83,24 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	myWriteToOther = !myWriteToOther;
 }
 
-void PaintingRenderPass::PrepareContext(RenderContext& aContext) const
+void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = GetWriteBuffer();
+	aContext.myFrameBufferDrawSlots[0] = PaintingFrameBuffer::kFinalColor;
+	aContext.myFrameBufferDrawSlots[1] = PaintingFrameBuffer::kPaintingColor;
+	aGraphics.GetRenderPass<ImGUIRenderPass>()->SetDestFrameBuffer(GetWriteBuffer());
+	aGraphics.GetRenderPass<DisplayRenderPass>()->SetReadBuffer(GetWriteBuffer());
 
 	aContext.myFrameBufferReadTextures[0] = {
 		myWriteToOther ?
 			static_cast<std::string_view>(PaintingFrameBuffer::kName) :
 			static_cast<std::string_view>(OtherPaintingFrameBuffer::kName),
-		uint8_t(0),
+		PaintingFrameBuffer::kPaintingColor,
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 	aContext.myEnableDepthTest = false;
 }
 
@@ -117,18 +124,18 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 	passJob.Add(job);
 }
 
-void DisplayRenderPass::PrepareContext(RenderContext& aContext) const
+void DisplayRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = ""; 
 
 	aContext.myFrameBufferReadTextures[0] = {
-		myPass->GetWriteBuffer(),
-		uint8_t(1),
+		myReadFrameBuffer,
+		PaintingFrameBuffer::kFinalColor,
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
-	aContext.myViewportSize[0] = static_cast<int>(Graphics::GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(Graphics::GetHeight());
+	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
+	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 	aContext.myEnableDepthTest = false;
 }
 
