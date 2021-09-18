@@ -41,36 +41,14 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	params.myCount = 6;
 	job.SetDrawParams(params);
 
-	const glm::vec2 texSize(aGraphics.GetWidth(), aGraphics.GetHeight());
-	
-	glm::vec2 mousePos = Input::GetMousePos();
-	mousePos.y = aGraphics.GetHeight() - mousePos.y;
-	
-	int paintMode = 0; // nothing
-	if (Input::GetMouseBtn(0))
-	{
-		paintMode = 1; // paint
-	}
-	else if (Input::GetMouseBtn(1))
-	{
-		paintMode = 2; // erase under mouse
-	}
-	else if (Input::GetKeyPressed(Input::Keys::Space))
-	{
-		paintMode = -1; // erase all
-	}
-
-	myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
-	myBrushRadius = glm::clamp(myBrushRadius, 0.f, 1.f);
-
 	Camera dudCamera(aGraphics.GetWidth(), aGraphics.GetHeight());
 	PainterAdapter::Source source{ 
 		aGraphics,
 		dudCamera, 
-		texSize,
-		mousePos,
-		paintMode,
-		myBrushRadius
+		myParams.myTexSize,
+		myParams.myMousePos,
+		myParams.myPaintMode,
+		myParams.myBrushSize
 	};
 	PainterAdapter adapter;
 	adapter.FillUniformBlock(source, *myBlock);
@@ -144,7 +122,8 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 	const Source& data = static_cast<const Source&>(aData);
 
 	aUB.SetUniform(0, 0, data.myTexSize);
-	aUB.SetUniform(1, 0, data.myMousePos);
+	const glm::vec2 mousePos(data.myMousePos.x, data.myTexSize.y - data.myMousePos.y);
+	aUB.SetUniform(1, 0, mousePos);
 	aUB.SetUniform(2, 0, data.myPaintMode);
 	aUB.SetUniform(3, 0, data.myBrushRadius);
 }

@@ -15,5 +15,5 @@ private:
 	glm::vec2 myTexSize;
 	glm::vec2 myMousePos;
 	int myPaintMode = 0;
-	float myBrushRadius = 0.001f;
+	float myBrushRadius = 0.003f;
 };

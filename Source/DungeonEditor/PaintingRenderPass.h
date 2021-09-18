@@ -33,7 +33,17 @@ class PaintingRenderPass : public IRenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("PaintingRenderPass");
+
+	struct Params
+	{
+		glm::vec2 myTexSize;
+		glm::vec2 myMousePos;
+		int myPaintMode;
+		float myBrushSize;
+	};
+public:
 	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
+	void SetParams(const Params& aParams) { myParams = aParams; }
 
 	std::string_view GetWriteBuffer() const;
 
@@ -45,7 +55,7 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	float myBrushRadius = 0.01f;
+	Params myParams;
 	bool myWriteToOther = false;
 };
 
