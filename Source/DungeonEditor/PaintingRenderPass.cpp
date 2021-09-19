@@ -47,6 +47,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		dudCamera, 
 		myParams.myTexSize,
 		myParams.myMousePos,
+		myParams.myGridDims,
 		myParams.myPaintMode,
 		myParams.myBrushSize
 	};
@@ -124,6 +125,8 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 	aUB.SetUniform(0, 0, data.myTexSize);
 	const glm::vec2 mousePos(data.myMousePos.x, data.myTexSize.y - data.myMousePos.y);
 	aUB.SetUniform(1, 0, mousePos);
-	aUB.SetUniform(2, 0, data.myPaintMode);
-	aUB.SetUniform(3, 0, data.myBrushRadius);
+	const glm::vec2 gridCellSize = data.myTexSize / glm::vec2(data.myGridDims);
+	aUB.SetUniform(2, 0, gridCellSize);
+	aUB.SetUniform(3, 0, data.myPaintMode);
+	aUB.SetUniform(4, 0, data.myBrushRadius);
 }

@@ -43,7 +43,7 @@ void Editor::Run()
 	if (!ignoreMouse)
 	{
 		myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
-		myBrushRadius = glm::clamp(myBrushRadius, 0.f, 1.f);
+		myBrushRadius = glm::clamp(myBrushRadius, 0.00001f, 0.2f);
 	}
 
 	Draw();
@@ -52,6 +52,7 @@ void Editor::Run()
 	PaintingRenderPass::Params params{
 		myTexSize,
 		myMousePos,
+		myGridDims,
 		myPaintMode,
 		myBrushRadius
 	};
@@ -75,6 +76,10 @@ void Editor::Draw()
 		myTexSize = glm::vec2(size[0], size[1]);
 
 		ImGui::SliderFloat("Brush size", &myBrushRadius, 0.00001f, 0.2f);
+
+		ImGui::InputInt2("Grid Dims", glm::value_ptr(myGridDims));
+		myGridDims.x = std::max(myGridDims.x, 1);
+		myGridDims.y = std::max(myGridDims.y, 1);
 	}
 	ImGui::End();
 }

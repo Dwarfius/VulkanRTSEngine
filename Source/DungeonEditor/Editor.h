@@ -14,6 +14,7 @@ private:
 	Game& myGame;
 	glm::vec2 myTexSize;
 	glm::vec2 myMousePos;
+	glm::ivec2 myGridDims{ 15, 10 };
 	int myPaintMode = 0;
 	float myBrushRadius = 0.003f;
 };

@@ -10,6 +10,7 @@
             "myEntries":[
                 { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },
+                { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":0, "myArraySize":1 },
                 { "myUniformType":1, "myArraySize":1 }
             ]

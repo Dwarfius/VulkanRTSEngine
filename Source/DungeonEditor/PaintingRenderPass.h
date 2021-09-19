@@ -38,6 +38,7 @@ public:
 	{
 		glm::vec2 myTexSize;
 		glm::vec2 myMousePos;
+		glm::ivec2 myGridDims;
 		int myPaintMode;
 		float myBrushSize;
 	};
@@ -84,6 +85,7 @@ public:
 	{
 		const glm::vec2 myTexSize;
 		const glm::vec2 myMousePos;
+		const glm::ivec2 myGridDims;
 		const int myPaintMode;
 		const float myBrushRadius;
 	};
