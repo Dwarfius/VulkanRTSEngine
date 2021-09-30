@@ -272,7 +272,7 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	// to avoid accumulating roll from quaternion applications, have to apply then separately
 	const glm::vec2 mouseDelta = Input::GetMouseDelta();
 
-	glm::vec3 pitchDelta(-mouseDelta.y, 0.f, 0.f);
+	glm::vec3 pitchDelta(mouseDelta.y, 0.f, 0.f);
 	pitchDelta *= myMouseSensitivity;
 	const glm::quat pitchRot(glm::radians(pitchDelta));
 

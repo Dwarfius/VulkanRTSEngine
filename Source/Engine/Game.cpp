@@ -126,6 +126,8 @@ void Game::Init(bool aUseDefaultCompositePass)
 			graphics->AddRenderPassDependency(FinalCompositeRenderPass::kId, ImGUIRenderPass::kId);
 		}
 		myCamera = new Camera(graphics->GetWidth(), graphics->GetHeight());
+		myCamera->GetTransform().SetPos(glm::vec3(0, 0, 5));
+		myCamera->GetTransform().LookAt(glm::vec3(0, 0, 0));
 	}
 
 	// TODO: has implicit dependency on window initialized - make explicit!
