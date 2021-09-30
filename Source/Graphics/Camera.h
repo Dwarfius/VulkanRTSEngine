@@ -65,6 +65,7 @@ public:
 	constexpr static float kFarPlane = 10000.f;
 	constexpr static float kFOV = 45;
 
+	Camera() = default;
 	Camera(float aWidth, float aHeight, bool anOrthoMode = false);
 
 	glm::mat4 Get() const { return myVP; }

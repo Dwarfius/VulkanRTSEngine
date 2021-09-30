@@ -27,7 +27,7 @@ void Camera::Recalculate(float aWidth, float aHeight)
 	
 	if (myOrthoMode)
 	{
-		myProjMatrix = glm::ortho(0.f, aWidth, 0.f, aHeight);
+		myProjMatrix = glm::ortho(0.f, aWidth, 0.f, aHeight, kNearPlane, kFarPlane);
 	}
 	else
 	{
@@ -51,6 +51,6 @@ void Camera::SetProjOrtho(float aLeft, float aRight, float aBottom, float aTop)
 {
 	myOrthoMode = true;
 
-	myProjMatrix = glm::ortho(aLeft, aRight, aBottom, aTop);
-	myVP = myProjMatrix;
+	myProjMatrix = glm::ortho(aLeft, aRight, aBottom, aTop, kNearPlane, kFarPlane);
+	myVP = myProjMatrix * myViewMatrix;
 }
