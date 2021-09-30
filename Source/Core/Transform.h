@@ -3,7 +3,7 @@
 class Serializer;
 
 // class that exposes utility functions around translation, rotation and scaling
-// built around the left-hand coordinate system. Provides pivot functionality
+// built around the right-hand coordinate system. Provides pivot functionality
 class Transform
 {
 public:
@@ -11,9 +11,9 @@ public:
 	Transform();
 	Transform(glm::vec3 aPos, glm::quat aRot, glm::vec3 aScale);
 
-	glm::vec3 GetRight() const { return myRotation * glm::vec3(1, 0, 0); }
-	glm::vec3 GetForward() const { return myRotation * glm::vec3(0, 1, 0); }
-	glm::vec3 GetUp() const { return myRotation * glm::vec3(0, 0, 1); }
+	glm::vec3 GetRight() const { return myRotation * glm::vec3(-1, 0, 0); }
+	glm::vec3 GetForward() const { return myRotation * glm::vec3(0, 0, 1); }
+	glm::vec3 GetUp() const { return myRotation * glm::vec3(0, 1, 0); }
 
 	glm::vec3 GetPos() const { return myPos; }
 	void Translate(glm::vec3 aDelta) { myPos += aDelta; }

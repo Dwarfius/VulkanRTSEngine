@@ -111,7 +111,7 @@ glm::quat Transform::RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest)
 		}
 
 		rotationAxis = normalize(rotationAxis);
-		return angleAxis(180.f, rotationAxis);
+		return angleAxis(glm::pi<float>(), rotationAxis);
 	}
 
 	rotationAxis = glm::cross(aStart, aDest);
