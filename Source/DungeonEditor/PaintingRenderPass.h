@@ -4,6 +4,7 @@
 #include <Graphics/FrameBuffer.h>
 #include <Core/StaticString.h>
 #include <Graphics/UniformAdapter.h>
+#include <Graphics/Camera.h>
 
 class GPUPipeline;
 class Pipeline;
@@ -36,6 +37,7 @@ public:
 
 	struct Params
 	{
+		Camera myCamera;
 		glm::vec2 myTexSize;
 		glm::vec2 myMousePos;
 		glm::ivec2 myGridDims;

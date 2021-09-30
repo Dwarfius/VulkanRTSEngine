@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Graphics/Camera.h>
+
 class Game;
 
 class Editor
@@ -12,6 +14,7 @@ private:
 	void Draw();
 
 	Game& myGame;
+	Camera myCamera;
 	glm::vec2 myTexSize;
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims{ 15, 10 };

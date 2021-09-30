@@ -3,6 +3,8 @@
 
 #include <Engine/Input.h>
 #include <Engine/Systems/ImGUI/ImGUIRendering.h>
+#include <Engine/Graphics/Adapters/ObjectMatricesAdapter.h>
+#include <Engine/Graphics/Adapters/AdapterSourceData.h>
 
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUModel.h>
@@ -41,10 +43,9 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	params.myCount = 6;
 	job.SetDrawParams(params);
 
-	Camera dudCamera(aGraphics.GetWidth(), aGraphics.GetHeight());
-	PainterAdapter::Source source{ 
+	PainterAdapter::Source source{
 		aGraphics,
-		dudCamera, 
+		myParams.myCamera,
 		myParams.myTexSize,
 		myParams.myMousePos,
 		myParams.myGridDims,
@@ -122,11 +123,12 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 {
 	const Source& data = static_cast<const Source&>(aData);
 
-	aUB.SetUniform(0, 0, data.myTexSize);
+	aUB.SetUniform(0, 0, data.myCam.Get());
+	aUB.SetUniform(1, 0, data.myTexSize);
 	const glm::vec2 mousePos(data.myMousePos.x, data.myTexSize.y - data.myMousePos.y);
-	aUB.SetUniform(1, 0, mousePos);
+	aUB.SetUniform(2, 0, mousePos);
 	const glm::vec2 gridCellSize = data.myTexSize / glm::vec2(data.myGridDims);
-	aUB.SetUniform(2, 0, gridCellSize);
-	aUB.SetUniform(3, 0, data.myPaintMode);
-	aUB.SetUniform(4, 0, data.myBrushRadius);
+	aUB.SetUniform(3, 0, gridCellSize);
+	aUB.SetUniform(4, 0, data.myPaintMode);
+	aUB.SetUniform(5, 0, data.myBrushRadius);
 }

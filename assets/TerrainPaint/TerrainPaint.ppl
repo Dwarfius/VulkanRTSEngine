@@ -1,13 +1,14 @@
 {  
     "type":0,
     "shaders":[
-        "Engine/compositeVert.shd",
+        "TerrainPaint/PaintVert.shd",
         "TerrainPaint/PaintFrag.shd"
     ],
     "descriptors":[
         { 
             "myUniformAdapter":"PainterAdapter",
             "myEntries":[
+                { "myUniformType":5, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },

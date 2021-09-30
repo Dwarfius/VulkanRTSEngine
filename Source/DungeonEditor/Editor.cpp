@@ -12,10 +12,20 @@
 Editor::Editor(Game& aGame)
 	: myGame(aGame)
 {
+	const Graphics* graphics = myGame.GetGraphics();
 	myTexSize = glm::vec2(
-		myGame.GetGraphics()->GetWidth(), 
-		myGame.GetGraphics()->GetHeight()
+		graphics->GetWidth(),
+		graphics->GetHeight()
 	);
+
+	myCamera = Camera(
+		graphics->GetWidth(),
+		graphics->GetHeight(),
+		true
+	);
+	Transform& transf = myCamera.GetTransform();
+	transf.SetPos(glm::vec3(0, 0, 1));
+	transf.LookAt(glm::vec3(0, 0, 0));
 
 	myMousePos = Input::GetMousePos();
 }
@@ -49,7 +59,10 @@ void Editor::Run()
 	Draw();
 
 	Graphics& graphics = *myGame.GetGraphics();
+	myCamera.Recalculate(graphics.GetWidth(), graphics.GetHeight());
+
 	PaintingRenderPass::Params params{
+		myCamera,
 		myTexSize,
 		myMousePos,
 		myGridDims,
