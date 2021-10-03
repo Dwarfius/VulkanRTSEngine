@@ -1,0 +1,43 @@
+#version 420
+
+in vec2 uvsOut;
+
+uniform sampler2D paintTexture;
+
+layout(location = 0) out vec4 outColor;
+
+layout (std140, binding = 0) uniform PainterAdapter
+{
+    mat4 MVP;
+    vec2 CanvasSize;
+    vec2 TexSize;
+    vec2 MousePos;
+    vec2 GridCellSize;
+    int IsDrawing;
+    float BrushSize;
+};
+
+vec2 GridScale()
+{
+    return floor(CanvasSize / TexSize);
+}
+
+bool IsGridPixel()
+{
+    vec2 coordsWS = uvsOut * TexSize;
+    vec2 gridScale = GridScale();
+    return int(mod(coordsWS.x, GridCellSize.x)) <= gridScale.x
+        || int(mod(coordsWS.y, GridCellSize.y)) <= gridScale.y;
+}
+
+vec4 ApplyGridColor(bool aIsGrid, vec4 aBaseColor)
+{
+    return aIsGrid ? vec4(0.5, 0.5, 0.5, 1) : aBaseColor;
+}
+
+void main() 
+{
+    bool isGrid = IsGridPixel();
+    vec4 baseColor = texture(paintTexture, uvsOut);
+    outColor = ApplyGridColor(isGrid, baseColor);
+}

@@ -52,24 +52,39 @@ void Editor::Run()
 
 	if (!ignoreMouse)
 	{
-		myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
-		myBrushRadius = glm::clamp(myBrushRadius, 0.00001f, 0.2f);
+		if (Input::GetKey(Input::Keys::Control))
+		{
+			myScale += Input::GetMouseWheelDelta() / 100.f;
+		}
+		else
+		{
+			myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
+			myBrushRadius = glm::clamp(myBrushRadius, 0.00001f, 0.2f);
+		}
 	}
 
 	Draw();
 
 	Graphics& graphics = *myGame.GetGraphics();
-	myCamera.Recalculate(graphics.GetWidth(), graphics.GetHeight());
+	const float scaledWidth = myScale * graphics.GetWidth();
+	const float scaledHeight = myScale * graphics.GetHeight();
+	myCamera.Recalculate(scaledWidth, scaledHeight);
 
-	PaintingRenderPass::Params params{
+	const glm::mat4 invProj = glm::inverse(myCamera.GetProj());
+	const glm::vec2 mousePosScreenCoords = glm::vec2(myMousePos.x, graphics.GetHeight() - myMousePos.y);
+	const glm::vec2 mouseRelPos = mousePosScreenCoords / glm::vec2(graphics.GetWidth(), graphics.GetHeight());
+	const glm::vec2 normMouseRelPos = mouseRelPos * 2.f - glm::vec2(1.f);
+	const glm::vec2 adjustedMousePos = invProj * glm::vec4(normMouseRelPos.x, normMouseRelPos.y, 0, 1);
+	PaintParams params{
 		myCamera,
 		myTexSize,
-		myMousePos,
+		adjustedMousePos,
 		myGridDims,
 		myPaintMode,
 		myBrushRadius
 	};
 	graphics.GetRenderPass<PaintingRenderPass>()->SetParams(params);
+	graphics.GetRenderPass<DisplayRenderPass>()->SetParams(params);
 }
 
 void Editor::Draw()
@@ -88,11 +103,14 @@ void Editor::Draw()
 		ImGui::InputInt2("Tex Size", size);
 		myTexSize = glm::vec2(size[0], size[1]);
 
-		ImGui::SliderFloat("Brush size", &myBrushRadius, 0.00001f, 0.2f);
+		ImGui::SliderFloat("Brush size(MWheel)", &myBrushRadius, 0.00001f, 0.2f);
 
 		ImGui::InputInt2("Grid Dims", glm::value_ptr(myGridDims));
 		myGridDims.x = std::max(myGridDims.x, 1);
 		myGridDims.y = std::max(myGridDims.y, 1);
+
+		ImGui::SliderFloat("Canvas Scale(Ctrl + MWheel)", &myScale, 0.01f, 4.f);
+
 	}
 	ImGui::End();
 }

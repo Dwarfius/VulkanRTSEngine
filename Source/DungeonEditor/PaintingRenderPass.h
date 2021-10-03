@@ -30,23 +30,24 @@ struct OtherPaintingFrameBuffer
 	constexpr static FrameBuffer kDescriptor = PaintingFrameBuffer::kDescriptor;
 };
 
+struct PaintParams
+{
+	Camera myCamera;
+	glm::vec2 myTexSize;
+	glm::vec2 myMousePos;
+	glm::ivec2 myGridDims;
+	int myPaintMode;
+	float myBrushSize;
+};
+
 class PaintingRenderPass : public IRenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("PaintingRenderPass");
-
-	struct Params
-	{
-		Camera myCamera;
-		glm::vec2 myTexSize;
-		glm::vec2 myMousePos;
-		glm::ivec2 myGridDims;
-		int myPaintMode;
-		float myBrushSize;
-	};
+	
 public:
 	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
-	void SetParams(const Params& aParams) { myParams = aParams; }
+	void SetParams(const PaintParams& aParams) { myParams = aParams; }
 
 	std::string_view GetWriteBuffer() const;
 
@@ -58,7 +59,7 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	Params myParams;
+	PaintParams myParams;
 	bool myWriteToOther = false;
 };
 
@@ -66,8 +67,9 @@ class DisplayRenderPass : public IRenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
-	void SetPipeline(Handle<GPUPipeline> aPipeline) { myPipeline = aPipeline; }
+	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
 	void SetReadBuffer(std::string_view aFrameBuffer) { myReadFrameBuffer = aFrameBuffer; }
+	void SetParams(const PaintParams& aParams) { myParams = aParams; }
 
 private:
 	void SubmitJobs(Graphics& aGraphics) final;
@@ -76,6 +78,8 @@ private:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
+	std::shared_ptr<UniformBlock> myBlock;
+	PaintParams myParams;
 	std::string_view myReadFrameBuffer;
 };
 

@@ -1,0 +1,25 @@
+#version 420
+
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 uvs;
+
+out vec2 uvsOut;
+
+layout (std140, binding = 0) uniform PainterAdapter
+{
+    mat4 MVP;
+    vec2 CanvasSize;
+    vec2 TexSize;
+    vec2 MousePos;
+    vec2 GridCellSize;
+    int IsDrawing;
+    float BrushSize;
+};
+
+void main() 
+{
+    vec2 normalizedPos = position / 2 + vec2(0.5, 0.5);
+    vec2 fullScreenPos = normalizedPos * TexSize;
+    gl_Position = MVP * vec4(fullScreenPos, 0, 1);
+    uvsOut = uvs;
+}

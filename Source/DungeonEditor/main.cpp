@@ -45,13 +45,13 @@ int main()
 	{
 		DisplayRenderPass* pass = new DisplayRenderPass();
 		graphics.AddRenderPass(pass);
-		graphics.AddRenderPassDependency(DisplayRenderPass::kId, ImGUIRenderPass::kId);
+		graphics.AddRenderPassDependency(ImGUIRenderPass::kId, DisplayRenderPass::kId);
 		graphics.AddRenderPassDependency(DisplayRenderPass::kId, PaintingRenderPass::kId);
 
 		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
-			"Engine/composite.ppl"
+			"TerrainPaint/Display.ppl"
 		);
-		pass->SetPipeline(graphics.GetOrCreate(pipeline).Get<GPUPipeline>());
+		pass->SetPipeline(pipeline, graphics);
 	}
 
 	graphics.AddNamedFrameBuffer(

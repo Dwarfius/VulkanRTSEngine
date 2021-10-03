@@ -1,8 +1,8 @@
 {  
     "type":0,
     "shaders":[
-        "TerrainPaint/PaintVert.shd",
-        "TerrainPaint/PaintFrag.shd"
+        "TerrainPaint/DisplayVert.shd",
+        "TerrainPaint/DisplayFrag.shd"
     ],
     "descriptors":[
         { 

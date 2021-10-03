@@ -20,4 +20,5 @@ private:
 	glm::ivec2 myGridDims{ 15, 10 };
 	int myPaintMode = 0;
 	float myBrushRadius = 0.003f;
+	float myScale = 1.f;
 };
