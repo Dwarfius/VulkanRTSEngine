@@ -33,6 +33,7 @@ struct OtherPaintingFrameBuffer
 struct PaintParams
 {
 	Camera myCamera;
+	glm::vec3 myColor;
 	glm::vec2 myTexSize;
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims;
@@ -89,6 +90,7 @@ class PainterAdapter : public UniformAdapter
 public:
 	struct Source : SourceData
 	{
+		const glm::vec3 myColor;
 		const glm::vec2 myTexSize;
 		const glm::vec2 myMousePos;
 		const glm::ivec2 myGridDims;

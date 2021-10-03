@@ -9,6 +9,7 @@ layout(location = 0) out vec4 outColor;
 layout (std140, binding = 0) uniform PainterAdapter
 {
     mat4 MVP;
+    vec3 Color;
     vec2 CanvasSize;
     vec2 TexSize;
     vec2 MousePos;

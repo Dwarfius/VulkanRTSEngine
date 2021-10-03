@@ -9,6 +9,7 @@
             "myUniformAdapter":"PainterAdapter",
             "myEntries":[
                 { "myUniformType":5, "myArraySize":1 },
+                { "myUniformType":3, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },
                 { "myUniformType":2, "myArraySize":1 },

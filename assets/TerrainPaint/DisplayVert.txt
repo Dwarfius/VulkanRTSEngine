@@ -8,6 +8,7 @@ out vec2 uvsOut;
 layout (std140, binding = 0) uniform PainterAdapter
 {
     mat4 MVP;
+    vec3 Color;
     vec2 CanvasSize;
     vec2 TexSize;
     vec2 MousePos;

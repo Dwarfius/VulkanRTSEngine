@@ -10,6 +10,7 @@ layout(location = 1) out vec4 outColor;
 layout (std140, binding = 0) uniform PainterAdapter
 {
     mat4 MVP;
+    vec3 Color;
     vec2 CanvasSize;
     vec2 TexSize;
     vec2 MousePos;
@@ -27,37 +28,33 @@ bool IsNearMouse()
     return dist < BrushSize;
 }
 
-vec4 GetPaintColor(bool aIsInside)
+vec4 ApplyPaintColor(bool aIsInside, vec4 aBaseColor)
 {
     if(IsDrawing > 0)
     {
-        // color pixel under mouse white, otherwise black
         return aIsInside ? 
-            (IsDrawing == 1 ? vec4(1, 1, 1, 1) : -vec4(1, 1, 1, 0)) : 
-            vec4(0, 0, 0, 1);
+            (IsDrawing == 1 ? vec4(Color, 1) : vec4(0)) : aBaseColor;
     }
     else if(IsDrawing == -1)
     {
-        return -vec4(1, 1, 1, 0);
+        return vec4(0);
     }
     else
     {
-        return vec4(0, 0, 0, 1);
+        return aBaseColor;
     }
 }
 
-vec4 GetMousePointerColor(bool aIsInside)
+vec4 GetMousePointerColor(bool aIsInside, vec4 aBaseColor)
 {
-    return aIsInside ? vec4(0, 0, 1, 1) : vec4(0, 0, 0, 0);
+    return aIsInside ? vec4(Color, 1) : aBaseColor;
 }
 
 void main() 
 {
     bool isInside = IsNearMouse();
-
-    vec4 paintColor = GetPaintColor(isInside);
     vec4 baseColor = texture(prevFrame, uvsOut);
-    outColor = baseColor + paintColor;
+    outColor = ApplyPaintColor(isInside, baseColor);
 
-    finalColor = outColor + GetMousePointerColor(isInside);
+    finalColor = GetMousePointerColor(isInside, outColor);
 }
