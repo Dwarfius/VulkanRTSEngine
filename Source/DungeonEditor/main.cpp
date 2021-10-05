@@ -2,14 +2,8 @@
 
 #include <Engine/Game.h>
 #include <Engine/Systems/ImGUI/ImGUIRendering.h>
-#include <Engine/Graphics/RenderPasses/FinalCompositeRenderPass.h>
 
-#include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/UniformAdapterRegister.h>
-
-#include <Core/Resources/BinarySerializer.h>
-#include <Core/Resources/JsonSerializer.h>
-#include <Core/Utils.h>
 
 #include "Editor.h"
 #include "PaintingRenderPass.h"
