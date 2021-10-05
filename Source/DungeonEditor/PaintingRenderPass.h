@@ -18,7 +18,10 @@ struct PaintingFrameBuffer
 			{ FrameBuffer::AttachmentType::Texture, ITexture::Format::UNorm_RGBA },
 			// composite of terrain + UI
 			{ FrameBuffer::AttachmentType::Texture, ITexture::Format::UNorm_RGBA }
-		}
+		},
+		{},
+		{},
+		glm::ivec2{800, 600}
 	};
 	constexpr static uint8_t kFinalColor = 0;
 	constexpr static uint8_t kPaintingColor = 1;
@@ -51,9 +54,10 @@ public:
 	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
 	void SetParams(const PaintParams& aParams) { myParams = aParams; }
 
-	std::string_view GetWriteBuffer() const;
-
 private:
+	std::string_view GetWriteBuffer() const;
+	std::string_view GetReadBuffer() const;
+
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }

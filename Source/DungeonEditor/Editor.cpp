@@ -13,10 +13,7 @@ Editor::Editor(Game& aGame)
 	: myGame(aGame)
 {
 	const Graphics* graphics = myGame.GetGraphics();
-	myTexSize = glm::vec2(
-		graphics->GetWidth(),
-		graphics->GetHeight()
-	);
+	myTexSize = PaintingFrameBuffer::kDescriptor.mySize;
 
 	myCamera = Camera(
 		graphics->GetWidth(),

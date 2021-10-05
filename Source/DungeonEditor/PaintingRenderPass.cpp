@@ -28,6 +28,13 @@ std::string_view PaintingRenderPass::GetWriteBuffer() const
 		static_cast<std::string_view>(PaintingFrameBuffer::kName);
 }
 
+std::string_view PaintingRenderPass::GetReadBuffer() const
+{
+	return !myWriteToOther ?
+		static_cast<std::string_view>(OtherPaintingFrameBuffer::kName) :
+		static_cast<std::string_view>(PaintingFrameBuffer::kName);
+}
+
 void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 {
 	if (!myPipeline.IsValid() ||
@@ -73,15 +80,16 @@ void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGrap
 	aGraphics.GetRenderPass<DisplayRenderPass>()->SetReadBuffer(GetWriteBuffer());
 
 	aContext.myFrameBufferReadTextures[0] = {
-		myWriteToOther ?
-			static_cast<std::string_view>(PaintingFrameBuffer::kName) :
-			static_cast<std::string_view>(OtherPaintingFrameBuffer::kName),
+		GetReadBuffer(),
 		PaintingFrameBuffer::kPaintingColor,
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
+	const int width = static_cast<int>(myParams.myTexSize.x);
+	const int height = static_cast<int>(myParams.myTexSize.y);
+	aGraphics.ResizeNamedFrameBuffer(GetWriteBuffer(), glm::ivec2(width, height));
+	aContext.myViewportSize[0] = width;
+	aContext.myViewportSize[1] = height;
 	aContext.myEnableDepthTest = false;
 }
 
