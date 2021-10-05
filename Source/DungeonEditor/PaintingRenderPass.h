@@ -35,6 +35,7 @@ struct PaintParams
 	Camera myCamera;
 	glm::vec3 myColor;
 	glm::vec2 myTexSize;
+	glm::vec2 myPrevMousePos;
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims;
 	int myPaintMode;
@@ -92,7 +93,8 @@ public:
 	{
 		const glm::vec3 myColor;
 		const glm::vec2 myTexSize;
-		const glm::vec2 myMousePos;
+		const glm::vec2 myMousePosStart;
+		const glm::vec2 myMousePosEnd;
 		const glm::ivec2 myGridDims;
 		const int myPaintMode;
 		const float myBrushRadius;

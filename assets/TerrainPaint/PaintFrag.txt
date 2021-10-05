@@ -13,19 +13,40 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec3 Color;
     vec2 CanvasSize;
     vec2 TexSize;
-    vec2 MousePos;
+    vec2 MousePosStart;
+    vec2 MousePosEnd;
     vec2 GridCellSize;
     int IsDrawing;
     float BrushSize;
 };
 
+float distanceSqr(vec2 aStart, vec2 aEnd)
+{
+    vec2 dist = aEnd - aStart;
+    return dot(dist, dist);
+}
+
 bool IsNearMouse()
 {
-    vec2 mouseRel = MousePos / TexSize;
-    mouseRel.x = clamp(mouseRel.x, 0, 1);
-    mouseRel.y = clamp(mouseRel.y, 0, 1);
-    float dist = distance(uvsOut, mouseRel);
-    return dist < BrushSize;
+    vec2 mStart = MousePosStart / TexSize;
+    mStart.x = clamp(mStart.x, 0, 1);
+    mStart.y = clamp(mStart.y, 0, 1);
+
+    vec2 mEnd = MousePosEnd / TexSize;
+    mEnd.x = clamp(mEnd.x, 0, 1);
+    mEnd.y = clamp(mEnd.y, 0, 1);
+
+    float lineDistSqr = distanceSqr(mStart, mEnd);
+    if(lineDistSqr != 0)
+    {
+        float t = max(0, min(1, dot(uvsOut - mStart, mEnd - mStart) / lineDistSqr));
+        vec2 projOnLine = mStart + t * (mEnd - mStart);
+        return distance(projOnLine, uvsOut) < BrushSize;
+    }
+    else
+    {
+        return distance(uvsOut, mEnd) < BrushSize;
+    }
 }
 
 vec4 ApplyPaintColor(bool aIsInside, vec4 aBaseColor)

@@ -28,6 +28,7 @@ Editor::Editor(Game& aGame)
 	transf.LookAt(glm::vec3(0, 0, 0));
 
 	myMousePos = Input::GetMousePos();
+	myPrevMousePos = myMousePos;
 }
 
 void Editor::Run()
@@ -42,20 +43,25 @@ void Editor::Run()
 	const float scaledHeight = myScale * height;
 	myCamera.Recalculate(scaledWidth, scaledHeight);
 
-	const glm::mat4 invProj = glm::inverse(myCamera.GetProj());
-	const glm::vec2 mousePosScreenCoords = glm::vec2(
-		myMousePos.x,
-		height - (myMousePos.y)
-	);
-	const glm::vec2 mouseRelPos = mousePosScreenCoords / glm::vec2(width, height);
-	const glm::vec2 normMouseRelPos = mouseRelPos * 2.f - glm::vec2(1.f);
-	const glm::vec2 adjustedMousePos = invProj * glm::vec4(normMouseRelPos.x, normMouseRelPos.y, 0, 1);
-	const glm::vec2 offset = myCamera.GetTransform().GetPos();
+	const glm::mat4 invProj = glm::inverse(myCamera.Get());
+	auto ProjectMouse = [&](glm::vec2 aMousePos)
+	{
+		const glm::vec2 mousePosScreenCoords = glm::vec2(
+			aMousePos.x,
+			height - (aMousePos.y)
+		);
+		const glm::vec2 mouseRelPos = mousePosScreenCoords / glm::vec2(width, height);
+		const glm::vec2 normMouseRelPos = mouseRelPos * 2.f - glm::vec2(1.f);
+		const glm::vec2 adjustedMousePos = invProj * glm::vec4(normMouseRelPos.x, normMouseRelPos.y, 0, 1);
+		return adjustedMousePos;
+	};
+	
 	PaintParams params{
 		myCamera,
 		myColor,
 		myTexSize,
-		adjustedMousePos + glm::vec2(offset.x, offset.y),
+		ProjectMouse(myPrevMousePos),
+		ProjectMouse(myMousePos),
 		myGridDims,
 		myPaintMode,
 		myBrushRadius
@@ -66,6 +72,7 @@ void Editor::Run()
 
 void Editor::ProcessInput()
 {
+	myPrevMousePos = myMousePos;
 	myMousePos = Input::GetMousePos();
 
 	myPaintMode = 0; // nothing

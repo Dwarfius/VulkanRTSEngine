@@ -11,7 +11,8 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec3 Color;
     vec2 CanvasSize;
     vec2 TexSize;
-    vec2 MousePos;
+    vec2 MousePosStart;
+    vec2 MousePosEnd;
     vec2 GridCellSize;
     int IsDrawing;
     float BrushSize;

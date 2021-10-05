@@ -48,6 +48,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		myParams.myCamera,
 		myParams.myColor,
 		myParams.myTexSize,
+		myParams.myPrevMousePos,
 		myParams.myMousePos,
 		myParams.myGridDims,
 		myParams.myPaintMode,
@@ -113,6 +114,7 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 		myParams.myCamera,
 		myParams.myColor,
 		myParams.myTexSize,
+		myParams.myPrevMousePos,
 		myParams.myMousePos,
 		myParams.myGridDims,
 		myParams.myPaintMode,
@@ -159,9 +161,10 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 	const glm::vec2 size(2 / proj[0][0], 2 / proj[1][1]);
 	aUB.SetUniform(2, 0, size);
 	aUB.SetUniform(3, 0, data.myTexSize);
-	aUB.SetUniform(4, 0, data.myMousePos);
+	aUB.SetUniform(4, 0, data.myMousePosStart);
+	aUB.SetUniform(5, 0, data.myMousePosEnd);
 	const glm::vec2 gridCellSize = data.myTexSize / glm::vec2(data.myGridDims);
-	aUB.SetUniform(5, 0, gridCellSize);
-	aUB.SetUniform(6, 0, data.myPaintMode);
-	aUB.SetUniform(7, 0, data.myBrushRadius);
+	aUB.SetUniform(6, 0, gridCellSize);
+	aUB.SetUniform(7, 0, data.myPaintMode);
+	aUB.SetUniform(8, 0, data.myBrushRadius);
 }
