@@ -24,4 +24,7 @@ struct FrameBuffer
 
 	Attachment myDepth{ AttachmentType::None, ITexture::Format::SNorm_R };
 	Attachment myStencil{ AttachmentType::None, ITexture::Format::SNorm_R };
+
+	constexpr static glm::ivec2 kFullScreen{ -1, -1 };
+	glm::ivec2 mySize = kFullScreen;
 };

@@ -25,7 +25,9 @@ public:
 	uint32_t GetDepthTexture() const;
 	uint32_t GetStencilTexture() const;
 
-	void OnResize(GraphicsGL& aGraphics);
+	bool IsFullScreen() const { return myIsFullscreen; }
+	void SetIsFullScreen(bool aIsFullscreen) { myIsFullscreen = aIsFullscreen; }
+	void Resize(uint32_t aWidth, uint32_t aHeight);
 
 private:
 	struct Attachment
@@ -42,4 +44,5 @@ private:
 	Attachment myColorAttachments[FrameBuffer::kMaxColorAttachments];
 	Attachment myDepthAttachment;
 	Attachment myStencilAttachment;
+	bool myIsFullscreen = true;
 };

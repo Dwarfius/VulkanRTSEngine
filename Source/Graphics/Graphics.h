@@ -48,6 +48,7 @@ public:
 
 	virtual void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer);
 	const FrameBuffer& GetNamedFrameBuffer(std::string_view aName) const;
+	virtual void ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize) {}
 
 	// Notifies the rendering system about how many threads will access it
 	virtual void SetMaxThreads(uint32_t aMaxThreadCount) {}

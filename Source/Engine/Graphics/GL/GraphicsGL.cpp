@@ -179,6 +179,17 @@ void GraphicsGL::AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& 
 	myFrameBuffers.emplace(aName, FrameBufferGL(*this, aBuffer));
 }
 
+void GraphicsGL::ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize)
+{
+	Graphics::ResizeNamedFrameBuffer(aName, aSize);
+
+	auto iter = myFrameBuffers.find(aName);
+	ASSERT_STR(iter != myFrameBuffers.end(),
+		"FrameBuffer %s not registered!", aName.data());
+	iter->second.SetIsFullScreen(aSize == FrameBuffer::kFullScreen);
+	iter->second.Resize(aSize.x, aSize.y);
+}
+
 FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 {
 	auto iter = myFrameBuffers.find(aName);
@@ -214,9 +225,14 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 {
 	Graphics::OnResize(aWidth, aHeight);
 
+	const uint32_t width = static_cast<uint32_t>(aWidth);
+	const uint32_t height = static_cast<uint32_t>(aHeight);
 	for (auto& [key, frameBuffer] : myFrameBuffers)
 	{
-		frameBuffer.OnResize(*this);
+		if (frameBuffer.IsFullScreen())
+		{
+			frameBuffer.Resize(width, height);
+		}
 	}
 }
 

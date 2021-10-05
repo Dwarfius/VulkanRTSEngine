@@ -9,8 +9,13 @@ FrameBufferGL::FrameBufferGL(GraphicsGL& aGraphics, const FrameBuffer& aDescript
 	glGenFramebuffers(1, &myBuffer);
 	Bind();
 
-	const uint32_t width = static_cast<uint32_t>(aGraphics.GetWidth());
-	const uint32_t height = static_cast<uint32_t>(aGraphics.GetHeight());
+	myIsFullscreen = aDescriptor.mySize == FrameBuffer::kFullScreen;
+	const uint32_t width = static_cast<uint32_t>(
+		myIsFullscreen ? aGraphics.GetWidth() : aDescriptor.mySize.x
+	);
+	const uint32_t height = static_cast<uint32_t>(
+		myIsFullscreen ? aGraphics.GetHeight() : aDescriptor.mySize.y
+	);
 
 	for (uint8_t i = 0; i < FrameBuffer::kMaxColorAttachments; i++)
 	{
@@ -141,6 +146,7 @@ FrameBufferGL& FrameBufferGL::operator=(FrameBufferGL&& aOther) noexcept
 	}
 	myDepthAttachment = std::exchange(aOther.myDepthAttachment, myDepthAttachment);
 	myStencilAttachment = std::exchange(aOther.myStencilAttachment, myStencilAttachment);
+	myIsFullscreen = std::exchange(aOther.myIsFullscreen, myIsFullscreen);
 	return *this;
 }
 
@@ -171,11 +177,8 @@ uint32_t FrameBufferGL::GetStencilTexture() const
 	return myStencilAttachment.myRes;
 }
 
-void FrameBufferGL::OnResize(GraphicsGL& aGraphics)
+void FrameBufferGL::Resize(uint32_t aWidth, uint32_t aHeigth)
 {
-	const uint32_t width = static_cast<uint32_t>(aGraphics.GetWidth());
-	const uint32_t height = static_cast<uint32_t>(aGraphics.GetHeight());
-
 	auto ResizeTexture = [=](uint32_t aTexture, ITexture::Format aFormat) {
 		glBindTexture(GL_TEXTURE_2D, aTexture);
 
@@ -184,7 +187,7 @@ void FrameBufferGL::OnResize(GraphicsGL& aGraphics)
 		const GLenum pixelType = TextureGL::DeterminePixelDataType(aFormat);
 		
 		glTexImage2D(GL_TEXTURE_2D, 0, internFormat,
-			width, height,
+			aWidth, aHeigth,
 			0, format, pixelType, nullptr
 		);
 	};
@@ -193,7 +196,7 @@ void FrameBufferGL::OnResize(GraphicsGL& aGraphics)
 		glBindRenderbuffer(GL_RENDERBUFFER, aBuffer);
 
 		const GLint internFormat = TextureGL::TranslateInternalFormat(aFormat);
-		glRenderbufferStorage(GL_RENDERBUFFER, internFormat, width, height);
+		glRenderbufferStorage(GL_RENDERBUFFER, internFormat, aWidth, aHeigth);
 	};
 
 	for (Attachment& attachment : myColorAttachments)

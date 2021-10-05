@@ -18,6 +18,7 @@ public:
 	void CleanUp() final;
 
 	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) final;
+	void ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize) final;
 	[[nodiscard]]
 	FrameBufferGL& GetFrameBufferGL(std::string_view aName);
 
