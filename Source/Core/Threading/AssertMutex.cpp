@@ -5,48 +5,47 @@
 
 #include <sstream>
 
-AssertMutex::AssertMutex()
-	: myWriter(std::thread::id())
+void AssertMutex::Lock(std::source_location aLocation)
 {
-}
+	std::atomic_thread_fence(std::memory_order::acquire);
+	const char* funcName = myFuncName.load(std::memory_order::relaxed);
+	const char* fileName = myFileName.load(std::memory_order::relaxed);
+	uint_least32_t line = myLine.load(std::memory_order::relaxed);
 
-void AssertMutex::Lock()
-{
-	std::thread::id expectedId = std::thread::id();
-	std::thread::id currentThreadId = std::this_thread::get_id();
-	// might need to change away from the default memory order to improve perf
-	if (!myWriter.compare_exchange_strong(expectedId, currentThreadId))
+	myFuncName.store(aLocation.function_name(), std::memory_order::relaxed);
+	myFileName.store(aLocation.file_name(), std::memory_order::relaxed);
+	myLine.store(aLocation.line(), std::memory_order::relaxed);
+	std::atomic_thread_fence(std::memory_order::release);
+	if (myIsLocked.test_and_set())
 	{
 		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! Thread ";
-		stream << currentThreadId;
-		stream << " tried to lock mutex owned by ";
-		stream << expectedId;
+		stream << "Contention! "
+			<< aLocation.function_name()
+			<< " at "
+			<< aLocation.file_name()
+			<< ":"
+			<< aLocation.line()
+			<< " tried to lock mutex owned by "
+		    << funcName << " at " << fileName << ":" << line;
 		ASSERT_STR(false, stream.str().c_str());
 	}
 }
 
 void AssertMutex::Unlock()
 {
-	std::thread::id expectedId = std::this_thread::get_id();
-	std::thread::id invalidId = std::thread::id();
-	if (!myWriter.compare_exchange_strong(expectedId, invalidId))
-	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Magic! Thread ";
-		stream << std::this_thread::get_id();
-		stream << " tried to unlock mutex owned by ";
-		stream << expectedId;
-		ASSERT_STR(false, stream.str().c_str());
-	}
+	myIsLocked.clear();
+	myFuncName.store("", std::memory_order::relaxed);
+	myFileName.store("", std::memory_order::relaxed);
+	myLine.store(0, std::memory_order::relaxed);
+	std::atomic_thread_fence(std::memory_order::release);
 }
 
 // ========================
 
-AssertLock::AssertLock(AssertMutex& aMutex)
+AssertLock::AssertLock(AssertMutex& aMutex, std::source_location aLocation)
 	: myMutex(aMutex)
 {
-	myMutex.Lock();
+	myMutex.Lock(aLocation);
 }
 
 AssertLock::~AssertLock()

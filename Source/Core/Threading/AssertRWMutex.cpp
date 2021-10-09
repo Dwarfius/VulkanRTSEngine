@@ -5,101 +5,92 @@
 
 #include <sstream>
 
-AssertRWMutex::AssertRWMutex()
-	: myLock(0)
-	, myLastReadThreadId(std::thread::id())
-	, myWriteThreadId(std::thread::id())
+void AssertRWMutex::LockWrite(std::source_location aLocation)
 {
-}
-
-void AssertRWMutex::LockWrite()
-{
+	// we set these first so that they are available in case of detected contention
+	myWriteFuncName.store(aLocation.function_name(), std::memory_order::relaxed);
+	myWriteFileName.store(aLocation.file_name(), std::memory_order::relaxed);
+	myWriteLine.store(aLocation.line(), std::memory_order::relaxed);
+	std::atomic_thread_fence(std::memory_order::acq_rel);
+	const char* funcName = myReadFuncName.load(std::memory_order::relaxed);
+	const char* fileName = myReadFileName.load(std::memory_order::relaxed);
+	uint_least32_t line = myReadLine.load(std::memory_order::relaxed);
 	// most-significant bit is reserved for a write lock
 	// check whether we just locked a write-locked mutex
-	constexpr unsigned char writeVal = 1 << 7;
-	unsigned char currVal = myLock.fetch_or(writeVal);
+	unsigned char currVal = myLock.fetch_or(kWriteVal);
 	if (currVal) // if any of the bits are set, then a reader write/read-lock is active
 	{
 		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! Thread ";
-		stream << std::this_thread::get_id();
-		stream << " tried to lock mutex for write (W: ";
-		stream << myWriteThreadId << ", R: ";
-		stream << myLastReadThreadId << ")";
+		stream << "Contention! "
+			<< aLocation.function_name()
+			<< " at "
+			<< aLocation.file_name()
+			<< ":"
+			<< aLocation.line()
+			<< " tried to lock mutex for write while it's locked for read by "
+			<< funcName << " at " << fileName << ":" << line;
 		ASSERT_STR(false, stream.str().c_str());
 	}
-	myWriteThreadId = std::this_thread::get_id();
 }
 
 void AssertRWMutex::UnlockWrite()
 {
-	// check whether we just unlocked an write-unlocked mutex
-	// (double unlock) or it unlocked during a read
-	constexpr unsigned char writeVal = 1 << 7;
-	unsigned char currVal = myLock.fetch_xor(writeVal);
-	if (currVal != writeVal)
+	myLock.fetch_xor(kWriteVal);
 	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Magic! Thread ";
-		stream << std::this_thread::get_id();
-		stream << " tried to unlock mutex for write (W: ";
-		stream << myWriteThreadId << ", R: ";
-		stream << myLastReadThreadId << ")";
-		if (currVal > writeVal)
-		{
-			stream << " it was previously read locked!";
-		}
-		ASSERT_STR(false, stream.str().c_str());
+		myWriteFuncName.store("", std::memory_order::relaxed);
+		myWriteFileName.store("", std::memory_order::relaxed);
+		myWriteLine.store(0, std::memory_order::relaxed);
+		std::atomic_thread_fence(std::memory_order::release);
 	}
-	myWriteThreadId = std::thread::id();
 }
 
-void AssertRWMutex::LockRead()
+void AssertRWMutex::LockRead(std::source_location aLocation)
 {
+	// we set these first  so that they are available in case of detected contention
+	myReadFuncName.store(aLocation.function_name(), std::memory_order::relaxed);
+	myReadFileName.store(aLocation.file_name(), std::memory_order::relaxed);
+	myReadLine.store(aLocation.line(), std::memory_order::relaxed);
+	std::atomic_thread_fence(std::memory_order::acq_rel);
+	const char* funcName = myWriteFuncName.load(std::memory_order::relaxed);
+	const char* fileName = myWriteFileName.load(std::memory_order::relaxed);
+	uint_least32_t line = myWriteLine.load(std::memory_order::relaxed);
 	// check whether we've just read-locked a write-locked mutex
-	constexpr unsigned char writeVal = 1 << 7;
 	unsigned char currVal = myLock.fetch_add(1);
-	if (currVal & writeVal)
+	if (currVal & kWriteVal)
 	{
 		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! Thread ";
-		stream << std::this_thread::get_id();
-		stream << " tried to lock mutex for read (W: ";
-		stream << myWriteThreadId << ", R: ";
-		stream << myLastReadThreadId << ")";
+		stream << "Contention! "
+			<< aLocation.function_name()
+			<< " at "
+			<< aLocation.file_name()
+			<< ":"
+			<< aLocation.line()
+			<< " tried to lock mutex for read while it's locked for write by "
+			<< funcName << " at " << fileName << ":" << line;
 		ASSERT_STR(false, stream.str().c_str());
 	}
-	myLastReadThreadId = std::this_thread::get_id();
 }
 
 void AssertRWMutex::UnlockRead()
 {
-	// only check if were not unlocking an unlocked mutex
-	unsigned char currVal = myLock.fetch_sub(1);
-	if (currVal == 0)
+	uint8_t oldVal = myLock.fetch_sub(1);
+
+	// We only reset the last location if there are no more reads
+	if(oldVal == 1)
 	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Magic! Thread ";
-		stream << std::this_thread::get_id();
-		stream << " tried to unlock mutex for read (W: ";
-		stream << myWriteThreadId << ", R: ";
-		stream << myLastReadThreadId << ")";
-		ASSERT_STR(false, stream.str().c_str());
-	}
-	// check whether we have just removed the last read lock
-	if (currVal == 1)
-	{
-		// and if so, invalidate the thread index
-		myLastReadThreadId = std::thread::id();
+		myReadFuncName.store("", std::memory_order::relaxed);
+		myReadFileName.store("", std::memory_order::relaxed);
+		myReadLine.store(0, std::memory_order::relaxed);
+		std::atomic_thread_fence(std::memory_order::release);
 	}
 }
 
 // ========================
 
-AssertWriteLock::AssertWriteLock(AssertRWMutex& anRWMutex)
+AssertWriteLock::AssertWriteLock(AssertRWMutex& anRWMutex, std::source_location aLocation)
 	: myMutex(anRWMutex)
 {
-	myMutex.LockWrite();
+	myMutex.LockWrite(aLocation);
 }
 
 AssertWriteLock::~AssertWriteLock()
@@ -109,10 +100,10 @@ AssertWriteLock::~AssertWriteLock()
 
 // ========================
 
-AssertReadLock::AssertReadLock(AssertRWMutex& anRWMutex)
+AssertReadLock::AssertReadLock(AssertRWMutex& anRWMutex, std::source_location aLocation)
 	: myMutex(anRWMutex)
 {
-	myMutex.LockRead();
+	myMutex.LockRead(aLocation);
 }
 
 AssertReadLock::~AssertReadLock()

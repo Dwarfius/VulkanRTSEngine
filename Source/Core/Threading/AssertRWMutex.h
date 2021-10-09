@@ -4,31 +4,37 @@
 
 #include <atomic>
 #include <thread>
+#include <source_location>
 
 // A utility mutex that asserts on double write or write-while-read situations. 
 // Multiple read is accepted.
 class AssertRWMutex
 {
 public:
-	AssertRWMutex();
-
-	void LockWrite();
+	void LockWrite(std::source_location aLocation);
 	void UnlockWrite();
 
-	void LockRead();
+	void LockRead(std::source_location aLocation);
 	void UnlockRead();
 
 private:
-	std::atomic<unsigned char> myLock;
-	std::thread::id myLastReadThreadId; // for debug info
-	std::thread::id myWriteThreadId; // for debug info
+	constexpr static uint8_t kWriteVal = 1 << 7;
+
+	std::atomic<uint8_t> myLock = 0;
+	std::atomic<uint_least32_t> myWriteLine = 0;
+	std::atomic<const char*> myWriteFuncName = "";
+	std::atomic<const char*> myWriteFileName = "";
+	std::atomic<uint_least32_t> myReadLine = 0;
+	std::atomic<const char*> myReadFuncName = "";
+	std::atomic<const char*> myReadFileName = "";
 };
 
 // A locker utility that implements RAII on AssertRWMutex for read
 class AssertWriteLock
 {
 public:
-	AssertWriteLock(AssertRWMutex& anRWMutex);
+	AssertWriteLock(AssertRWMutex& anRWMutex, 
+		std::source_location aLocation = std::source_location::current());
 	~AssertWriteLock();
 
 private:
@@ -39,7 +45,8 @@ private:
 class AssertReadLock
 {
 public:
-	AssertReadLock(AssertRWMutex& anRWMutex);
+	AssertReadLock(AssertRWMutex& anRWMutex,
+		std::source_location aLocation = std::source_location::current());
 	~AssertReadLock();
 
 private:
