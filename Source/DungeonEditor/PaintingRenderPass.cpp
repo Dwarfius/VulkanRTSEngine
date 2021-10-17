@@ -9,6 +9,7 @@
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Camera.h>
 
@@ -45,10 +46,21 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	}
 
 	RenderJob job(myPipeline, aGraphics.GetFullScreenQuad(), {});
+	if (myParams.myPaintTexture.IsValid())
+	{
+		job.GetTextures().push_back(myParams.myPaintTexture);
+	}
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;
 	params.myCount = 6;
 	job.SetDrawParams(params);
+
+	glm::vec2 scaledSize(1.f);
+	if (myParams.myPaintTexture.IsValid())
+	{
+		glm::vec2 size = myParams.myPaintTexture->GetSize();
+		scaledSize = size / myParams.myPaintInverseScale;
+	}
 
 	PainterAdapter::Source source{
 		aGraphics,
@@ -58,6 +70,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		myParams.myPrevMousePos,
 		myParams.myMousePos,
 		myParams.myGridDims,
+		scaledSize,
 		myParams.myPaintMode,
 		myParams.myBrushSize
 	};
@@ -91,6 +104,8 @@ void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGrap
 	aContext.myViewportSize[0] = width;
 	aContext.myViewportSize[1] = height;
 	aContext.myEnableDepthTest = false;
+
+	aContext.myTexturesToActivate[0] = myParams.myPaintTexture.IsValid() ? 0 : -1;
 }
 
 void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
@@ -125,6 +140,7 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 		myParams.myPrevMousePos,
 		myParams.myMousePos,
 		myParams.myGridDims,
+		glm::vec2(),
 		myParams.myPaintMode,
 		myParams.myBrushSize
 	};
@@ -173,6 +189,7 @@ void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB
 	aUB.SetUniform(5, 0, data.myMousePosEnd);
 	const glm::vec2 gridCellSize = data.myTexSize / glm::vec2(data.myGridDims);
 	aUB.SetUniform(6, 0, gridCellSize);
-	aUB.SetUniform(7, 0, data.myPaintMode);
-	aUB.SetUniform(8, 0, data.myBrushRadius);
+	aUB.SetUniform(7, 0, data.myPaintSizeScaled);
+	aUB.SetUniform(8, 0, static_cast<int>(data.myPaintMode));
+	aUB.SetUniform(9, 0, data.myBrushRadius);
 }

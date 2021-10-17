@@ -1,8 +1,11 @@
 #pragma once
 
 #include <Graphics/Camera.h>
+#include <Core/RefCounted.h>
 
 class Game;
+enum class PaintMode : int;
+class GPUTexture;
 
 class Editor
 {
@@ -13,6 +16,8 @@ public:
 private:
 	void ProcessInput();
 	void Draw();
+	void DrawGeneralSettings();
+	void DrawPaintSettings();
 
 	Game& myGame;
 	Camera myCamera;
@@ -22,7 +27,12 @@ private:
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims{ 15, 10 };
 	glm::vec2 myDragStart{ 0, 0 };
-	int myPaintMode = 0;
+	PaintMode myPaintMode;
 	float myBrushRadius = 0.003f;
 	float myScale = 1.f;
+	bool myPaintingColor = true;
+
+	Handle<GPUTexture> myPaintTexture;
+	std::string myTexturePath;
+	float myInverseScale = 1.f;
 };

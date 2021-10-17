@@ -8,6 +8,7 @@
 
 class GPUPipeline;
 class Pipeline;
+class GPUTexture;
 
 struct PaintingFrameBuffer
 {
@@ -33,16 +34,27 @@ struct OtherPaintingFrameBuffer
 	constexpr static FrameBuffer kDescriptor = PaintingFrameBuffer::kDescriptor;
 };
 
+enum class PaintMode : int
+{
+	None = 0,
+	PaintColor = 1,
+	PaintTexture = 2,
+	EraseAll = -1,
+	ErasePtr = -2
+};
+
 struct PaintParams
 {
+	Handle<GPUTexture> myPaintTexture;
 	Camera myCamera;
 	glm::vec3 myColor;
 	glm::vec2 myTexSize;
 	glm::vec2 myPrevMousePos;
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims;
-	int myPaintMode;
+	PaintMode myPaintMode;
 	float myBrushSize;
+	float myPaintInverseScale;
 };
 
 class PaintingRenderPass : public IRenderPass
@@ -100,7 +112,8 @@ public:
 		const glm::vec2 myMousePosStart;
 		const glm::vec2 myMousePosEnd;
 		const glm::ivec2 myGridDims;
-		const int myPaintMode;
+		const glm::vec2 myPaintSizeScaled;
+		const PaintMode myPaintMode;
 		const float myBrushRadius;
 	};
 

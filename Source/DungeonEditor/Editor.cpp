@@ -7,10 +7,14 @@
 #include <Engine/Input.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
 
+#include <Graphics/Resources/Texture.h>
+#include <Graphics/Resources/GPUTexture.h>
+
 #include <Core/Resources/AssetTracker.h>
 
 Editor::Editor(Game& aGame)
 	: myGame(aGame)
+	, myPaintMode(PaintMode::None)
 {
 	const Graphics* graphics = myGame.GetGraphics();
 	myTexSize = PaintingFrameBuffer::kDescriptor.mySize;
@@ -54,6 +58,7 @@ void Editor::Run()
 	};
 	
 	PaintParams params{
+		myPaintTexture,
 		myCamera,
 		myColor,
 		myTexSize,
@@ -61,7 +66,8 @@ void Editor::Run()
 		ProjectMouse(myMousePos),
 		myGridDims,
 		myPaintMode,
-		myBrushRadius
+		myBrushRadius,
+		myInverseScale
 	};
 	graphics.GetRenderPass<PaintingRenderPass>()->SetParams(params);
 	graphics.GetRenderPass<DisplayRenderPass>()->SetParams(params);
@@ -72,20 +78,21 @@ void Editor::ProcessInput()
 	myPrevMousePos = myMousePos;
 	myMousePos = Input::GetMousePos();
 
-	myPaintMode = 0; // nothing
+	myPaintMode = PaintMode::None;
 	if (!ImGui::GetIO().WantCaptureMouse && !ImGui::GetIO().WantCaptureKeyboard)
 	{
 		if (Input::GetMouseBtn(0))
 		{
-			myPaintMode = 1; // paint
+			myPaintMode = myPaintingColor ? 
+				PaintMode::PaintColor : PaintMode::PaintTexture;
 		}
 		else if (Input::GetMouseBtn(1))
 		{
-			myPaintMode = 2; // erase under mouse
+			myPaintMode = PaintMode::ErasePtr;
 		}
 		else if (Input::GetKeyPressed(Input::Keys::Space))
 		{
-			myPaintMode = -1; // erase all
+			myPaintMode = PaintMode::EraseAll;
 		}
 
 		if (Input::GetKey(Input::Keys::Control))
@@ -118,27 +125,67 @@ void Editor::Draw()
 	std::lock_guard lock(myGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Editor"))
 	{
-		ImGui::TextWrapped("Paint with left mouse, erase with right mouse, "
-			"clear all with Space and change brush size with mouse wheel/bellow. "
-			"You can drag the canvas with middle mouse button, and zoom canvas with "
-			"Ctrl + MWheel."
-		);
-
-		int size[2]{
-			static_cast<int>(myTexSize.x),
-			static_cast<int>(myTexSize.y)
-		};
-		ImGui::InputInt2("Tex Size", size);
-		myTexSize = glm::vec2(size[0], size[1]);
-
-		ImGui::SliderFloat("Brush size(MWheel)", &myBrushRadius, 0.00001f, 0.2f);
-
-		ImGui::InputInt2("Grid Dims", glm::value_ptr(myGridDims));
-		myGridDims.x = std::max(myGridDims.x, 1);
-		myGridDims.y = std::max(myGridDims.y, 1);
-
-		ImGui::SliderFloat("Canvas Scale(Ctrl + MWheel)", &myScale, 0.01f, 4.f);
-		ImGui::ColorPicker3("Paint Color", glm::value_ptr(myColor));
+		DrawGeneralSettings();
+		ImGui::Separator();
+		DrawPaintSettings();
 	}
 	ImGui::End();
+}
+
+void Editor::DrawGeneralSettings()
+{
+	ImGui::TextWrapped("Paint with left mouse, erase with right mouse, "
+		"clear all with Space and change brush size with mouse wheel/bellow. "
+		"You can drag the canvas with middle mouse button, and zoom canvas with "
+		"Ctrl + MWheel."
+	);
+
+	int size[2]{
+		static_cast<int>(myTexSize.x),
+		static_cast<int>(myTexSize.y)
+	};
+	ImGui::InputInt2("Tex Size", size);
+	myTexSize = glm::vec2(size[0], size[1]);
+
+	ImGui::SliderFloat("Brush size(MWheel)", &myBrushRadius, 0.00001f, 0.2f);
+
+	ImGui::InputInt2("Grid Dims", glm::value_ptr(myGridDims));
+	myGridDims.x = std::max(myGridDims.x, 1);
+	myGridDims.y = std::max(myGridDims.y, 1);
+
+	ImGui::SliderFloat("Canvas Scale(Ctrl + MWheel)", &myScale, 0.01f, 4.f);
+}
+
+void Editor::DrawPaintSettings()
+{
+	ImGui::Checkbox("Paint With Color?", &myPaintingColor);
+	if (myPaintingColor)
+	{
+		ImGui::ColorPicker3("Paint Color", glm::value_ptr(myColor));
+		if (myPaintTexture.IsValid())
+		{
+			myPaintTexture = {};
+		}
+	}
+	else
+	{
+		bool changed = ImGui::InputText("Paint Texture", myTexturePath.data(), myTexturePath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+			[](ImGuiInputTextCallbackData* aData)
+		{
+			std::string* valueStr = static_cast<std::string*>(aData->UserData);
+			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
+			{
+				valueStr->resize(aData->BufTextLen);
+				aData->Buf = valueStr->data();
+			}
+			return 0;
+		}, &myTexturePath);
+		if (changed && !myTexturePath.empty())
+		{
+			Handle<Texture> texture = Texture::LoadFromDisk(myTexturePath);
+			myPaintTexture = myGame.GetGraphics()->GetOrCreate(texture, false).Get<GPUTexture>();
+		}
+
+		ImGui::DragFloat("Inverse Scale", &myInverseScale, 0.1f, 0.5f, 4.f);
+	}
 }
