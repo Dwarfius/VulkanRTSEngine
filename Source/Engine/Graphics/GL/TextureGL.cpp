@@ -84,8 +84,10 @@ uint32_t TextureGL::DeterminePixelDataType(Format aFormat)
 void TextureGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLTexture, "Recreating an existing texture!");
-
 	glGenTextures(1, &myGLTexture);
+
+	const Texture* texture = myResHandle.Get<const Texture>();
+	mySize = glm::vec2(texture->GetWidth(), texture->GetHeight());
 }
 
 bool TextureGL::OnUpload(Graphics& aGraphics)
