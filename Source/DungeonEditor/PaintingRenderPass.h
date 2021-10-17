@@ -5,6 +5,7 @@
 #include <Core/StaticString.h>
 #include <Graphics/UniformAdapter.h>
 #include <Graphics/Camera.h>
+#include <Core/RWBuffer.h>
 
 class GPUPipeline;
 class Pipeline;
@@ -64,11 +65,12 @@ public:
 	
 public:
 	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
-	void SetParams(const PaintParams& aParams) { myParams = aParams; }
+	void SetParams(const PaintParams& aParams);
 
 private:
 	std::string_view GetWriteBuffer() const;
 	std::string_view GetReadBuffer() const;
+	PaintParams GetParams() const;
 
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
@@ -77,7 +79,8 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	PaintParams myParams;
+	RWBuffer<PaintParams, 2> myParams;
+	mutable tbb::spin_mutex myParamsMutex;
 	bool myWriteToOther = false;
 };
 
@@ -87,9 +90,11 @@ public:
 	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
 	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
 	void SetReadBuffer(std::string_view aFrameBuffer) { myReadFrameBuffer = aFrameBuffer; }
-	void SetParams(const PaintParams& aParams) { myParams = aParams; }
+	void SetParams(const PaintParams& aParams);
 
 private:
+	PaintParams GetParams() const;
+
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
@@ -97,7 +102,8 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	PaintParams myParams;
+	RWBuffer<PaintParams, 2> myParams;
+	mutable tbb::spin_mutex myParamsMutex;
 	std::string_view myReadFrameBuffer;
 };
 

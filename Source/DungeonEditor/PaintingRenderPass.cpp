@@ -22,6 +22,13 @@ void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGrap
 	});
 }
 
+void PaintingRenderPass::SetParams(const PaintParams& aParams)
+{
+	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
+	myParams.Advance();
+	myParams.GetWrite() = aParams;
+}
+
 std::string_view PaintingRenderPass::GetWriteBuffer() const
 {
 	return myWriteToOther ?
@@ -36,6 +43,12 @@ std::string_view PaintingRenderPass::GetReadBuffer() const
 		static_cast<std::string_view>(PaintingFrameBuffer::kName);
 }
 
+PaintParams PaintingRenderPass::GetParams() const
+{
+	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
+	return myParams.GetRead();
+}
+
 void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 {
 	if (!myPipeline.IsValid() ||
@@ -45,10 +58,11 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		return;
 	}
 
+	const PaintParams paintParams = GetParams();
 	RenderJob job(myPipeline, aGraphics.GetFullScreenQuad(), {});
-	if (myParams.myPaintTexture.IsValid())
+	if (paintParams.myPaintTexture.IsValid())
 	{
-		job.GetTextures().push_back(myParams.myPaintTexture);
+		job.GetTextures().push_back(paintParams.myPaintTexture);
 	}
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;
@@ -56,23 +70,23 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	job.SetDrawParams(params);
 
 	glm::vec2 scaledSize(1.f);
-	if (myParams.myPaintTexture.IsValid())
+	if (paintParams.myPaintTexture.IsValid())
 	{
-		glm::vec2 size = myParams.myPaintTexture->GetSize();
-		scaledSize = size / myParams.myPaintInverseScale;
+		glm::vec2 size = paintParams.myPaintTexture->GetSize();
+		scaledSize = size / paintParams.myPaintInverseScale;
 	}
 
 	PainterAdapter::Source source{
 		aGraphics,
-		myParams.myCamera,
-		myParams.myColor,
-		myParams.myTexSize,
-		myParams.myPrevMousePos,
-		myParams.myMousePos,
-		myParams.myGridDims,
+		paintParams.myCamera,
+		paintParams.myColor,
+		paintParams.myTexSize,
+		paintParams.myPrevMousePos,
+		paintParams.myMousePos,
+		paintParams.myGridDims,
 		scaledSize,
-		myParams.myPaintMode,
-		myParams.myBrushSize
+		paintParams.myPaintMode,
+		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
 	adapter.FillUniformBlock(source, *myBlock);
@@ -98,14 +112,15 @@ void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGrap
 		RenderContext::FrameBufferTexture::Type::Color
 	};
 
-	const int width = static_cast<int>(myParams.myTexSize.x);
-	const int height = static_cast<int>(myParams.myTexSize.y);
+	const PaintParams paintParams = GetParams();
+	const int width = static_cast<int>(paintParams.myTexSize.x);
+	const int height = static_cast<int>(paintParams.myTexSize.y);
 	aGraphics.ResizeNamedFrameBuffer(GetWriteBuffer(), glm::ivec2(width, height));
 	aContext.myViewportSize[0] = width;
 	aContext.myViewportSize[1] = height;
 	aContext.myEnableDepthTest = false;
 
-	aContext.myTexturesToActivate[0] = myParams.myPaintTexture.IsValid() ? 0 : -1;
+	aContext.myTexturesToActivate[0] = paintParams.myPaintTexture.IsValid() ? 0 : -1;
 }
 
 void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
@@ -115,6 +130,19 @@ void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraph
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		myBlock = std::make_shared<UniformBlock>(pipeline->GetDescriptor(0));
 	});
+}
+
+void DisplayRenderPass::SetParams(const PaintParams& aParams)
+{
+	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
+	myParams.Advance();
+	myParams.GetWrite() = aParams;
+}
+
+PaintParams DisplayRenderPass::GetParams() const
+{
+	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
+	return myParams.GetRead();
 }
 
 void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
@@ -132,17 +160,18 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 	params.myCount = 6;
 	job.SetDrawParams(params);
 
+	const PaintParams paintParams = GetParams();
 	PainterAdapter::Source source{
 		aGraphics,
-		myParams.myCamera,
-		myParams.myColor,
-		myParams.myTexSize,
-		myParams.myPrevMousePos,
-		myParams.myMousePos,
-		myParams.myGridDims,
+		paintParams.myCamera,
+		paintParams.myColor,
+		paintParams.myTexSize,
+		paintParams.myPrevMousePos,
+		paintParams.myMousePos,
+		paintParams.myGridDims,
 		glm::vec2(),
-		myParams.myPaintMode,
-		myParams.myBrushSize
+		paintParams.myPaintMode,
+		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
 	adapter.FillUniformBlock(source, *myBlock);
