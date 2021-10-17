@@ -184,7 +184,15 @@ public:
 	template<class TOther> requires std::is_base_of_v<TOther, T>
 	operator const Handle<TOther>() const
 	{
-		return Handle<TOther>{ *this };
+#ifdef HANDLE_HEAVY_DEBUG
+		AssertReadLock ourLock(myDebugMutex);
+#endif
+		// Usually casting away constness is UB,
+		// but since we can only create these objects
+		// with either nullptr or mutable RefCounteds
+		// we can never cast away original constness
+		RefCounted* refObj = const_cast<RefCounted*>(myObject);
+		return Handle<TOther>(refObj);
 	}
 
 private:
