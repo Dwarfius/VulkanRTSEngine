@@ -18,6 +18,8 @@ int main()
 	// TODO: get rid of this and all rand() calls
 	srand(static_cast<uint32_t>(time(0)));
 
+	UniformAdapterRegister::GetInstance().Register<PainterAdapter>();
+
 	// initialize the game engine
 	Game* game = new Game(&glfwErrorReporter);
 	game->Init(false);
@@ -27,8 +29,6 @@ int main()
 		PaintingRenderPass* pass = new PaintingRenderPass();
 		graphics.AddRenderPass(pass);
 		graphics.AddRenderPassDependency(ImGUIRenderPass::kId, PaintingRenderPass::kId);
-
-		UniformAdapterRegister::GetInstance().Register<PainterAdapter>();
 
 		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
 			"TerrainPaint/TerrainPaint.ppl"
