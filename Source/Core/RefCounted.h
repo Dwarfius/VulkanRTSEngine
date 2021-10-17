@@ -174,7 +174,6 @@ public:
 		return Get();
 	}
 
-	// TODO: replace with concepts!
 	// Allow conversions to super-classes of T
 	template<class TOther> requires std::is_base_of_v<TOther, T>
 	operator Handle<TOther>()
@@ -182,10 +181,10 @@ public:
 		return Get<TOther>();
 	}
 
-	template<class TOther>
+	template<class TOther> requires std::is_base_of_v<TOther, T>
 	operator const Handle<TOther>() const
 	{
-		return Handle{ *this };
+		return Handle<TOther>{ *this };
 	}
 
 private:
