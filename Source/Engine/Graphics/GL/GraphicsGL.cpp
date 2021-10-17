@@ -245,6 +245,12 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	const GLchar* aMessage,
 	const void* aUserParam)
 {
+	switch (aId)
+	{
+	case 131204: return; // unbound sampler or badly defined texture at sampler
+	default: break;
+	}
+
 	const char* source;
 	switch (aSource)
 	{
