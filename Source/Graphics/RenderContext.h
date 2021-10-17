@@ -94,7 +94,7 @@ public:
 	// in X, Y, Width, Height
 	int myScissorRect[4] = { 0, 0, 0, 0 };
 
-	// every pass is alloved an arbitrary limit of
+	// every pass is allowed an arbitrary limit of
 	// active texture inputs
 	constexpr static uint8_t kMaxObjectTextureSlots = 8;
 	// -1 means no texture
