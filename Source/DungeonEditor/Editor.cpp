@@ -165,6 +165,7 @@ void Editor::DrawPaintSettings()
 		if (myPaintTexture.IsValid())
 		{
 			myPaintTexture = {};
+			myTexturePath = "";
 		}
 	}
 	else
@@ -185,7 +186,12 @@ void Editor::DrawPaintSettings()
 			Handle<Texture> texture = Texture::LoadFromDisk(myTexturePath);
 			myPaintTexture = myGame.GetGraphics()->GetOrCreate(texture, false).Get<GPUTexture>();
 		}
-
+		
+		if (myPaintTexture.IsValid())
+		{
+			const glm::vec2 size = glm::max(glm::vec2(256), myPaintTexture->GetSize());
+			myGame.GetImGUISystem().Image(myPaintTexture, size);
+		}
 		ImGui::DragFloat("Inverse Scale", &myInverseScale, 0.1f, 0.5f, 4.f);
 	}
 }

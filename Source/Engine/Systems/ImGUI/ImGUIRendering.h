@@ -10,6 +10,8 @@
 
 #include "../../Graphics/RenderPasses/GenericRenderPasses.h"
 
+class GPUTexture;
+
 struct ImGUIVertex
 {
 	glm::vec2 myPos;
@@ -56,6 +58,7 @@ namespace std
 struct ImGUIRenderParams : public IRenderPass::IParams
 {
 	int myScissorRect[4];
+	Handle<GPUTexture> myTexture;
 };
 
 // Utility adapter if someone else wants to use it - we set the uniforms directly

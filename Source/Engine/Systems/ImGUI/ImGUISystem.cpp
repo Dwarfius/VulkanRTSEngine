@@ -7,6 +7,7 @@
 
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/Graphics.h>
+#include <Graphics/Resources/GPUTexture.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Profiler.h>
@@ -162,6 +163,10 @@ void ImGUISystem::Render()
 				params.myScissorRect[1] = (int)(fb_height - clip_rect.w);
 				params.myScissorRect[2] = (int)(clip_rect.z - clip_rect.x);
 				params.myScissorRect[3] = (int)(clip_rect.w - clip_rect.y);
+				if (cmd->TextureId)
+				{
+					params.myTexture = Handle<GPUTexture>(static_cast<GPUTexture*>(cmd->TextureId));
+				}
 
 				myRenderPass->AddImGuiRenderJob(params);
 			}
@@ -177,4 +182,19 @@ void ImGUISystem::Render()
 	uploadDesc.myIndOwned = true;
 	uploadDesc.myIndices = indBuffer;
 	myRenderPass->UpdateImGuiVerts(uploadDesc);
+	myKeepAliveTextures.clear();
+}
+
+void ImGUISystem::Image(Handle<GPUTexture> aTexture, glm::vec2 aSize, glm::vec2 aUV0, glm::vec2 aUV1, glm::vec4 aTintColor, glm::vec4 aBorderColor)
+{
+	// we're not locking because all calls to imgui should be
+	// happening under a lock
+	myKeepAliveTextures.push_back(aTexture);
+	ImGui::Image(aTexture.Get(), 
+		ImVec2(aSize.x, aSize.y), 
+		ImVec2(aUV0.x, aUV0.y), 
+		ImVec2(aUV1.x, aUV1.y), 
+		ImVec4(aTintColor.x, aTintColor.y, aTintColor.z, aTintColor.w), 
+		ImVec4(aBorderColor.x, aBorderColor.y, aBorderColor.z, aBorderColor.w)
+	);
 }

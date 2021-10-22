@@ -2,7 +2,7 @@
 #include "ImGUIRendering.h"
 
 #include <Graphics/Graphics.h>
-#include <Graphics/GPUResource.h>
+#include <Graphics/Resources/GPUTexture.h>
 
 #include "Graphics/NamedFrameBuffers.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
@@ -88,10 +88,16 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 
 	for (const ImGUIRenderParams& params : myScheduledImGuiParams)
 	{
+		Handle<GPUTexture> texture = myFontAtlas.Get<GPUTexture>();
+		if (params.myTexture.IsValid())
+		{
+			texture = params.myTexture;
+		}
+
 		RenderJob job{
 			myPipeline,
 			myModel,
-			{ myFontAtlas }
+			{ texture }
 		};
 		job.AddUniformBlock(*myUniformBlock);
 
