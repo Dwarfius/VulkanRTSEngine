@@ -28,15 +28,14 @@ public:
 	
 	// shortcut for advancing both the reader and the writer
 	void Advance() { AdvanceWrite(); AdvanceRead(); }
+	void AdvanceWrite();
+	void AdvanceRead();
 	
 	// range-for utility support
 	InternalIter begin() { return myBuffers.begin(); }
 	InternalIter end() { return myBuffers.end(); }
 
 private:
-	void AdvanceWrite();
-	void AdvanceRead();
-
 	InternalBuffer myBuffers;
 	size_t myReadBuffer;
 	size_t myWriteBuffer;
