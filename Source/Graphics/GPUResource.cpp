@@ -82,18 +82,17 @@ bool GPUResource::AreDependenciesValid() const
 	return true;
 }
 
-void GPUResource::SetErrMsg(std::string&& anErrString)
+void GPUResource::SetErrMsg(std::string_view anErrString)
 {
 	myState = State::Error;
 #ifdef _DEBUG
-	myErrorMsg = std::move(anErrString);
 	if (myResHandle.IsValid())
 	{
-		printf("[Error] %s: %s\n", myResHandle->GetPath().c_str(), myErrorMsg.c_str());
+		printf("[Error] %s: %s\n", myResHandle->GetPath().c_str(), anErrString.data());
 	}
 	else
 	{
-		printf("[Error] %s\n", myErrorMsg.c_str());
+		printf("[Error] %s\n", anErrString.data());
 	}
 #endif
 }

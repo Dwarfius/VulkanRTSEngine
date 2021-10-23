@@ -62,12 +62,6 @@ public:
 	// keep the resource handle
 	Handle<Resource> GetResource() const { return myResHandle; }
 
-#ifdef _DEBUG
-	const std::string& GetErrorMsg() const { return myErrorMsg; }
-#else
-	const std::string& GetErrorMsg() const { return ""; }
-#endif
-
 protected:
 	Handle<Resource> myResHandle;
 	Resource::Id myResId;
@@ -76,7 +70,7 @@ protected:
 
 	// A convinience wrapper to set the error message in debug builds.
 	// Sets the state to Error
-	void SetErrMsg(std::string&& anErrString);
+	void SetErrMsg(std::string_view anErrString);
 
 private:
 	virtual void OnCreate(Graphics& aGraphics) = 0;
@@ -95,9 +89,5 @@ private:
 	Graphics* myGraphics; // non owning ptr
 	std::vector<UploadRegion> myRegionsToUpload;
 
-#ifdef _DEBUG
-	// used for tracking what went wrong
-	std::string myErrorMsg;
-#endif
 	bool myKeepResHandle;
 };
