@@ -5,11 +5,12 @@
 #include <Core/Resources/Serializer.h>
 #include <STB_Image/stb_image.h>
 
-Handle<Texture> Texture::LoadFromDisk(const std::string& aPath)
+Handle<Texture> Texture::LoadFromDisk(std::string_view aPath)
 {
 	File file(aPath);
 	bool success = file.Read();
-	ASSERT_STR(success, "Failed to read a file: %s", aPath.c_str());
+	DEBUG_ONLY(std::string path(aPath.data(), aPath.size()););
+	ASSERT_STR(success, "Failed to read a file: %s", path.data());
 
 	Handle<Texture> textureHandle = new Texture();
 	Texture* texture = textureHandle.Get();

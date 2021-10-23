@@ -9,7 +9,7 @@ class Texture : public Resource, public ITexture
 public:
 	constexpr static StaticString kExtension = ".img";
 
-	static Handle<Texture> LoadFromDisk(const std::string& aPath);
+	static Handle<Texture> LoadFromDisk(std::string_view aPath);
 	static Handle<Texture> LoadFromMemory(const char* aBuffer, size_t aLength);
 
 public:

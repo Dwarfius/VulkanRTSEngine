@@ -11,6 +11,7 @@
 #include <Graphics/Resources/GPUTexture.h>
 
 #include <Core/Resources/AssetTracker.h>
+#include <Core/File.h>
 
 Editor::Editor(Game& aGame)
 	: myGame(aGame)
@@ -181,10 +182,20 @@ void Editor::DrawPaintSettings()
 			}
 			return 0;
 		}, &myTexturePath);
+
 		if (changed && !myTexturePath.empty())
 		{
-			Handle<Texture> texture = Texture::LoadFromDisk(myTexturePath);
-			myPaintTexture = myGame.GetGraphics()->GetOrCreate(texture, false).Get<GPUTexture>();
+			std::string_view path = myTexturePath;
+			if (path.starts_with('"') && path.ends_with('"'))
+			{
+				path = path.substr(1, path.size() - 2);
+			}
+
+			if (File::Exists(path))
+			{
+				Handle<Texture> texture = Texture::LoadFromDisk(path);
+				myPaintTexture = myGame.GetGraphics()->GetOrCreate(texture, false).Get<GPUTexture>();
+			}
 		}
 		
 		if (myPaintTexture.IsValid())

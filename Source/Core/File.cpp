@@ -1,8 +1,10 @@
 #include "Precomp.h"
 #include "File.h"
 
+#include <filesystem>
+
 File::File(std::string_view aPath)
-	: myPath(aPath)
+	: myPath(aPath.data(), aPath.size())
 {
 }
 
@@ -15,6 +17,13 @@ File::File(const std::string& aPath, std::vector<char>&& aData)
 	: myPath(aPath)
 	, myBuffer(std::move(aData))
 {
+}
+
+bool File::Exists(std::string_view aPath)
+{
+	[[maybe_unused]] std::error_code error;
+	bool exists = std::filesystem::exists(aPath, error);
+	return exists;
 }
 
 bool File::Read()
