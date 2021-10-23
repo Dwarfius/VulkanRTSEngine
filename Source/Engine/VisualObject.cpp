@@ -10,32 +10,33 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUTexture.h>
 
 void VisualObject::SetModel(Handle<Model> aModel)
 {
-	myModel = Game::GetInstance()->GetGraphics()->GetOrCreate(aModel);
+	myModel = Game::GetInstance()->GetGraphics()->GetOrCreate(aModel).Get<GPUModel>();
 }
 
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
-	myPipeline = Game::GetInstance()->GetGraphics()->GetOrCreate(aPipeline);
+	myPipeline = Game::GetInstance()->GetGraphics()->GetOrCreate(aPipeline).Get<GPUPipeline>();
 }
 
 void VisualObject::SetTexture(Handle<Texture> aTexture)
 {
-	myTexture = Game::GetInstance()->GetGraphics()->GetOrCreate(aTexture);
+	myTexture = Game::GetInstance()->GetGraphics()->GetOrCreate(aTexture).Get<GPUTexture>();
 }
 
 glm::vec3 VisualObject::GetCenter() const
 {
-	return myModel.Get<const GPUModel>()->GetCenter();
+	return myModel->GetCenter();
 }
 
 float VisualObject::GetRadius() const
 {
 	const glm::vec3 scale = myTransf.GetScale();
 	const float maxScale = std::max({ scale.x, scale.y, scale.z });
-	const float radius = myModel.Get<const GPUModel>()->GetSphereRadius();
+	const float radius = myModel->GetSphereRadius();
 	return maxScale * radius;
 }
 
@@ -52,7 +53,7 @@ bool VisualObject::Resolve()
 	// descriptors, UBOs and adapters
 	myUniforms.clear();
 
-	const GPUPipeline* pipeline = myPipeline.Get<const GPUPipeline>();
+	const GPUPipeline* pipeline = myPipeline.Get();
 	size_t descriptorCount = pipeline->GetDescriptorCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{

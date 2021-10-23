@@ -2,6 +2,8 @@
 #include "ImGUIRendering.h"
 
 #include <Graphics/Graphics.h>
+#include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
 
 #include "Graphics/NamedFrameBuffers.h"
@@ -25,11 +27,11 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		const Descriptor& descriptor = pipeline->GetDescriptor(0);
 		myUniformBlock = std::make_shared<UniformBlock>(descriptor);
 	});
-	myPipeline = aGraphics.GetOrCreate(aPipeline);
+	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	Model::BaseStorage* vertexStorage = new Model::VertStorage<ImGUIVertex>(0);
 	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
-	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic);
-	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas);
+	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic).Get<GPUModel>();
+	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas).Get<GPUTexture>();
 }
 
 void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
@@ -88,7 +90,7 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 
 	for (const ImGUIRenderParams& params : myScheduledImGuiParams)
 	{
-		Handle<GPUTexture> texture = myFontAtlas.Get<GPUTexture>();
+		Handle<GPUTexture> texture = myFontAtlas;
 		if (params.myTexture.IsValid())
 		{
 			texture = params.myTexture;

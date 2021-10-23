@@ -2,8 +2,11 @@
 #include "RenderPassJob.h"
 
 #include <Graphics/UniformBlock.h>
+#include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUModel.h>
+#include <Graphics/Resources/GPUTexture.h>
 
-RenderJob::RenderJob(Handle<GPUResource> aPipeline, Handle<GPUResource> aModel,
+RenderJob::RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
 	const TextureSet& aTextures)
 	: myPipeline(aPipeline)
 	, myModel(aModel)

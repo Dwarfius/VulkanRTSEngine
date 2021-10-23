@@ -92,6 +92,8 @@ protected:
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
 	bool myRenderPassJobsNeedsOrdering = true;
 
+	void ProcessCreateQueue();
+	void ProcessUploadQueue();
 	void ProcessUnloadQueue();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
 	IRenderPass* GetRenderPass(uint32_t anId) const;

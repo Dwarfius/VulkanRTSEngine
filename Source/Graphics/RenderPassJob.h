@@ -4,13 +4,15 @@
 
 #include <Core/RefCounted.h>
 
-class GPUResource;
+class GPUPipeline;
+class GPUTexture;
+class GPUModel;
 class UniformBlock;
 class Graphics;
 
 struct RenderJob
 {
-	using TextureSet = std::vector<Handle<GPUResource>>;
+	using TextureSet = std::vector<Handle<GPUTexture>>;
 	// TODO: replace with std::vector<std::span<char>> that's backed by a pool or per frame allocator
 	using UniformSet = std::vector<std::vector<char>>;
 
@@ -47,7 +49,7 @@ struct RenderJob
 
 public:
 	RenderJob() = default;
-	RenderJob(Handle<GPUResource> aPipeline, Handle<GPUResource> aModel,
+	RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
 		const TextureSet& aTextures);
 
 	// Copies a set of uniform blocks for a frame
@@ -67,10 +69,10 @@ public:
 	const DrawParams& GetDrawParams() const { return myDrawParams; }
 	DrawMode GetDrawMode() const { return myDrawMode; }
 
-	Handle<GPUResource>& GetPipeline() { return myPipeline; }
-	const Handle<GPUResource>& GetPipeline() const { return myPipeline; }
-	Handle<GPUResource>& GetModel() { return myModel; }
-	const Handle<GPUResource>& GetModel() const { return myModel; }
+	Handle<GPUPipeline>& GetPipeline() { return myPipeline; }
+	const Handle<GPUPipeline>& GetPipeline() const { return myPipeline; }
+	Handle<GPUModel>& GetModel() { return myModel; }
+	const Handle<GPUModel>& GetModel() const { return myModel; }
 	TextureSet& GetTextures() { return myTextures; }
 	const TextureSet& GetTextures() const { return myTextures; }
 	UniformSet& GetUniformSet() { return myUniforms; }
@@ -80,8 +82,8 @@ public:
 	void SetScissorRect(int aIndex, int aValue) { myScissorRect[aIndex] = aValue; }
 
 private:
-	Handle<GPUResource> myPipeline;
-	Handle<GPUResource> myModel;
+	Handle<GPUPipeline> myPipeline;
+	Handle<GPUModel> myModel;
 
 	TextureSet myTextures;
 	UniformSet myUniforms;

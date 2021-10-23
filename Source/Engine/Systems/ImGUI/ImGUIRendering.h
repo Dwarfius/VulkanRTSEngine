@@ -10,6 +10,8 @@
 
 #include "../../Graphics/RenderPasses/GenericRenderPasses.h"
 
+class GPUModel;
+class GPUPipeline; 
 class GPUTexture;
 
 struct ImGUIVertex
@@ -78,9 +80,9 @@ public:
 
 class ImGUIRenderPass : public IRenderPass
 {
-	Handle<GPUResource> myPipeline;
-	Handle<GPUResource> myModel;
-	Handle<GPUResource> myFontAtlas;
+	Handle<GPUPipeline> myPipeline;
+	Handle<GPUModel> myModel;
+	Handle<GPUTexture> myFontAtlas;
 	RenderPassJob* myCurrentJob;
 	std::shared_ptr<UniformBlock> myUniformBlock;
 	std::vector<ImGUIRenderParams> myScheduledImGuiParams;

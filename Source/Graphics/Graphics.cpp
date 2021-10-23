@@ -201,6 +201,68 @@ void Graphics::TriggerUpload(GPUResource* aGPUResource)
 	aGPUResource->TriggerUpload();
 }
 
+void Graphics::ProcessCreateQueue()
+{
+	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Create");
+	std::queue<Handle<GPUResource>> delayQueue;
+	Handle<GPUResource> aResourceHandle;
+	while (myCreateQueue.try_pop(aResourceHandle))
+	{
+		if (aResourceHandle.IsLastHandle())
+		{
+			// last handle - owner discarded, can skip
+			// it will automatically get added to the unload queue
+			continue;
+		}
+		if (aResourceHandle->GetResource().IsValid()
+			&& aResourceHandle->GetResource()->GetState() != Resource::State::Ready)
+		{
+			// we want to guarantee that the source resource has finished
+			// loading up to enable correct setup of gpu resource
+			delayQueue.push(aResourceHandle);
+			continue;
+		}
+		aResourceHandle->TriggerCreate();
+	}
+	// reschedule delayed resources from this frame for next
+	while (!delayQueue.empty())
+	{
+		myCreateQueue.push(delayQueue.front());
+		delayQueue.pop();
+	}
+}
+
+void Graphics::ProcessUploadQueue()
+{
+	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Upload");
+	std::queue<Handle<GPUResource>> delayQueue;
+	Handle<GPUResource> aResourceHandle;
+	while (myUploadQueue.try_pop(aResourceHandle))
+	{
+		if (aResourceHandle.IsLastHandle())
+		{
+			// last handle - owner discarded, can skip
+			// it will automatically get added to the unload queue
+			continue;
+		}
+		if (!aResourceHandle->AreDependenciesValid())
+		{
+			// we guarantee that all dependencies will be uploaded
+			// before calling the current resource, so delay it
+			// to next frame
+			delayQueue.push(aResourceHandle);
+			continue;
+		}
+		aResourceHandle->TriggerUpload();
+	}
+	// reschedule delayed resources from this frame for next
+	while (!delayQueue.empty())
+	{
+		myUploadQueue.push(delayQueue.front());
+		delayQueue.pop();
+	}
+}
+
 void Graphics::ProcessUnloadQueue()
 {
 	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Unload");
@@ -218,67 +280,8 @@ void Graphics::ProcessUnloadQueue()
 
 void Graphics::ProcessGPUQueues()
 {
-	// TODO: overwrite implementation for Vulkan to allow for parallel
-	// generation/processing
-	Handle<GPUResource> aResourceHandle;
-	std::queue<Handle<GPUResource>> delayQueue;
-
-	{
-		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Create");
-		while (myCreateQueue.try_pop(aResourceHandle))
-		{
-			if (aResourceHandle.IsLastHandle())
-			{
-				// last handle - owner discarded, can skip
-				// it will automatically get added to the unload queue
-				continue;
-			}
-			if (aResourceHandle->GetResource().IsValid()
-				&& aResourceHandle->GetResource()->GetState() != Resource::State::Ready)
-			{
-				// we want to guarantee that the source resource has finished
-				// loading up to enable correct setup of gpu resource
-				delayQueue.push(aResourceHandle);
-				continue;
-			}
-			aResourceHandle->TriggerCreate();
-		}
-		// reschedule delayed resources from this frame for next
-		while (!delayQueue.empty())
-		{
-			myCreateQueue.push(delayQueue.front());
-			delayQueue.pop();
-		}
-	}
-
-	{
-		Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Upload");
-		while (myUploadQueue.try_pop(aResourceHandle))
-		{
-			if (aResourceHandle.IsLastHandle())
-			{
-				// last handle - owner discarded, can skip
-				// it will automatically get added to the unload queue
-				continue;
-			}
-			if (!aResourceHandle->AreDependenciesValid())
-			{
-				// we guarantee that all dependencies will be uploaded
-				// before calling the current resource, so delay it
-				// to next frame
-				delayQueue.push(aResourceHandle);
-				continue;
-			}
-			aResourceHandle->TriggerUpload();
-		}
-		// reschedule delayed resources from this frame for next
-		while (!delayQueue.empty())
-		{
-			myUploadQueue.push(delayQueue.front());
-			delayQueue.pop();
-		}
-	}
-
+	ProcessCreateQueue();
+	ProcessUploadQueue();
 	ProcessUnloadQueue();
 }
 

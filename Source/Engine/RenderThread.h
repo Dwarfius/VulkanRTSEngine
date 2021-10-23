@@ -34,7 +34,6 @@ public:
 
 private:
 	std::unique_ptr<Graphics> myGraphics;
-	bool myIsUsingVulkan;
 
 	struct GameObjectRenderable
 	{
@@ -61,5 +60,6 @@ private:
 
 	std::atomic<bool> myNeedsSwitch;
 	std::atomic<bool> myHasWorkPending;
+	bool myIsUsingVulkan;
 };
 

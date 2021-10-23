@@ -9,19 +9,21 @@ class Model;
 class Texture;
 class Pipeline;
 class Resource;
-class GPUResource;
+class GPUModel;
+class GPUPipeline;
+class GPUTexture;
 
 class VisualObject
 {
 public:
 	void SetModel(Handle<Model> aModel);
-	Handle<GPUResource> GetModel() const { return myModel; }
+	Handle<GPUModel> GetModel() const { return myModel; }
 
 	void SetPipeline(Handle<Pipeline> aPipeline);
-	Handle<GPUResource> GetPipeline() const { return myPipeline; }
+	Handle<GPUPipeline> GetPipeline() const { return myPipeline; }
 
 	void SetTexture(Handle<Texture> aTexture);
-	Handle<GPUResource> GetTexture() const { return myTexture; }
+	Handle<GPUTexture> GetTexture() const { return myTexture; }
 
 	// Returns true if some dependencies need to be resolved
 	bool IsResolved() const { return myIsResolved; }
@@ -39,9 +41,9 @@ public:
 
 private:
 	Transform myTransf;
-	Handle<GPUResource> myModel;
-	Handle<GPUResource> myPipeline;
-	Handle<GPUResource> myTexture;
+	Handle<GPUModel> myModel;
+	Handle<GPUPipeline> myPipeline;
+	Handle<GPUTexture> myTexture;
 
 	// TODO: rework this to use a index-based Handle into
 	// a pool of UniformBlocks
