@@ -37,8 +37,8 @@ public:
 
 private:
 	InternalBuffer myBuffers;
-	size_t myReadBuffer;
-	size_t myWriteBuffer;
+	std::atomic<size_t> myReadBuffer;
+	std::atomic<size_t> myWriteBuffer;
 	// false if write is ahead of read, true if write just wrapped and read didn't yet
 	bool mySwapped;
 };
@@ -139,10 +139,10 @@ public:
 
 	constexpr size_t GetSize() const { return 2; }
 
-	T& GetWrite() { return myBuffers[myWriteBuffer ? 1 : 0]; }
-	const T& GetRead() const { return myBuffers[myWriteBuffer ? 0 : 1]; }
+	T& GetWrite() { return myBuffers[myWriteBuffer]; }
+	const T& GetRead() const { return myBuffers[1 - myWriteBuffer]; }
 
-	void Advance() { myWriteBuffer ^= true; }
+	void Advance() { myWriteBuffer ^= 1; }
 
 	// range-for utility support
 	InternalIter begin() { return myBuffers.begin(); }
@@ -150,7 +150,7 @@ public:
 
 private:
 	InternalBuffer myBuffers;
-	bool myWriteBuffer; // if true, points to 2nd one
+	std::atomic<uint8_t> myWriteBuffer; // if true, points to 2nd one
 };
 
 // ============================================================================
