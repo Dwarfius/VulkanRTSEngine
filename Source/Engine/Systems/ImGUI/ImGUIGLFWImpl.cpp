@@ -9,10 +9,8 @@ ImGUIGLFWImpl::ImGUIGLFWImpl(Game& aGame)
 {
 }
 
-void ImGUIGLFWImpl::Init()
+void ImGUIGLFWImpl::Init(GLFWwindow& aWindow)
 {
-    GLFWwindow* window = myGame.GetWindow();
-
     // Setup back-end capabilities flags
     ImGuiIO& io = ImGui::GetIO();
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
@@ -51,9 +49,9 @@ void ImGUIGLFWImpl::Init()
     io.GetClipboardTextFn = [](void* user_data) {
         return glfwGetClipboardString((GLFWwindow*)user_data);
     };
-    io.ClipboardUserData = window;
+    io.ClipboardUserData = &aWindow;
 #if defined(_WIN32)
-    io.ImeWindowHandle = (void*)glfwGetWin32Window(window);
+    io.ImeWindowHandle = (void*)glfwGetWin32Window(&aWindow);
 #endif
 
     // Create mouse cursors
@@ -61,6 +59,7 @@ void ImGUIGLFWImpl::Init()
     // GLFW will emit an error which will often be printed by the app, so we temporarily disable error reporting.
     // Missing cursors will return NULL and our _UpdateMouseCursor() function will use the Arrow cursor instead.)
     GLFWerrorfun prev_error_callback = glfwSetErrorCallback(NULL);
+    static_assert(kCursorCount == ImGuiMouseCursor_COUNT, "Update kCursorCount!");
     std::memset(myCursors, 0, kCursorCount * sizeof(GLFWcursor*));
     myCursors[ImGuiMouseCursor_Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
     myCursors[ImGuiMouseCursor_TextInput] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);

@@ -136,9 +136,7 @@ void Game::Init(bool aUseDefaultCompositePass)
 	myRenderThread->AddRenderContributor([this](Graphics& aGraphics) {
 		ScheduleRenderables(aGraphics);
 	});
-
-	// TODO: has implicit dependency on window initialized - make explicit!
-	myImGUISystem->Init();
+	myImGUISystem->Init(*GetWindow());
 
 	// setting up a task tree
 	{

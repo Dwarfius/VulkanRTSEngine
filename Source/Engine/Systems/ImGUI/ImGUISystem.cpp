@@ -19,7 +19,7 @@ ImGUISystem::ImGUISystem(Game& aGame)
 {
 }
 
-void ImGUISystem::Init()
+void ImGUISystem::Init(GLFWwindow& aWindow)
 {
 	Profiler::ScopedMark profile("ImGUISystem::Init");
 
@@ -28,7 +28,7 @@ void ImGUISystem::Init()
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 
-	myGLFWImpl.Init();
+	myGLFWImpl.Init(aWindow);
 
 	Handle<Pipeline> imGUIPipeline = myGame.GetAssetTracker().GetOrCreate<Pipeline>("Engine/imgui.ppl");
 	Handle<Texture> fontAtlas = new Texture();

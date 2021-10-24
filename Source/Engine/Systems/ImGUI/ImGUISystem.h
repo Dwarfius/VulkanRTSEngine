@@ -6,6 +6,7 @@
 class Game;
 class ImGUIRenderPass;
 class GPUTexture;
+struct GLFWwindow;
 
 // This class handles all the necessary logic for handling input, resources, etc
 class ImGUISystem
@@ -13,7 +14,7 @@ class ImGUISystem
 public:
 	ImGUISystem(Game& aGame);
 
-	void Init();
+	void Init(GLFWwindow& aWindow);
 	void Shutdown();
 	void NewFrame(float aDeltaTime);
 

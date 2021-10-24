@@ -2,13 +2,14 @@
 
 class Game;
 struct GLFWcursor;
+struct GLFWwindow;
 
 class ImGUIGLFWImpl
 {
 public:
 	ImGUIGLFWImpl(Game& aGame);
 
-	void Init();
+	void Init(GLFWwindow& aWindow);
 	void Shutdown();
 	void NewFrame(float aDeltaTime);
 
