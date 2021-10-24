@@ -87,7 +87,7 @@ void GraphicsGL::Display()
 	Profiler::ScopedMark profile("GraphicsGL::Display");
 	Graphics::Display();
 
-	myRenderPassJobs.Advance();
+	myRenderPassJobs.AdvanceRead();
 
 	{
 		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
@@ -102,6 +102,13 @@ void GraphicsGL::Display()
 		Profiler::ScopedMark swapProfile("GraphicsGL::SwapBuffers");
 		glfwSwapBuffers(myWindow);
 	}
+}
+
+void GraphicsGL::EndGather()
+{
+	Graphics::EndGather();
+
+	myRenderPassJobs.AdvanceWrite();
 }
 
 void GraphicsGL::CleanUp()

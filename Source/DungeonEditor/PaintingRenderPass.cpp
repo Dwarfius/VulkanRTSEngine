@@ -24,9 +24,10 @@ void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGrap
 
 void PaintingRenderPass::SetParams(const PaintParams& aParams)
 {
-	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
-	myParams.Advance();
-	myParams.GetWrite() = aParams;
+#ifdef ENABLE_ASSERTS
+	AssertLock lock(myParamsMutex);
+#endif
+	myParams = aParams;
 }
 
 std::string_view PaintingRenderPass::GetWriteBuffer() const
@@ -45,8 +46,10 @@ std::string_view PaintingRenderPass::GetReadBuffer() const
 
 PaintParams PaintingRenderPass::GetParams() const
 {
-	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
-	return myParams.GetRead();
+#ifdef ENABLE_ASSERTS
+	AssertLock lock(myParamsMutex);
+#endif
+	return myParams;
 }
 
 void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
@@ -134,15 +137,18 @@ void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraph
 
 void DisplayRenderPass::SetParams(const PaintParams& aParams)
 {
-	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
-	myParams.Advance();
-	myParams.GetWrite() = aParams;
+#ifdef ENABLE_ASSERTS
+	AssertLock lock(myParamsMutex);
+#endif
+	myParams = aParams;
 }
 
 PaintParams DisplayRenderPass::GetParams() const
 {
-	tbb::spin_mutex::scoped_lock lock(myParamsMutex);
-	return myParams.GetRead();
+#ifdef ENABLE_ASSERTS
+	AssertLock lock(myParamsMutex);
+#endif
+	return myParams;
 }
 
 void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)

@@ -15,6 +15,7 @@ public:
 
 	void Init() final;
 	void Display() final;
+	void EndGather() final;
 	void CleanUp() final;
 
 	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) final;

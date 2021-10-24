@@ -40,7 +40,7 @@ private:
 		const VisualObject& myVisualObject;
 		const GameObject& myGameObject;
 	};
-	RWBuffer<std::vector<GameObjectRenderable>, 2> myRenderables;
+	std::vector<GameObjectRenderable> myRenderables;
 	void ScheduleGORenderables(const Camera& aCam);
 
 	struct TerrainRenderable
@@ -48,14 +48,14 @@ private:
 		const VisualObject& myVisualObject;
 		const Terrain& myTerrain;
 	};
-	RWBuffer<std::vector<TerrainRenderable>, 2> myTerrainRenderables;
+	std::vector<TerrainRenderable> myTerrainRenderables;
 	void ScheduleTerrainRenderables(const Camera& aCam);
 
 	struct DebugRenderable
 	{
 		const DebugDrawer& myDebugDrawer;
 	};
-	RWBuffer<std::vector<DebugRenderable>, 2> myDebugDrawers;
+	std::vector<DebugRenderable> myDebugDrawers;
 	void ScheduleDebugRenderables(const Camera& aCam);
 
 	std::atomic<bool> myNeedsSwitch;

@@ -74,9 +74,9 @@ void Graphics::BeginGather()
 	}
 }
 
-void Graphics::Display()
+void Graphics::EndGather()
 {
-	Profiler::ScopedMark profile("Graphics::Display");
+	Profiler::ScopedMark profile("Graphics::EndGather");
 	for (IRenderPass* pass : myRenderPasses)
 	{
 		pass->SubmitJobs(*this);
@@ -89,8 +89,12 @@ void Graphics::Display()
 		SortRenderPassJobs();
 		myRenderPassJobsNeedsOrdering = false;
 	}
+}
 
-	// Doing it after SubmitJobs because RenderPasses can 
+void Graphics::Display()
+{
+	Profiler::ScopedMark profile("Graphics::Display");
+	// Doing it after EndGather because RenderPasses can 
 	// generate new asset updates at any point of their
 	// execution
 	ProcessGPUQueues();

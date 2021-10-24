@@ -26,7 +26,8 @@ public:
 	virtual ~Graphics() = default;
 
 	virtual void Init();
-	virtual void BeginGather();
+	void BeginGather();
+	virtual void EndGather();
 	virtual void Display();
 	virtual void CleanUp();
 	

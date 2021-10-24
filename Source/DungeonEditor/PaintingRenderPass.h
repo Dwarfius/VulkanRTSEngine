@@ -79,9 +79,12 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	RWBuffer<PaintParams, 2> myParams;
-	mutable tbb::spin_mutex myParamsMutex;
+	PaintParams myParams;
 	bool myWriteToOther = false;
+
+#ifdef ENABLE_ASSERTS
+	mutable AssertMutex myParamsMutex;
+#endif
 };
 
 class DisplayRenderPass : public IRenderPass
@@ -102,9 +105,12 @@ private:
 
 	Handle<GPUPipeline> myPipeline;
 	std::shared_ptr<UniformBlock> myBlock;
-	RWBuffer<PaintParams, 2> myParams;
-	mutable tbb::spin_mutex myParamsMutex;
+	PaintParams myParams;
 	std::string_view myReadFrameBuffer;
+
+#ifdef ENABLE_ASSERTS
+	mutable AssertMutex myParamsMutex;
+#endif
 };
 
 class PainterAdapter : public UniformAdapter

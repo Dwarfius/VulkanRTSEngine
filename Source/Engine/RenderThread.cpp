@@ -65,6 +65,19 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 
 void RenderThread::Work()
 {
+	// TODO: move this out!
+	Camera& cam = *Game::GetInstance()->GetCamera();
+	cam.Recalculate(myGraphics->GetWidth(), myGraphics->GetHeight());
+
+	myGraphics->BeginGather();
+
+	// TODO: move this out!
+	ScheduleGORenderables(cam);
+	ScheduleTerrainRenderables(cam);
+	ScheduleDebugRenderables(cam);
+
+	myGraphics->EndGather();
+	
 	myHasWorkPending = true;
 }
 
@@ -76,15 +89,13 @@ GLFWwindow* RenderThread::GetWindow() const
 void RenderThread::AddRenderable(const VisualObject& aVO, const GameObject& aGO)
 {
 	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
-	std::vector<GameObjectRenderable>& buffer = myRenderables.GetWrite();
-	buffer.push_back({ aVO, aGO });
+	myRenderables.push_back({ aVO, aGO });
 }
 
 void RenderThread::AddTerrainRenderable(const VisualObject& aVO, const Terrain& aTerrain)
 {
 	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
-	std::vector<TerrainRenderable>& buffer = myTerrainRenderables.GetWrite();
-	buffer.push_back({ aVO, aTerrain });
+	myTerrainRenderables.push_back({ aVO, aTerrain });
 }
 
 void RenderThread::AddDebugRenderable(const DebugDrawer& aDebugDrawer)
@@ -94,7 +105,7 @@ void RenderThread::AddDebugRenderable(const DebugDrawer& aDebugDrawer)
 		return;
 	}
 
-	myDebugDrawers.GetWrite().push_back({ aDebugDrawer });
+	myDebugDrawers.push_back({ aDebugDrawer });
 }
 
 void RenderThread::SubmitRenderables()
@@ -138,18 +149,6 @@ void RenderThread::SubmitRenderables()
 	}
 #endif // USE_VULKAN
 
-	// update the mvp
-	Game::GetInstance()->GetCamera()->Recalculate(myGraphics->GetWidth(), myGraphics->GetHeight());
-
-	// the current render queue has been used up, we can fill it up again
-	myGraphics->BeginGather();
-
-	// TODO: Camera needs to be passed in rather than grabbed like this
-	const Camera& cam = *Game::GetInstance()->GetCamera();
-	ScheduleGORenderables(cam);
-	ScheduleTerrainRenderables(cam);
-	ScheduleDebugRenderables(cam);
-
 	myGraphics->Display();
 
 	myHasWorkPending = false;
@@ -157,13 +156,9 @@ void RenderThread::SubmitRenderables()
 
 void RenderThread::ScheduleGORenderables(const Camera& aCam)
 {
-	myRenderables.Advance();
-	const std::vector<GameObjectRenderable>& currRenderables = myRenderables.GetRead();
-	myRenderables.GetWrite().clear();
-
 	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleGORender");
 	DefaultRenderPass* renderPass = myGraphics->GetRenderPass<DefaultRenderPass>();
-	for (const GameObjectRenderable& renderable : currRenderables)
+	for (const GameObjectRenderable& renderable : myRenderables)
 	{
 		// building a render job
 		const VisualObject& visualObj = renderable.myVisualObject;
@@ -207,17 +202,14 @@ void RenderThread::ScheduleGORenderables(const Camera& aCam)
 		);
 		renderPass->AddRenderable(renderJob, params);
 	}
+	myRenderables.clear();
 }
 
 void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 {
-	myTerrainRenderables.Advance();
-	const std::vector<TerrainRenderable>& currRenderables = myTerrainRenderables.GetRead();
-	myTerrainRenderables.GetWrite().clear();
-
 	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleTerrainRender");
 	TerrainRenderPass* renderPass = myGraphics->GetRenderPass<TerrainRenderPass>();
-	for (const TerrainRenderable& renderable : currRenderables)
+	for (const TerrainRenderable& renderable : myTerrainRenderables)
 	{
 		// building a render job
 		const VisualObject& visualObj = renderable.myVisualObject;
@@ -265,24 +257,23 @@ void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
 		params.myTileCount = gridTiles.x * gridTiles.y;
 		renderPass->AddRenderable(renderJob, params);
 	}
+	myTerrainRenderables.clear();
 }
 
 void RenderThread::ScheduleDebugRenderables(const Camera& aCam)
 {
-	myDebugDrawers.Advance();
-	const std::vector<DebugRenderable>& debugDrawers = myDebugDrawers.GetRead();
-	myDebugDrawers.GetWrite().clear();
-
 	Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
 	DebugRenderPass* renderPass = myGraphics->GetRenderPass<DebugRenderPass>();
 	if (!renderPass->IsReady())
 	{
+		myDebugDrawers.clear();
 		return;
 	}
 
 	renderPass->SetCamera(0, aCam, *myGraphics);
-	for (const DebugRenderable& renderable : debugDrawers)
+	for (const DebugRenderable& renderable : myDebugDrawers)
 	{
 		renderPass->AddDebugDrawer(0, renderable.myDebugDrawer);
 	}
+	myDebugDrawers.clear();
 }
