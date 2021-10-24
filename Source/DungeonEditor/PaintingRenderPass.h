@@ -82,7 +82,7 @@ private:
 	PaintParams myParams;
 	bool myWriteToOther = false;
 
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	mutable AssertMutex myParamsMutex;
 #endif
 };
@@ -108,7 +108,7 @@ private:
 	PaintParams myParams;
 	std::string_view myReadFrameBuffer;
 
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	mutable AssertMutex myParamsMutex;
 #endif
 };

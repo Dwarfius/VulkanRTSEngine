@@ -59,7 +59,7 @@ void RenderThread::Gather()
 {
 	myGraphics->BeginGather();
 	{
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 		AssertLock lock(myRenderCallbackMutex);
 #endif
 
@@ -80,7 +80,7 @@ GLFWwindow* RenderThread::GetWindow() const
 
 void RenderThread::AddRenderContributor(OnRenderCallback aCallback)
 {
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myRenderCallbackMutex);
 #endif
 	myRenderCallbacks.push_back(aCallback);

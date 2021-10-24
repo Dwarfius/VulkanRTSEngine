@@ -24,7 +24,7 @@ void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGrap
 
 void PaintingRenderPass::SetParams(const PaintParams& aParams)
 {
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myParamsMutex);
 #endif
 	myParams = aParams;
@@ -46,7 +46,7 @@ std::string_view PaintingRenderPass::GetReadBuffer() const
 
 PaintParams PaintingRenderPass::GetParams() const
 {
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myParamsMutex);
 #endif
 	return myParams;
@@ -137,7 +137,7 @@ void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraph
 
 void DisplayRenderPass::SetParams(const PaintParams& aParams)
 {
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myParamsMutex);
 #endif
 	myParams = aParams;
@@ -145,7 +145,7 @@ void DisplayRenderPass::SetParams(const PaintParams& aParams)
 
 PaintParams DisplayRenderPass::GetParams() const
 {
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myParamsMutex);
 #endif
 	return myParams;

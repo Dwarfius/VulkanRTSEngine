@@ -27,7 +27,7 @@ public:
 private:
 	std::unique_ptr<Graphics> myGraphics;
 	std::vector<OnRenderCallback> myRenderCallbacks;
-#ifdef ENABLE_ASSERTS
+#ifdef ASSERT_MUTEX
 	AssertMutex myRenderCallbackMutex;
 #endif
 
