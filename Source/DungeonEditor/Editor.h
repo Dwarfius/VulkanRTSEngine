@@ -25,7 +25,7 @@ private:
 	glm::vec2 myTexSize;
 	glm::vec2 myPrevMousePos;
 	glm::vec2 myMousePos;
-	glm::ivec2 myGridDims{ 15, 10 };
+	glm::ivec2 myGridDims{ 20, 10 };
 	glm::vec2 myDragStart{ 0, 0 };
 	PaintMode myPaintMode;
 	int myBrushRadius = 1;

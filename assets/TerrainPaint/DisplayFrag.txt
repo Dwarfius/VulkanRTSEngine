@@ -20,17 +20,13 @@ layout (std140, binding = 0) uniform PainterAdapter
     int BrushSize;
 };
 
-vec2 GridScale()
-{
-    return floor(CanvasSize / TexSize);
-}
-
 bool IsGridPixel()
 {
     vec2 coordsWS = uvsOut * TexSize;
-    vec2 gridScale = GridScale();
-    return int(mod(coordsWS.x, GridCellSize.x)) <= gridScale.x
-        || int(mod(coordsWS.y, GridCellSize.y)) <= gridScale.y;
+    float scaleFactor = min(TexSize.x / CanvasSize.x, 1);
+    float scaledPixel = 1.f / scaleFactor;
+    return mod(coordsWS.x, GridCellSize.x) < scaledPixel
+        || mod(coordsWS.y, GridCellSize.y) < scaledPixel;
 }
 
 vec4 ApplyGridColor(bool aIsGrid, vec4 aBaseColor)
