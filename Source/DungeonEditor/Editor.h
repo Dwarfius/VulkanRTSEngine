@@ -28,7 +28,7 @@ private:
 	glm::ivec2 myGridDims{ 15, 10 };
 	glm::vec2 myDragStart{ 0, 0 };
 	PaintMode myPaintMode;
-	float myBrushRadius = 0.003f;
+	int myBrushRadius = 1;
 	float myScale = 1.f;
 	bool myPaintingColor = true;
 

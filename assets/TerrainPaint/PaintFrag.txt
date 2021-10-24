@@ -19,7 +19,7 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec2 GridCellSize;
     vec2 TextureSize;
     int DrawingMode;
-    float BrushSize;
+    int BrushSize;
 };
 
 float distanceSqr(vec2 aStart, vec2 aEnd)
@@ -30,24 +30,29 @@ float distanceSqr(vec2 aStart, vec2 aEnd)
 
 bool IsNearMouse()
 {
-    vec2 mStart = MousePosStart / TexSize;
-    mStart.x = clamp(mStart.x, 0, 1);
-    mStart.y = clamp(mStart.y, 0, 1);
+    vec2 mStart = MousePosStart;
+    mStart.x = clamp(mStart.x, 0, TexSize.x);
+    mStart.y = clamp(mStart.y, 0, TexSize.y);
+    mStart = floor(mStart);
 
-    vec2 mEnd = MousePosEnd / TexSize;
-    mEnd.x = clamp(mEnd.x, 0, 1);
-    mEnd.y = clamp(mEnd.y, 0, 1);
+    vec2 mEnd = MousePosEnd;
+    mEnd.x = clamp(mEnd.x, 0, TexSize.x);
+    mEnd.y = clamp(mEnd.y, 0, TexSize.y);
+    mEnd = floor(mEnd);
+
+    vec2 pixelPos = uvsOut * TexSize;
+    pixelPos = floor(pixelPos);
 
     float lineDistSqr = distanceSqr(mStart, mEnd);
     if(lineDistSqr != 0)
     {
-        float t = max(0, min(1, dot(uvsOut - mStart, mEnd - mStart) / lineDistSqr));
+        float t = max(0, min(1, dot(pixelPos - mStart, mEnd - mStart) / lineDistSqr));
         vec2 projOnLine = mStart + t * (mEnd - mStart);
-        return distance(projOnLine, uvsOut) < BrushSize;
+        return distance(projOnLine, pixelPos) < (BrushSize - 0.5f);
     }
     else
     {
-        return distance(uvsOut, mEnd) < BrushSize;
+        return distance(pixelPos, mEnd) < (BrushSize - 0.5f);
     }
 }
 

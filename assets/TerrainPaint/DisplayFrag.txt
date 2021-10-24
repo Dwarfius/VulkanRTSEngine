@@ -17,7 +17,7 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec2 GridCellSize;
     vec2 TextureSize;
     int DrawingMode;
-    float BrushSize;
+    int BrushSize;
 };
 
 vec2 GridScale()
@@ -35,7 +35,16 @@ bool IsGridPixel()
 
 vec4 ApplyGridColor(bool aIsGrid, vec4 aBaseColor)
 {
-    return aIsGrid ? vec4(0.5, 0.5, 0.5, 1) : aBaseColor;
+    vec4 gridColor = vec4(0.5f);
+    if(aIsGrid)
+    {
+        float factor = 1.f - gridColor.w;
+        return aBaseColor * factor + gridColor * gridColor.w;
+    }
+    else
+    {
+        return aBaseColor;
+    }
 }
 
 void main() 

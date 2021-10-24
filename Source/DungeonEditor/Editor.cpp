@@ -98,12 +98,12 @@ void Editor::ProcessInput()
 
 		if (Input::GetKey(Input::Keys::Control))
 		{
-			myScale += Input::GetMouseWheelDelta() / 100.f;
+			myScale -= Input::GetMouseWheelDelta() / 100.f;
 		}
 		else
 		{
-			myBrushRadius += Input::GetMouseWheelDelta() / 300.f;
-			myBrushRadius = glm::clamp(myBrushRadius, 0.00001f, 0.2f);
+			myBrushRadius += static_cast<int>(Input::GetMouseWheelDelta());
+			myBrushRadius = glm::clamp(myBrushRadius, 1, 100);
 		}
 
 		if (Input::GetMouseBtnPressed(2))
@@ -148,7 +148,7 @@ void Editor::DrawGeneralSettings()
 	ImGui::InputInt2("Tex Size", size);
 	myTexSize = glm::vec2(size[0], size[1]);
 
-	ImGui::SliderFloat("Brush size(MWheel)", &myBrushRadius, 0.00001f, 0.2f);
+	ImGui::SliderInt("Brush size(MWheel)", &myBrushRadius, 1, 100);
 
 	ImGui::InputInt2("Grid Dims", glm::value_ptr(myGridDims));
 	myGridDims.x = std::max(myGridDims.x, 1);

@@ -54,7 +54,7 @@ struct PaintParams
 	glm::vec2 myMousePos;
 	glm::ivec2 myGridDims;
 	PaintMode myPaintMode;
-	float myBrushSize;
+	int myBrushSize;
 	float myPaintInverseScale;
 };
 
@@ -126,7 +126,7 @@ public:
 		const glm::ivec2 myGridDims;
 		const glm::vec2 myPaintSizeScaled;
 		const PaintMode myPaintMode;
-		const float myBrushRadius;
+		const int myBrushRadius;
 	};
 
 	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;

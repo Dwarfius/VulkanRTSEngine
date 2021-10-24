@@ -16,7 +16,7 @@ layout (std140, binding = 0) uniform PainterAdapter
     vec2 GridCellSize;
     vec2 TextureSize;
     int DrawingMode;
-    float BrushSize;
+    int BrushSize;
 };
 
 void main() 
