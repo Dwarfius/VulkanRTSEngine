@@ -16,7 +16,6 @@ public:
 	void Init();
 	void Shutdown();
 	void NewFrame(float aDeltaTime);
-	void Render();
 
 	std::mutex& GetMutex() { return myMutex; }
 	// Helper for safely scheduling a drawing of texture
@@ -28,6 +27,8 @@ public:
 	);
 
 private:
+	void Render();
+
 	Game& myGame;
 	std::mutex myMutex;
 	ImGUIGLFWImpl myGLFWImpl;

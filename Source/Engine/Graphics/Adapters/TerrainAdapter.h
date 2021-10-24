@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Graphics/UniformAdapter.h>
+#include "Graphics/Adapters/AdapterSourceData.h"
 
 class Terrain;
 
@@ -13,6 +14,11 @@ class TerrainAdapter : public UniformAdapter
 	static float GetTileSize(const Terrain& aTerrain);
 
 public:
+	struct Source : UniformAdapterSource
+	{
+		const Terrain& myTerrain;
+	};
+
 	// Returns in how many tiles is the terrain grid split
 	static glm::ivec2 GetTileCount(const Terrain& aTerrain);
 

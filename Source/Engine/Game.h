@@ -40,9 +40,11 @@ public:
 		};
 	};
 
-public:
 	typedef void (*ReportError)(int, const char*);
 
+	using OnRenderCallback = std::function<void(Graphics&)>;
+
+public:
 	Game(ReportError aReporterFunc);
 	~Game();
 
@@ -83,6 +85,8 @@ public:
 	Graphics* GetGraphics();
 	const Graphics* GetGraphics() const;
 
+	void AddRenderContributor(OnRenderCallback aCallback);
+
 	// Adds GameObject and it's children to the world
 	// Does not add the parent of the GameObject to the world -
 	// it is assumed it's already been added
@@ -111,6 +115,11 @@ private:
 	void RemoveGameObjects();
 
 	void RegisterUniformAdapters();
+
+	void ScheduleRenderables(Graphics& aGraphics);
+	void RenderGameObjects(Graphics& aGraphics);
+	void RenderTerrains(Graphics& aGraphics);
+	void RenderDebugDrawers(Graphics& aGraphics);
 
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
@@ -144,13 +153,18 @@ private:
 	bool myShouldEnd;
 	bool myIsPaused;
 	bool myIsInFocus;
-	mutable AssertRWMutex myGOMutex;
+#ifdef ASSERT_MUTEX
+	mutable AssertMutex myGOMutex;
+	mutable AssertMutex myTerrainsMutex;
+#endif
 };
 
 template<class TFunc>
 void Game::ForEach(TFunc aFunc)
 {
-	AssertReadLock assertLock(myGOMutex);
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myGOMutex);
+#endif
 	for (auto& [id, go] : myGameObjects)
 	{
 		aFunc(*go.Get());

@@ -48,6 +48,10 @@ void ImGUISystem::Init()
 
 	myRenderPass = new ImGUIRenderPass(imGUIPipeline, fontAtlas, *myGame.GetGraphics());
 	myGame.GetGraphics()->AddRenderPass(myRenderPass);
+
+	myGame.AddRenderContributor([this](Graphics& aGraphics) {
+		Render();
+	});
 }
 
 void ImGUISystem::Shutdown()
@@ -60,6 +64,20 @@ void ImGUISystem::NewFrame(float aDeltaTime)
 {
 	myGLFWImpl.NewFrame(aDeltaTime);
 	ImGui::NewFrame();
+}
+
+void ImGUISystem::Image(Handle<GPUTexture> aTexture, glm::vec2 aSize, glm::vec2 aUV0, glm::vec2 aUV1, glm::vec4 aTintColor, glm::vec4 aBorderColor)
+{
+	// we're not locking because all calls to imgui should be
+	// happening under a lock
+	myKeepAliveTextures.push_back(aTexture);
+	ImGui::Image(aTexture.Get(),
+		ImVec2(aSize.x, aSize.y),
+		ImVec2(aUV0.x, aUV0.y),
+		ImVec2(aUV1.x, aUV1.y),
+		ImVec4(aTintColor.x, aTintColor.y, aTintColor.z, aTintColor.w),
+		ImVec4(aBorderColor.x, aBorderColor.y, aBorderColor.z, aBorderColor.w)
+	);
 }
 
 void ImGUISystem::Render()
@@ -183,18 +201,4 @@ void ImGUISystem::Render()
 	uploadDesc.myIndices = indBuffer;
 	myRenderPass->UpdateImGuiVerts(uploadDesc);
 	myKeepAliveTextures.clear();
-}
-
-void ImGUISystem::Image(Handle<GPUTexture> aTexture, glm::vec2 aSize, glm::vec2 aUV0, glm::vec2 aUV1, glm::vec4 aTintColor, glm::vec4 aBorderColor)
-{
-	// we're not locking because all calls to imgui should be
-	// happening under a lock
-	myKeepAliveTextures.push_back(aTexture);
-	ImGui::Image(aTexture.Get(), 
-		ImVec2(aSize.x, aSize.y), 
-		ImVec2(aUV0.x, aUV0.y), 
-		ImVec2(aUV1.x, aUV1.y), 
-		ImVec4(aTintColor.x, aTintColor.y, aTintColor.z, aTintColor.w), 
-		ImVec4(aBorderColor.x, aBorderColor.y, aBorderColor.z, aBorderColor.w)
-	);
 }

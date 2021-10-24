@@ -12,6 +12,8 @@
 #include "Graphics/Adapters/TerrainAdapter.h"
 #include "Graphics/Adapters/SkeletonAdapter.h"
 #include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
+#include "Graphics/RenderPasses/DebugRenderPass.h"
+#include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Systems/ImGUI/ImGUIRendering.h"
 #include "Animation/AnimationSystem.h"
@@ -26,6 +28,7 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/UniformAdapterRegister.h>
 
 #include <Physics/PhysicsWorld.h>
@@ -129,6 +132,10 @@ void Game::Init(bool aUseDefaultCompositePass)
 		myCamera->GetTransform().SetPos(glm::vec3(0, 0, 5));
 		myCamera->GetTransform().LookAt(glm::vec3(0, 0, 0));
 	}
+
+	myRenderThread->AddRenderContributor([this](Graphics& aGraphics) {
+		ScheduleRenderables(aGraphics);
+	});
 
 	// TODO: has implicit dependency on window initialized - make explicit!
 	myImGUISystem->Init();
@@ -271,6 +278,11 @@ const Graphics* Game::GetGraphics() const
 	return myRenderThread->GetGraphics();
 }
 
+void Game::AddRenderContributor(OnRenderCallback aCallback)
+{
+	myRenderThread->AddRenderContributor(aCallback);
+}
+
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
@@ -372,6 +384,10 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 
 void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 {
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myTerrainsMutex);
+#endif
+
 	myTerrains.push_back({ aTerrain, nullptr, nullptr });
 	TerrainEntity& terrainEntity = myTerrains[myTerrains.size() - 1];
 	Handle<Texture> terrainTexture = aTerrain->GetTextureHandle();
@@ -406,7 +422,9 @@ void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 
 void Game::AddGameObjects()
 {
-	AssertWriteLock assertLock(myGOMutex);
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myGOMutex);
+#endif
 	tbb::spin_mutex::scoped_lock spinlock(myAddLock);
 	while (myAddQueue.size())
 	{
@@ -466,51 +484,8 @@ void Game::AnimationUpdate()
 
 void Game::Render()
 {
-	Profiler::ScopedMark profile(__func__);
-	// TODO: get rid of single map, and use a separate vector for Renderables
-	// TODO: fill out the renderables vector not per frame, but after new ones are created
-	{
-		AssertReadLock assertLock(myGOMutex);
-		for (auto& [uid, gameObjHandle] : myGameObjects)
-		{
-			VisualObject* visObj = gameObjHandle->GetVisualObject();
-			if (!visObj)
-			{
-				continue;
-			}
-
-			if (visObj->IsResolved() || visObj->Resolve())
-			{
-				myRenderThread->AddRenderable(*visObj, *gameObjHandle.Get());
-			}
-		}
-	}
-
-	// rendering terrains
-	for(TerrainEntity& entity : myTerrains)
-	{
-		VisualObject* visObj = entity.myVisualObject;
-		if (!visObj)
-		{
-			continue;
-		}
-
-		if (visObj->IsResolved() || visObj->Resolve())
-		{
-			myRenderThread->AddTerrainRenderable(*visObj, *entity.myTerrain);
-		}
-	}
-
-	// adding axis for world navigation
-	
-
-	myRenderThread->AddDebugRenderable(myDebugDrawer);
-	myRenderThread->AddDebugRenderable(myPhysWorld->GetDebugDrawer());
-
-	myImGUISystem->Render();
-
-	// signal that we have submitted extra work
-	myRenderThread->Work();
+	Profiler::ScopedMark profile("Game::Render");
+	myRenderThread->Gather();
 }
 
 void Game::UpdateAudio()
@@ -535,9 +510,13 @@ void Game::UpdateEnd()
 void Game::RemoveGameObjects()
 {
 	Profiler::ScopedMark profile(__func__);
-	ourGODeleteEnabled = true;
-	AssertWriteLock assertLock(myGOMutex);
+	
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myGOMutex);
+#endif
+
 	tbb::spin_mutex::scoped_lock spinlock(myRemoveLock);
+	ourGODeleteEnabled = true;
 	while (myRemoveQueue.size())
 	{
 		Handle<GameObject> go = myRemoveQueue.front();
@@ -556,3 +535,167 @@ void Game::RegisterUniformAdapters()
 	adapterRegister.Register<SkeletonAdapter>();
 }
 
+void Game::ScheduleRenderables(Graphics& aGraphics)
+{
+	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
+	myCamera->Recalculate(aGraphics.GetWidth(), aGraphics.GetHeight());
+
+	RenderGameObjects(aGraphics);
+	RenderTerrains(aGraphics);
+	RenderDebugDrawers(aGraphics);
+}
+
+void Game::RenderGameObjects(Graphics& aGraphics)
+{
+	Profiler::ScopedMark debugProfile("Game::RenderGameObjects");
+
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myGOMutex);
+#endif
+	DefaultRenderPass* renderPass = aGraphics.GetRenderPass<DefaultRenderPass>();
+	// TODO: get rid of single map, and use a separate vector for Renderables
+	for (auto& [uid, gameObjHandle] : myGameObjects)
+	{
+		VisualObject* visObj = gameObjHandle->GetVisualObject();
+		if (!visObj)
+		{
+			continue;
+		}
+
+		if (visObj->IsResolved() || visObj->Resolve())
+		{
+			// building a render job
+			const GameObject* gameObject = gameObjHandle.Get();
+			const VisualObject& visualObj = *visObj;
+			RenderJob renderJob(
+				visualObj.GetPipeline(),
+				visualObj.GetModel(),
+				{ visualObj.GetTexture() }
+			);
+
+			if (!renderPass->HasResources(renderJob))
+			{
+				continue;
+			}
+
+			if (!myCamera->CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+			{
+				continue;
+			}
+
+			// updating the uniforms - grabbing game state!
+			UniformAdapterSource source{
+				aGraphics,
+				*myCamera,
+				gameObject,
+				visualObj
+			};
+			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+			const size_t uboCount = gpuPipeline->GetDescriptorCount();
+			for (size_t i = 0; i < uboCount; i++)
+			{
+				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
+				adapter.FillUniformBlock(source, uniformBlock);
+			}
+			renderJob.SetUniformSet(visualObj.GetUniforms());
+
+			IRenderPass::IParams params;
+			params.myDistance = glm::distance(
+				myCamera->GetTransform().GetPos(),
+				gameObject->GetWorldTransform().GetPos()
+			);
+			renderPass->AddRenderable(renderJob, params);
+		}
+	}
+}
+
+void Game::RenderTerrains(Graphics& aGraphics)
+{
+	Profiler::ScopedMark debugProfile("Game::RenderTerrains");
+
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myTerrainsMutex);
+#endif
+	TerrainRenderPass* renderPass = aGraphics.GetRenderPass<TerrainRenderPass>();
+	for (TerrainEntity& entity : myTerrains)
+	{
+		VisualObject* visObj = entity.myVisualObject;
+		if (!visObj)
+		{
+			continue;
+		}
+
+		if (visObj->IsResolved() || visObj->Resolve())
+		{
+			// building a render job
+			const Terrain& terrain = *entity.myTerrain;
+			const VisualObject& visualObj = *visObj;
+			RenderJob renderJob(
+				visualObj.GetPipeline(),
+				visualObj.GetModel(),
+				{ visualObj.GetTexture() }
+			);
+
+			if (!renderPass->HasResources(renderJob))
+			{
+				continue;
+			}
+
+			if (visualObj.GetModel().IsValid()
+				&& !myCamera->CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+			{
+				continue;
+			}
+
+			// updating the uniforms - grabbing game state!
+			TerrainAdapter::Source source{
+				aGraphics,
+				*myCamera,
+				nullptr,
+				visualObj,
+				terrain
+			};
+			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+			const size_t uboCount = gpuPipeline->GetDescriptorCount();
+			for (size_t i = 0; i < uboCount; i++)
+			{
+				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
+				adapter.FillUniformBlock(source, uniformBlock);
+			}
+			renderJob.SetUniformSet(visualObj.GetUniforms());
+
+			TerrainRenderParams params;
+			params.myDistance = glm::distance(
+				myCamera->GetTransform().GetPos(),
+				visualObj.GetTransform().GetPos()
+			);
+			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+			params.myTileCount = gridTiles.x * gridTiles.y;
+			renderPass->AddRenderable(renderJob, params);
+		}
+	}
+}
+
+void Game::RenderDebugDrawers(Graphics& aGraphics)
+{
+	Profiler::ScopedMark debugProfile("Game::RenderDebugDrawers");
+
+	DebugRenderPass* renderPass = aGraphics.GetRenderPass<DebugRenderPass>();
+	if (!renderPass->IsReady())
+	{
+		return;
+	}
+
+	renderPass->SetCamera(0, *myCamera, aGraphics);
+	if (myDebugDrawer.GetCurrentVertexCount())
+	{
+		renderPass->AddDebugDrawer(0, myDebugDrawer);
+	}
+
+	if (myPhysWorld->GetDebugDrawer().GetCurrentVertexCount())
+	{
+		renderPass->AddDebugDrawer(0, myPhysWorld->GetDebugDrawer());
+	}
+}

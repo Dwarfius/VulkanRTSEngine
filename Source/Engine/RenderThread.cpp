@@ -5,20 +5,12 @@
 #include "Graphics/VK/GraphicsVK.h"
 #include "Input.h"
 #include "Game.h"
-#include "VisualObject.h"
-#include "Graphics/Adapters/TerrainAdapter.h"
-#include "Graphics/Adapters/AdapterSourceData.h"
-#include "Terrain.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
 #include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Graphics/NamedFrameBuffers.h"
 
-#include <Graphics/Camera.h>
 #include <Graphics/Resources/Pipeline.h>
-#include <Graphics/Resources/GPUPipeline.h>
-#include <Graphics/UniformAdapter.h>
-#include <Graphics/FrameBuffer.h>
 
 #include <Core/Profiler.h>
 
@@ -63,19 +55,19 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	Input::SetWindow(myGraphics->GetWindow());
 }
 
-void RenderThread::Work()
+void RenderThread::Gather()
 {
-	// TODO: move this out!
-	Camera& cam = *Game::GetInstance()->GetCamera();
-	cam.Recalculate(myGraphics->GetWidth(), myGraphics->GetHeight());
-
 	myGraphics->BeginGather();
+	{
+#ifdef ENABLE_ASSERTS
+		AssertLock lock(myRenderCallbackMutex);
+#endif
 
-	// TODO: move this out!
-	ScheduleGORenderables(cam);
-	ScheduleTerrainRenderables(cam);
-	ScheduleDebugRenderables(cam);
-
+		for (OnRenderCallback callback : myRenderCallbacks)
+		{
+			callback(*myGraphics);
+		}
+	}
 	myGraphics->EndGather();
 	
 	myHasWorkPending = true;
@@ -86,26 +78,12 @@ GLFWwindow* RenderThread::GetWindow() const
 	return myGraphics->GetWindow();
 }
 
-void RenderThread::AddRenderable(const VisualObject& aVO, const GameObject& aGO)
+void RenderThread::AddRenderContributor(OnRenderCallback aCallback)
 {
-	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
-	myRenderables.push_back({ aVO, aGO });
-}
-
-void RenderThread::AddTerrainRenderable(const VisualObject& aVO, const Terrain& aTerrain)
-{
-	ASSERT_STR(aVO.IsResolved(), "Visual Object hasn't been resolved - nothing to render!");
-	myTerrainRenderables.push_back({ aVO, aTerrain });
-}
-
-void RenderThread::AddDebugRenderable(const DebugDrawer& aDebugDrawer)
-{
-	if (!aDebugDrawer.GetCurrentVertexCount())
-	{
-		return;
-	}
-
-	myDebugDrawers.push_back({ aDebugDrawer });
+#ifdef ENABLE_ASSERTS
+	AssertLock lock(myRenderCallbackMutex);
+#endif
+	myRenderCallbacks.push_back(aCallback);
 }
 
 void RenderThread::SubmitRenderables()
@@ -152,128 +130,4 @@ void RenderThread::SubmitRenderables()
 	myGraphics->Display();
 
 	myHasWorkPending = false;
-}
-
-void RenderThread::ScheduleGORenderables(const Camera& aCam)
-{
-	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleGORender");
-	DefaultRenderPass* renderPass = myGraphics->GetRenderPass<DefaultRenderPass>();
-	for (const GameObjectRenderable& renderable : myRenderables)
-	{
-		// building a render job
-		const VisualObject& visualObj = renderable.myVisualObject;
-		RenderJob renderJob(
-			visualObj.GetPipeline(),
-			visualObj.GetModel(),
-			{ visualObj.GetTexture() }
-		);
-		
-		if (!renderPass->HasResources(renderJob))
-		{
-			continue;
-		}
-
-		if (!aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
-		{
-			continue;
-		}
-
-		// updating the uniforms - grabbing game state!
-		UniformAdapterSource source{
-			*myGraphics,
-			aCam,
-			&renderable.myGameObject,
-			visualObj
-		};
-		const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetDescriptorCount();
-		for (size_t i = 0; i < uboCount; i++)
-		{
-			UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-			const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
-			adapter.FillUniformBlock(source, uniformBlock);
-		}
-		renderJob.SetUniformSet(visualObj.GetUniforms());
-
-		IRenderPass::IParams params;
-		params.myDistance = glm::distance(
-			aCam.GetTransform().GetPos(), 
-			renderable.myGameObject.GetWorldTransform().GetPos()
-		);
-		renderPass->AddRenderable(renderJob, params);
-	}
-	myRenderables.clear();
-}
-
-void RenderThread::ScheduleTerrainRenderables(const Camera& aCam)
-{
-	Profiler::ScopedMark visualObjectProfile("RenderThread::ScheduleTerrainRender");
-	TerrainRenderPass* renderPass = myGraphics->GetRenderPass<TerrainRenderPass>();
-	for (const TerrainRenderable& renderable : myTerrainRenderables)
-	{
-		// building a render job
-		const VisualObject& visualObj = renderable.myVisualObject;
-		RenderJob renderJob(
-			visualObj.GetPipeline(),
-			visualObj.GetModel(),
-			{ visualObj.GetTexture() }
-		);
-
-		if (!renderPass->HasResources(renderJob))
-		{
-			continue;
-		}
-
-		if (visualObj.GetModel().IsValid()
-			&& !aCam.CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
-		{
-			continue;
-		}
-
-		// updating the uniforms - grabbing game state!
-		TerrainUniformAdapterSource source{
-			*myGraphics,
-			aCam,
-			nullptr,
-			visualObj,
-			renderable.myTerrain,
-		};
-		const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetDescriptorCount();
-		for (size_t i = 0; i < uboCount; i++)
-		{
-			UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-			const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
-			adapter.FillUniformBlock(source, uniformBlock);
-		}
-		renderJob.SetUniformSet(visualObj.GetUniforms());
-
-		TerrainRenderParams params;
-		params.myDistance = glm::distance(
-			aCam.GetTransform().GetPos(),
-			visualObj.GetTransform().GetPos()
-		);
-		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(renderable.myTerrain);
-		params.myTileCount = gridTiles.x * gridTiles.y;
-		renderPass->AddRenderable(renderJob, params);
-	}
-	myTerrainRenderables.clear();
-}
-
-void RenderThread::ScheduleDebugRenderables(const Camera& aCam)
-{
-	Profiler::ScopedMark debugProfile("RenderThread::ScheduleDebugRender");
-	DebugRenderPass* renderPass = myGraphics->GetRenderPass<DebugRenderPass>();
-	if (!renderPass->IsReady())
-	{
-		myDebugDrawers.clear();
-		return;
-	}
-
-	renderPass->SetCamera(0, aCam, *myGraphics);
-	for (const DebugRenderable& renderable : myDebugDrawers)
-	{
-		renderPass->AddDebugDrawer(0, renderable.myDebugDrawer);
-	}
-	myDebugDrawers.clear();
 }
