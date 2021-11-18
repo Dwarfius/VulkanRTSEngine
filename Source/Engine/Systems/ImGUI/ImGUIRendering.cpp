@@ -32,6 +32,8 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
 	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic).Get<GPUModel>();
 	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas).Get<GPUTexture>();
+
+	std::memset(&myUpdateDescriptor, 0, sizeof(myUpdateDescriptor));
 }
 
 void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
@@ -41,8 +43,9 @@ void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
 
 void ImGUIRenderPass::UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor)
 {
-	myModel->GetResource().Get<Model>()->Update(aDescriptor);
-	myModel->UpdateRegion({});
+	// We can't upload straight to staging model, since it'll 
+	// overwrite data pending for the upcoming frame render
+	myUpdateDescriptor = aDescriptor;
 }
 
 void ImGUIRenderPass::AddImGuiRenderJob(const ImGUIRenderParams& aParams)
@@ -58,7 +61,8 @@ bool ImGUIRenderPass::IsReady() const
 {
 	return myPipeline->GetState() == GPUResource::State::Valid
 		&& myFontAtlas->GetState() == GPUResource::State::Valid
-		&& myModel->GetState() == GPUResource::State::Valid;
+		&& (myModel->GetState() == GPUResource::State::Valid
+			|| myModel->GetState() == GPUResource::State::PendingUpload);
 }
 
 void ImGUIRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
@@ -115,5 +119,12 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 
 		myCurrentJob->Add(job);
 	}
+
+	if (myUpdateDescriptor.myIndCount > 0)
+	{
+		myModel->GetResource().Get<Model>()->Update(myUpdateDescriptor);
+		myModel->UpdateRegion({});
+	}
+
 	myScheduledImGuiParams.clear();
 }

@@ -86,6 +86,7 @@ class ImGUIRenderPass : public IRenderPass
 	RenderPassJob* myCurrentJob;
 	std::shared_ptr<UniformBlock> myUniformBlock;
 	std::vector<ImGUIRenderParams> myScheduledImGuiParams;
+	Model::UploadDescriptor<ImGUIVertex> myUpdateDescriptor;
 	AssertMutex myRenderJobMutex;
 
 public:
