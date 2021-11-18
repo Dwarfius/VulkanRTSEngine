@@ -79,6 +79,10 @@ void GraphicsGL::Init()
 	}
 #endif
 
+	// Configuring all unpacking from client-side to be byte aligned
+	// This prevents problems from some textures not being word aligned
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	Graphics::Init();
 }
 
