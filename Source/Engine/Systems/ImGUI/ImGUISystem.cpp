@@ -140,9 +140,9 @@ void ImGUISystem::Render()
 
 	uint32_t vertOffset = 0;
 	uint32_t indOffset = 0;
-	for (int i = 0; i < drawData->CmdListsCount; i++)
+	for (int cmdListInd = 0; cmdListInd < drawData->CmdListsCount; cmdListInd++)
 	{
-		const ImDrawList* cmdList = drawData->CmdLists[i];
+		const ImDrawList* cmdList = drawData->CmdLists[cmdListInd];
 
 		// copy verts
 		static_assert(sizeof(ImGUIVertex) == sizeof(ImDrawVert), "Can no longer copy verts!");
@@ -157,10 +157,10 @@ void ImGUISystem::Render()
 		{
 			indBuffer[indOffset + i] = vertOffset + cmdList->IdxBuffer.Data[i];
 		}
-
-		for (int cmd_i = 0; cmd_i < cmdList->CmdBuffer.Size; cmd_i++)
+		
+		for (int cmdInd = 0; cmdInd < cmdList->CmdBuffer.Size; cmdInd++)
 		{
-			const ImDrawCmd* cmd = &cmdList->CmdBuffer[cmd_i];
+			const ImDrawCmd* cmd = &cmdList->CmdBuffer[cmdInd];
 
 			// Project scissor/clipping rectangles into framebuffer space
 			ImVec4 clip_rect;
@@ -193,7 +193,6 @@ void ImGUISystem::Render()
 		vertOffset += cmdList->VtxBuffer.Size;
 		indOffset += cmdList->IdxBuffer.Size;
 	}
-
 	uploadDesc.myVertsOwned = true;
 	uploadDesc.myVertices = vertBuffer;
 
