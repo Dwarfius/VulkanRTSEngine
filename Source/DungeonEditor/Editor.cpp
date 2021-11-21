@@ -124,23 +124,35 @@ void Editor::ProcessInput()
 
 void Editor::Draw()
 {
-	std::lock_guard lock(myGame.GetImGUISystem().GetMutex());
-	if (ImGui::Begin("Editor"))
 	{
-		DrawGeneralSettings();
-		ImGui::Separator();
-		DrawPaintSettings();
-	}
-	ImGui::End();
+		std::lock_guard lock(myGame.GetImGUISystem().GetMutex());
+		if (ImGui::Begin("Editor"))
+		{
+			DrawGeneralSettings();
+			ImGui::Separator();
+			DrawPaintSettings();
+		}
+		ImGui::End();
 
-	if (myTexturesWindowOpen)
+		if (myTexturesWindowOpen)
+		{
+			DrawTextures();
+		}
+	}
+
+	if (myShowProfilerUI)
 	{
-		DrawTextures();
+		myProfilerUI.Draw(myShowProfilerUI);
 	}
 }
 
 void Editor::DrawGeneralSettings()
 {
+	if (ImGui::Button("Open Profiler"))
+	{
+		myShowProfilerUI = true;
+	}
+
 	ImGui::TextWrapped("Paint with left mouse, erase with right mouse, "
 		"clear all with Space and change brush size with mouse wheel/bellow. "
 		"You can drag the canvas with middle mouse button, and zoom canvas with "

@@ -11,6 +11,7 @@ class ProfilerUI
 	using HierarchyMap = std::unordered_map<int, uint32_t>;
 	using ThreadHierarchyMap = std::unordered_map<std::thread::id, HierarchyMap>;
 public:
+	ProfilerUI();
 	void Draw(bool& aIsOpen);
 
 private:
@@ -24,7 +25,7 @@ private:
 
 	void DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const;
 	void DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const;
-	
+
 	static HierarchyMap CalculateHierarchy(const MarksVec& aMarks, uint32_t& aMaxLevel);
 	static FrameData ProcessFrameProfile(const Profiler::FrameProfile& aProfile);
 

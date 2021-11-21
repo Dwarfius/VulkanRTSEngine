@@ -38,6 +38,14 @@ namespace
 	}
 }
 
+ProfilerUI::ProfilerUI()
+{
+	Profiler::GetInstance().SetOnLongFrameCallback(
+		[this](const Profiler::FrameProfile& aProfile) {
+			myFramesToRender.push_back(std::move(ProcessFrameProfile(aProfile)));
+	});
+}
+
 void ProfilerUI::Draw(bool& aIsOpen)
 {
 	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());

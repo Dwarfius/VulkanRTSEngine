@@ -48,6 +48,17 @@ void Profiler::NewFrame()
         // store a copy of init frame for future inspection
         myInitFrames[myFrameNum - 1] = profile;
     }
+
+    if (myFrameNum > 0)
+    {
+        std::chrono::duration delta = profile.myEndStamp - profile.myBeginStamp;
+        using namespace std::chrono_literals;
+        constexpr std::chrono::duration kLimit = 16ms;
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(delta) > kLimit)
+        {
+            myOnLongFrameCB(profile);
+        }
+    }
     myFrameNum++;
 }
 

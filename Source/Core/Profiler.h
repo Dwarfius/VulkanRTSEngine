@@ -14,6 +14,8 @@ class Profiler
     constexpr static uint32_t kInitFrames = 5;
 public:
     class ScopedMark;
+    struct FrameProfile;
+    using LongFrameCallback = std::function<void(const FrameProfile& aProfile)>;
 
 	// A profiling mark, a record of how long it took to execute a named activity
     // Also keeps track of it's parent via IDs
@@ -47,6 +49,7 @@ public:
 
     // Call to start tracking new Marks for new frame
     void NewFrame();
+    void SetOnLongFrameCallback(const LongFrameCallback& aCallback) { myOnLongFrameCB = aCallback; }
 
     const std::array<FrameProfile, kMaxFrames>& GetBufferedFrameData() const { return myFrameProfiles;  }
     const std::array<FrameProfile, kInitFrames>& GrabInitFrame() const { return myInitFrames; };
@@ -71,6 +74,7 @@ private:
     std::vector<Storage*> myTLSStorages;
     std::array<FrameProfile, kMaxFrames> myFrameProfiles;
     std::array<FrameProfile, kInitFrames> myInitFrames;
+    LongFrameCallback myOnLongFrameCB;
     size_t myFrameNum;
     tbb::spin_mutex myStorageMutex;
 };

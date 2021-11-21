@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Engine/Systems/ProfilerUI.h>
 #include <Graphics/Camera.h>
 #include <Core/RefCounted.h>
 
@@ -23,6 +24,7 @@ private:
 	void DrawTextures();
 
 	Game& myGame;
+	
 	Camera myCamera;
 	glm::vec3 myColor{ 1 };
 	glm::vec2 myTexSize;
@@ -46,4 +48,7 @@ private:
 	std::atomic<uint64_t> myTotalTextures;
 	std::mutex myTexturesMutex;
 	oneapi::tbb::task_group myLoadGroup;
+
+	ProfilerUI myProfilerUI;
+	bool myShowProfilerUI = false;
 };
