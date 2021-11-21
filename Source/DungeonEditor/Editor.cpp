@@ -12,6 +12,7 @@
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/File.h>
+#include <filesystem>
 
 Editor::Editor(Game& aGame)
 	: myGame(aGame)
@@ -131,6 +132,11 @@ void Editor::Draw()
 		DrawPaintSettings();
 	}
 	ImGui::End();
+
+	if (myTexturesWindowOpen)
+	{
+		DrawTextures();
+	}
 }
 
 void Editor::DrawGeneralSettings()
@@ -166,12 +172,14 @@ void Editor::DrawPaintSettings()
 		if (myPaintTexture.IsValid())
 		{
 			myPaintTexture = {};
-			myTexturePath = "";
+			myTexturesPath = "";
+			myTexturesWindowOpen = false;
+			myTextures.clear();
 		}
 	}
 	else
 	{
-		bool changed = ImGui::InputText("Paint Texture", myTexturePath.data(), myTexturePath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+		bool changed = ImGui::InputText("Paint Texture", myTexturesPath.data(), myTexturesPath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
 			[](ImGuiInputTextCallbackData* aData)
 		{
 			std::string* valueStr = static_cast<std::string*>(aData->UserData);
@@ -181,28 +189,129 @@ void Editor::DrawPaintSettings()
 				aData->Buf = valueStr->data();
 			}
 			return 0;
-		}, &myTexturePath);
+		}, & myTexturesPath);
 
-		if (changed && !myTexturePath.empty())
+		if (changed && !myTexturesPath.empty())
 		{
-			std::string_view path = myTexturePath;
+			std::string_view path = myTexturesPath;
 			if (path.starts_with('"') && path.ends_with('"'))
 			{
 				path = path.substr(1, path.size() - 2);
 			}
 
-			if (File::Exists(path))
-			{
-				Handle<Texture> texture = Texture::LoadFromDisk(path);
-				myPaintTexture = myGame.GetGraphics()->GetOrCreate(texture, false).Get<GPUTexture>();
-			}
+			LoadTextures(path);
+			myTexturesWindowOpen = true;
 		}
 		
+		if (!myTexturesPath.empty() && !myTexturesWindowOpen)
+		{
+			if (ImGui::Button("Open Textures Window"))
+			{
+				myTexturesWindowOpen = true;
+			}
+		}
+
+		ImGui::DragFloat("Inverse Scale", &myInverseScale, 0.1f, 0.5f, 4.f);
+		ImGui::Text("Current Texture");
 		if (myPaintTexture.IsValid())
 		{
-			const glm::vec2 size = glm::max(glm::vec2(256), myPaintTexture->GetSize());
+			const glm::vec2 size = glm::min(glm::vec2(256), myPaintTexture->GetSize());
 			myGame.GetImGUISystem().Image(myPaintTexture, size);
 		}
-		ImGui::DragFloat("Inverse Scale", &myInverseScale, 0.1f, 0.5f, 4.f);
+		else
+		{
+			ImGui::Text("None");
+		}
 	}
+}
+
+void Editor::LoadTextures(std::string_view aPath)
+{
+	// acts as a cancellation token
+	uint64_t initLoadVal = myLoadReqCounter.fetch_add(1) + 1;
+
+	std::filesystem::path path = aPath;
+	const uint64_t totalWorkItems = [&] {
+		std::error_code errorCode;
+		std::filesystem::directory_iterator dirIter(path, errorCode);
+		ASSERT(!errorCode);
+
+		return std::count_if(dirIter, {}, [](const std::filesystem::directory_entry& aEntry) {
+			return aEntry.is_regular_file();
+		});
+	}();
+	myTotalTextures = totalWorkItems;
+	myWorkItemCounter = 0;
+
+	{
+		std::lock_guard lock(myTexturesMutex);
+		myTextures.clear();
+	}
+
+	std::error_code errorCode;
+	std::filesystem::directory_iterator dirIter(path, errorCode);
+	ASSERT(!errorCode);
+
+	for (const auto& entry : dirIter)
+	{
+		if (!entry.is_regular_file())
+		{
+			continue;
+		}
+
+		std::string utf8Path = entry.path().string();
+		std::string fileName = entry.path().filename().string();
+		myLoadGroup.run([=, this]{
+			Handle<Texture> texture = Texture::LoadFromDisk(utf8Path);
+			if (texture->GetState() == Resource::State::Error)
+			{
+				myTotalTextures--;
+				return;
+			}
+			Handle<GPUTexture> gpuTexture = myGame.GetGraphics()->GetOrCreate(texture).Get<GPUTexture>();
+			if (myLoadReqCounter == initLoadVal)
+			{
+				std::lock_guard lock(myTexturesMutex);
+				myTextures.emplace(fileName, gpuTexture);
+
+				myWorkItemCounter++;
+			}
+		});
+	}
+}
+
+void Editor::DrawTextures()
+{
+	constexpr glm::vec2 kSize(64);
+	if (ImGui::Begin("Textures", &myTexturesWindowOpen))
+	{
+		ImGui::LabelText("Path", myTexturesPath.c_str());
+		ImGui::LabelText("Loaded", "%llu/%llu", 
+			myWorkItemCounter.load(),
+			myTotalTextures.load());
+
+		const float offset = ImGui::GetStyle().ItemSpacing.x;
+		const float width = ImGui::GetContentRegionAvail().x;
+		const int rowElemCount = glm::max(static_cast<int>(width / (kSize.x + offset)), 1);
+		
+		std::lock_guard texturesMutex(myTexturesMutex);
+		int i = 0;
+		for (const auto& [filename, texture] : myTextures)
+		{
+			if((i++) % rowElemCount != 0)
+			{
+				ImGui::SameLine();
+			}
+			myGame.GetImGUISystem().Image(texture, kSize);
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip(filename.c_str());
+				if (ImGui::IsItemClicked())
+				{
+					myPaintTexture = texture;
+				}
+			}
+		}
+	}
+	ImGui::End();
 }

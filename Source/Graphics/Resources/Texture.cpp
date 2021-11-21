@@ -17,6 +17,10 @@ Handle<Texture> Texture::LoadFromDisk(std::string_view aPath)
 
 	int actualChannels = 0;
 	texture->LoadFromMemory(file.GetCBuffer(), file.GetSize(), STBI_default, actualChannels);
+	if (texture->GetState() == State::Error)
+	{
+		return texture;
+	}
 	Format format = Format::UNorm_RGB;
 	switch (actualChannels)
 	{
@@ -47,6 +51,7 @@ Handle<Texture> Texture::LoadFromMemory(const char* aBuffer, size_t aLength)
 
 	int actualChannels = 0;
 	texture->LoadFromMemory(aBuffer, aLength, STBI_default, actualChannels);
+	ASSERT(texture->GetState() != State::Error);
 	Format format = Format::UNorm_RGB;
 	switch (actualChannels)
 	{

@@ -3,7 +3,10 @@
 in vec2 uvsOut;
 
 uniform sampler2D prevFrame;
-uniform sampler2D zpaintTexture;
+// TODO: this requires z prefix to force it
+// to be second in order (as it seems to be sorted
+// alphabetically when using glGetActiveUniform)
+uniform sampler2D zpaintTexture; 
 
 layout(location = 0) out vec4 finalColor;
 layout(location = 1) out vec4 outColor;
@@ -66,7 +69,7 @@ vec4 ApplyPaintColor(bool aIsInside, vec4 aBaseColor)
     {
         vec2 uvs;
         uvs.x = mod(gl_FragCoord.x, TextureSize.x) / TextureSize.x;
-        uvs.y = mod(gl_FragCoord.y, TextureSize.y) / TextureSize.y;
+        uvs.y = 1 - mod(gl_FragCoord.y, TextureSize.y) / TextureSize.y;
         vec4 color = texture(zpaintTexture, uvs);
         return aIsInside ? color : aBaseColor;
     }

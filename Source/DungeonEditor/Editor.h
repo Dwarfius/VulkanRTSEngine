@@ -19,6 +19,9 @@ private:
 	void DrawGeneralSettings();
 	void DrawPaintSettings();
 
+	void LoadTextures(std::string_view aPath);
+	void DrawTextures();
+
 	Game& myGame;
 	Camera myCamera;
 	glm::vec3 myColor{ 1 };
@@ -33,6 +36,14 @@ private:
 	bool myPaintingColor = true;
 
 	Handle<GPUTexture> myPaintTexture;
-	std::string myTexturePath;
 	float myInverseScale = 1.f;
+
+	std::unordered_map<std::string, Handle<GPUTexture>> myTextures;
+	std::string myTexturesPath;
+	bool myTexturesWindowOpen = false;
+	std::atomic<uint8_t> myLoadReqCounter;
+	std::atomic<uint64_t> myWorkItemCounter;
+	std::atomic<uint64_t> myTotalTextures;
+	std::mutex myTexturesMutex;
+	oneapi::tbb::task_group myLoadGroup;
 };
