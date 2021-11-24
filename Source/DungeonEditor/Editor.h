@@ -49,7 +49,7 @@ private:
 	std::atomic<uint64_t> myTotalTextures;
 	std::mutex myTexturesMutex;
 	tbb::task_arena myTaskArena{
-		std::thread::hardware_concurrency() / 4,
+		glm::max(std::thread::hardware_concurrency() / 4, 1u),
 		1, 
 		tbb::task_arena::priority::low
 	};
