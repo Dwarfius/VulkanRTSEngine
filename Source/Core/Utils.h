@@ -57,3 +57,36 @@ void Utils::StringFormat(char(&aBuffer)[Length], const char* aFormat, const TArg
 	std::snprintf(aBuffer, Length, aFormat, aArgs...);
 #endif
 }
+
+namespace Utils
+{
+	class AffinitySetter : public tbb::task_scheduler_observer
+	{
+	public:
+		enum class Priority
+		{
+			High,
+			Medium,
+			Low
+		};
+
+		AffinitySetter(tbb::task_arena& anArena, Priority aPriority)
+			: tbb::task_scheduler_observer(anArena)
+			, myPriority(aPriority)
+		{
+			observe();
+		}
+
+		AffinitySetter(Priority aPriority)
+			: myPriority(aPriority)
+		{
+			observe();
+		}
+
+	private:
+		void on_scheduler_entry(bool aWorker) override;
+		void on_scheduler_exit(bool aWorker) override;
+
+		const Priority myPriority;
+	};
+}

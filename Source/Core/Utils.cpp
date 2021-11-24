@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "Utils.h"
 
+#include <windows.h>
+
 namespace Utils
 {
 	bool IsNan(glm::vec3 aVec)
@@ -217,5 +219,29 @@ namespace Utils
 
 		std::string_view lastFilterPart = aFilter.substr(currFilterInd, nextFilterInd - currFilterInd);
 		return aStr.find(lastFilterPart, currStrOffset) != std::string::npos;
+	}
+
+	void AffinitySetter::on_scheduler_entry(bool aWorker)
+	{
+		bool res = false;
+		switch (myPriority)
+		{
+		case Priority::Low: 
+			res = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+			break;
+		case Priority::Medium:
+			res = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+			break;
+		case Priority::High: 
+			res = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+			break;
+		}
+		ASSERT(res);
+	}
+
+	void AffinitySetter::on_scheduler_exit(bool aWorker)
+	{
+		bool res = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+		ASSERT(res);
 	}
 }

@@ -36,6 +36,7 @@ Editor::Editor(Game& aGame)
 
 void Editor::Run()
 {
+	Profiler::ScopedMark mark("Editor::Run");
 	ProcessInput();
 	Draw();
 
@@ -273,7 +274,8 @@ void Editor::LoadTextures(std::string_view aPath)
 
 		std::string utf8Path = entry.path().string();
 		std::string fileName = entry.path().filename().string();
-		myLoadGroup.run([=, this]{
+		myTaskArena.enqueue([=, this] {
+			Profiler::ScopedMark mark("Editor::LoadTextureTask");
 			Handle<Texture> texture = Texture::LoadFromDisk(utf8Path);
 			if (texture->GetState() == Resource::State::Error)
 			{

@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "GameTaskManager.h"
 
+#include <Core/Profiler.h>
+
 GameTask::GameTask(Type aType, std::function<void()> aCallback)
 	: myType(aType)
 	, myCallback(aCallback)
@@ -73,6 +75,7 @@ void GameTaskManager::Run()
 
 void GameTaskManager::Wait()
 {
+	Profiler::ScopedMark mark("GameTaskManager::Wait");
 	myTaskGraph->wait_for_all();
 	while (!myExternalDepsResetQueue.empty())
 	{

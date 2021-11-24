@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/Utils.h>
+
 class GameTask
 {
 public:
@@ -59,7 +61,8 @@ public:
 private:
 	void ResolveDependencies();
 
-	// It appears first in decl to be destroyed last
+	tbb::task_arena myTaskArena;
+	Utils::AffinitySetter myAffinitySetter{ myTaskArena, Utils::AffinitySetter::Priority::High };
 	std::unique_ptr<tbb::flow::graph> myTaskGraph;
 	std::unordered_map<GameTask::Type, GameTask> myTasks;
 	std::unordered_map<GameTask::Type, std::shared_ptr<BaseTaskNodeType>> myTaskNodes;

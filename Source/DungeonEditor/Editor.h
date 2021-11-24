@@ -3,6 +3,7 @@
 #include <Engine/Systems/ProfilerUI.h>
 #include <Graphics/Camera.h>
 #include <Core/RefCounted.h>
+#include <Core/Utils.h>
 
 class Game;
 enum class PaintMode : int;
@@ -47,7 +48,12 @@ private:
 	std::atomic<uint64_t> myWorkItemCounter;
 	std::atomic<uint64_t> myTotalTextures;
 	std::mutex myTexturesMutex;
-	oneapi::tbb::task_group myLoadGroup;
+	tbb::task_arena myTaskArena{
+		std::thread::hardware_concurrency() / 4,
+		1, 
+		tbb::task_arena::priority::low
+	};
+	Utils::AffinitySetter myAffinitySetter{ myTaskArena, Utils::AffinitySetter::Priority::Low };
 
 	ProfilerUI myProfilerUI;
 	bool myShowProfilerUI = false;

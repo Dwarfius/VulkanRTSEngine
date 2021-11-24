@@ -2,6 +2,7 @@
 
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
+#include <Core/Utils.h>
 
 #include "GameTaskManager.h"
 #include "GameObject.h"
@@ -129,6 +130,7 @@ private:
 	float myFrameStart;
 	float myDeltaTime;
 
+	Utils::AffinitySetter myAffinitySetter{ Utils::AffinitySetter::Priority::Medium };
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
 	std::unordered_map<UID, Handle<GameObject>> myGameObjects;

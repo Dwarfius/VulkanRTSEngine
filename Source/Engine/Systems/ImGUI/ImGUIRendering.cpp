@@ -6,6 +6,8 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
 
+#include <Core/Profiler.h>
+
 #include "Graphics/NamedFrameBuffers.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
 
@@ -86,6 +88,8 @@ void ImGUIRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphic
 // We're using BeginPass to generate all work and schedule updates of assets (model)
 void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("ImGUIRenderPass::BeginPass");
+
 	AssertLock lock(myRenderJobMutex);
 	IRenderPass::BeginPass(aGraphics);
 
