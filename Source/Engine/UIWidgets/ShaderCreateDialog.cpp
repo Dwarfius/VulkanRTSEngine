@@ -53,7 +53,7 @@ void ShaderCreateDialog::DrawShader()
 	DrawSaveInput(mySavePath);
 	if (ImGui::Button("Save"))
 	{
-		Handle<Shader> shader;
+		Handle<Shader> shader = new Shader();
 		shader->Upload(mySource.data(), mySource.size());
 		shader->SetType(static_cast<Shader::Type>(myShaderType));
 		std::string fullSavePath = Resource::kAssetsFolder.CStr() + mySavePath;

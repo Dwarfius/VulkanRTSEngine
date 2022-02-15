@@ -75,7 +75,7 @@ void PipelineCreateDialog::DrawPipeline()
 	DrawSaveInput(mySavePath);
 	if (ImGui::Button("Save"))
 	{
-		Handle<Pipeline> pipeline;
+		Handle<Pipeline> pipeline = new Pipeline();
 		pipeline->SetType(static_cast<Pipeline::Type>(myPipelineType));
 		for (const std::string& shader : myShaderPaths)
 		{
