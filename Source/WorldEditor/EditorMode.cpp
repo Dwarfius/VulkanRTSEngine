@@ -74,6 +74,8 @@ EditorMode::EditorMode(Game& aGame)
 	}
 
 	myAnimTest = new AnimationTest(aGame);
+
+	solver.Init(aGame);
 }
 
 EditorMode::~EditorMode()
@@ -224,6 +226,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	debugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
 	debugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
 	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
+
+	solver.Update(aGame, aDeltaTime);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)

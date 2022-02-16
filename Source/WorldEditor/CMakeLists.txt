@@ -6,6 +6,7 @@ set(SRC "Precomp.h"
 	"main.cpp"
 	"AnimationTest.cpp" "AnimationTest.h"
 	"EditorMode.cpp" "EditorMode.h"
+	"HexSolver.cpp" "HexSolver.h"
 )
 
 source_group("" FILES ${SRC})

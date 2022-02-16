@@ -1,0 +1,29 @@
+{
+    "descriptors":
+    [
+        {  
+            "myUniformAdapter":"ObjectMatricesAdapter",
+            "myEntries":[  
+                { "myUniformType":5, "myArraySize":1 },
+                { "myUniformType":5, "myArraySize":1 },
+                { "myUniformType":5, "myArraySize":1 }
+            ]
+        },
+        {
+            "myEntries":
+            [
+                {
+                    "myArraySize": 3,
+                    "myUniformType": 0
+                }
+            ],
+            "myUniformAdapter": "TintAdapter"
+        }
+    ],
+    "shaders":
+    [
+        "Engine/baseVert.shd",
+        "Hexagon/HexColor.shd"
+    ],
+    "type": 0
+}

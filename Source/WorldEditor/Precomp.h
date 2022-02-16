@@ -7,6 +7,7 @@
 #include <fstream>
 #include <random>
 #include <mutex>
+#include <array>
 
 #include <tbb/tbb.h>
 

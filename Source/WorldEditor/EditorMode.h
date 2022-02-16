@@ -14,6 +14,8 @@
 #include <Engine/UIWidgets/ShaderCreateDialog.h>
 #include <Engine/UIWidgets/PipelineCreateDialog.h>
 
+#include "HexSolver.h"
+
 class PhysicsWorld;
 class GameObject;
 class PhysicsShapeBase;
@@ -71,4 +73,6 @@ private:
 	AnimationTest* myAnimTest;
 
 	Handle<GameObject> myGO;
+
+	HexSolver solver;
 };
