@@ -3,6 +3,7 @@
 
 #include <Graphics/Resources/Shader.h>
 #include <Graphics/Graphics.h>
+#include <Core/Profiler.h>
 
 ShaderGL::ShaderGL()
 	: myGLShader(0)
@@ -31,6 +32,8 @@ void ShaderGL::OnCreate(Graphics& aGraphics)
 
 bool ShaderGL::OnUpload(Graphics& aGraphics)
 {
+	Profiler::ScopedMark uploadMark("ShaderGL::OnUpload");
+
 	ASSERT_STR(myGLShader, "Shader missing!");
 
 	const Shader* shader = myResHandle.Get<const Shader>();

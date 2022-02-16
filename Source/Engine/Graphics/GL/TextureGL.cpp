@@ -2,6 +2,7 @@
 #include "TextureGL.h"
 
 #include <Graphics/Resources/Texture.h>
+#include <Core/Profiler.h>
 
 void TextureGL::Bind()
 {
@@ -92,6 +93,8 @@ void TextureGL::OnCreate(Graphics& aGraphics)
 
 bool TextureGL::OnUpload(Graphics& aGraphics)
 {
+	Profiler::ScopedMark uploadMark("TextureGL::OnUpload");
+
 	ASSERT_STR(myGLTexture, "Uploading an uploaded texture!");
 
 	// rebind it in case it's not bound
@@ -113,6 +116,7 @@ bool TextureGL::OnUpload(Graphics& aGraphics)
 
 	if (texture->IsUsingMipMaps())
 	{
+		Profiler::ScopedMark mipmapsMark("TextureGL::GenerateMipMaps");
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 

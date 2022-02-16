@@ -2,6 +2,7 @@
 #include "ModelGL.h"
 
 #include <Graphics/Resources/Model.h>
+#include <Core/Profiler.h>
 
 ModelGL::ModelGL(UsageType aUsage)
 	: ModelGL(PrimitiveType::Lines, aUsage, VertexDescriptor::GetEmpty(), false)
@@ -111,14 +112,15 @@ void ModelGL::OnCreate(Graphics& aGraphics)
 
 bool ModelGL::OnUpload(Graphics& aGraphics)
 {
-	const Model* model = static_cast<const Model*>(myResHandle.Get());
-	
+	Profiler::ScopedMark uploadMark("ModelGL::OnUpload");
+
 	ASSERT_STR(myVAO, "Don't have a buffer alocated!");
 
 	glBindVertexArray(myVAO);
 
 	// first need to count how many vertices and indices are there in total
 	// and adjust internal buffers if there aren't enough
+	const Model* model = static_cast<const Model*>(myResHandle.Get());
 	char elemPerPrim = 0;
 	switch (model->GetPrimitiveType())
 	{

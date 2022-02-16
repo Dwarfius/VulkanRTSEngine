@@ -4,6 +4,7 @@
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Graphics.h>
 #include <Core/Resources/AssetTracker.h>
+#include <Core/Profiler.h>
 
 #include "ShaderGL.h"
 #include "UniformBufferGL.h"
@@ -68,6 +69,8 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 
 bool PipelineGL::OnUpload(Graphics& aGraphics)
 {
+	Profiler::ScopedMark uploadMark("PipelineGL::OnUpload");
+
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
 	// Upload is just linking the dependencies on the GPU
