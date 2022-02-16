@@ -157,6 +157,11 @@ target_compile_definitions(${PROJECT_NAME}
 		__STDC_WANT_LIB_EXT1__=1 # to get safe format functions from stdio
 )
 
+option(VENGINE_USE_ASAN "Enable AddressSanitizer" OFF)
+if(VENGINE_USE_ASAN)
+	target_compile_options(${PROJECT_NAME} PUBLIC "/fsanitize=address")
+endif()
+
 target_include_directories(${PROJECT_NAME}
 	PRIVATE 
 		. 
