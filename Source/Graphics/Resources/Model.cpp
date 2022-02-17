@@ -55,7 +55,8 @@ void Model::SetAABB(glm::vec3 aMin, glm::vec3 aMax)
 {
 	myAABBMin = aMin;
 	myAABBMax = aMax;
-	myCenter = (myAABBMin + myAABBMax) / 2.f;
+	myCenter = myAABBMin + (myAABBMax - myAABBMin) / 2.f;
+	mySphereRadius = glm::length(myAABBMax - myCenter);
 }
 
 void Model::Serialize(Serializer& aSerializer)
@@ -109,9 +110,9 @@ void Model::Serialize(Serializer& aSerializer)
 
 	aSerializer.Serialize("myAABBMin", myAABBMin);
 	aSerializer.Serialize("myAABBMax", myAABBMax);
-	myCenter = (myAABBMin + myAABBMax) / 2.f;
+	myCenter = myAABBMin + (myAABBMax - myAABBMin) / 2.f;
+	mySphereRadius = glm::length(myAABBMax - myCenter);
 
-	aSerializer.Serialize("mySphereRadius", mySphereRadius);
 	aSerializer.SerializeEnum("myPrimitiveType", myPrimitiveType);
 }
 
