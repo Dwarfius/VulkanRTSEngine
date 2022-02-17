@@ -55,6 +55,40 @@ void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, 
 	}
 }
 
+void DebugDrawer::AddCircle(glm::vec3 aCenter, glm::vec3 aUp, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive /* = 1*/)
+{
+	constexpr char kSegments = 8;
+	constexpr glm::vec3 kUp{ 0, 1, 0 };
+	constexpr glm::vec3 kRight{ 1, 0, 0 };
+	constexpr glm::vec3 kForward{ 0, 0, 1 };
+	const bool isNormalUp = aUp == kUp || aUp == -kUp;
+	const glm::vec3 right = isNormalUp ? kRight : glm::cross(aUp, kUp);
+	const glm::vec3 forward = isNormalUp ? kForward : glm::cross(aUp, right);
+	float angle = 0;
+	constexpr float kDeltaAngle = glm::two_pi<float>() / kSegments;
+	for (char i = 0; i < kSegments; i++)
+	{
+		const float x1 = aRadius * glm::cos(angle);
+		const float y1 = aRadius * glm::sin(angle);
+
+		angle += kDeltaAngle;
+
+		const float x2 = aRadius * glm::cos(angle);
+		const float y2 = aRadius * glm::sin(angle);
+
+		const glm::vec3 from = aCenter + x1 * right + y1 * forward;
+		const glm::vec3 to = aCenter + x2 * right + y2 * forward;
+		AddLine(from, to, aColor, aFramesToLive);
+	}
+}
+
+void DebugDrawer::AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive /* = 1 */)
+{
+	AddCircle(aCenter, glm::vec3{ 1, 0, 0 }, aRadius, aColor, aFramesToLive);
+	AddCircle(aCenter, glm::vec3{ 0, 1, 0 }, aRadius, aColor, aFramesToLive);
+	AddCircle(aCenter, glm::vec3{ 0, 0, 1 }, aRadius, aColor, aFramesToLive);
+}
+
 const PosColorVertex* DebugDrawer::GetCurrentVertices() const
 {
 	return myFrameCaches.GetRead().myVertices.Data();

@@ -22,6 +22,10 @@ public:
 	// Creates a line from aFrom and color aFromColor to aTo and color aToColor
 	void AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, glm::vec3 aToColor, uint32_t aFramesToLive = 1);
 
+	void AddCircle(glm::vec3 aCenter, glm::vec3 aUp, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive = 1);
+
+	void AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, uint32_t aFrameToLive = 1);
+
 	const PosColorVertex* GetCurrentVertices() const;
 	size_t GetCurrentVertexCount() const;
 
