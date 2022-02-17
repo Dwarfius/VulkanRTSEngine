@@ -29,7 +29,10 @@ void VisualObject::SetTexture(Handle<Texture> aTexture)
 
 glm::vec3 VisualObject::GetCenter() const
 {
-	return myModel->GetCenter();
+	const glm::vec3 pos = myTransf.GetPos();
+	const glm::vec3 scale = myTransf.GetScale();
+	const glm::vec3 localCenter = myModel->GetCenter();
+	return pos + scale * localCenter;
 }
 
 float VisualObject::GetRadius() const

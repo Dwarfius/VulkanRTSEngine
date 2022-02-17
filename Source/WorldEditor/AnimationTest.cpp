@@ -231,5 +231,14 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 	uploadDesc.myIndOwned = false;
 	model->Update(uploadDesc);
 
+	glm::vec3 min(std::numeric_limits<float>::max());
+	glm::vec3 max(std::numeric_limits<float>::min());
+	for (const SkinnedVertex& vert : verts)
+	{
+		min = glm::min(min, vert.myPos);
+		max = glm::max(max, vert.myPos);
+	}
+	model->SetAABB(min, max);
+
 	return model;
 }

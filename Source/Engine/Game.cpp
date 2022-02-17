@@ -576,7 +576,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				continue;
 			}
 
-			if (!myCamera->CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
+			if (!myCamera->CheckSphere(visualObj.GetCenter(), visualObj.GetRadius()))
 			{
 				continue;
 			}
