@@ -106,11 +106,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 		}
 	}
 
-	if (Input::GetKeyPressed(Input::Keys::K))
-	{
-		aGame.GetGraphics()->ToggleWireframe();
-	}
-
 	if (Input::GetMouseBtnPressed(2))
 	{
 		AssetTracker& assetTracker = aGame.GetAssetTracker();

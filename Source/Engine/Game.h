@@ -6,6 +6,7 @@
 
 #include "GameTaskManager.h"
 #include "GameObject.h"
+#include "EngineSettings.h"
 
 class Camera;
 class Graphics;
@@ -86,6 +87,9 @@ public:
 	Graphics* GetGraphics();
 	const Graphics* GetGraphics() const;
 
+	EngineSettings& GetEngineSettings() { return mySettings; }
+	const EngineSettings& GetEngineSettings() const { return mySettings; }
+
 	void AddRenderContributor(OnRenderCallback aCallback);
 
 	// Adds GameObject and it's children to the world
@@ -150,6 +154,7 @@ private:
 	DebugDrawer myDebugDrawer;
 	ImGUISystem* myImGUISystem;
 	AnimationSystem* myAnimationSystem;
+	EngineSettings mySettings;
 
 	bool myIsRunning;
 	bool myShouldEnd;

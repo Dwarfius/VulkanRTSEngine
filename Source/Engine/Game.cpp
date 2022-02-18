@@ -502,6 +502,12 @@ void Game::UpdateAudio()
 void Game::UpdateEnd()
 {
 	Profiler::ScopedMark profile(__func__);
+
+	if (Input::GetKeyPressed(Input::Keys::K))
+	{
+		mySettings.myUseWireframe = !mySettings.myUseWireframe;
+	}
+
 	Input::PostUpdate();
 }
 

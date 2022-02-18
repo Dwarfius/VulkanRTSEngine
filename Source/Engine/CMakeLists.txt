@@ -57,6 +57,7 @@ set(CMAKE_FOLDER "")
 
 set(SRC "Precomp.h"
 	"Audio.cpp" "Audio.h"
+	"EngineSettings.h"
 	"Game.cpp" "Game.h"
 	"GameObject.cpp" "GameObject.h"
 	"GameTaskManager.cpp" "GameTaskManager.h"

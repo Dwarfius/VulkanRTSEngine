@@ -7,6 +7,7 @@
 
 #include "Graphics/NamedFrameBuffers.h"
 #include "Terrain.h"
+#include "Game.h"
 
 DefaultRenderPass::DefaultRenderPass()
 {
@@ -32,6 +33,10 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 
 	aContext.myTexturesToActivate[0] = 0;
+
+	const EngineSettings& settings = Game::GetInstance()->GetEngineSettings();
+	aContext.myPolygonMode = settings.myUseWireframe ?
+		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;
 
 	aContext.myEnableCulling = true;
 	aContext.myEnableDepthTest = true;
@@ -69,7 +74,8 @@ void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 
 	aContext.myTexturesToActivate[0] = 0;
 
-	aContext.myPolygonMode = aGraphics.IsWireframeActive() ? 
+	const EngineSettings& settings = Game::GetInstance()->GetEngineSettings();
+	aContext.myPolygonMode = settings.myUseWireframe ?
 		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;
 
 	aContext.myEnableCulling = true;

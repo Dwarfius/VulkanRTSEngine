@@ -36,10 +36,6 @@ public:
 	float GetWidth() const { return static_cast<float>(myWidth); }
 	float GetHeight() const { return static_cast<float>(myHeight); }
 
-	// TODO: move this to a settings struct
-	bool IsWireframeActive() const { return myUseWireframe; }
-	void ToggleWireframe() { myUseWireframe = !myUseWireframe; }
-
 	// Graphics will manage the lifetime of the render pass job,
 	// but it guarantees that it will stay valid until the next call
 	// to GetRenderPassJob with same context.
