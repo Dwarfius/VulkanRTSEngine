@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Engine/Systems/ProfilerUI.h>
 #include <Graphics/Camera.h>
 #include <Core/RefCounted.h>
 #include <Core/Utils.h>
@@ -54,7 +53,4 @@ private:
 		tbb::task_arena::priority::low
 	};
 	Utils::AffinitySetter myAffinitySetter{ myTaskArena, Utils::AffinitySetter::Priority::Low };
-
-	ProfilerUI myProfilerUI;
-	bool myShowProfilerUI = false;
 };

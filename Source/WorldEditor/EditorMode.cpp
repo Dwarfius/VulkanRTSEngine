@@ -14,13 +14,6 @@
 #include <Engine/Animation/AnimationSystem.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
 #include <Engine/Resources/GLTFImporter.h>
-#include <Engine/UIWidgets/EntitiesWidget.h>
-#include <Engine/UIWidgets/ObjImportDialog.h>
-#include <Engine/UIWidgets/GltfImportDialog.h>
-#include <Engine/UIWidgets/TextureImportDialog.h>
-#include <Engine/UIWidgets/ShaderCreateDialog.h>
-#include <Engine/UIWidgets/PipelineCreateDialog.h>
-#include <Engine/Systems/ProfilerUI.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Utils.h>
@@ -33,32 +26,6 @@
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
-
-namespace UIWidgets
-{
-	void DrawCameraInfo(bool& aIsVisible, const Game& aGame)
-	{
-		if (ImGui::Begin("Camera", &aIsVisible))
-		{
-			const Camera* camera = aGame.GetCamera();
-			const Transform& camTransform = camera->GetTransform();
-			ImGui::Text("Pos: %f %f %f", 
-				camTransform.GetPos().x,
-				camTransform.GetPos().y,
-				camTransform.GetPos().z);
-		}
-		ImGui::End();
-	}
-
-	// We can't capture a copy in the lambda capture list because
-	// it moves it around - and internally ProfielrUI
-	// caches 'this' pointer (which becomes invalid)
-	ProfilerUI ourProfilerUI;
-	void DrawProfilerUI(bool& aIsVisible)
-	{
-		ourProfilerUI.Draw(aIsVisible);
-	}
-}
 
 EditorMode::EditorMode(Game& aGame)
 {
@@ -80,38 +47,6 @@ EditorMode::EditorMode(Game& aGame)
 		aGame.AddGameObject(go);
 
 		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/goSaveTest.go", go);
-	});
-
-	myTopBar.Register("Widgets/Demo", [](bool& aIsVisible) { 
-		ImGui::ShowDemoWindow(&aIsVisible); 
-	});
-	myTopBar.Register("Widgets/Camera Info", [&](bool& aIsVisible) { 
-		UIWidgets::DrawCameraInfo(aIsVisible, aGame); 
-	});
-	myTopBar.Register("Widgets/Profiler", &UIWidgets::DrawProfilerUI);
-	myTopBar.Register("Widgets/Entities View", 
-		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable { 
-			entitiesWidget.DrawDialog(aGame, aIsVisible); 
-	});
-	myTopBar.Register("File/Import OBJ", 
-		[objImportDialog = ObjImportDialog()](bool& aIsVisible) mutable { 
-			objImportDialog.Draw(aIsVisible); 
-	});
-	myTopBar.Register("File/Import Gltf", 
-		[gltfImportDialog = GltfImportDialog()](bool& aIsVisible) mutable { 
-			gltfImportDialog.Draw(aIsVisible); 
-	});
-	myTopBar.Register("File/Import Texture", 
-		[textureImportDialog = TextureImportDialog()](bool& aIsVisible) mutable { 
-			textureImportDialog.Draw(aIsVisible); 
-	});
-	myTopBar.Register("File/Create Shader", 
-		[shaderCreateDialog = ShaderCreateDialog()](bool& aIsVisible) mutable { 
-			shaderCreateDialog.Draw(aIsVisible); 
-	});
-	myTopBar.Register("File/Create Pipeline", 
-		[pipelineCreateDialog = PipelineCreateDialog()](bool& aIsVisible) mutable { 
-			pipelineCreateDialog.Draw(aIsVisible); 
 	});
 
 	{
@@ -212,8 +147,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 
 	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
 	myAnimTest->Update(aGame.IsPaused() ? 0 : aDeltaTime);
-
-	myTopBar.Draw();
 
 	const Terrain* terrain = aGame.GetTerrain(0);
 	const float halfW = terrain->GetWidth() / 2.f;

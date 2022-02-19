@@ -18,6 +18,13 @@
 #include "Systems/ImGUI/ImGUIRendering.h"
 #include "Animation/AnimationSystem.h"
 #include "RenderThread.h"
+#include "UIWidgets/EntitiesWidget.h"
+#include "UIWidgets/ObjImportDialog.h"
+#include "UIWidgets/GltfImportDialog.h"
+#include "UIWidgets/TextureImportDialog.h"
+#include "UIWidgets/ShaderCreateDialog.h"
+#include "UIWidgets/PipelineCreateDialog.h"
+#include "Systems/ProfilerUI.h"
 
 #include <Core/StaticString.h>
 #include <Core/Profiler.h>
@@ -45,6 +52,32 @@ bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
 constexpr StaticString kHeightmapName("Tynemouth-tangrams.img");
+
+namespace UIWidgets
+{
+	void DrawCameraInfo(bool& aIsVisible, const Game& aGame)
+	{
+		if (ImGui::Begin("Camera", &aIsVisible))
+		{
+			const Camera* camera = aGame.GetCamera();
+			const Transform& camTransform = camera->GetTransform();
+			ImGui::Text("Pos: %f %f %f",
+				camTransform.GetPos().x,
+				camTransform.GetPos().y,
+				camTransform.GetPos().z);
+		}
+		ImGui::End();
+	}
+
+	// We can't capture a copy in the lambda capture list because
+	// it moves it around - and internally ProfielrUI
+	// caches 'this' pointer (which becomes invalid)
+	ProfilerUI ourProfilerUI;
+	void DrawProfilerUI(bool& aIsVisible)
+	{
+		ourProfilerUI.Draw(aIsVisible);
+	}
+}
 
 Game::Game(ReportError aReporterFunc)
 	: myFrameStart(0.f)
@@ -175,6 +208,38 @@ void Game::Init(bool aUseDefaultCompositePass)
 		task.AddDependency(Tasks::UpdateEnd);
 		myTaskManager->AddTask(task);
 	}
+
+	myTopBar.Register("Widgets/Demo", [](bool& aIsVisible) {
+		ImGui::ShowDemoWindow(&aIsVisible);
+	});
+	myTopBar.Register("Widgets/Camera Info", [&](bool& aIsVisible) {
+		UIWidgets::DrawCameraInfo(aIsVisible, *this);
+	});
+	myTopBar.Register("Widgets/Profiler", &UIWidgets::DrawProfilerUI);
+	myTopBar.Register("Widgets/Entities View",
+		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {
+		entitiesWidget.DrawDialog(*this, aIsVisible);
+	});
+	myTopBar.Register("File/Import OBJ",
+		[objImportDialog = ObjImportDialog()](bool& aIsVisible) mutable {
+		objImportDialog.Draw(aIsVisible);
+	});
+	myTopBar.Register("File/Import Gltf",
+		[gltfImportDialog = GltfImportDialog()](bool& aIsVisible) mutable {
+		gltfImportDialog.Draw(aIsVisible);
+	});
+	myTopBar.Register("File/Import Texture",
+		[textureImportDialog = TextureImportDialog()](bool& aIsVisible) mutable {
+		textureImportDialog.Draw(aIsVisible);
+	});
+	myTopBar.Register("File/Create Shader",
+		[shaderCreateDialog = ShaderCreateDialog()](bool& aIsVisible) mutable {
+		shaderCreateDialog.Draw(aIsVisible);
+	});
+	myTopBar.Register("File/Create Pipeline",
+		[pipelineCreateDialog = PipelineCreateDialog()](bool& aIsVisible) mutable {
+		pipelineCreateDialog.Draw(aIsVisible);
+	});
 
 	// TODO: need to add functionality to draw out the task tree ingame
 	myTaskManager->Run();
@@ -507,6 +572,8 @@ void Game::UpdateEnd()
 	{
 		mySettings.myUseWireframe = !mySettings.myUseWireframe;
 	}
+
+	myTopBar.Draw();
 
 	Input::PostUpdate();
 }

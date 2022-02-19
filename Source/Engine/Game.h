@@ -7,6 +7,7 @@
 #include "GameTaskManager.h"
 #include "GameObject.h"
 #include "EngineSettings.h"
+#include "UIWidgets/TopBar.h"
 
 class Camera;
 class Graphics;
@@ -155,6 +156,7 @@ private:
 	ImGUISystem* myImGUISystem;
 	AnimationSystem* myAnimationSystem;
 	EngineSettings mySettings;
+	TopBar myTopBar;
 
 	bool myIsRunning;
 	bool myShouldEnd;

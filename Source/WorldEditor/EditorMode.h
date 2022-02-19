@@ -5,7 +5,6 @@
 #include <Engine/Animation/AnimationClip.h>
 #include <Core/Pool.h>
 #include <Engine/Resources/GLTFImporter.h>
-#include <Engine/UIWidgets/TopBar.h>
 
 #include "HexSolver.h"
 
@@ -33,7 +32,6 @@ private:
 	float myFlightSpeed = 2.f;
 
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;
-	TopBar myTopBar;
 
 	// Testing
 	void AddTestSkeleton(Game& aGame);
