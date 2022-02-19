@@ -6,6 +6,7 @@ class GltfImportDialog
 {
 public:
 	void Draw(bool& aIsOpen);
+
 private:
 	constexpr static bool ValidPath(std::string_view aPath);
 

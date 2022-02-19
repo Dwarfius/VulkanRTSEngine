@@ -7,6 +7,7 @@ class ShaderCreateDialog
 {
 public:
 	void Draw(bool& aIsOpen);
+
 private:
 	void DrawShader();
 

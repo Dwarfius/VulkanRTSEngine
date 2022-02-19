@@ -8,8 +8,6 @@
 
 void PipelineCreateDialog::Draw(bool& aIsOpen)
 {
-	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
-
 	if (ImGui::Begin("Import Pipeline", &aIsOpen))
 	{
 		DrawPipeline();

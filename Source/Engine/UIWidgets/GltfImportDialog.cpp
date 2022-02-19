@@ -11,9 +11,7 @@
 
 void GltfImportDialog::Draw(bool& aIsOpen)
 {
-	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
-
-	if (ImGui::Begin("Import Model", &aIsOpen))
+	if (ImGui::Begin("Import Model(GLTF)", &aIsOpen))
 	{
 		DrawSourceInput(mySourceFile);
 		ImGui::SameLine();

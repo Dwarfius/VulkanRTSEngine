@@ -5,9 +5,9 @@
 #include "../Input.h"
 #include "../Systems/ImGUI/ImGUISystem.h"
 
-void TopBar::Register(std::string_view aPath, Callback aCallback)
+void TopBar::Register(std::string_view aPath, DrawCallback aCallback)
 {
-	myMenuItems.push_back({ GetMenuStack(aPath), aPath, aCallback });
+	myMenuItems.push_back({ GetMenuStack(aPath), aPath, aCallback, false });
 	std::sort(myMenuItems.begin(), myMenuItems.end(), [](const MenuItem& aLeft, const MenuItem& aRight) {
 		return aLeft.myPath.compare(aRight.myPath) < 0;
 	});
@@ -44,9 +44,12 @@ void TopBar::Draw()
 		constexpr size_t kMaxPath = 250;
 		char currentMenu[kMaxPath]{};
 		char menuCount = 0;
-		for (const MenuItem& item : myMenuItems)
+		for (MenuItem& item : myMenuItems)
 		{
-			DrawMenu(item, currentMenu, menuCount);
+			if (DrawMenu(item, currentMenu, menuCount))
+			{
+				item.myIsVisible = true;
+			}
 		}
 		while (menuCount)
 		{
@@ -55,9 +58,17 @@ void TopBar::Draw()
 		}
 		ImGui::EndMainMenuBar();
 	}
+
+	for (MenuItem& item : myMenuItems)
+	{
+		if (item.myIsVisible)
+		{
+			item.myDrawCallback(item.myIsVisible);
+		}
+	}
 }
 
-void TopBar::DrawMenu(const MenuItem& anItem, char* aCurrentMenu, char& aMenuCount)
+bool TopBar::DrawMenu(const MenuItem& anItem, char* aCurrentMenu, char& aMenuCount) const
 {
 	// check if we need to start a new menu
 	size_t offset = 0;
@@ -123,10 +134,7 @@ void TopBar::DrawMenu(const MenuItem& anItem, char* aCurrentMenu, char& aMenuCou
 
 	// draw out current item
 	std::string_view name = GetMenuName(anItem.myPath);
-	if (aMenuCount == anItem.myMenuStack.size() && ImGui::MenuItem(name.data()))
-	{
-		anItem.myCallback();
-	}
+	return aMenuCount == anItem.myMenuStack.size() && ImGui::MenuItem(name.data());
 }
 
 std::vector<std::string> TopBar::GetMenuStack(std::string_view aPath)

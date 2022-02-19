@@ -48,7 +48,6 @@ ProfilerUI::ProfilerUI()
 
 void ProfilerUI::Draw(bool& aIsOpen)
 {
-	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Profiler", &aIsOpen))
 	{
 		if (ImGui::Button("Buffer Init Frame"))

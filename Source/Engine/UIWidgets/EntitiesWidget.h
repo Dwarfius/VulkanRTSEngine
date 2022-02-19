@@ -11,7 +11,7 @@ public:
 	void Draw(Game& aGame);
 
 	// Draws as a separate window
-	// Precondition: ImGui lock free
+	// Precondition: ImGui lock acquired
 	void DrawDialog(Game& aGame, bool& aIsOpen);
 
 private:

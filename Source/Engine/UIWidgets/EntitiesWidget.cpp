@@ -30,7 +30,6 @@ void EntitiesWidget::Draw(Game& aGame)
 
 void EntitiesWidget::DrawDialog(Game& aGame, bool& aIsOpen)
 {
-	std::lock_guard imguiLock(aGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Entities", &aIsOpen))
 	{
 		Draw(aGame);
