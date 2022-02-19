@@ -7,7 +7,7 @@
 #include "../../VisualObject.h"
 #include "AdapterSourceData.h"
 
-void ObjectMatricesAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void ObjectMatricesAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const UniformAdapterSource& source = static_cast<const UniformAdapterSource&>(aData);
 

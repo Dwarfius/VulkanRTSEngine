@@ -12,7 +12,6 @@ set(SRC "Precomp.cpp" "Precomp.h"
 	"RenderPass.cpp" "RenderPass.h"
 	"RenderPassJob.cpp" "RenderPassJob.h"
 	"UniformBlock.cpp" "UniformBlock.h"
-	"UniformAdapter.h"
 	"UniformAdapterRegister.cpp" "UniformAdapterRegister.h"
 )
 

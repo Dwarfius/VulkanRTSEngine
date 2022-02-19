@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 
-class SkeletonAdapter : public UniformAdapter
+class SkeletonAdapter : RegisterUniformAdapter<SkeletonAdapter>
 {
-	DECLARE_REGISTER(SkeletonAdapter);
 public:
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
+	constexpr static std::string_view kName = "SkeletonAdapter";
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

@@ -3,9 +3,9 @@
 #include <Graphics/RenderPass.h>
 #include <Graphics/FrameBuffer.h>
 #include <Core/StaticString.h>
-#include <Graphics/UniformAdapter.h>
 #include <Graphics/Camera.h>
 #include <Core/RWBuffer.h>
+#include <Graphics/UniformAdapterRegister.h>
 
 class GPUPipeline;
 class Pipeline;
@@ -113,11 +113,12 @@ private:
 #endif
 };
 
-class PainterAdapter : public UniformAdapter
+class PainterAdapter : RegisterUniformAdapter<PainterAdapter>
 {
-	DECLARE_REGISTER(PainterAdapter);
 public:
-	struct Source : SourceData
+	constexpr static std::string_view kName = "PainterAdapter";
+
+	struct Source : AdapterSourceData
 	{
 		const glm::vec3 myColor;
 		const glm::vec2 myTexSize;
@@ -129,5 +130,5 @@ public:
 		const int myBrushRadius;
 	};
 
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

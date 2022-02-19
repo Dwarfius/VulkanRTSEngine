@@ -8,7 +8,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Pipeline.h>
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 
 #include <Core/Debug/DebugDrawer.h>
 
@@ -134,7 +134,7 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 	RenderPassJob& passJob = anInterface.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
-	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
+	UniformAdapterRegister::FillUBCallback adapter = myPipeline->GetAdapter(0);
 	for (PerCameraModel& perCamModel : myCameraModels)
 	{
 		const bool hasDebugData = perCamModel.myDesc.myVertCount > 0;
@@ -158,8 +158,8 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
 		job.SetDrawParams(params);
 
-		UniformAdapter::SourceData source{ anInterface, perCamModel.myCamera };
-		adapter.FillUniformBlock(source, *perCamModel.myBlock);
+		AdapterSourceData source{ anInterface, perCamModel.myCamera };
+		adapter(source, *perCamModel.myBlock);
 		job.AddUniformBlock(*perCamModel.myBlock);
 
 		passJob.Add(job);

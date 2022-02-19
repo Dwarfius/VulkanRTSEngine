@@ -210,7 +210,7 @@ void DisplayRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myClearColor[3] = 1;
 }
 
-void PainterAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void PainterAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const Source& data = static_cast<const Source&>(aData);
 

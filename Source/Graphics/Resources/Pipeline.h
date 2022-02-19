@@ -5,8 +5,6 @@
 #include "../Descriptor.h"
 #include "../Resources/Shader.h"
 
-class UniformAdapter;
-
 // A base class describing a generic pipeline
 class Pipeline : public Resource, public IPipeline
 {
@@ -21,7 +19,7 @@ public:
 
 	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
 	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
-	const UniformAdapter& GetAdapter(size_t anIndex) const override final { return myAdapters[anIndex]; }
+	UniformAdapterRegister::FillUBCallback GetAdapter(size_t anIndex) const override final { return myAdapters[anIndex]; }
 
 	void AddShader(const std::string& aShader) { myShaders.push_back(aShader); }
 
@@ -39,6 +37,6 @@ private:
 	Type myType;
 	// TODO: explore storing adapters only, instead of Descriptors and Adapters
 	std::vector<Descriptor> myDescriptors;
-	std::vector<std::reference_wrapper<const UniformAdapter>> myAdapters;
+	std::vector<UniformAdapterRegister::FillUBCallback> myAdapters;
 	std::vector<std::string> myShaders;
 };

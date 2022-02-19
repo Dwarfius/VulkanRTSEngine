@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 
-class CameraAdapter : public UniformAdapter
+class CameraAdapter : RegisterUniformAdapter<CameraAdapter>
 {
-	DECLARE_REGISTER(CameraAdapter);
 public:
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
+	constexpr static std::string_view kName = "CameraAdapter";
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

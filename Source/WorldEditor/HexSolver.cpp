@@ -15,8 +15,6 @@
 
 void HexSolver::Init(Game& aGame)
 {
-	UniformAdapterRegister::GetInstance().Register<TintAdapter>();
-
 	InitGrid(aGame);
 }
 
@@ -212,7 +210,7 @@ void HexSolver::Solve()
 	}
 }
 
-void TintAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void TintAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const UniformAdapterSource& data = static_cast<const UniformAdapterSource&>(aData);
 	const HexComponent* hexComp = data.myGO->GetComponent<HexComponent>();

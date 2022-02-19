@@ -1,15 +1,13 @@
 #include "Precomp.h"
 #include "UniformAdapterRegister.h"
 
-#include "UniformAdapter.h"
-
-std::reference_wrapper<const UniformAdapter> UniformAdapterRegister::GetAdapter(const std::string& aName) const
+UniformAdapterRegister::FillUBCallback UniformAdapterRegister::GetAdapter(std::string_view aName) const
 {
 #ifdef _DEBUG
 	AssertReadLock lock(myRegisterMutex);
 #endif
 
 	const auto iter = myAdapters.find(aName);
-	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter: %s", aName.c_str());
-	return std::cref(*iter->second);
+	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter: %s", aName.data());
+	return iter->second;
 }

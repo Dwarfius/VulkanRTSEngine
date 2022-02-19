@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 #include <Engine/Components/ComponentBase.h>
 
 class Game;
@@ -38,9 +38,9 @@ public:
 	bool myIsPath = false;
 };
 
-class TintAdapter : public UniformAdapter
+class TintAdapter : RegisterUniformAdapter<TintAdapter>
 {
-	DECLARE_REGISTER(TintAdapter);
 public:
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
+	constexpr static std::string_view kName = "TintAdapter";
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

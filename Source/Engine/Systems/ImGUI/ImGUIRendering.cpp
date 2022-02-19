@@ -11,7 +11,7 @@
 #include "Graphics/NamedFrameBuffers.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
 
-void ImGUIAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void ImGUIAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const ImGUIData& data = static_cast<const ImGUIData&>(aData);
 	aUB.SetUniform(0, 0, data.myOrthoProj);

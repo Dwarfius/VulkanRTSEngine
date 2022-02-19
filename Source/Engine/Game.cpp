@@ -145,7 +145,6 @@ AnimationSystem& Game::GetAnimationSystem()
 void Game::Init(bool aUseDefaultCompositePass)
 {
 	Profiler::ScopedMark profile("Game::Init");
-	RegisterUniformAdapters();
 
 	constexpr static uint32_t kInitReserve = 4000;
 	myGameObjects.reserve(kInitReserve);
@@ -597,15 +596,6 @@ void Game::RemoveGameObjects()
 	ourGODeleteEnabled = false;
 }
 
-void Game::RegisterUniformAdapters()
-{
-	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
-	adapterRegister.Register<CameraAdapter>();
-	adapterRegister.Register<ObjectMatricesAdapter>();
-	adapterRegister.Register<TerrainAdapter>();
-	adapterRegister.Register<SkeletonAdapter>();
-}
-
 void Game::ScheduleRenderables(Graphics& aGraphics)
 {
 	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
@@ -666,8 +656,8 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
-				adapter.FillUniformBlock(source, uniformBlock);
+				UniformAdapterRegister::FillUBCallback uniformAdapter = gpuPipeline->GetAdapter(i);
+				uniformAdapter(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());
 
@@ -732,8 +722,8 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-				const UniformAdapter& adapter = gpuPipeline->GetAdapter(i);
-				adapter.FillUniformBlock(source, uniformBlock);
+				UniformAdapterRegister::FillUBCallback uniformAdapter = gpuPipeline->GetAdapter(i);
+				uniformAdapter(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());
 

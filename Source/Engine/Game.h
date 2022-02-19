@@ -120,8 +120,6 @@ private:
 	void UpdateEnd();
 	void RemoveGameObjects();
 
-	void RegisterUniformAdapters();
-
 	void ScheduleRenderables(Graphics& aGraphics);
 	void RenderGameObjects(Graphics& aGraphics);
 	void RenderTerrains(Graphics& aGraphics);

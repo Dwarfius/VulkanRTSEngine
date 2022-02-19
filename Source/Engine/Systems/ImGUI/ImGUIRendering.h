@@ -3,7 +3,7 @@
 #include <glm/gtx/hash.hpp>
 #include <Core/VertexDescriptor.h>
 #include <Core/Threading/AssertMutex.h>
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
@@ -66,16 +66,16 @@ struct ImGUIRenderParams : public IRenderPass::IParams
 // Utility adapter if someone else wants to use it - we set the uniforms directly
 // We have to provide it because UniformAdapters that are referenced
 // in assets must be registered (even if they are not used)
-class ImGUIAdapter : public UniformAdapter
+class ImGUIAdapter : RegisterUniformAdapter<ImGUIAdapter>
 {
-	DECLARE_REGISTER(ImGUIAdapter);
 public:
-	struct ImGUIData : SourceData
+	constexpr static std::string_view kName = "ImGUIAdapter";
+	struct ImGUIData : AdapterSourceData
 	{
 		glm::mat4 myOrthoProj;
 	};
 
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const final;
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };
 
 class ImGUIRenderPass : public IRenderPass

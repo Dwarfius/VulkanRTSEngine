@@ -1,19 +1,19 @@
 #pragma once
 
-#include <Graphics/UniformAdapter.h>
+#include <Graphics/UniformAdapterRegister.h>
 #include "Graphics/Adapters/AdapterSourceData.h"
 
 class Terrain;
 
-class TerrainAdapter : public UniformAdapter
+class TerrainAdapter : RegisterUniformAdapter<TerrainAdapter>
 {
-	DECLARE_REGISTER(TerrainAdapter);
-
 	constexpr static float kTileSize = 64.f;
 
 	static float GetTileSize(const Terrain& aTerrain);
 
 public:
+	constexpr static std::string_view kName = "TerrainAdapter";
+
 	struct Source : UniformAdapterSource
 	{
 		const Terrain& myTerrain;
@@ -22,5 +22,5 @@ public:
 	// Returns in how many tiles is the terrain grid split
 	static glm::ivec2 GetTileCount(const Terrain& aTerrain);
 
-	void FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const override;
+	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

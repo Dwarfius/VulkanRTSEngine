@@ -5,7 +5,7 @@
 #include "GameObject.h"
 #include "Animation/AnimationSystem.h"
 
-void SkeletonAdapter::FillUniformBlock(const UniformAdapter::SourceData& aData, UniformBlock& aUB) const
+void SkeletonAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const UniformAdapterSource& data = static_cast<const UniformAdapterSource&>(aData);
 	ASSERT_STR(data.myGO, "GameObject needed to access skeleton");

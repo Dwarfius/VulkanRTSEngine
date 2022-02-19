@@ -20,7 +20,7 @@ void PipelineCreateDialog::DrawPipeline()
 	{
 		using IndType = Pipeline::Type::UnderlyingType;
 		IndType selectedInd = static_cast<IndType>(myPipelineType);
-		if (ImGui::BeginCombo("Uniform Type", Pipeline::Type::kNames[selectedInd]))
+		if (ImGui::BeginCombo("Pipeline Type", Pipeline::Type::kNames[selectedInd]))
 		{
 			for (IndType i = 0; i < Pipeline::Type::GetSize(); i++)
 			{

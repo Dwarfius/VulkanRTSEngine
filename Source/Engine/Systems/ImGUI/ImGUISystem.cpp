@@ -23,8 +23,6 @@ void ImGUISystem::Init(GLFWwindow& aWindow)
 {
 	Profiler::ScopedMark profile("ImGUISystem::Init");
 
-	UniformAdapterRegister::GetInstance().Register<ImGUIAdapter>();
-
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 

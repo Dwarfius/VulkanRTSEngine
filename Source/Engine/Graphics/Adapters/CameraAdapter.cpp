@@ -5,7 +5,7 @@
 #include <Graphics/UniformBlock.h>
 #include <Graphics/Graphics.h>
 
-void CameraAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void CameraAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already

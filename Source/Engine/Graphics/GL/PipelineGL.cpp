@@ -51,7 +51,7 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	{
 		const Descriptor& descriptor = pipeline->GetDescriptor(i);
 		myDescriptors.push_back(descriptor);
-		myAdapters.push_back(std::cref(pipeline->GetAdapter(i)));
+		myAdapters.push_back(pipeline->GetAdapter(i));
 
 		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor);
 		ubo->Create(aGraphics, nullptr);

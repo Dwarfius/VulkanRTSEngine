@@ -30,7 +30,7 @@ glm::ivec2 TerrainAdapter::GetTileCount(const Terrain& aTerrain)
 	return glm::ivec2(gridWidth, gridDepth);
 }
 
-void TerrainAdapter::FillUniformBlock(const SourceData& aData, UniformBlock& aUB) const
+void TerrainAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const Source& source = static_cast<const Source&>(aData);
 
