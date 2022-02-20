@@ -94,7 +94,8 @@ void PipelineCreateDialog::DrawPipeline()
 void PipelineCreateDialog::DrawDescriptor(Descriptor& aDesc)
 {
 	{
-		std::string adapter = aDesc.GetUniformAdapter();
+		std::string_view adapterName = aDesc.GetUniformAdapter();
+		std::string adapter(adapterName.data(), adapterName.size());
 		bool changed = ImGui::InputText("Adapter", adapter.data(), adapter.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
 			[](ImGuiInputTextCallbackData* aData)
 		{
