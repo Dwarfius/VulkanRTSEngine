@@ -18,7 +18,8 @@ void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGrap
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	aPipeline->ExecLambdaOnLoad([this](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
-		myBlock = std::make_shared<UniformBlock>(pipeline->GetDescriptor(0));
+		const UniformAdapter& adapter = pipeline->GetAdapter(0);
+		myBlock = std::make_shared<UniformBlock>(adapter.GetDescriptor());
 	});
 }
 
@@ -131,7 +132,8 @@ void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraph
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	aPipeline->ExecLambdaOnLoad([this](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
-		myBlock = std::make_shared<UniformBlock>(pipeline->GetDescriptor(0));
+		const UniformAdapter& adapter = pipeline->GetAdapter(0);
+		myBlock = std::make_shared<UniformBlock>(adapter.GetDescriptor());
 	});
 }
 

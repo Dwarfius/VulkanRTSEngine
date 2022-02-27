@@ -57,11 +57,11 @@ bool VisualObject::Resolve()
 	myUniforms.clear();
 
 	const GPUPipeline* pipeline = myPipeline.Get();
-	size_t descriptorCount = pipeline->GetDescriptorCount();
+	size_t descriptorCount = pipeline->GetAdapterCount();
 	for (size_t i = 0; i < descriptorCount; i++)
 	{
-		const Descriptor& descriptor = pipeline->GetDescriptor(i);
-		myUniforms.push_back(std::make_shared<UniformBlock>(descriptor));
+		const UniformAdapter& adapter = pipeline->GetAdapter(i);
+		myUniforms.push_back(std::make_shared<UniformBlock>(adapter.GetDescriptor()));
 	}
 
 	myIsResolved = true;

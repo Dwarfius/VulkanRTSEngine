@@ -43,22 +43,19 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	// request the creation of uniform buffers,
 	// since they're not kept as part of myDependencies
 	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
-	size_t descCount = pipeline->GetDescriptorCount();
-	myBuffers.reserve(descCount);
-	myDescriptors.reserve(descCount);
-	myAdapters.reserve(descCount);
-	for(size_t i=0; i<descCount; i++)
+	const size_t adapterCount = pipeline->GetAdapterCount();
+	myBuffers.reserve(adapterCount);
+	myAdapters.reserve(adapterCount);
+	for(size_t i=0; i< adapterCount; i++)
 	{
-		const Descriptor& descriptor = pipeline->GetDescriptor(i);
-		myDescriptors.push_back(descriptor);
-		myAdapters.push_back(pipeline->GetAdapter(i));
+		myAdapters.push_back(&pipeline->GetAdapter(i));
 
-		Handle<UniformBufferGL> ubo = new UniformBufferGL(descriptor);
+		Handle<UniformBufferGL> ubo = new UniformBufferGL(myAdapters[i]->GetDescriptor());
 		ubo->Create(aGraphics, nullptr);
 		myBuffers.push_back(ubo);
 	}
 
-	size_t shaderCount = pipeline->GetShaderCount();
+	const size_t shaderCount = pipeline->GetShaderCount();
 	for (size_t i = 0; i < shaderCount; i++)
 	{
 		const std::string& shaderName = pipeline->GetShader(i);
@@ -74,10 +71,9 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
 	// Upload is just linking the dependencies on the GPU
-	size_t shaderCount = myDependencies.size();
-	for (size_t ind = 0; ind < shaderCount; ind++)
+	for (Handle<GPUResource> dependency : myDependencies)
 	{
-		const ShaderGL* shader = myDependencies[ind].Get<const ShaderGL>();
+		const ShaderGL* shader = dependency.Get<const ShaderGL>();
 		glAttachShader(myGLProgram, shader->GetShaderId());
 	}
 	glLinkProgram(myGLProgram);
@@ -103,14 +99,12 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 	{
 		// we've succesfully linked, time to resolve the UBOs
 		const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
-		const size_t descCount = pipeline->GetDescriptorCount();
-		for (size_t i = 0; i < descCount; i++)
+		const size_t adapterCount = pipeline->GetAdapterCount();
+		for (size_t i = 0; i < adapterCount; i++)
 		{
-			const Descriptor& descriptor = pipeline->GetDescriptor(i);
-
-			// TODO: get rid of this name hack, have a proper name string!
-			std::string_view uboName = descriptor.GetUniformAdapter();
-			uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
+			const UniformAdapter& adapter = pipeline->GetAdapter(i);
+			const std::string_view uboName = adapter.GetName();
+			const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
 			ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for %s", uboName.data());
 			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}

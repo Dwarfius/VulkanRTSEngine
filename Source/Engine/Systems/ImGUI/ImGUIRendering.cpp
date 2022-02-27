@@ -24,9 +24,9 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 
 	aPipeline->ExecLambdaOnLoad([&](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
-		ASSERT_STR(pipeline->GetDescriptorCount() == 1,
-			"Only supporting 1 descriptor! Please update if changed!");
-		const Descriptor& descriptor = pipeline->GetDescriptor(0);
+		ASSERT_STR(pipeline->GetAdapterCount() == 1,
+			"Only supporting 1 adapter! Please update if changed!");
+		const Descriptor& descriptor = pipeline->GetAdapter(0).GetDescriptor();
 		myUniformBlock = std::make_shared<UniformBlock>(descriptor);
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();

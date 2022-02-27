@@ -24,6 +24,12 @@ public:
 		Mat4
 	);
 
+	struct InitArgs
+	{
+		UniformType myType;
+		uint32_t myArraySize = 1;
+	};
+
 private:
 	struct Entry
 	{
@@ -34,7 +40,7 @@ private:
 
 public:
 	Descriptor() = default;
-	Descriptor(std::initializer_list<UniformType> aUniformsList);
+	Descriptor(std::initializer_list<InitArgs> aUniformsList);
 
 	// Marks the slot to be used storing a uniform of specific type
 	void SetUniformType(uint32_t aSlot, UniformType aType, uint32_t anArraySize);
@@ -63,8 +69,6 @@ public:
 	// Name of the adapter that is related to the Uniform Buffer Object
 	std::string_view GetUniformAdapter() const { return myUniformAdapter; }
 	void SetUniformAdapter(const std::string& anAdapter) { myUniformAdapter = anAdapter; }
-
-	void Serialize(Serializer& aSerializer);
 
 private:
 	void GetSizeAndAlignment(uint32_t aSlot, size_t& aSize, size_t& anAlignment) const;

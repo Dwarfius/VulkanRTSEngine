@@ -16,18 +16,17 @@ Pipeline::Pipeline(Resource::Id anId, const std::string& aPath)
 {
 }
 
-void Pipeline::AddDescriptor(const Descriptor& aDescriptor)
+void Pipeline::AddAdapter(std::string_view anAdapter)
 {
-	myDescriptors.push_back(aDescriptor);
-	AddAdapter(aDescriptor);
+	myAdapters.push_back(&UniformAdapterRegister::GetInstance().GetAdapter(anAdapter));
 }
 
 void Pipeline::Serialize(Serializer& aSerializer)
 {
-	aSerializer.SerializeEnum("type", myType);
+	aSerializer.SerializeEnum("myType", myType);
 	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline needs implementing!");
 
-	if (Serializer::Scope shadersScope = aSerializer.SerializeArray("shaders", myShaders))
+	if (Serializer::Scope shadersScope = aSerializer.SerializeArray("myShaders", myShaders))
 	{
 		for (size_t i = 0; i < myShaders.size(); i++)
 		{
@@ -35,32 +34,18 @@ void Pipeline::Serialize(Serializer& aSerializer)
 		}
 	}
 
-	if(Serializer::Scope adaptersScope = aSerializer.SerializeArray("descriptors", myDescriptors))
+	if(Serializer::Scope adaptersScope = aSerializer.SerializeArray("myAdapters", myAdapters))
 	{
-		for (size_t i = 0; i < myDescriptors.size(); i++)
+		for (size_t i = 0; i < myAdapters.size(); i++)
 		{
-			if (Serializer::Scope objectScope = aSerializer.SerializeObject(i))
+			std::string adapterName = myAdapters[i] ? 
+				std::string{ myAdapters[i]->GetName().data(), myAdapters[i]->GetName().size() }
+				: std::string();
+			aSerializer.Serialize(i, adapterName);
+			if (aSerializer.IsReading())
 			{
-				myDescriptors[i].Serialize(aSerializer);
+				myAdapters[i] = &UniformAdapterRegister::GetInstance().GetAdapter(adapterName);
 			}
 		}
-	}
-	
-	AssignAdapters();
-}
-
-void Pipeline::AddAdapter(const Descriptor& aDescriptor)
-{
-	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
-	const auto& adapter = adapterRegister.GetAdapter(aDescriptor.GetUniformAdapter());
-	myAdapters.push_back(adapter);
-}
-
-void Pipeline::AssignAdapters()
-{
-	myAdapters.reserve(myDescriptors.size());
-	for (const Descriptor& descriptor : myDescriptors)
-	{
-		AddAdapter(descriptor);
 	}
 }

@@ -7,6 +7,7 @@
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
+#include <Graphics/Descriptor.h>
 
 #include "../../Graphics/RenderPasses/GenericRenderPasses.h"
 
@@ -74,7 +75,9 @@ public:
 	{
 		glm::mat4 myOrthoProj;
 	};
-
+	inline static const Descriptor ourDescriptor{
+		{ Descriptor::UniformType::Mat4 }
+	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };
 

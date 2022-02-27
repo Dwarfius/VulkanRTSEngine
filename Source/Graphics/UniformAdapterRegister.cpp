@@ -1,7 +1,7 @@
 #include "Precomp.h"
 #include "UniformAdapterRegister.h"
 
-UniformAdapterRegister::FillUBCallback UniformAdapterRegister::GetAdapter(std::string_view aName) const
+const UniformAdapter& UniformAdapterRegister::GetAdapter(std::string_view aName) const
 {
 #ifdef _DEBUG
 	AssertReadLock lock(myRegisterMutex);

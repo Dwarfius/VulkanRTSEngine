@@ -1,8 +1,8 @@
 {  
-    "type":0,
-    "shaders":[
+    "myType":0,
+    "myShaders":[
         "Engine/compositeVert.shd",
         "Engine/compositeFrag.shd"
     ],
-    "descriptors":[]
+    "myAdapters":[]
 }

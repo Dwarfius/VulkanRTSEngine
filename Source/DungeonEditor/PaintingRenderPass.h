@@ -6,6 +6,10 @@
 #include <Graphics/Camera.h>
 #include <Core/RWBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
+#include <Graphics/Descriptor.h>
+#ifdef ASSERT_MUTEX
+#include <Core/Threading/AssertMutex.h>
+#endif
 
 class GPUPipeline;
 class Pipeline;
@@ -130,5 +134,17 @@ public:
 		const int myBrushRadius;
 	};
 
+	inline static const Descriptor ourDescriptor {
+		{ Descriptor::UniformType::Mat4 },
+		{ Descriptor::UniformType::Vec3 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Vec2 },
+		{ Descriptor::UniformType::Int },
+		{ Descriptor::UniformType::Int }
+	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

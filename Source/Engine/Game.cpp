@@ -652,12 +652,12 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				visualObj
 			};
 			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
-			const size_t uboCount = gpuPipeline->GetDescriptorCount();
+			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-				UniformAdapterRegister::FillUBCallback uniformAdapter = gpuPipeline->GetAdapter(i);
-				uniformAdapter(source, uniformBlock);
+				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+				uniformAdapter.Fill(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());
 
@@ -718,12 +718,12 @@ void Game::RenderTerrains(Graphics& aGraphics)
 				terrain
 			};
 			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
-			const size_t uboCount = gpuPipeline->GetDescriptorCount();
+			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
 				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
-				UniformAdapterRegister::FillUBCallback uniformAdapter = gpuPipeline->GetAdapter(i);
-				uniformAdapter(source, uniformBlock);
+				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+				uniformAdapter.Fill(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());
 

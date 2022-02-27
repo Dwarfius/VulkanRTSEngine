@@ -294,17 +294,19 @@ void RenderPassJobGL::RunJobs()
 		}
 
 		// Now we can update the uniform blocks
-		size_t descriptorCount = pipeline->GetDescriptorCount();
+		size_t adapterCount = pipeline->GetAdapterCount();
 		RenderJob::UniformSet& uniforms = r.GetUniformSet();
-		for (size_t i = 0; i < descriptorCount; i++)
+		for (size_t i = 0; i < adapterCount; i++)
 		{
 			// grabbing the descriptor because it has the locations
 			// of uniform values to be uploaded to
-			const Descriptor& aDesc = pipeline->GetDescriptor(i);
+			const UniformAdapter& adapter = pipeline->GetAdapter(i);
+			const Descriptor& descriptor = adapter.GetDescriptor();
+
 			// there's a UBO for every descriptor of the pipeline
 			UniformBufferGL& ubo = pipeline->GetUBO(i);
 			UniformBufferGL::UploadDescriptor uploadDesc;
-			uploadDesc.mySize = aDesc.GetBlockSize(); // TODO: uniform buffer already has a descriptor
+			uploadDesc.mySize = descriptor.GetBlockSize(); // TODO: uniform buffer already has a descriptor
 			uploadDesc.myData = uniforms[i].data();
 			ubo.UploadData(uploadDesc);
 		}

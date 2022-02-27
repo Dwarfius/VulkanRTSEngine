@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Graphics/Descriptor.h>
-
 class Pipeline;
 template<class T> class Handle;
 
@@ -13,12 +11,12 @@ public:
 	void Draw(bool& aIsOpen);
 private:
 	void DrawPipeline();
-	void DrawDescriptor(Descriptor& aDesc);
+	void DrawAdapter(std::string& anAdapter);
 
 	static void DrawSaveInput(std::string& aPath);
 
 	uint8_t myPipelineType = 0;
 	std::string myShaderPaths[kShaderTypes];
-	std::vector<Descriptor> myDescriptors;
+	std::vector<std::string> myAdapters;
 	std::string mySavePath;
 };

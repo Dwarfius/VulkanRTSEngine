@@ -1,15 +1,10 @@
 {  
-	"type":0,
-	"shaders":[
+	"myType":0,
+	"myShaders":[
 		"Engine/imguiVert.shd",
 		"Engine/imguiFrag.shd"
 	],
-	"descriptors":[  
-		{
-			"myUniformAdapter":"ImGUIAdapter",
-			"myEntries":[  
-				{ "myUniformType":5, "myArraySize":1 }
-			]
-		}
+	"myAdapters":[
+		"ImGUIAdapter"
 	]
 }

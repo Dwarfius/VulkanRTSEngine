@@ -7,6 +7,7 @@
 class UniformBlock;
 class Camera;
 class Graphics;
+class Descriptor;
 
 struct AdapterSourceData
 {
@@ -14,20 +15,44 @@ struct AdapterSourceData
 	const Camera& myCam;
 };
 
+class UniformAdapter
+{
+public:
+	using FillUBCallback = void(*)(const AdapterSourceData& aData, UniformBlock& aUB);
+	
+	UniformAdapter(std::string_view aName, FillUBCallback aUBCallback, const Descriptor& aDesc)
+		: myName(aName)
+		, myUBFiller(aUBCallback)
+		, myDescriptor(aDesc)
+	{
+	}
+
+	void Fill(const AdapterSourceData& aData, UniformBlock& aUB) const
+	{
+		myUBFiller(aData, aUB);
+	}
+
+	const Descriptor& GetDescriptor() const { return myDescriptor; }
+	std::string_view GetName() const { return myName; }
+
+private:
+	const FillUBCallback myUBFiller;
+	const Descriptor& myDescriptor;
+	const std::string_view myName;
+};
+
 // A Singleton class used for tracking all the uniform adapters
 // that can be used to bridge the game state and rendering
 class UniformAdapterRegister
 {
 public:
-	using FillUBCallback = void(*)(const AdapterSourceData& aData, UniformBlock& aUB);
-
 	static UniformAdapterRegister& GetInstance()
 	{
 		static UniformAdapterRegister adapterRegister;
 		return adapterRegister;
 	}
 
-	FillUBCallback GetAdapter(std::string_view aName) const;
+	const UniformAdapter& GetAdapter(std::string_view aName) const;
 
 	// Before adapters can be fetched, they must be registered
 	template<class Type>
@@ -37,12 +62,13 @@ public:
 		AssertWriteLock lock(myRegisterMutex);
 #endif
 		std::string_view name = Type::kName;
-		FillUBCallback adapterCallback = &Type::FillUniformBlock;
-		myAdapters.insert({ name, adapterCallback });
+		UniformAdapter::FillUBCallback adapterCallback = &Type::FillUniformBlock;
+		const Descriptor& desc = Type::ourDescriptor;
+		myAdapters.insert({ name, { name, adapterCallback, desc } });
 	}
 	
 private:
-	std::unordered_map<std::string_view, FillUBCallback> myAdapters;
+	std::unordered_map<std::string_view, UniformAdapter> myAdapters;
 #ifdef _DEBUG
 	mutable AssertRWMutex myRegisterMutex;
 #endif

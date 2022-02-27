@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Graphics/UniformAdapterRegister.h>
+#include <Graphics/Descriptor.h>
 #include "Graphics/Adapters/AdapterSourceData.h"
 
 class Terrain;
@@ -22,5 +23,12 @@ public:
 	// Returns in how many tiles is the terrain grid split
 	static glm::ivec2 GetTileCount(const Terrain& aTerrain);
 
+	inline static const Descriptor ourDescriptor{
+		{ Descriptor::UniformType::Vec3 },
+		{ Descriptor::UniformType::Float },
+		{ Descriptor::UniformType::Int },
+		{ Descriptor::UniformType::Int },
+		{ Descriptor::UniformType::Float }
+	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

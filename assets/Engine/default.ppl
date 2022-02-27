@@ -1,17 +1,10 @@
 {  
-	"type":0,
-	"shaders":[
+	"myType":0,
+	"myShaders":[
 		"Engine/baseVert.shd",
 		"Engine/baseFrag.shd"
 	],
-	"descriptors":[  
-		{  
-			"myUniformAdapter":"ObjectMatricesAdapter",
-			"myEntries":[  
-				{ "myUniformType":5, "myArraySize":1 },
-				{ "myUniformType":5, "myArraySize":1 },
-				{ "myUniformType":5, "myArraySize":1 }
-			]
-		}
+	"myAdapters":[  
+		"ObjectMatricesAdapter"
 	]
 }

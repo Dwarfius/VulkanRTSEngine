@@ -52,21 +52,24 @@ void PipelineCreateDialog::DrawPipeline()
 			return 0;
 		}, &path);
 	}
-
-	if (ImGui::Button("Add Descriptor"))
-	{
-		myDescriptors.push_back({});
-	}
+	
 	ImGui::Indent();
-	for(size_t i = 0; i<myDescriptors.size(); i++)
+	for (size_t i = 0; i < myAdapters.size(); i++)
 	{
-		DrawDescriptor(myDescriptors[i]);
+		ImGui::PushID(i);
+		DrawAdapter(myAdapters[i]);
 
-		if (ImGui::Button("Delete Descriptor"))
+		if (ImGui::Button("Delete Adapter"))
 		{
-			myDescriptors.erase(myDescriptors.begin() + i);
+			myAdapters.erase(myAdapters.begin() + i);
 			i--;
 		}
+		ImGui::PopID();
+	}
+
+	if (ImGui::Button("Add Adapter"))
+	{
+		myAdapters.push_back({});
 	}
 	ImGui::Unindent();
 	
@@ -82,89 +85,31 @@ void PipelineCreateDialog::DrawPipeline()
 				pipeline->AddShader(shader);
 			}
 		}
-		for (const Descriptor& descriptor : myDescriptors)
+		for (const std::string& adapter : myAdapters)
 		{
-			pipeline->AddDescriptor(descriptor);
+			if (!adapter.empty())
+			{
+				pipeline->AddAdapter(adapter);
+			}
 		}
 		std::string fullSavePath = Resource::kAssetsFolder.CStr() + mySavePath;
 		Game::GetInstance()->GetAssetTracker().SaveAndTrack(fullSavePath, pipeline);
 	}
 }
 
-void PipelineCreateDialog::DrawDescriptor(Descriptor& aDesc)
+void PipelineCreateDialog::DrawAdapter(std::string& anAdapter)
 {
+	ImGui::InputText("Adapter", anAdapter.data(), anAdapter.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+		[](ImGuiInputTextCallbackData* aData)
 	{
-		std::string_view adapterName = aDesc.GetUniformAdapter();
-		std::string adapter(adapterName.data(), adapterName.size());
-		bool changed = ImGui::InputText("Adapter", adapter.data(), adapter.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-			[](ImGuiInputTextCallbackData* aData)
+		std::string* valueStr = static_cast<std::string*>(aData->UserData);
+		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
 		{
-			std::string* valueStr = static_cast<std::string*>(aData->UserData);
-			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-			{
-				valueStr->resize(aData->BufTextLen);
-				aData->Buf = valueStr->data();
-			}
-			return 0;
-		}, &adapter);
-		if (changed)
-		{
-			aDesc.SetUniformAdapter(adapter);
+			valueStr->resize(aData->BufTextLen);
+			aData->Buf = valueStr->data();
 		}
-	}
-
-	bool needsRecompute = false;
-	if (ImGui::Button("Add Uniform"))
-	{
-		aDesc.AddUniformType();
-		needsRecompute = true;
-	}
-	ImGui::Indent();
-	for (uint32_t i = 0; i < aDesc.GetUniformCount(); i++)
-	{
-		bool changed = false;
-
-		Descriptor::UniformType uniform = aDesc.GetType(i);
-		using IndType = Descriptor::UniformType::UnderlyingType;
-		IndType selectedInd = static_cast<IndType>(uniform);
-		if (ImGui::BeginCombo("Uniform Type", Descriptor::UniformType::kNames[selectedInd]))
-		{
-			for (IndType i = 0; i < Descriptor::UniformType::GetSize(); i++)
-			{
-				bool selected = selectedInd == i;
-				if (ImGui::Selectable(Descriptor::UniformType::kNames[i], &selected))
-				{
-					changed = selectedInd != i;
-					selectedInd = i;
-					uniform = static_cast<Descriptor::UniformType>(selectedInd);
-				}
-			}
-
-			ImGui::EndCombo();
-		}
-
-		uint32_t arraySize = aDesc.GetArraySize(i);
-		changed |= ImGui::InputScalar("Array Size", ImGuiDataType_U32, &arraySize);
-
-		if (changed)
-		{
-			aDesc.SetUniformType(i, uniform, arraySize);
-			needsRecompute = true;
-		}
-
-		if (ImGui::Button("Delete Uniform"))
-		{
-			aDesc.RemoveUniformType(i);
-			i--;
-			needsRecompute = true;
-		}
-	}
-
-	if (needsRecompute)
-	{
-		aDesc.RecomputeSize();
-	}
-	ImGui::Unindent();
+		return 0;
+	}, &anAdapter);
 }
 
 void PipelineCreateDialog::DrawSaveInput(std::string& aPath)

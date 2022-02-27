@@ -2,6 +2,7 @@
 
 #include <Graphics/UniformAdapterRegister.h>
 #include <Engine/Components/ComponentBase.h>
+#include <Graphics/Descriptor.h>
 
 class Game;
 template<class T> class Handle;
@@ -42,5 +43,8 @@ class TintAdapter : RegisterUniformAdapter<TintAdapter>
 {
 public:
 	constexpr static std::string_view kName = "TintAdapter";
+	inline static const Descriptor ourDescriptor{
+		{ Descriptor::UniformType::Vec3 }
+	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

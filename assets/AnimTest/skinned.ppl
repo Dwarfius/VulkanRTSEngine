@@ -1,23 +1,11 @@
 {  
-	"type":0,
-	"shaders":[
+	"myType":0,
+	"myShaders":[
 		"AnimTest/skinnedVert.shd",
 		"Engine/baseFrag.shd"
 	],
-	"descriptors":[  
-		{  
-			"myUniformAdapter":"ObjectMatricesAdapter",
-			"myEntries":[  
-				{ "myUniformType":5, "myArraySize":1 },
-				{ "myUniformType":5, "myArraySize":1 },
-				{ "myUniformType":5, "myArraySize":1 }
-			]
-		},
-		{  
-			"myUniformAdapter":"SkeletonAdapter",
-			"myEntries":[  
-				{ "myUniformType":5, "myArraySize":100 }
-			]
-		}
+	"myAdapters":[
+		"ObjectMatricesAdapter",
+		"SkeletonAdapter"
 	]
 }

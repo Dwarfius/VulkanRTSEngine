@@ -2,11 +2,11 @@
 
 #include <Core/Resources/Resource.h>
 #include "../Interfaces/IPipeline.h"
-#include "../Descriptor.h"
 #include "../Resources/Shader.h"
+#include "../UniformAdapterRegister.h"
 
 // A base class describing a generic pipeline
-class Pipeline : public Resource, public IPipeline
+class Pipeline final : public Resource, public IPipeline
 {
 public:
 	constexpr static StaticString kExtension = ".ppl";
@@ -17,13 +17,11 @@ public:
 	Type GetType() const { return myType; }
 	void SetType(Type aType) { myType = aType; }
 
-	size_t GetDescriptorCount() const override final { return myDescriptors.size(); }
-	const Descriptor& GetDescriptor(size_t anIndex) const override final { return myDescriptors[anIndex]; }
-	UniformAdapterRegister::FillUBCallback GetAdapter(size_t anIndex) const override final { return myAdapters[anIndex]; }
+	size_t GetAdapterCount() const override { return myAdapters.size(); }
+	const UniformAdapter& GetAdapter(size_t anIndex) const override { return *myAdapters[anIndex]; }
+	void AddAdapter(std::string_view anAdapter);
 
 	void AddShader(const std::string& aShader) { myShaders.push_back(aShader); }
-
-	void AddDescriptor(const Descriptor& aDescriptor);
 
 	size_t GetShaderCount() const { return myShaders.size(); }
 	const std::string& GetShader(size_t anInd) const { return myShaders[anInd]; }
@@ -31,12 +29,7 @@ public:
 private:
 	void Serialize(Serializer& aSerializer) override;
 
-	void AddAdapter(const Descriptor& aDescriptor);
-	void AssignAdapters();
-
 	Type myType;
-	// TODO: explore storing adapters only, instead of Descriptors and Adapters
-	std::vector<Descriptor> myDescriptors;
-	std::vector<UniformAdapterRegister::FillUBCallback> myAdapters;
+	std::vector<const UniformAdapter*> myAdapters;
 	std::vector<std::string> myShaders;
 };

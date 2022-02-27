@@ -13,7 +13,8 @@ void SkeletonAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBl
 	ASSERT_STR(skeletonPtr.IsValid(), "Using adapter for an object that doesn't have a skeleton!");
 
 	const Skeleton* skeleton = skeletonPtr.Get();
-	Skeleton::BoneIndex boneCount = skeleton->GetBoneCount();
+	const Skeleton::BoneIndex boneCount = skeleton->GetBoneCount();
+	ASSERT_STR(boneCount < kMaxBones, "Too many bones!");
 	for (Skeleton::BoneIndex index = 0; index < boneCount; index++)
 	{
 		const glm::mat4& worldBoneTransf = skeleton->GetBoneWorldTransform(index).GetMatrix();
