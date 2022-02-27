@@ -56,7 +56,7 @@ void PipelineCreateDialog::DrawPipeline()
 	ImGui::Indent();
 	for (size_t i = 0; i < myAdapters.size(); i++)
 	{
-		ImGui::PushID(i);
+		ImGui::PushID(static_cast<int>(i));
 		DrawAdapter(myAdapters[i]);
 
 		if (ImGui::Button("Delete Adapter"))
