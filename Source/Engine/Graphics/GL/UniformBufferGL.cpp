@@ -16,15 +16,6 @@ void UniformBufferGL::Bind(uint32_t aBindPoint)
 	glBindBufferBase(GL_UNIFORM_BUFFER, aBindPoint, myBuffer);
 }
 
-bool UniformBufferGL::AreDependenciesValid() const
-{
-	if (!GPUResource::AreDependenciesValid())
-	{
-		return false;
-	}
-	return true;
-}
-
 void UniformBufferGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myBuffer, "Double initialization of uniform buffer!");

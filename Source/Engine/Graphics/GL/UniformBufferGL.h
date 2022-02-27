@@ -20,8 +20,6 @@ public:
 	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
-	bool AreDependenciesValid() const override final;
-
 private:
 	void OnCreate(Graphics& aGraphics) override final;
 	bool OnUpload(Graphics& aGraphics) override final;
