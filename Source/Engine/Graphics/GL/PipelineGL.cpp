@@ -251,7 +251,7 @@ bool PipelineGL::AreUBOsValid()
 		ASSERT_STR(activeUniforms < kMaxUniforms, "Please increase size of uniform cache!");
 
 		const uint32_t uniformLocationsProperty = GL_ACTIVE_VARIABLES;
-		std::vector<int32_t> uniformIDs(activeUniforms);
+		std::array<int32_t, kMaxUniforms> uniformIDs;
 		glGetProgramResourceiv(myGLProgram, GL_UNIFORM_BLOCK, blockInd,
 			1, &uniformLocationsProperty,
 			activeUniforms, nullptr, uniformIDs.data()
