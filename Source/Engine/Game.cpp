@@ -64,7 +64,13 @@ namespace UIWidgets
 			ImGui::Text("Pos: %f %f %f",
 				camTransform.GetPos().x,
 				camTransform.GetPos().y,
-				camTransform.GetPos().z);
+				camTransform.GetPos().z
+			);
+			ImGui::Text("Rot: %f %f %f",
+				glm::degrees(camTransform.GetEuler().x),
+				glm::degrees(camTransform.GetEuler().y),
+				glm::degrees(camTransform.GetEuler().z)
+			);
 		}
 		ImGui::End();
 	}

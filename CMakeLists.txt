@@ -39,6 +39,7 @@ add_subdirectory(Source/Graphics)
 add_subdirectory(Source/Engine)
 add_subdirectory(Source/WorldEditor)
 add_subdirectory(Source/DungeonEditor)
+add_subdirectory(Source/StressTest)
 
 if(VENGINE_GENERATE_BENCHTABLE)
 	add_subdirectory(Source/BenchTable)
