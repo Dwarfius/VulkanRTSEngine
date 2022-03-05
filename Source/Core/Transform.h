@@ -3,7 +3,7 @@
 class Serializer;
 
 // class that exposes utility functions around translation, rotation and scaling
-// built around the right-hand coordinate system. Provides pivot functionality
+// built around the right hand coord system (x to the left, z to front)
 class Transform
 {
 public:
@@ -23,7 +23,6 @@ public:
 	void SetScale(glm::vec3 aScale) { myScale = aScale; }
 
 	void LookAt(glm::vec3 aTarget);
-	void RotateToUp(glm::vec3 aNewUp);
 
 	glm::quat GetRotation() const { return myRotation; }
 	// Returns euler angles in radians
@@ -62,6 +61,4 @@ private:
 	glm::vec3 myPos;
 	glm::vec3 myScale;
 	glm::quat myRotation;
-
-	static glm::quat RotationBetweenVectors(glm::vec3 aStart, glm::vec3 aDest);
 };
