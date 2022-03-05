@@ -25,7 +25,7 @@ private:
 	bool OnUpload(Graphics& aGraphics) override final;
 	void OnUnload(Graphics& aGraphics) override final;
 
-	Descriptor myDescriptor;
+	const Descriptor& myDescriptor;
 	uint32_t myBuffer;
 	UploadDescriptor myUploadDesc;
 
