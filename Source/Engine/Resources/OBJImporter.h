@@ -9,7 +9,7 @@ class File;
 class OBJImporter
 {
 public:
-	bool Load(const std::string& aPath);
+	bool Load(std::string_view aPath);
 	bool Load(const File& aFile);
 	bool Load(const std::vector<char>& aBuffer);
 

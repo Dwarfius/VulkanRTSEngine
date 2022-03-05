@@ -6,7 +6,7 @@
 #include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
-bool OBJImporter::Load(const std::string& aPath)
+bool OBJImporter::Load(std::string_view aPath)
 {
 	File file(aPath);
 	return file.Read() && Load(file);
@@ -110,7 +110,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 				// might be a slowdown cause bad hint). Need to come back later and reread implementation
 				// marking that new vertex is at this index
 				iter = uniqueVerts.insert(uniqueVerts.begin(), { vertex, static_cast<Model::IndexType>(vertsFound) });
-				modelVertices.push_back(vertex); // adding it at the marked position
+				modelVertices[vertsFound] = vertex; // adding it at the marked position
 				vertsFound++;
 			}
 
