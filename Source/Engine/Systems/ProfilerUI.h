@@ -29,6 +29,7 @@ private:
 	static HierarchyMap CalculateHierarchy(const MarksVec& aMarks, uint32_t& aMaxLevel);
 	static FrameData ProcessFrameProfile(const Profiler::FrameProfile& aProfile);
 
-	float myWidthScale = 1.f;
 	std::vector<FrameData> myFramesToRender;
+	float myWidthScale = 1.f;
+	bool myAutoRecordLongFrames = true;
 };

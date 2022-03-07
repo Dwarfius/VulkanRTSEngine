@@ -41,9 +41,14 @@ namespace
 ProfilerUI::ProfilerUI()
 {
 	Profiler::GetInstance().SetOnLongFrameCallback(
-		[this](const Profiler::FrameProfile& aProfile) {
-			myFramesToRender.push_back(std::move(ProcessFrameProfile(aProfile)));
-	});
+		[this](const Profiler::FrameProfile& aProfile) 
+		{
+			if (myAutoRecordLongFrames)
+			{
+				myFramesToRender.push_back(std::move(ProcessFrameProfile(aProfile)));
+			}
+		}
+	);
 }
 
 void ProfilerUI::Draw(bool& aIsOpen)
@@ -71,6 +76,8 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		{
 			myFramesToRender.clear();
 		}
+
+		ImGui::Checkbox("Auto Record Long Frames?", &myAutoRecordLongFrames);
 
 		bool plotWindowHovered = false;
 		char nodeName[64];
