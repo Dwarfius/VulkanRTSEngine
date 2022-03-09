@@ -58,6 +58,6 @@ void TerrainAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlo
 	const Terrain::HeightLevelColor heightLevel = terrain.GetHeightLevelColor(layersCount - 1);
 	for (uint8_t i = layersCount; i < kHeightLayers; i++)
 	{
-		aUB.SetUniform(5, i, glm::vec4{ 1, 1, 1, heightLevel.myHeight });
+		aUB.SetUniform(5, i, glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
 	}
 }
