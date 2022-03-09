@@ -29,8 +29,9 @@ StressTest::StressTest(Game& aGame)
 		Terrain* terrain = new Terrain();
 		terrain->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 1);
 
-		terrain->PushHeightLevelColor(0.f, { 1, 1, 1 });
-		terrain->PushHeightLevelColor(10.f, { 1, 1, 1 });
+		terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
+		terrain->PushHeightLevelColor(0.5f, { 0, 1, 1 });
+		terrain->PushHeightLevelColor(1.f, { 1, 0, 1 });
 
 		Handle<Pipeline> terrainPipeline = assetTracker.GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
 		aGame.AddTerrain(terrain, terrainPipeline);

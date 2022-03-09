@@ -21,6 +21,7 @@
 #include "UIWidgets/EntitiesWidget.h"
 #include "UIWidgets/ObjImportDialog.h"
 #include "UIWidgets/GltfImportDialog.h"
+#include "UIWidgets/TerrainOptionsDialog.h"
 #include "UIWidgets/TextureImportDialog.h"
 #include "UIWidgets/ShaderCreateDialog.h"
 #include "UIWidgets/PipelineCreateDialog.h"
@@ -224,6 +225,10 @@ void Game::Init(bool aUseDefaultCompositePass)
 	myTopBar.Register("Widgets/Entities View",
 		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {
 		entitiesWidget.DrawDialog(*this, aIsVisible);
+	});
+	myTopBar.Register("Widgets/Terrain Options",
+		[&, terrainOptions = TerrainOptionsDialog()](bool& aIsVisible) mutable {
+		terrainOptions.Draw(*this, aIsVisible);
 	});
 	myTopBar.Register("File/Import OBJ",
 		[objImportDialog = ObjImportDialog()](bool& aIsVisible) mutable {

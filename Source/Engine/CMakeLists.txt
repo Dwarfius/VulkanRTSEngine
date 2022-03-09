@@ -146,6 +146,7 @@ set(SRC_UIWIDGETS
 	"UIWidgets/ObjImportDialog.cpp" "UIWidgets/ObjImportDialog.h"
 	"UIWidgets/PipelineCreateDialog.cpp" "UIWidgets/PipelineCreateDialog.h"
 	"UIWidgets/ShaderCreateDialog.cpp" "UIWidgets/ShaderCreateDialog.h"
+	"UIWidgets/TerrainOptionsDialog.cpp" "UIWidgets/TerrainOptionsDialog.h"
 	"UIWidgets/TextureImportDialog.cpp" "UIWidgets/TextureImportDialog.h"
 	"UIWidgets/TopBar.cpp" "UIWidgets/TopBar.h"
 )
