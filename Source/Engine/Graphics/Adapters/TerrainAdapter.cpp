@@ -46,4 +46,18 @@ void TerrainAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlo
 	aUB.SetUniform(2, 0, gridTiles.x);
 	aUB.SetUniform(3, 0, gridTiles.y);
 	aUB.SetUniform(4, 0, terrain.GetYScale());
+
+	static_assert(kHeightLayers == Terrain::kMaxHeightLevels,
+		"Please ensure these constants are the same!");
+	const uint8_t layersCount = terrain.GetHeightLevelCount();
+	for (uint8_t i = 0; i < layersCount; i++)
+	{
+		const Terrain::HeightLevelColor heightLevel = terrain.GetHeightLevelColor(i);
+		aUB.SetUniform(5, i, glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
+	}
+	const Terrain::HeightLevelColor heightLevel = terrain.GetHeightLevelColor(layersCount - 1);
+	for (uint8_t i = layersCount; i < kHeightLayers; i++)
+	{
+		aUB.SetUniform(5, i, glm::vec4{ 1, 1, 1, heightLevel.myHeight });
+	}
 }

@@ -23,12 +23,14 @@ public:
 	// Returns in how many tiles is the terrain grid split
 	static glm::ivec2 GetTileCount(const Terrain& aTerrain);
 
+	constexpr static uint8_t kHeightLayers = 5;
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec3 },
 		{ Descriptor::UniformType::Float },
 		{ Descriptor::UniformType::Int },
 		{ Descriptor::UniformType::Int },
-		{ Descriptor::UniformType::Float }
+		{ Descriptor::UniformType::Float },
+		{ Descriptor::UniformType::Vec4, kHeightLayers }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };

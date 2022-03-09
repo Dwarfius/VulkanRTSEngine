@@ -7,16 +7,6 @@
 #include <Physics/PhysicsShapes.h>
 #include <Graphics/Resources/Texture.h>
 
-Terrain::Terrain()
-	: myWidth(0)
-	, myHeight(0)
-	, myMinHeight(std::numeric_limits<float>::max())
-	, myMaxHeight(std::numeric_limits<float>::min())
-	, myStep(0.f)
-	, myYScale(0.f)
-{
-}
-
 void Terrain::Load(Handle<Texture> aTexture, float aStep, float anYScale)
 {
 	myYScale = anYScale;
@@ -133,6 +123,40 @@ float Terrain::GetHeight(glm::vec3 aLocalPos) const
 	const float botHeight = glm::mix(v0, v2, x);
 	const float topHeight = glm::mix(v1, v3, x);
 	return glm::mix(botHeight, topHeight, z);
+}
+
+void Terrain::PushHeightLevelColor(float aHeightLevel, glm::vec3 aColor)
+{
+	ASSERT_STR(myLevelsCount < kMaxHeightLevels, 
+		"Overflow, terrain only supports %u levels!", kMaxHeightLevels);
+
+	myHeightLevelColors[myLevelsCount++] = {
+		.myColor = aColor,
+		.myHeight = aHeightLevel
+	};
+	std::sort(
+		myHeightLevelColors.begin(), 
+		myHeightLevelColors.begin() + myLevelsCount,
+		[](HeightLevelColor aLeft, HeightLevelColor aRight) 
+		{
+			return aLeft.myHeight < aRight.myHeight;
+		}
+	);
+}
+
+void Terrain::RemoveHeightLevelColor(uint8_t anInd)
+{
+	ASSERT_STR(anInd < myLevelsCount, "Out of bounds removal!");
+	myLevelsCount--;
+	std::swap(myHeightLevelColors[anInd], myHeightLevelColors[myLevelsCount]);
+	std::sort(
+		myHeightLevelColors.begin(),
+		myHeightLevelColors.begin() + myLevelsCount,
+		[](HeightLevelColor aLeft, HeightLevelColor aRight)
+		{
+			return aLeft.myHeight < aRight.myHeight;
+		}
+	);
 }
 
 float Terrain::GetHeightAtVert(uint32_t aX, uint32_t aY) const

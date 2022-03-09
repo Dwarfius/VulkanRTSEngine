@@ -56,6 +56,13 @@ EditorMode::EditorMode(Game& aGame)
 		// Heightmaps generated via https://tangrams.github.io/heightmapper/
 		Handle<Texture> terrainText = aGame.GetAssetTracker().GetOrCreate<Texture>("TestTerrain/Tynemouth-tangrams.img");
 		terrain->Load(terrainText, kTerrSize / kResolution, 1000.f);
+
+		terrain->PushHeightLevelColor(10.f, { 0, 0, 1 });
+		terrain->PushHeightLevelColor(15.f, { 1, 0.8f, 0 });
+		terrain->PushHeightLevelColor(25.f, { 0, 1, 0.15f });
+		terrain->PushHeightLevelColor(50.f, { 0.5f, 0.5f, 0.5f });
+		terrain->PushHeightLevelColor(100.f, { 1, 1, 1 });
+
 		//constexpr uint32_t kTerrCells = 64;
 		//terr->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 10);
 

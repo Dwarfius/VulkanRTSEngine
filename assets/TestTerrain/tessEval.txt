@@ -17,6 +17,7 @@ layout (std140, binding = 1) uniform TerrainAdapter
 	int GridWidth;
 	int GridHeight;
 	float YScale;
+	vec4 ColorsAndHeightLevels[5];
 };
 
 layout(location = 0) in DataIn

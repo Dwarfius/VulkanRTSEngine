@@ -3,11 +3,12 @@
 
 layout (std140, binding = 1) uniform TerrainAdapter
 {
-	vec3 GridOrigin;
-	float TileSize;
-	int GridWidth;
-	int GridHeight;
-	float YScale; 
+    vec3 GridOrigin;
+    float TileSize;
+    int GridWidth;
+    int GridHeight;
+    float YScale;
+    vec4 ColorsAndHeightLevels[5];
 };
 
 layout(location = 0) out DataOut 
