@@ -33,13 +33,51 @@ void PhysicsComponent::CreatePhysicsEntity(float aMass, std::shared_ptr<PhysicsS
 {
 	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
 	ASSERT_STR(!myEntity, "About to leak entity!");
-	myEntity = new PhysicsEntity(aMass, aShape, *myOwner, anOrigin);
+
+	PhysicsEntity::InitParams params;
+	params.myType = aMass == 0.f ? PhysicsEntity::Type::Static : PhysicsEntity::Type::Dynamic;
+	params.myShape = aShape;
+	params.myEntity = myOwner;
+	params.myOffset = anOrigin;
+	params.myMass = aMass;
+	myEntity = new PhysicsEntity(params);
 }
 
 void PhysicsComponent::CreateOwnerlessPhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
 {
 	ASSERT_STR(!myEntity, "About to leak entity!");
-	myEntity = new PhysicsEntity(aMass, aShape, aTransf);
+	PhysicsEntity::InitParams params;
+	params.myType = aMass == 0.f ? PhysicsEntity::Type::Static : PhysicsEntity::Type::Dynamic;
+	params.myShape = aShape;
+	params.myEntity = nullptr;
+	params.myTranfs = aTransf;
+	params.myMass = aMass;
+	myEntity = new PhysicsEntity(params);
+}
+
+void PhysicsComponent::CreateTriggerEntity(std::shared_ptr<PhysicsShapeBase> aShape, glm::vec3 anOrigin)
+{
+	ASSERT_STR(myOwner, "There's no owner - did you forget to add the component to the game object?");
+	ASSERT_STR(!myEntity, "About to leak entity!");
+
+	PhysicsEntity::InitParams params;
+	params.myType = PhysicsEntity::Type::Trigger;
+	params.myShape = aShape;
+	params.myEntity = myOwner;
+	params.myOffset = anOrigin;
+	myEntity = new PhysicsEntity(params);
+}
+
+void PhysicsComponent::CreateOwnerlessTriggerEntity(std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
+{
+	ASSERT_STR(!myEntity, "About to leak entity!");
+
+	PhysicsEntity::InitParams params;
+	params.myType = PhysicsEntity::Type::Trigger;
+	params.myShape = aShape;
+	params.myEntity = nullptr;
+	params.myTranfs = aTransf;
+	myEntity = new PhysicsEntity(params);
 }
 
 void PhysicsComponent::DeletePhysicsEntity()

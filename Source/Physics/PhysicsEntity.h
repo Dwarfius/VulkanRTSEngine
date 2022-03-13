@@ -4,6 +4,8 @@
 #include <Core/Threading/AssertMutex.h>
 #endif
 
+#include <Core/DataEnum.h>
+
 // will need to extend this once I find out how bullet handles layers
 enum CollisionLayers
 {
@@ -36,21 +38,32 @@ public:
 		InWorld,
 		PendingRemoval,
 	};
+
+	DATA_ENUM(Type, char,
+		Static,
+		Dynamic,
+		Trigger
+	);
+
 	// Creates an entity that is pending initialization. Requires setting up a shape
 	// before adding to the physics world
 	PhysicsEntity() = default;
-	// Creates an entity that is not linked to any game object, and has it's own transform
-	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf);
-	// Creates an entity that is linked to a game object, 
-	// and synchronises the transform with it, with respect to the origin point
-	PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity, const glm::vec3& anOrigin);
+
+	struct InitParams
+	{
+		Type myType = Type::Static;
+		std::shared_ptr<PhysicsShapeBase> myShape;
+		IPhysControllable* myEntity = nullptr;// optional
+		glm::mat4 myTranfs{ 1 }; // expected if anEntity isn't set
+		glm::vec3 myOffset{ 0 };
+		float myMass{ 0 }; // only valid for Dynamic types
+	};
+	PhysicsEntity(const InitParams& aParams);
 	~PhysicsEntity();
 
 	PhysicsEntity& operator=(const PhysicsEntity&) = delete;
 
-	bool IsStatic() const { return myIsStatic; }
-	bool IsDynamic() const { return !myIsStatic; } // declaring both for convenience
-	// TODO: add kinemitic object support
+	Type GetType() const { return myType; }
 	
 	State GetState() const { return myState; }
 	
@@ -100,8 +113,9 @@ private:
 	friend class PhysicsWorld;
 
 	void ApplyForces();
-	void CreateBody(float aMass, IPhysControllable* anEntity, const glm::mat4& aTransf);
 	void SetMass(float aMass);
+
+	void CreateBody(const InitParams& aParams);
 
 	std::shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody = nullptr;
@@ -115,7 +129,8 @@ private:
 	glm::vec3 myAccumTorque{0};
 	glm::vec3 myOffset{0};
 
+	Type myType = Type::Static;
+
 	bool myIsFrozen = false;
 	bool myIsSleeping = false;
-	bool myIsStatic = true;
 };

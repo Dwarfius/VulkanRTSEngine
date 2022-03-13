@@ -59,7 +59,6 @@ private:
 	const int MaxSteps = 4;
 	const float FixedStepLength = 1.f / 30.f;
 
-	// TODO: replace with u_map<UID, handle>
 	std::vector<PhysicsEntity*> myEntities;
 	std::vector<ISymCallbackListener*> myPhysSystems;
 

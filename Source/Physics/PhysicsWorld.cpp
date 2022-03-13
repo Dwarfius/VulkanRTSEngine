@@ -187,10 +187,10 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 		system->OnPrePhysicsStep(aDeltaTime);
 	}
 
-	// TODO: have a separate map for dynamic entities for faster iter
+	// TODO: have a separate container for dynamic entities for faster iter
 	for (PhysicsEntity* entity : myEntities)
 	{
-		if (entity->IsDynamic())
+		if (entity->GetType() == PhysicsEntity::Type::Dynamic)
 		{
 			entity->ApplyForces();
 		}
@@ -240,14 +240,17 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	ASSERT(!entity->myWorld);
 	ASSERT(entity->GetState() == PhysicsEntity::State::PendingAddition);
 
-	// TODO: refactor this
-	if (entity->myIsStatic)
+	switch (entity->GetType())
 	{
+	case PhysicsEntity::Type::Static:
+	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody);
-	}
-	else
-	{
+		break;
+	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
+		break;
+	default:
+		ASSERT(false);
 	}
 	entity->myWorld = this;
 	entity->myState = PhysicsEntity::State::InWorld;
@@ -261,14 +264,17 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 	ASSERT(entity->myWorld == this);
 	ASSERT(entity->GetState() == PhysicsEntity::State::PendingRemoval);
 
-	// TODO: refactor this
-	if (entity->myIsStatic)
+	switch (entity->GetType())
 	{
+	case PhysicsEntity::Type::Static:
+	case PhysicsEntity::Type::Trigger:
 		myWorld->removeCollisionObject(entity->myBody);
-	}
-	else
-	{
+		break;
+	case PhysicsEntity::Type::Dynamic:
 		myWorld->removeRigidBody(static_cast<btRigidBody*>(entity->myBody));
+		break;
+	default:
+		ASSERT(false);
 	}
 	entity->myWorld = nullptr;
 	entity->myState = PhysicsEntity::State::NotInWorld;

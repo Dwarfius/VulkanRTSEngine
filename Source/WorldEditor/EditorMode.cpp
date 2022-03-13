@@ -97,7 +97,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 
 		PhysicsEntity* physEntity;
 		if (aWorld->RaycastClosest(from, dir, 100.f, physEntity)
-			&& !physEntity->IsStatic())
+			&& physEntity->GetType() == PhysicsEntity::Type::Dynamic)
 		{
 			physEntity->AddForce(dir * 100.f);
 		}

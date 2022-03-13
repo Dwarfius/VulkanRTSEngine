@@ -43,23 +43,15 @@ public:
 	}
 };
 
-PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, const glm::mat4& aTransf)
-	: myShape(aShape)
+PhysicsEntity::PhysicsEntity(const InitParams& aParams)
 {
-	CreateBody(aMass, nullptr, aTransf);
-}
-
-PhysicsEntity::PhysicsEntity(float aMass, std::shared_ptr<PhysicsShapeBase> aShape, IPhysControllable& anEntity, const glm::vec3& anOrigin)
-	: myShape(aShape)
-	, myOffset(anOrigin)
-{
-	CreateBody(aMass, &anEntity, glm::mat4());
+	CreateBody(aParams);
 }
 
 PhysicsEntity::~PhysicsEntity()
 {
 	ASSERT(myState == State::NotInWorld);
-	if (!myIsStatic)
+	if (myType == Type::Dynamic)
 	{
 		delete static_cast<btRigidBody*>(myBody)->getMotionState();
 	}
@@ -78,7 +70,7 @@ glm::mat4 PhysicsEntity::GetTransform() const
 glm::mat4 PhysicsEntity::GetTransformInterp() const
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Static entities can't be interpolated");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects can move!");
 
 	const btRigidBody* rigidBody = static_cast<const btRigidBody*>(myBody);
 
@@ -108,14 +100,14 @@ void PhysicsEntity::SetTransform(const glm::mat4& aTransf)
 float PhysicsEntity::GetMass() const
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Static objects don't have mass!");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects have mass!");
 	return static_cast<const btRigidBody*>(myBody)->getMass();
 }
 
 void PhysicsEntity::AddForce(glm::vec3 aForce)
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects can have force applied to!");
 	ASSERT(!Utils::IsNan(aForce));
 
 	{
@@ -128,7 +120,7 @@ void PhysicsEntity::AddForce(glm::vec3 aForce)
 void PhysicsEntity::SetVelocity(glm::vec3 aVelocity)
 {
 	ASSERT(myBody);
-	ASSERT_STR(!myIsStatic, "Static objects can't have velocity!");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects can have velocity!");
 	ASSERT(!Utils::IsNan(aVelocity));
 
 	const btVector3 velocity = Utils::ConvertToBullet(aVelocity);
@@ -146,6 +138,27 @@ int PhysicsEntity::GetCollisionFlags() const
 	return myBody->getCollisionFlags();
 }
 
+void PhysicsEntity::SetOffset(glm::vec3 anOffset)
+{
+	if (myBody)
+	{
+		if (myType == Type::Dynamic)
+		{
+			btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
+			EntityMotionState* motionState = static_cast<EntityMotionState*>(rigidBody->getMotionState());
+			motionState->SetOrigin(anOffset);
+		}
+		else
+		{
+			glm::vec3 offsetDelta = anOffset - myOffset;
+			glm::mat4 transf = Utils::ConvertToGLM(myBody->getWorldTransform());
+			transf = glm::translate(transf, offsetDelta);
+			myBody->setWorldTransform(Utils::ConvertToBullet(transf));
+		}
+	}
+	myOffset = anOffset;
+}
+
 void PhysicsEntity::DeferDelete()
 {
 	ASSERT(myWorld);
@@ -154,11 +167,15 @@ void PhysicsEntity::DeferDelete()
 
 void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEntity)
 {
+	aSerializer.SerializeEnum("myType", myType);
+
 	PhysicsShapeBase::Type shapeType = myShape ?
 		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
 	aSerializer.SerializeEnum("myShape", shapeType);
 	
-	float mass = myBody && !myIsStatic ? static_cast<btRigidBody*>(myBody)->getMass() : 0;
+	float mass = myBody && myType == Type::Static 
+		? static_cast<btRigidBody*>(myBody)->getMass() 
+		: 0;
 	float oldMass = mass;
 	aSerializer.Serialize("myMass", mass);
 
@@ -274,39 +291,22 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 		}
 	}
 
-	if (createShape)
+	if (aSerializer.IsReading())
 	{
-		if (!myBody)
-		{
-			CreateBody(mass, anEntity, glm::mat4(1));
-		}
-		myBody->setCollisionShape(myShape->GetShape());
-	}
-	else
-	{
-		if (mass != oldMass)
-		{
-			if (mass == 0 || oldMass == 0)
-			{
-				if (myBody)
-				{
-					delete myBody;
-					myBody = nullptr;
-				}
-				CreateBody(mass, anEntity, glm::mat4(1));
-			}
-			SetMass(mass);
-		}
-		if (offset != oldOffset)
-		{
-			SetOffset(offset);
-		}
+		InitParams params;
+		params.myType = myType;
+		params.myShape = myShape;
+		params.myEntity = anEntity;
+		params.myTranfs = glm::mat4{ 1 };
+		params.myOffset = offset;
+		params.myMass = mass;
+		CreateBody(params);
 	}
 }
 
 void PhysicsEntity::ApplyForces()
 {
-	ASSERT_STR(!myIsStatic, "Can't apply forces to a static object!");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects can have foces applied to!");
 
 	btVector3 force;
 	btVector3 torque;
@@ -338,49 +338,9 @@ void PhysicsEntity::ApplyForces()
 	}
 }
 
-void PhysicsEntity::CreateBody(float aMass, IPhysControllable* anEntity, const glm::mat4& aTransf)
-{
-	ASSERT_STR(myShape, "Shape must be set before creating the physics body!");
-	ASSERT_STR(!myBody, "About to leak a body!");
-
-	myIsStatic = aMass == 0;
-	btTransform startTransf = Utils::ConvertToBullet(aTransf);
-	btCollisionShape* shape = myShape->GetShape();
-	if (!myIsStatic)
-	{
-		EntityMotionState* motionState = nullptr;
-		if (anEntity)
-		{
-			motionState = new EntityMotionState(anEntity, myOffset);
-		}
-
-		btVector3 localInertia(0, 0, 0);
-		shape->calculateLocalInertia(aMass, localInertia);
-		btRigidBody::btRigidBodyConstructionInfo constructInfo(aMass, motionState, shape, localInertia);
-		constructInfo.m_startWorldTransform = startTransf;
-		myBody = new btRigidBody(constructInfo);
-	}
-	else
-	{
-		if (anEntity)
-		{
-			glm::mat4 transf;
-			anEntity->GetPhysTransform(transf);
-			transf = glm::translate(transf, myOffset);
-			startTransf = Utils::ConvertToBullet(transf);
-		}
-
-		myBody = new btCollisionObject();
-		myBody->setWorldTransform(startTransf);
-		myBody->setCollisionShape(shape);
-	}
-
-	myBody->setUserPointer(this);
-}
-
 void PhysicsEntity::SetMass(float aMass)
 {
-	ASSERT_STR(!myIsStatic, "Static bodies can't have mass!");
+	ASSERT_STR(myType == Type::Dynamic, "Only Dynamic objects have mass!");
 
 	// recalculate local intertia
 	btVector3 localInertia(0, 0, 0);
@@ -390,23 +350,62 @@ void PhysicsEntity::SetMass(float aMass)
 	rigidBody->setMassProps(aMass, localInertia);
 }
 
-void PhysicsEntity::SetOffset(glm::vec3 anOffset)
+void PhysicsEntity::CreateBody(const InitParams& aParams)
 {
-	if (myBody)
+	// input validation
+	ASSERT_STR((aParams.myType == Type::Dynamic) == (aParams.myMass != 0.f),
+		"Only Dynamic entities can have a mass!");
+
+	// TODO: make this work with multiple calls
+	ASSERT_STR(!myBody, "About to leak a body!");
+
+	myType = aParams.myType;
+	myOffset = aParams.myOffset;
+	btTransform startTransf = Utils::ConvertToBullet(aParams.myTranfs);
+	myShape = aParams.myShape;
+	btCollisionShape* shape = myShape->GetShape();
+
+	switch (myType)
 	{
-		if (myIsStatic)
+	case Type::Static:
+	{
+		if (aParams.myEntity)
 		{
-			glm::vec3 offsetDelta = anOffset - myOffset;
-			glm::mat4 transf = Utils::ConvertToGLM(myBody->getWorldTransform());
-			transf = glm::translate(transf, offsetDelta);
-			myBody->setWorldTransform(Utils::ConvertToBullet(transf));
+			glm::mat4 transf;
+			aParams.myEntity->GetPhysTransform(transf);
+			transf = glm::translate(transf, myOffset);
+			startTransf = Utils::ConvertToBullet(transf);
 		}
-		else
-		{
-			btRigidBody* rigidBody = static_cast<btRigidBody*>(myBody);
-			EntityMotionState* motionState = static_cast<EntityMotionState*>(rigidBody->getMotionState());
-			motionState->SetOrigin(anOffset);
-		}
+
+		myBody = new btCollisionObject();
+		myBody->setWorldTransform(startTransf);
+		myBody->setCollisionShape(shape);
+		break;
 	}
-	myOffset = anOffset;
+	case Type::Dynamic:
+	{
+		EntityMotionState* motionState = nullptr;
+		if (aParams.myEntity)
+		{
+			motionState = new EntityMotionState(aParams.myEntity, myOffset);
+		}
+
+		btVector3 localInertia(0, 0, 0);
+		shape->calculateLocalInertia(aParams.myMass, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo constructInfo(aParams.myMass, motionState, shape, localInertia);
+		constructInfo.m_startWorldTransform = startTransf;
+		myBody = new btRigidBody(constructInfo);
+		break;
+	}
+	case Type::Trigger:
+	{
+		myBody = new btGhostObject();
+		myBody->setWorldTransform(startTransf);
+		myBody->setCollisionShape(shape);
+		break;
+	}
+	default:
+		ASSERT(false);
+	}
+	myBody->setUserPointer(this);
 }

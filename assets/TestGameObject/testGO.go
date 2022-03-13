@@ -15,6 +15,7 @@
 			"myCompType": "PhysicsComponent",
 			"myCompData": {
 				"myPhysEntity": {
+					"myType" : 0,
 					"myShape": 1,
 					"myMass": 0,
 					"myOrigin": [0, 0, 0],
