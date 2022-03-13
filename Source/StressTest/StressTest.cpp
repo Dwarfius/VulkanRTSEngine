@@ -45,8 +45,27 @@ StressTest::StressTest(Game& aGame)
 		myTankModel = importer.GetModel(0);
 	}
 
-	myTankTexture = assetTracker.GetOrCreate<Texture>("Tank/playerTank.img");
-	myTankPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
+	{
+		OBJImporter importer;
+		constexpr StaticString path = Resource::kAssetsFolder + "sphere.obj";
+		[[maybe_unused]] bool loadRes = importer.Load(path);
+		ASSERT_STR(loadRes, "Failed to load %s", path.CStr());
+		mySphereModel = importer.GetModel(0);
+	}
+
+	{
+		myGreyTexture = new Texture();
+		myGreyTexture->SetWidth(1);
+		myGreyTexture->SetHeight(1);
+		myGreyTexture->SetFormat(Texture::Format::UNorm_RGB);
+
+		uint8_t* kGreyPixel = new uint8_t[]{ 64, 64, 64 };
+		myGreyTexture->SetPixels(kGreyPixel);
+	}
+
+	myGreenTankTexture = assetTracker.GetOrCreate<Texture>("Tank/playerTank.img");
+	myRedTankTexture = assetTracker.GetOrCreate<Texture>("Tank/enemyTank.img");
+	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
 
 	myTanks.reserve(1000);
 }
@@ -55,8 +74,14 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 {
 	Profiler::ScopedMark mark("StressTest::Update");
 	DrawUI(aGame);
+	if (aGame.IsPaused())
+	{
+		return;
+	}
+
 	UpdateCamera(*aGame.GetCamera(), aDeltaTime);
 	UpdateTanks(aGame, aDeltaTime);
+	UpdateBalls(aGame, aDeltaTime);
 }
 
 void StressTest::DrawUI(Game& aGame)
@@ -64,12 +89,17 @@ void StressTest::DrawUI(Game& aGame)
 	std::lock_guard imguiLock(aGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Stress Test"))
 	{
-		ImGui::InputFloat("Tank Life", &myTankLife);
 		ImGui::InputFloat("Spawn Rate", &mySpawnRate);
 		ImGui::InputFloat("Spawn Square Side", &mySpawnSquareSide);
+		ImGui::InputFloat("Tank Speed", &myTankSpeed);
 		ImGui::Text("Tanks alive: %llu", myTanks.size());
-		const int32_t totalPop = static_cast<int32_t>(myTankLife * mySpawnRate);
-		ImGui::Text("Target population: %d", totalPop);
+
+		ImGui::Separator();
+
+		ImGui::InputFloat("Shoot Cooldown", &myShootCD);
+		ImGui::InputFloat("Shot Life", &myShotLife);
+		ImGui::InputFloat("Shot Speed", &myShotSpeed);
+		ImGui::Text("Cannonballs: %llu", myBalls.size());
 	}
 	ImGui::End();
 }
@@ -88,38 +118,114 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 		myTanks.resize(newCount);
 		for (uint32_t i = 0; i < toSpawnCount; i++)
 		{
+			myTankSwitch = !myTankSwitch;
+
 			Tank& tank = myTanks[newCount - i - 1];
-			tank.myLife = myTankLife;
+			tank.myTeam = myTankSwitch;
+			tank.myCooldown = myShootCD;
+
+			const float xSpawn = mySpawnSquareSide / 2.f * (tank.myTeam ? 1 : -1);
+			const float zSpawn = filter(myRandEngine);
+			const float xTarget = -xSpawn;
+			const float zTarget = filter(myRandEngine);
+			tank.myDest = glm::vec3(xTarget, 0, zTarget);
 
 			Transform tankTransf;
-			tankTransf.SetPos({ filter(myRandEngine), 0, filter(myRandEngine) });
+			tankTransf.SetPos({ xSpawn, 0, zSpawn });
 			tankTransf.SetScale({ 0.01f, 0.01f, 0.01f }); // the model is too large
+			tankTransf.LookAt(tank.myDest);
 			tank.myGO = new GameObject(tankTransf);
 			VisualComponent* visualComp = tank.myGO->AddComponent<VisualComponent>();
 			visualComp->SetModel(myTankModel);
 			visualComp->SetTextureCount(1);
-			visualComp->SetTexture(0, myTankTexture);
-			visualComp->SetPipeline(myTankPipeline);
+			visualComp->SetTexture(0, tank.myTeam ? myGreenTankTexture : myRedTankTexture);
+			visualComp->SetPipeline(myDefaultPipeline);
 			aGame.AddGameObject(tank.myGO);
 		}
 	}
 
 	for (Tank& tank : myTanks)
 	{
-		tank.myLife -= aDeltaTime;
-		if (tank.myLife <= 0.f)
+		Transform transf = tank.myGO->GetWorldTransform();
+		glm::vec3 dist = tank.myDest - transf.GetPos();
+		dist.y = 0;
+		const float sqrlength = glm::length2(dist);
+
+		if (sqrlength <= 1.f)
 		{
 			aGame.RemoveGameObject(tank.myGO);
 			tank.myGO = Handle<GameObject>();
+			continue;
+		}
+
+		transf.Translate(transf.GetForward() * myTankSpeed * aDeltaTime);
+		tank.myGO->SetWorldTransform(transf);
+
+		tank.myCooldown -= aDeltaTime;
+		if (tank.myCooldown < 0)
+		{
+			tank.myCooldown += myShootCD;
+
+			Transform ballTransf;
+			ballTransf.SetPos(transf.GetPos()
+				+ transf.GetForward() * 0.2f
+				+ transf.GetUp() * 0.85f
+			);
+			ballTransf.SetScale({ 0.2f, 0.2f, 0.2f });
+
+			Ball ball;
+			ball.myLife = myShotLife;
+
+			glm::vec3 initVelocity = transf.GetForward();
+			initVelocity.y += 0.5f;
+			ball.myVel = glm::normalize(initVelocity) * myShotSpeed;
+
+			ball.myGO = new GameObject(ballTransf);
+			VisualComponent* visualComp = ball.myGO->AddComponent<VisualComponent>();
+			visualComp->SetModel(mySphereModel);
+			visualComp->SetTextureCount(1);
+			visualComp->SetTexture(0, myGreyTexture);
+			visualComp->SetPipeline(myDefaultPipeline);
+			aGame.AddGameObject(ball.myGO);
+
+			myBalls.push_back(ball);
 		}
 	}
 
 	const size_t removed = std::erase_if(myTanks, 
 		[](const Tank& aTank) {
-			return aTank.myLife <= 0.f;
+			return !aTank.myGO.IsValid();
 		}
 	);
 	myTankAccum -= removed;
+}
+
+void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
+{
+	constexpr static float kGravity = 9.8f;
+	for (Ball& ball : myBalls)
+	{
+		ball.myLife -= aDeltaTime;
+		if (ball.myLife < 0)
+		{
+			aGame.RemoveGameObject(ball.myGO);
+			ball.myGO = Handle<GameObject>();
+			continue;
+		}
+
+		
+		ball.myVel.y -= kGravity * aDeltaTime;
+
+		Transform transf = ball.myGO->GetWorldTransform();
+		transf.Translate(ball.myVel * aDeltaTime);
+		ball.myGO->SetWorldTransform(transf);
+	}
+
+	std::erase_if(myBalls,
+		[](const Ball& aBall) {
+			return !aBall.myGO.IsValid();
+		}
+	);
 }
 
 void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)

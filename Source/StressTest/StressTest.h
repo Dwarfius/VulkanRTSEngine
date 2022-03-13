@@ -20,24 +20,43 @@ public:
 	void Update(Game& aGame, float aDeltaTime);
 
 private:
-	Handle<Texture> myTankTexture;
-	Handle<Pipeline> myTankPipeline;
+	Handle<Texture> myGreenTankTexture;
+	Handle<Texture> myRedTankTexture;
+	Handle<Texture> myGreyTexture;
+	Handle<Pipeline> myDefaultPipeline;
 	Handle<Model> myTankModel;
+	Handle<Model> mySphereModel;
 
-	float myTankLife = 10.f;
 	float mySpawnRate = 10.f;
 	float mySpawnSquareSide = 20.f;
+	float myTankSpeed = 5.f;
+	float myShootCD = 2.f;
+	float myShotLife = 10.f;
+	float myShotSpeed = 10.f;
 	void DrawUI(Game& aGame);
 
+	std::default_random_engine myRandEngine;
+
+	float myTankAccum = 0.f;
+	bool myTankSwitch;
 	struct Tank
 	{
 		Handle<GameObject> myGO;
-		float myLife;
+		glm::vec3 myDest;
+		float myCooldown;
+		bool myTeam;
 	};
 	std::vector<Tank> myTanks;
-	float myTankAccum = 0.f;
-	std::default_random_engine myRandEngine;
 	void UpdateTanks(Game& aGame, float aDeltaTime);
+
+	struct Ball
+	{
+		Handle<GameObject> myGO;
+		glm::vec3 myVel;
+		float myLife;
+	};
+	std::vector<Ball> myBalls;
+	void UpdateBalls(Game& aGame, float aDeltaTime);
 
 	float myRotationAngle = 0.f;
 	void UpdateCamera(Camera& aCam, float aDeltaTime);
