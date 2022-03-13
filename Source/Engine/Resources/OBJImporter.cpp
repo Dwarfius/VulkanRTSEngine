@@ -55,7 +55,12 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 
 	std::vector<Model::IndexType> modelIndices;
 	std::vector<Vertex> modelVertices;
-	modelVertices.resize(attrib.vertices.size());
+	const size_t maxSize = std::max({ 
+		attrib.vertices.size(), 
+		attrib.texcoords.size(), 
+		attrib.normals.size() 
+	});
+	modelVertices.resize(maxSize);
 	myModels.clear();
 	for (const tinyobj::shape_t& shape : shapes)
 	{
