@@ -1,1 +1,3 @@
-{"myCenter":[0.0,0.0,0.0],"myChildren":[],"myComponents":[{"myCompData":{"myPhysEntity":{"myHalfExtents":[0.5,0.5,0.5],"myMass":0.0,"myOffset":[0.0,0.0,0.0],"myShape":1}},"myCompType":"PhysicsComponent"},{"myCompData":{"myModel":"TestGameObject/modelTest.model","myPipeline":"Engine/default.ppl","myTextures":["CubeUnwrap.img"],"myTransf":{"myPos":[0.0,0.0,0.0],"myRotation":[0.0,0.0,0.0,1.0],"myScale":[1.0,1.0,1.0]}},"myCompType":"VisualComponent"}],"myEnableMipMaps":false,"myFormat":7,"myImgExtension":"png","myLocalTransf":{"myPos":[0.0,0.0,0.0],"myRotation":[0.0,0.0,0.0,1.0],"myScale":[1.0,1.0,1.0]},"myMagFilter":0,"myMinFilter":0,"myUID":{"myMac":198112243456228,"myRndNum":3310556358,"myTime":929075547},"myWrapMode":0}
+{
+    "myImgExtension":"png"
+}
