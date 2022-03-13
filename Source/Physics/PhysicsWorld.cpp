@@ -100,7 +100,7 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 		myIsBeingStepped = true;
 		// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
 		// the simulation, but it will update the motion states, thus achieving interpolation
-		myWorld->stepSimulation(aDeltaTime, MaxSteps, FixedStepLength);
+		myWorld->stepSimulation(aDeltaTime, kMaxSteps, kFixedStepLength);
 		myIsBeingStepped = false;
 
 		myWorld->debugDrawWorld();

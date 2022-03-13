@@ -56,8 +56,8 @@ public:
 	void AddPhysSystem(ISymCallbackListener* aSystem);
 
 private:
-	const int MaxSteps = 4;
-	const float FixedStepLength = 1.f / 30.f;
+	constexpr static int kMaxSteps = 4;
+	constexpr static float kFixedStepLength = 1.f / 30.f;
 
 	std::vector<PhysicsEntity*> myEntities;
 	std::vector<ISymCallbackListener*> myPhysSystems;
