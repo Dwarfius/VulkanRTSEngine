@@ -9,6 +9,8 @@ class Pipeline;
 class Texture;
 class Camera;
 
+class PhysicsEntity;
+
 // Sets up and runs the Tank stress test:
 // a "wall" of tanks descends towards the middle,
 // shooting each other.
@@ -16,6 +18,7 @@ class StressTest
 {
 public:
 	StressTest(Game& aGame);
+	~StressTest();
 
 	void Update(Game& aGame, float aDeltaTime);
 
@@ -36,6 +39,8 @@ private:
 	void DrawUI(Game& aGame);
 
 	std::default_random_engine myRandEngine;
+	friend class TriggersTracker;
+	TriggersTracker* myTriggersTracker;
 
 	float myTankAccum = 0.f;
 	bool myTankSwitch;
@@ -44,9 +49,11 @@ private:
 		Handle<GameObject> myGO;
 		glm::vec3 myDest;
 		float myCooldown;
+		PhysicsEntity* myTrigger;
 		bool myTeam;
 	};
 	std::vector<Tank> myTanks;
+	std::vector<Tank> myTanksToRemove;
 	void UpdateTanks(Game& aGame, float aDeltaTime);
 
 	struct Ball
@@ -54,8 +61,11 @@ private:
 		Handle<GameObject> myGO;
 		glm::vec3 myVel;
 		float myLife;
+		PhysicsEntity* myTrigger;
+		bool myTeam;
 	};
 	std::vector<Ball> myBalls;
+	std::vector<Ball> myBallsToRemove;
 	void UpdateBalls(Game& aGame, float aDeltaTime);
 
 	float myRotationAngle = 0.f;

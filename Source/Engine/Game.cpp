@@ -293,6 +293,9 @@ void Game::CleanUp()
 
 	myImGUISystem->Shutdown();
 
+	// physics clear
+	delete myPhysWorld;
+
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
 	// get rid of pending objects
@@ -321,9 +324,6 @@ void Game::CleanUp()
 		}
 	}
 	myTerrains.clear();
-
-	// physics clear
-	delete myPhysWorld;
 
 	delete myCamera;
 }

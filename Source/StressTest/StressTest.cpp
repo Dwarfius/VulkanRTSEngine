@@ -4,6 +4,7 @@
 #include <Engine/Game.h>
 #include <Engine/Terrain.h>
 #include <Engine/Resources/OBJImporter.h>
+#include <Engine/Components/PhysicsComponent.h>
 #include <Engine/Components/VisualComponent.h>
 #include <Engine/Input.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
@@ -13,8 +14,77 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Camera.h>
 
+#include <Physics/PhysicsWorld.h>
+#include <Physics/PhysicsEntity.h>
+#include <Physics/PhysicsShapes.h>
+
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
+
+class TriggersTracker final : public PhysicsWorld::ISymCallbackListener
+{
+public:
+	TriggersTracker(StressTest& aOwner) : myOwner(aOwner) {}
+
+private:
+	void OnPrePhysicsStep(float aDeltaTime) override {};
+	void OnPostPhysicsStep(float aDeltaTime) override {};
+
+	void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) override
+	{
+		// TODO: this is horribly inefficient, but other than
+		// keeping track of indices on PhysicsEntity (which I 
+		// can't do - no stability guarantee) I got no ideas
+		auto tankIter = std::find_if(myOwner.myTanks.begin(), myOwner.myTanks.end(), 
+			[left = &aLeft, right = &aRight](const StressTest::Tank& aTank) {
+				return aTank.myTrigger == left || aTank.myTrigger == right;
+			}
+		);
+		if (tankIter == myOwner.myTanks.end())
+		{
+			return;
+		}
+
+		auto ballIter = std::find_if(myOwner.myBalls.begin(), myOwner.myBalls.end(),
+			[left = &aLeft, right = &aRight](const StressTest::Ball& aBall) {
+				return aBall.myTrigger == left || aBall.myTrigger == right;
+			}
+		);
+		if (ballIter == myOwner.myBalls.end())
+		{
+			return;
+		}
+
+		StressTest::Tank& tank = *tankIter;
+		StressTest::Ball& ball = *ballIter;
+		if (tank.myTeam != ball.myTeam)
+		{
+			// we have to defer destruction as we don't
+			// have access to the Game
+			myOwner.myTanksToRemove.push_back(tank);
+			myOwner.myBallsToRemove.push_back(ball);
+
+			auto lastTankIter = myOwner.myTanks.end();
+			std::advance(lastTankIter, -1);
+			if (tankIter != lastTankIter)
+			{
+				std::swap(tank, myOwner.myTanks.back());
+			}
+			myOwner.myTanks.erase(lastTankIter);
+			myOwner.myTankAccum--;
+
+			auto lastBallIter = myOwner.myBalls.end();
+			std::advance(lastBallIter, -1);
+			if (ballIter != lastBallIter)
+			{
+				std::swap(ball, myOwner.myBalls.back());
+			}
+			myOwner.myBalls.erase(lastBallIter);
+		}
+	}
+
+	StressTest& myOwner;
+};
 
 StressTest::StressTest(Game& aGame)
 {
@@ -67,7 +137,16 @@ StressTest::StressTest(Game& aGame)
 	myRedTankTexture = assetTracker.GetOrCreate<Texture>("Tank/enemyTank.img");
 	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
 
-	myTanks.reserve(1000);
+	myTanks.reserve(500);
+	myBalls.reserve(500);
+
+	myTriggersTracker = new TriggersTracker(*this);
+	aGame.GetPhysicsWorld()->AddPhysSystem(myTriggersTracker);
+}
+
+StressTest::~StressTest()
+{
+	delete myTriggersTracker;
 }
 
 void StressTest::Update(Game& aGame, float aDeltaTime)
@@ -91,6 +170,7 @@ void StressTest::DrawUI(Game& aGame)
 	{
 		ImGui::InputFloat("Spawn Rate", &mySpawnRate);
 		ImGui::InputFloat("Spawn Square Side", &mySpawnSquareSide);
+		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1.f);
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
 		ImGui::Text("Tanks alive: %llu", myTanks.size());
 
@@ -106,6 +186,12 @@ void StressTest::DrawUI(Game& aGame)
 
 void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 {
+	for (Tank& tank : myTanksToRemove)
+	{
+		aGame.RemoveGameObject(tank.myGO);
+	}
+	myTanksToRemove.clear();
+
 	myTankAccum += mySpawnRate * aDeltaTime;
 	if (myTankAccum >= myTanks.size() + 1)
 	{
@@ -132,14 +218,28 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 			Transform tankTransf;
 			tankTransf.SetPos({ xSpawn, 0, zSpawn });
-			tankTransf.SetScale({ 0.01f, 0.01f, 0.01f }); // the model is too large
+			constexpr float kScale = 0.01f;
+			tankTransf.SetScale({ kScale, kScale, kScale }); // the model is too large
 			tankTransf.LookAt(tank.myDest);
+
 			tank.myGO = new GameObject(tankTransf);
 			VisualComponent* visualComp = tank.myGO->AddComponent<VisualComponent>();
 			visualComp->SetModel(myTankModel);
 			visualComp->SetTextureCount(1);
 			visualComp->SetTexture(0, tank.myTeam ? myGreenTankTexture : myRedTankTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
+
+			const glm::vec3 aabbMin = myTankModel->GetAABBMin();
+			const glm::vec3 aabbMax = myTankModel->GetAABBMax();
+			const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f;
+			std::shared_ptr<PhysicsShapeBox> shape = std::make_shared<PhysicsShapeBox>(
+				halfExtents
+			);
+			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
+			physComp->CreateTriggerEntity(shape, {0, halfExtents.y, 0});
+			physComp->RequestAddToWorld(*aGame.GetPhysicsWorld());
+			tank.myTrigger = &physComp->GetPhysicsEntity();
+
 			aGame.AddGameObject(tank.myGO);
 		}
 	}
@@ -171,10 +271,12 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				+ transf.GetForward() * 0.2f
 				+ transf.GetUp() * 0.85f
 			);
-			ballTransf.SetScale({ 0.2f, 0.2f, 0.2f });
+			constexpr float kScale = 0.2f;
+			ballTransf.SetScale({ kScale, kScale, kScale });
 
 			Ball ball;
 			ball.myLife = myShotLife;
+			ball.myTeam = tank.myTeam;
 
 			glm::vec3 initVelocity = transf.GetForward();
 			initVelocity.y += 0.5f;
@@ -186,6 +288,18 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetTextureCount(1);
 			visualComp->SetTexture(0, myGreyTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
+
+			const glm::vec3 aabbMin = mySphereModel->GetAABBMin();
+			const glm::vec3 aabbMax = mySphereModel->GetAABBMax();
+			const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f;
+			std::shared_ptr<PhysicsShapeSphere> shape = std::make_shared<PhysicsShapeSphere>(
+				halfExtents.x
+			);
+			PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
+			physComp->CreateTriggerEntity(shape, {});
+			physComp->RequestAddToWorld(*aGame.GetPhysicsWorld());
+			ball.myTrigger = &physComp->GetPhysicsEntity();
+
 			aGame.AddGameObject(ball.myGO);
 
 			myBalls.push_back(ball);
@@ -202,6 +316,12 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 {
+	for (Ball& ball : myBallsToRemove)
+	{
+		aGame.RemoveGameObject(ball.myGO);
+	}
+	myBallsToRemove.clear();
+
 	constexpr static float kGravity = 9.8f;
 	for (Ball& ball : myBalls)
 	{

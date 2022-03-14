@@ -10,6 +10,7 @@ class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
+class btGhostPairCallback;
 class DebugDrawer;
 
 class PhysicsWorld
@@ -22,6 +23,8 @@ public:
 	public:
 		virtual void OnPrePhysicsStep(float aDeltaTime) = 0;
 		virtual void OnPostPhysicsStep(float aDeltaTime) = 0;
+		// Called once per entity pair, before OnPostPhysicsStep
+		virtual void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) = 0;
 	};
 
 public:
@@ -59,7 +62,9 @@ private:
 	constexpr static int kMaxSteps = 4;
 	constexpr static float kFixedStepLength = 1.f / 30.f;
 
-	std::vector<PhysicsEntity*> myEntities;
+	std::vector<PhysicsEntity*> myStaticEntities;
+	std::vector<PhysicsEntity*> myDynamicEntities;
+	std::vector<PhysicsEntity*> myTriggers;
 	std::vector<ISymCallbackListener*> myPhysSystems;
 
 	void PrePhysicsStep(float aDeltaTime);
@@ -70,6 +75,7 @@ private:
 	btCollisionDispatcher* myDispatcher;
 	btSequentialImpulseConstraintSolver* mySolver; // for now using default one, should try ODE quickstep solver later 
 	btDiscreteDynamicsWorld* myWorld;
+	btGhostPairCallback* myGhostCallback;
 	
 	tbb::spin_mutex myCommandsLock;
 	std::atomic<bool> myIsBeingStepped;

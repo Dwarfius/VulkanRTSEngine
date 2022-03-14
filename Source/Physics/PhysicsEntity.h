@@ -114,12 +114,17 @@ private:
 
 	void ApplyForces();
 	void SetMass(float aMass);
+	void UpdateTransform();
 
 	void CreateBody(const InitParams& aParams);
+
+	int GetOverlapCount() const;
+	const PhysicsEntity* GetOverlapContact(int anIndex) const;
 
 	std::shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody = nullptr;
 	PhysicsWorld* myWorld = nullptr;
+	IPhysControllable* myPhysController = nullptr;
 	State myState = State::NotInWorld;
 
 #ifdef ASSERT_MUTEX

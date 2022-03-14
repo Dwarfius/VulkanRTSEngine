@@ -350,6 +350,17 @@ void PhysicsEntity::SetMass(float aMass)
 	rigidBody->setMassProps(aMass, localInertia);
 }
 
+void PhysicsEntity::UpdateTransform()
+{
+	if (myPhysController)
+	{
+		glm::mat4 transf;
+		myPhysController->GetPhysTransform(transf);
+		transf = glm::translate(transf, myOffset);
+		SetTransform(transf);
+	}
+}
+
 void PhysicsEntity::CreateBody(const InitParams& aParams)
 {
 	// input validation
@@ -361,7 +372,22 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 
 	myType = aParams.myType;
 	myOffset = aParams.myOffset;
-	btTransform startTransf = Utils::ConvertToBullet(aParams.myTranfs);
+	myPhysController = aParams.myEntity;
+	btTransform startTransf;
+	if (myPhysController)
+	{
+		glm::mat4 transf;
+		myPhysController->GetPhysTransform(transf);
+		transf = glm::translate(transf, myOffset);
+		startTransf = Utils::ConvertToBullet(transf);
+	}
+	else
+	{
+		glm::mat4 transf = aParams.myTranfs;
+		transf = glm::translate(transf, myOffset);
+		startTransf = Utils::ConvertToBullet(transf);
+	}
+
 	myShape = aParams.myShape;
 	btCollisionShape* shape = myShape->GetShape();
 
@@ -369,14 +395,6 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 	{
 	case Type::Static:
 	{
-		if (aParams.myEntity)
-		{
-			glm::mat4 transf;
-			aParams.myEntity->GetPhysTransform(transf);
-			transf = glm::translate(transf, myOffset);
-			startTransf = Utils::ConvertToBullet(transf);
-		}
-
 		myBody = new btCollisionObject();
 		myBody->setWorldTransform(startTransf);
 		myBody->setCollisionShape(shape);
@@ -385,9 +403,9 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 	case Type::Dynamic:
 	{
 		EntityMotionState* motionState = nullptr;
-		if (aParams.myEntity)
+		if (myPhysController)
 		{
-			motionState = new EntityMotionState(aParams.myEntity, myOffset);
+			motionState = new EntityMotionState(myPhysController, myOffset);
 		}
 
 		btVector3 localInertia(0, 0, 0);
@@ -408,4 +426,17 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 		ASSERT(false);
 	}
 	myBody->setUserPointer(this);
+}
+
+int PhysicsEntity::GetOverlapCount() const
+{
+	ASSERT_STR(myType == Type::Trigger, "Unsupported call!");
+	return static_cast<btGhostObject*>(myBody)->getNumOverlappingObjects();
+}
+
+const PhysicsEntity* PhysicsEntity::GetOverlapContact(int anIndex) const
+{
+	const btGhostObject* ghost = static_cast<btGhostObject*>(myBody);
+	const btCollisionObject* other = ghost->getOverlappingObject(anIndex);
+	return static_cast<const PhysicsEntity*>(other->getUserPointer());
 }

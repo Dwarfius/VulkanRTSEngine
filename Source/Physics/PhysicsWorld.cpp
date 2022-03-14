@@ -13,6 +13,8 @@ PhysicsWorld::PhysicsWorld()
 	: myIsBeingStepped(false)
 {
 	myBroadphase = new btDbvtBroadphase();
+	myGhostCallback = new btGhostPairCallback();
+	myBroadphase->getOverlappingPairCache()->setInternalGhostPairCallback(myGhostCallback);
 	myConfiguration = new btDefaultCollisionConfiguration();
 	myDispatcher = new btCollisionDispatcher(myConfiguration);
 	mySolver = new btSequentialImpulseConstraintSolver();
@@ -33,7 +35,9 @@ PhysicsWorld::PhysicsWorld()
 	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints);
 
 	myCommands.reserve(200);
-	myEntities.reserve(1000);
+	myStaticEntities.reserve(1000);
+	myDynamicEntities.reserve(200);
+	myTriggers.reserve(100);
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -45,7 +49,17 @@ PhysicsWorld::~PhysicsWorld()
 
 	// everything that's left can be marked as outside of world
 	// if they want to be deleted later
-	for (PhysicsEntity* entity : myEntities)
+	for (PhysicsEntity* entity : myStaticEntities)
+	{
+		entity->myState = PhysicsEntity::State::NotInWorld;
+	}
+
+	for (PhysicsEntity* entity : myDynamicEntities)
+	{
+		entity->myState = PhysicsEntity::State::NotInWorld;
+	}
+
+	for (PhysicsEntity* entity : myTriggers)
 	{
 		entity->myState = PhysicsEntity::State::NotInWorld;
 	}
@@ -55,6 +69,7 @@ PhysicsWorld::~PhysicsWorld()
 	delete mySolver;
 	delete myDispatcher;
 	delete myConfiguration;
+	delete myGhostCallback;
 	delete myBroadphase;
 }
 
@@ -187,18 +202,67 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 		system->OnPrePhysicsStep(aDeltaTime);
 	}
 
-	// TODO: have a separate container for dynamic entities for faster iter
-	for (PhysicsEntity* entity : myEntities)
+	for (PhysicsEntity* entity : myDynamicEntities)
 	{
-		if (entity->GetType() == PhysicsEntity::Type::Dynamic)
-		{
-			entity->ApplyForces();
-		}
+		entity->ApplyForces();
 	}
+
+	// update all teh trigger positions before simulation
+	for (PhysicsEntity* trigger : myTriggers)
+	{
+		trigger->UpdateTransform();
+	}
+}
+
+struct EntityPair
+{
+	const PhysicsEntity* myLeft;
+	const PhysicsEntity* myRight;
+
+	auto operator<=>(const EntityPair&) const = default;
+};
+
+namespace std
+{
+	template<> struct hash<EntityPair>
+	{
+		size_t operator()(const EntityPair& aPair) const
+		{
+			return hash<const void*>()(aPair.myLeft) ^
+				hash<const void*>()(aPair.myRight) << 1;
+		}
+	};
 }
 
 void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 {
+	{
+		std::unordered_set<EntityPair> processedPairs;
+		processedPairs.reserve(myTriggers.size());
+		for (PhysicsEntity* trigger : myTriggers)
+		{
+			int count = trigger->GetOverlapCount();
+			for (int i = 0; i < count; i++)
+			{
+				const PhysicsEntity* other = trigger->GetOverlapContact(i);
+
+				EntityPair pair;
+				pair.myLeft = trigger < other ? trigger : other;
+				pair.myRight = trigger < other ? other : trigger;
+				if (processedPairs.contains(pair))
+				{
+					continue;
+				}
+				processedPairs.insert(pair);
+
+				for (ISymCallbackListener* system : myPhysSystems)
+				{
+					system->OnTriggerCallback(*trigger, *other);
+				}
+			}
+		}
+	}
+
 	for (ISymCallbackListener* system : myPhysSystems)
 	{
 		system->OnPostPhysicsStep(aDeltaTime);
@@ -243,8 +307,10 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	switch (entity->GetType())
 	{
 	case PhysicsEntity::Type::Static:
-	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody);
+		break;
+	case PhysicsEntity::Type::Trigger:
+		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
@@ -254,7 +320,21 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	}
 	entity->myWorld = this;
 	entity->myState = PhysicsEntity::State::InWorld;
-	myEntities.push_back(entity);
+
+	switch (entity->GetType())
+	{
+	case PhysicsEntity::Type::Static:
+		myStaticEntities.push_back(entity);
+		break;
+	case PhysicsEntity::Type::Dynamic:
+		myDynamicEntities.push_back(entity);
+		break;
+	case PhysicsEntity::Type::Trigger:
+		myTriggers.push_back(entity);
+		break;
+	default:
+		ASSERT(false);
+	}
 }
 
 void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
@@ -279,15 +359,20 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 	entity->myWorld = nullptr;
 	entity->myState = PhysicsEntity::State::NotInWorld;
 
-	// TODO: get rid of this by using u_map
-	size_t size = myEntities.size();
-	for (size_t i = 0; i < size; i++)
+	// TODO: accelerate this by using binary search
+	switch (entity->GetType())
 	{
-		if (myEntities[i] == entity)
-		{
-			myEntities.erase(myEntities.begin() + i);
-			break;
-		}
+	case PhysicsEntity::Type::Static:
+		std::erase(myStaticEntities, entity);
+		break;
+	case PhysicsEntity::Type::Dynamic:
+		std::erase(myDynamicEntities, entity);
+		break;
+	case PhysicsEntity::Type::Trigger:
+		std::erase(myTriggers, entity);
+		break;
+	default:
+		ASSERT(false);
 	}
 }
 
