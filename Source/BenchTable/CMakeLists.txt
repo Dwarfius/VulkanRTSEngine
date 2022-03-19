@@ -30,51 +30,35 @@ endif()
 
 set(CMAKE_FOLDER "")
 
-file(GLOB SRC "*.cpp" "*.h")
-source_group("" FILES ${SRC})
+file(GLOB SRC LIST_DIRECTORIES false *)
 
 if(BENCHTABLE_GenSerialization)
-	set(SRC_SERIALIZATION "Serialization/CommonTypes.h"
-		"Serialization/VariadicStorage.cpp"
-		"Serialization/VirtualOrdered.cpp"
-		"Serialization/VirtualUnordered.cpp"
-	)
-	source_group("Serialization" FILES ${SRC_SERIALIZATION})
+	file(GLOB_RECURSE SRC_EXTRA Serialization/*)
+	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
 if(BENCHTABLE_GenProfiling)
-	set(SRC_PROFILING "Profiling/ChronoProfiler.cpp"	
+	set(SRC_EXTRA "Profiling/ChronoProfiler.cpp"	
 		"Profiling/CommonTypes.h"
 	)
 	if(WIN32)
-		list(APPEND SRC_PROFILING "Profiling/QPCProfiler.cpp")
+		list(APPEND SRC_EXTRA "Profiling/QPCProfiler.cpp")
 	endif()
-	source_group("Profiling" FILES ${SRC_PROFILING})
+	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
 if(BENCHTABLE_GenPool)
-	set(SRC_POOL "Pool/Pool.cpp"	
-		"Pool/PoolHeaderElem.h"
-		"Pool/PoolFreeList.h"
-	)
-	source_group("Pool" FILES ${SRC_POOL})
+	file(GLOB_RECURSE SRC_EXTRA Pool/*)
+	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
 if(BENCHTABLE_GenSkeleton)
-	set(SRC_SKELETON "Skeleton/SkeletonIter.cpp"
-		"Skeleton/SkeletonDirty.cpp"
-		"Skeleton/SkeletonCommon.h"
-	)
-	source_group("Skeleton" FILES ${SRC_SKELETON})
+	file(GLOB_RECURSE SRC_EXTRA Skeleton/*)
+	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
-add_executable(${PROJECT_NAME} 
-	${SRC} 
-	${SRC_SERIALIZATION} 
-	${SRC_PROFILING} 
-	${SRC_POOL} 
-	${SRC_SKELETON}
-)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC})
+add_executable(${PROJECT_NAME} ${SRC})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 

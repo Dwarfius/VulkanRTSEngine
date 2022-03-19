@@ -2,14 +2,8 @@
 cmake_minimum_required (VERSION 3.16)
 project (DungeonEditor LANGUAGES CXX)
 
-set(SRC "Precomp.h"
-	"main.cpp"
-	"Editor.cpp" "Editor.h"
-	"PaintingRenderPass.cpp" "PaintingRenderPass.h"
-)
-
-source_group("" FILES ${SRC})
-
+file(GLOB_RECURSE SRC *)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC})
 add_executable(${PROJECT_NAME} ${SRC})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)

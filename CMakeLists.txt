@@ -12,6 +12,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_CURRENT_LIST_DIR}/bin)
 
+# Do not setup the ZERO_PROJECT that reruns as first build project
+# as we now glob for files which can be slower than before
+set(CMAKE_SUPPRESS_REGENERATION ON)
+
 # Whether to build with audio support or not.
 # Requires installed OpenAL sdk
 option(VENGINE_BUILD_WITH_AUDIO "Build with audio support" OFF)

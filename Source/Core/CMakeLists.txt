@@ -96,54 +96,9 @@ endif()
 
 set(CMAKE_FOLDER "")
 
-set(SRC "Precomp.h"
-	"CRC32.h"
-	"DataEnum.h"
-	"File.cpp" "File.h"
-	"LazyVector.h"
-	"Pool.h"
-	"Transform.cpp" "Transform.h"
-	"Profiler.cpp" "Profiler.h"
-	"RefCounted.cpp" "RefCounted.h"
-	"RWBuffer.h"
-	"StaticString.h"
-	"UID.cpp" "UID.h"
-	"Utils.cpp" "Utils.h"
-	"VariantUtils.h"
-	"Vertex.h"
-	"VertexDescriptor.cpp" "VertexDescriptor.h"
-)
-
-set(SRC_ALGOS "Algos/DiamondSquareAlgo.h"
-)
-
-set(SRC_THREADING "Threading/AssertMutex.cpp" "Threading/AssertMutex.h"
-	"Threading/AssertRWMutex.cpp" "Threading/AssertRWMutex.h"
-)
-
-set(SRC_DEBUG "Debug/Assert.cpp" "Debug/Assert.h" "Debug/Assert.inl" 
-	"Debug/DebugDrawer.cpp" "Debug/DebugDrawer.h"
-)
-
-set(SRC_RESOURCES "Resources/AssetTracker.cpp" "Resources/AssetTracker.h"
-	"Resources/BinarySerializer.cpp" "Resources/BinarySerializer.h"
-	"Resources/JsonSerializer.cpp" "Resources/JsonSerializer.h"
-	"Resources/Resource.cpp" "Resources/Resource.h"
-	"Resources/Serializer.cpp" "Resources/Serializer.h"
-)
-
-add_library(${PROJECT_NAME} STATIC 
-	${SRC} ${SRC_THREADING} ${SRC_DEBUG} ${SRC_ALGOS} ${SRC_RESOURCES})
-if (MSVC)
-   set(EXTRA_LIBS "IPHLPAPI.lib") # for UID class
-endif(MSVC)
-
-# just to make our life a little bit more organized, group files
-source_group("" FILES ${SRC})
-source_group(Algos FILES ${SRC_ALGOS})
-source_group(Threading FILES ${SRC_THREADING})
-source_group(Debug FILES ${SRC_DEBUG})
-source_group(Resources FILES ${SRC_RESOURCES})
+file(GLOB_RECURSE SRC *)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC})
+add_library(${PROJECT_NAME} STATIC ${SRC})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
 
@@ -169,6 +124,10 @@ target_include_directories(${PROJECT_NAME}
 	INTERFACE
 		..
 )
+
+if (MSVC)
+   set(EXTRA_LIBS "IPHLPAPI.lib") # for UID class
+endif(MSVC)
 
 target_link_libraries(${PROJECT_NAME} 
 	${EXTRA_LIBS}

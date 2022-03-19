@@ -33,17 +33,8 @@ endif()
 
 set(CMAKE_FOLDER "")
 
-set(SRC "Precomp.h"
-	"PhysicsEntity.cpp" "PhysicsEntity.h"
-	"PhysicsWorld.cpp" "PhysicsWorld.h"
-	"PhysicsShapes.cpp" "PhysicsShapes.h"
-	"PhysicsDebugDrawer.cpp" "PhysicsDebugDrawer.h"
-	"PhysicsCommands.cpp" "PhysicsCommands.h"
-	"Utils.cpp"
-)
-
-source_group("" FILES ${SRC})
-
+file(GLOB_RECURSE SRC *)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRC})
 add_library(${PROJECT_NAME} STATIC ${SRC})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE Precomp.h)
