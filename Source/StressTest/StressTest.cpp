@@ -32,6 +32,8 @@ private:
 
 	void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) override
 	{
+		Profiler::ScopedMark scope("OnTriggerCB");
+
 		// TODO: this is horribly inefficient, but other than
 		// keeping track of indices on PhysicsEntity (which I 
 		// can't do - no stability guarantee) I got no ideas
@@ -296,7 +298,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				halfExtents.x
 			);
 			PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
-			physComp->CreateTriggerEntity(shape, {});
+			physComp->CreateTriggerEntity(shape, { 0, halfExtents.x, 0 });
 			physComp->RequestAddToWorld(*aGame.GetPhysicsWorld());
 			ball.myTrigger = &physComp->GetPhysicsEntity();
 
