@@ -8,19 +8,27 @@ PhysicsDebugDrawer::PhysicsDebugDrawer()
 
 void PhysicsDebugDrawer::drawLine(const btVector3& aFrom, const btVector3& aTo, const btVector3& aColor)
 {
-	glm::vec3 from = Utils::ConvertToGLM(aFrom);
-	glm::vec3 to = Utils::ConvertToGLM(aTo);
-	glm::vec3 color = Utils::ConvertToGLM(aColor);
+	const glm::vec3 from = Utils::ConvertToGLM(aFrom);
+	const glm::vec3 to = Utils::ConvertToGLM(aTo);
+	const glm::vec3 color = Utils::ConvertToGLM(aColor);
 	myDebugDrawer.AddLine(from, to, color);
 }
 
 void PhysicsDebugDrawer::drawLine(const btVector3& aFrom, const btVector3& aTo, const btVector3& aFromColor, const btVector3& aToColor)
 {
-	glm::vec3 from = Utils::ConvertToGLM(aFrom);
-	glm::vec3 to = Utils::ConvertToGLM(aTo);
-	glm::vec3 fromColor = Utils::ConvertToGLM(aFromColor);
-	glm::vec3 toColor = Utils::ConvertToGLM(aToColor);
+	const glm::vec3 from = Utils::ConvertToGLM(aFrom);
+	const glm::vec3 to = Utils::ConvertToGLM(aTo);
+	const glm::vec3 fromColor = Utils::ConvertToGLM(aFromColor);
+	const glm::vec3 toColor = Utils::ConvertToGLM(aToColor);
 	myDebugDrawer.AddLine(from, to, fromColor, toColor);
+}
+
+void PhysicsDebugDrawer::drawSphere(btScalar aRadius, const btTransform& aTransform, const btVector3& aColor)
+{
+	const float scale = aTransform.getBasis().getColumn(0).x();
+	const glm::vec3 center = Utils::ConvertToGLM(aTransform)[3];
+	const glm::vec3 color = Utils::ConvertToGLM(aColor);
+	myDebugDrawer.AddSphere(center, aRadius * scale, color);
 }
 
 void PhysicsDebugDrawer::drawContactPoint(const btVector3& aPointOnB, const btVector3& aNormalOnB, btScalar aDistance, int aLifeTime, const btVector3& aColor)
