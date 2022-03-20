@@ -32,7 +32,6 @@ PhysicsWorld::PhysicsWorld()
 	}, this, false);
 
 	myWorld->setDebugDrawer(new PhysicsDebugDrawer());
-	myWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints);
 
 	myCommands.reserve(200);
 	myStaticEntities.reserve(1000);
@@ -188,6 +187,19 @@ bool PhysicsWorld::Raycast(glm::vec3 aFrom, glm::vec3 aTo, std::vector<PhysicsEn
 const DebugDrawer& PhysicsWorld::GetDebugDrawer() const
 {
 	return static_cast<PhysicsDebugDrawer*>(myWorld->getDebugDrawer())->GetDebugDrawer();
+}
+
+bool PhysicsWorld::IsDebugDrawingEnabled() const
+{
+	return myWorld->getDebugDrawer()->getDebugMode() != btIDebugDraw::DBG_NoDebug;
+}
+
+void PhysicsWorld::SetDebugDrawing(bool aIsEnabled)
+{
+	const int debugMode = aIsEnabled
+		? btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawContactPoints
+		: btIDebugDraw::DBG_NoDebug;
+	myWorld->getDebugDrawer()->setDebugMode(debugMode);
 }
 
 void PhysicsWorld::AddPhysSystem(ISymCallbackListener* aSystem)

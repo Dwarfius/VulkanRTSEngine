@@ -2,6 +2,7 @@
 
 struct EngineSettings
 {
+	bool myIsPaused = false;
 	bool myUseWireframe = false;
-	bool myDebugBoundingSpheres = false;
+	bool myDrawPhysicsDebug = false;
 };

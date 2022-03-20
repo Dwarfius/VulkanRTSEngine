@@ -56,7 +56,7 @@ constexpr StaticString kHeightmapName("Tynemouth-tangrams.img");
 
 namespace UIWidgets
 {
-	void DrawCameraInfo(bool& aIsVisible, const Game& aGame)
+	void DrawCameraInfo(const Game& aGame, bool& aIsVisible)
 	{
 		if (ImGui::Begin("Camera", &aIsVisible))
 		{
@@ -72,6 +72,18 @@ namespace UIWidgets
 				glm::degrees(camTransform.GetEuler().y),
 				glm::degrees(camTransform.GetEuler().z)
 			);
+		}
+		ImGui::End();
+	}
+
+	void DrawEngineSettings(Game& aGame, bool& aIsOpen)
+	{
+		if (ImGui::Begin("Engine Settings", &aIsOpen))
+		{
+			EngineSettings& settings = aGame.GetEngineSettings();
+			ImGui::Checkbox("Is Paused (B)", &settings.myIsPaused);
+			ImGui::Checkbox("Draw Wireframe (K)", &settings.myUseWireframe);
+			ImGui::Checkbox("Draw Physics Debug", &settings.myDrawPhysicsDebug);
 		}
 		ImGui::End();
 	}
@@ -92,7 +104,6 @@ Game::Game(ReportError aReporterFunc)
 	, myCamera(nullptr)
 	, myIsRunning(true)
 	, myShouldEnd(false)
-	, myIsPaused(false)
 	, myIsInFocus(false)
 {
 	{
@@ -219,12 +230,15 @@ void Game::Init(bool aUseDefaultCompositePass)
 		ImGui::ShowDemoWindow(&aIsVisible);
 	});
 	myTopBar.Register("Widgets/Camera Info", [&](bool& aIsVisible) {
-		UIWidgets::DrawCameraInfo(aIsVisible, *this);
+		UIWidgets::DrawCameraInfo(*this, aIsVisible);
 	});
 	myTopBar.Register("Widgets/Profiler", &UIWidgets::DrawProfilerUI);
 	myTopBar.Register("Widgets/Entities View",
 		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {
 		entitiesWidget.DrawDialog(*this, aIsVisible);
+	});
+	myTopBar.Register("Widgets/Engine Settings", [&](bool& aIsVisible) {
+		UIWidgets::DrawEngineSettings(*this, aIsVisible);
 	});
 	myTopBar.Register("Widgets/Terrain Options",
 		[&, terrainOptions = TerrainOptionsDialog()](bool& aIsVisible) mutable {
@@ -524,13 +538,13 @@ void Game::Update()
 	Profiler::ScopedMark profile(__func__);
 	if (Input::GetKey(Input::Keys::Escape) || myShouldEnd)
 	{
-		myIsPaused = myIsRunning = false;
+		mySettings.myIsPaused = myIsRunning = false;
 		return;
 	}
 
 	if (Input::GetKeyPressed(Input::Keys::B))
 	{
-		myIsPaused = !myIsPaused;
+		mySettings.myIsPaused = !mySettings.myIsPaused;
 	}
 
 	if (Input::GetKeyPressed(Input::Keys::G))
@@ -541,16 +555,23 @@ void Game::Update()
 
 void Game::PhysicsUpdate()
 {
-	if (!myIsPaused)
+	if (!mySettings.myIsPaused)
 	{
 		Profiler::ScopedMark profile(__func__);
+
+		const bool isDrawing = myPhysWorld->IsDebugDrawingEnabled();
+		if (mySettings.myDrawPhysicsDebug != isDrawing)
+		{
+			myPhysWorld->SetDebugDrawing(mySettings.myDrawPhysicsDebug);
+		}
+
 		myPhysWorld->Simulate(myDeltaTime);
 	}
 }
 
 void Game::AnimationUpdate()
 {
-	if (!myIsPaused)
+	if (!mySettings.myIsPaused)
 	{
 		Profiler::ScopedMark profile(__func__);
 		myAnimationSystem->Update(myDeltaTime);

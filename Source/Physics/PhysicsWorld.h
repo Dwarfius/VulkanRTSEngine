@@ -54,6 +54,9 @@ public:
 	// TODO: refactor this away
 	const DebugDrawer& GetDebugDrawer() const;
 
+	bool IsDebugDrawingEnabled() const;
+	void SetDebugDrawing(bool aIsEnabled);
+
 	// Subscribes a system to Pre/PostPhys callbacks
 	// Not thread safe
 	void AddPhysSystem(ISymCallbackListener* aSystem);

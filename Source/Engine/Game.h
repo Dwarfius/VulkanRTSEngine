@@ -67,7 +67,7 @@ public:
 	float GetLastFrameDeltaTime() const { return myDeltaTime; }
 	bool IsRunning() const;
 	void EndGame() { myShouldEnd = true; }
-	bool IsPaused() const { return myIsPaused; }
+	bool IsPaused() const { return mySettings.myIsPaused; }
 	// Returns whether the window is in focus thread safe way
 	bool IsWindowInFocus() const { return myIsInFocus; }
 
@@ -158,7 +158,6 @@ private:
 
 	bool myIsRunning;
 	bool myShouldEnd;
-	bool myIsPaused;
 	bool myIsInFocus;
 #ifdef ASSERT_MUTEX
 	mutable AssertMutex myGOMutex;
