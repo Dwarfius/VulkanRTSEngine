@@ -35,6 +35,7 @@ namespace glTF
 					const char* start = fullName.data() + separatorInd + 1;
 					const char* end = fullName.data() + fullName.size();
 					auto [p, errorCode] = std::from_chars(start, end, attribute.mySet);
+					static_cast<void>(errorCode); // to silence an "unused" warning
 					ASSERT(errorCode == std::errc());
 					hasAttribIndex = true;
 				}
