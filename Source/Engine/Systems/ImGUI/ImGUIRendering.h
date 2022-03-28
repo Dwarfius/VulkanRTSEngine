@@ -70,7 +70,6 @@ struct ImGUIRenderParams : public IRenderPass::IParams
 class ImGUIAdapter : RegisterUniformAdapter<ImGUIAdapter>
 {
 public:
-	constexpr static std::string_view kName = "ImGUIAdapter";
 	struct ImGUIData : AdapterSourceData
 	{
 		glm::mat4 myOrthoProj;

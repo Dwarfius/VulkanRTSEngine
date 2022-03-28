@@ -7,7 +7,6 @@ class SkeletonAdapter : RegisterUniformAdapter<SkeletonAdapter>
 {
 public:
 	constexpr static uint32_t kMaxBones = 100;
-	constexpr static std::string_view kName = "SkeletonAdapter";
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4, kMaxBones }
 	};

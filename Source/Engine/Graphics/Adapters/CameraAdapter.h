@@ -6,7 +6,6 @@
 class CameraAdapter : RegisterUniformAdapter<CameraAdapter>
 {
 public:
-	constexpr static std::string_view kName = "CameraAdapter";
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },

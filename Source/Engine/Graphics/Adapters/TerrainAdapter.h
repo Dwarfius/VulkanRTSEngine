@@ -13,8 +13,6 @@ class TerrainAdapter : RegisterUniformAdapter<TerrainAdapter>
 	static float GetTileSize(const Terrain& aTerrain);
 
 public:
-	constexpr static std::string_view kName = "TerrainAdapter";
-
 	struct Source : UniformAdapterSource
 	{
 		const Terrain& myTerrain;

@@ -42,7 +42,6 @@ public:
 class TintAdapter : RegisterUniformAdapter<TintAdapter>
 {
 public:
-	constexpr static std::string_view kName = "TintAdapter";
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec3 }
 	};

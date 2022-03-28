@@ -120,8 +120,6 @@ private:
 class PainterAdapter : RegisterUniformAdapter<PainterAdapter>
 {
 public:
-	constexpr static std::string_view kName = "PainterAdapter";
-
 	struct Source : AdapterSourceData
 	{
 		const glm::vec3 myColor;

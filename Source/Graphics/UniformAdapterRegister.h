@@ -56,15 +56,14 @@ public:
 
 	// Before adapters can be fetched, they must be registered
 	template<class Type>
-	void Register()
+	void Register(std::string_view aName)
 	{
 #ifdef _DEBUG
 		AssertWriteLock lock(myRegisterMutex);
 #endif
-		std::string_view name = Type::kName;
 		UniformAdapter::FillUBCallback adapterCallback = &Type::FillUniformBlock;
 		const Descriptor& desc = Type::ourDescriptor;
-		myAdapters.insert({ name, { name, adapterCallback, desc } });
+		myAdapters.insert({ aName, { aName, adapterCallback, desc } });
 	}
 	
 private:
@@ -80,7 +79,7 @@ class RegisterUniformAdapter
 private:
 	static bool Register()
 	{
-		UniformAdapterRegister::GetInstance().Register<CRTP>();
+		UniformAdapterRegister::GetInstance().Register<CRTP>(Utils::NameOf<CRTP>);
 		return true;
 	}
 

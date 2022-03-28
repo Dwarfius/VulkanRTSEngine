@@ -9,7 +9,6 @@
 class ObjectMatricesAdapter : RegisterUniformAdapter<ObjectMatricesAdapter>
 {
 public:
-	constexpr static std::string_view kName = "ObjectMatricesAdapter";
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },
