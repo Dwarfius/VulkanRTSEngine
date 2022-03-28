@@ -12,8 +12,6 @@ class AssetTracker;
 class VisualComponent : public SerializableComponent<VisualComponent>
 {
 public:
-	constexpr static std::string_view kName = "VisualComponent";
-
 	void SetModel(Handle<Model> aModel);
 	void SetPipeline(Handle<Pipeline> aPipeline);
 	void SetTextureCount(size_t aCount);

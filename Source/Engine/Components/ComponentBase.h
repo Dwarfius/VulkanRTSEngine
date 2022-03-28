@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/Utils.h>
+
 class GameObject;
 class Serializer;
 
@@ -50,7 +52,6 @@ private:
 // Optional helper to cause component to implement 
 // auto-registration with ComponentRegister for serialization. 
 // Requires:
-// * TComp must define constexpr static kName
 // * TComp must override Serialize(Serialzier&)
 template<class TComp, class TBase = ComponentBase>
 class SerializableComponent : public TBase
@@ -58,7 +59,7 @@ class SerializableComponent : public TBase
 public:
 	// this is needed to get past ODR and cause implicit template instantiation
 	~SerializableComponent() { ourRegistrar; } 
-	std::string_view GetName() const override { return TComp::kName; }
+	std::string_view GetName() const override { return Utils::NameOf<TComp>; }
 
 private:
 	static bool Register()
@@ -66,7 +67,7 @@ private:
 		auto newT = [] {
 			return static_cast<ComponentBase*>(new TComp());
 		};
-		ComponentRegister::Get().Register(TComp::kName, newT);
+		ComponentRegister::Get().Register(Utils::NameOf<TComp>, newT);
 		return true;
 	}
 	static bool ourRegistrar;

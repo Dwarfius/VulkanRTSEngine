@@ -10,8 +10,6 @@ class PhysicsShapeBase;
 class PhysicsComponent : public SerializableComponent<PhysicsComponent>
 {
 public:
-	constexpr static std::string_view kName = "PhysicsComponent";
-
 	PhysicsComponent() = default;
 	~PhysicsComponent();
 
