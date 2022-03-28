@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StaticString.h"
+
 namespace Utils
 {
 	template<class T>
@@ -21,7 +23,53 @@ namespace Utils
 
 	// tries to match the filter to the string. Supports * wildcard
 	bool Matches(std::string_view aStr, std::string_view filter);
+
+	template<class T>
+	consteval auto NameOfFunc()
+	{
+#if defined(_MSC_VER)
+		constexpr std::string_view funcName = __FUNCSIG__;
+		constexpr std::string_view startTag = "NameOfFunc<";
+		constexpr char endTag = '>';
+#elif defined(__clang__)
+		constexpr std::string_view funcName = __PRETTY_FUNCTION__;
+		constexpr std::string_view startTag = "[T = ";
+		constexpr char endTag = ']';
+#elif defined(__GNUC__)
+		constexpr std::string_view funcName = __PRETTY_FUNCTION__;
+		constexpr std::string_view startTag = "[with T = ";
+		constexpr char endTag = ';';
+#else
+#error Unsupported Compiler
+#endif
+		constexpr size_t startInd = funcName.find(startTag) + startTag.size();
+		constexpr size_t endInd = funcName.rfind(endTag);
+		constexpr std::string_view name = funcName.substr(startInd, endInd - startInd);
+		// it might be scope-qualified or namespace qualified
+		// need to strip all of that
+#if defined(_MSC_VER)
+		constexpr size_t qualInd = name.rfind("::");
+		constexpr std::string_view noQualName = qualInd != std::string_view::npos ? name.substr(qualInd + 2) : name;
+		// MSVC also can specify "struct/class T", so need to
+		// strip it out
+		constexpr size_t typeInd = noQualName.rfind(' ');
+		constexpr std::string_view res = typeInd != std::string_view::npos ? noQualName.substr(typeInd + 1) : noQualName;
+#elif defined(__GNUC__)
+		constexpr size_t qualInd = name.rfind("::");
+		constexpr std::string_view res = qualInd != std::string_view::npos ? name.substr(qualInd + 2) : name;
+#else
+		constexpr std::string_view res = name;
+#endif
+
+		char buffer[res.size() + 1]{ 0 };
+		res.copy(buffer, res.size());
+		return StaticString(buffer);
+	}
+
+	template<class T>
+	constexpr static StaticString NameOf = NameOfFunc<T>();
 }
+static_assert(Utils::NameOf<int> == "int");
 
 template<class T>
 uint8_t Utils::CountSetBits(T aVal)
