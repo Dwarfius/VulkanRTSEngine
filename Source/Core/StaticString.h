@@ -21,7 +21,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aString[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
 	template<int M, int K>
@@ -38,7 +38,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aBuffer[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
 	template<int M, int K>
@@ -55,7 +55,7 @@ class StaticString
 		{
 			myBuffer[M - 1 + i] = aString2[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
 	// friend declarations
@@ -104,7 +104,7 @@ public:
 		{
 			myBuffer[i] = aOther[i];
 		}
-		ASSERT_STR(!myBuffer[myLength - 1], "STring not properly terminated");
+		ASSERT_STR(!myBuffer[myLength - 1], "String not properly terminated");
 	}
 
 	constexpr char& operator[](int index)
@@ -128,7 +128,7 @@ public:
 	}
 
 	template<int M>
-	constexpr bool operator==(const StaticString<M>& aOther)
+	constexpr bool operator==(const StaticString<M>& aOther) const
 	{
 		if (myLength != aOther.GetLength())
 		{
@@ -145,6 +145,24 @@ public:
 		return true;
 	}
 
+	template<int M>
+	constexpr bool operator==(const char(&aOther)[M]) const
+	{
+		if (myLength != M)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < M; i++)
+		{
+			if (myBuffer[i] != aOther[i])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	constexpr const char* CStr() const
 	{
 		return myBuffer;
@@ -152,12 +170,12 @@ public:
 
 	constexpr operator std::string_view() const
 	{
-		return std::string_view(myBuffer, myLength);
+		return std::string_view(myBuffer, myLength - 1);
 	}
 
 private:
 	char myBuffer[N];
-	int myLength;
+	int myLength; // including \0
 };
 
 template<int N, int M>
