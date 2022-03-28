@@ -8,6 +8,7 @@ SET(BENCHTABLE_GenSerialization FALSE CACHE BOOL "Should BenchTable include Seri
 SET(BENCHTABLE_GenProfiling FALSE CACHE BOOL "Should BenchTable include Profiling tests")
 SET(BENCHTABLE_GenPool FALSE CACHE BOOL "Should BenchTable include Pool tests")
 SET(BENCHTABLE_GenSkeleton FALSE CACHE BOOL "Should BenchTable include Skeleton tests")
+SET(BENCHTABLE_GenDirList FALSE CACHE BOOL "Should BenchTable include DirList tests")
 
 FetchContent_Declare(
 	googleBench
@@ -54,6 +55,11 @@ endif()
 
 if(BENCHTABLE_GenSkeleton)
 	file(GLOB_RECURSE SRC_EXTRA Skeleton/*)
+	list(APPEND SRC ${SRC_EXTRA})
+endif()
+
+if(BENCHTABLE_GenDirList)
+	file(GLOB_RECURSE SRC_EXTRA DirList/*)
 	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
