@@ -173,7 +173,7 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
 	aSerializer.SerializeEnum("myShape", shapeType);
 	
-	float mass = myBody && myType == Type::Static 
+	float mass = myBody && myType == Type::Dynamic 
 		? static_cast<btRigidBody*>(myBody)->getMass() 
 		: 0;
 	float oldMass = mass;
