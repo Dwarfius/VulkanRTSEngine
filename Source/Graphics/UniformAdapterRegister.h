@@ -4,6 +4,8 @@
 #include <Core/Threading/AssertRWMutex.h>
 #endif
 
+#include <Core/Utils.h>
+
 class UniformBlock;
 class Camera;
 class Graphics;
