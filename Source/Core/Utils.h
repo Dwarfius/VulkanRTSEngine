@@ -24,6 +24,12 @@ namespace Utils
 	// tries to match the filter to the string. Supports * wildcard
 	bool Matches(std::string_view aStr, std::string_view filter);
 
+	constexpr size_t Align(size_t aValue, size_t anAlignment)
+	{
+		const size_t remainder = aValue % anAlignment;
+		return remainder ? aValue + (anAlignment - remainder) : aValue;
+	}
+
 	template<class T>
 	consteval auto NameOfFunc()
 	{
