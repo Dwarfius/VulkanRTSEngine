@@ -3,7 +3,6 @@
 #include <Graphics/RenderPass.h>
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Model.h>
-#include <Graphics/UniformBlock.h>
 #include <Core/Vertex.h>
 
 class DebugDrawer;
@@ -11,6 +10,7 @@ class Graphics;
 class Pipeline;
 class GPUModel;
 class GPUPipeline;
+class UniformBuffer;
 
 class DebugRenderPass : public IRenderPass
 {
@@ -38,7 +38,7 @@ private:
 		Handle<GPUModel> myModel;
 		Camera myCamera;
 		UploadDesc myDesc;
-		std::shared_ptr<UniformBlock> myBlock;
+		Handle<UniformBuffer> myBuffer;
 	};
 	std::vector<PerCameraModel> myCameraModels;
 };

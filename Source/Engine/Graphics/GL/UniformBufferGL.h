@@ -1,35 +1,25 @@
 #pragma once
 
-#include <Graphics/GPUResource.h>
+#include <Graphics/Resources/UniformBuffer.h>
 
-class Descriptor;
-
-class UniformBufferGL : public GPUResource
+class UniformBufferGL final : public UniformBuffer
 {
 public:
-	struct UploadDescriptor
-	{
-		size_t mySize;
-		const char* myData;
-	};
+	using UniformBuffer::UniformBuffer;
 
-public:
-	UniformBufferGL(const Descriptor& aDescriptor);
-
-	// Binds the UniformBuffer to a binding point. 
+	// Binds the UniformBuffer active range to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
 	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
+	// Doesn't change OpenGL state
+	char* Map() override;
+	void Unmap() override;
+
 private:
-	void OnCreate(Graphics& aGraphics) override final;
-	bool OnUpload(Graphics& aGraphics) override final;
-	void OnUnload(Graphics& aGraphics) override final;
+	void OnCreate(Graphics& aGraphics) override;
+	bool OnUpload(Graphics& aGraphics) override { return true; }
+	void OnUnload(Graphics& aGraphics) override;
 
-	const Descriptor& myDescriptor;
-	uint32_t myBuffer;
-	UploadDescriptor myUploadDesc;
-
-	friend class RenderPassJobGL;
-	void UploadData(const UploadDescriptor& anUploadDesc);
+	uint32_t myUniformBuffer = 0;
 };

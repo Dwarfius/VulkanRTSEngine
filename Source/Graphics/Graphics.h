@@ -18,6 +18,7 @@ class Pipeline;
 class Model;
 class Shader;
 class GPUModel;
+class UniformBuffer;
 
 class Graphics
 {
@@ -75,6 +76,8 @@ public:
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
 
+	Handle<UniformBuffer> CreateUniformBuffer(size_t aSize);
+
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 
 	Handle<GPUModel> GetFullScreenQuad() const { return myFullScrenQuad; }
@@ -116,6 +119,8 @@ private:
 	virtual GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const = 0;
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
+
+	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) const = 0;
 
 	void SortRenderPasses();
 	virtual void SortRenderPassJobs() = 0;

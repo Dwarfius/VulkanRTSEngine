@@ -3,12 +3,10 @@
 #include <Core/Transform.h>
 #include <Core/RefCounted.h>
 
-class UniformBlock;
-class UniformAdapter;
+class UniformBuffer;
 class Model;
 class Texture;
 class Pipeline;
-class Resource;
 class GPUModel;
 class GPUPipeline;
 class GPUTexture;
@@ -34,8 +32,8 @@ public:
 	void SetTransform(const Transform& aTransf) { myTransf = aTransf; }
 	const Transform& GetTransform() const { return myTransf; }
 
-	UniformBlock& GetUniformBlock(size_t anIndex) const { return *myUniforms[anIndex]; }
-	const std::vector<std::shared_ptr<UniformBlock>>& GetUniforms() const { return myUniforms; }
+	Handle<UniformBuffer> GetUniformBuffer(size_t anIndex) const { return myUniforms[anIndex]; }
+	const std::vector<Handle<UniformBuffer>>& GetUniforms() const { return myUniforms; }
 
 	bool Resolve();
 
@@ -47,6 +45,7 @@ private:
 
 	// TODO: rework this to use a index-based Handle into
 	// a pool of UniformBlocks
-	std::vector<std::shared_ptr<UniformBlock>> myUniforms;
+	std::vector<Handle<UniformBuffer>> myUniforms;
 	bool myIsResolved = false;
+	bool myIsNewPipeline = false;
 };

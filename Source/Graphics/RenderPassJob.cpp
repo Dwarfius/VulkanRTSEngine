@@ -1,7 +1,7 @@
 #include "Precomp.h"
 #include "RenderPassJob.h"
 
-#include <Graphics/UniformBlock.h>
+#include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
@@ -17,22 +17,17 @@ RenderJob::RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
 {
 }
 
-void RenderJob::SetUniformSet(const std::vector<std::shared_ptr<UniformBlock>>& aUniformSet)
+void RenderJob::SetUniformSet(const UniformSet& aUniformSet)
 {
-	for (const std::shared_ptr<UniformBlock>& block : aUniformSet)
+	for (const Handle<UniformBuffer>& buffer : aUniformSet)
 	{
-		AddUniformBlock(*block);
+		AddUniformBlock(buffer);
 	}
 }
 
-void RenderJob::AddUniformBlock(const UniformBlock& aBlock)
+void RenderJob::AddUniformBlock(const Handle<UniformBuffer>& aBuffer)
 {
-	// TODO: replace with a caching allocator, cause this is allocation
-	// per block per job per frame (which is a lot!)
-	std::vector<char> buffer;
-	buffer.resize(aBlock.GetSize());
-	std::memcpy(buffer.data(), aBlock.GetData(), aBlock.GetSize());
-	myUniforms.push_back(std::move(buffer));
+	myUniforms.push_back(aBuffer);
 }
 
 bool RenderJob::HasLastHandles() const

@@ -14,6 +14,7 @@
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Profiler.h>
+#include <Core/Utils.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Shader.h>
@@ -83,6 +84,8 @@ void GraphicsGL::Init()
 	// This prevents problems from some textures not being word aligned
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &myUBOOffsetAlignment);
+
 	Graphics::Init();
 }
 
@@ -144,14 +147,21 @@ GPUResource* GraphicsGL::Create(Pipeline*, GPUResource::UsageType) const
 	return new PipelineGL();
 }
 
+GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType) const
+{
+	return new TextureGL();
+}
+
 GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType) const
 {
 	return new ShaderGL();
 }
 
-GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType) const
+UniformBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize) const
 {
-	return new TextureGL();
+	const size_t alignedSize = Utils::Align(aSize, myUBOOffsetAlignment);
+	// TODO: Pool this!
+	return new UniformBufferGL(alignedSize);
 }
 
 void GraphicsGL::SortRenderPassJobs()

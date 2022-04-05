@@ -8,27 +8,27 @@
 class PipelineGL;
 class ModelGL;
 
-class GraphicsGL : public Graphics
+class GraphicsGL final: public Graphics
 {
 public:
 	using Graphics::Graphics;
 
-	void Init() final;
-	void Display() final;
-	void EndGather() final;
-	void CleanUp() final;
+	void Init() override;
+	void Display() override;
+	void EndGather() override;
+	void CleanUp() override;
 
-	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) final;
-	void ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize) final;
+	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) override;
+	void ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize) override;
 	[[nodiscard]]
 	FrameBufferGL& GetFrameBufferGL(std::string_view aName);
 
 	[[nodiscard]]
-	RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) final;
+	RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) override;
 
 private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
-	void OnResize(int aWidth, int aHeight) final;
+	void OnResize(int aWidth, int aHeight) override;
 
 	struct IdPasJobPair
 	{
@@ -38,12 +38,15 @@ private:
 	using RenderPassJobs = std::vector<IdPasJobPair>;
 	RWBuffer<RenderPassJobs, 3> myRenderPassJobs;
 
-	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const final;
-	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const final;
-	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const final;
-	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const final;
+	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const override;
+	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const override;
+	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const override;
+	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const override;
 
-	void SortRenderPassJobs() final;
+	UniformBuffer* CreateUniformBufferImpl(size_t aSize) const override;
+
+	void SortRenderPassJobs() override;
 
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
+	int32_t myUBOOffsetAlignment = 0;
 };

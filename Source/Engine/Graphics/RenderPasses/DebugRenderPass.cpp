@@ -8,7 +8,9 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
+#include <Graphics/UniformBlock.h>
 
 #include <Core/Debug/DebugDrawer.h>
 
@@ -63,10 +65,9 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 			"Not ready to add cameras, pipeline hasn't loaded yet!");
 		ASSERT_STR(myPipeline->GetAdapterCount() == 1, 
 			"DebugRenderPass needs a pipeline with Camera adapter only!");
-		std::shared_ptr<UniformBlock> block = std::make_shared<UniformBlock>(
-			myPipeline->GetAdapter(0).GetDescriptor()
-		);
-		myCameraModels.emplace_back(gpuModel, aCamera, desc, std::move(block));
+		const size_t bufferSize = myPipeline->GetAdapter(0).GetDescriptor().GetBlockSize();
+		Handle<UniformBuffer> buffer = aGraphics.CreateUniformBuffer(bufferSize);
+		myCameraModels.emplace_back(gpuModel, aCamera, desc, buffer);
 	}
 	else
 	{
@@ -140,7 +141,7 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 	for (PerCameraModel& perCamModel : myCameraModels)
 	{
 		const bool hasDebugData = perCamModel.myDesc.myVertCount > 0;
-		if (!hasDebugData)
+		if (!hasDebugData || perCamModel.myBuffer->GetState() != GPUResource::State::Valid)
 		{
 			continue;
 		}
@@ -161,8 +162,10 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		job.SetDrawParams(params);
 
 		AdapterSourceData source{ anInterface, perCamModel.myCamera };
-		adapter.Fill(source, *perCamModel.myBlock);
-		job.AddUniformBlock(*perCamModel.myBlock);
+
+		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
+		adapter.Fill(source, block);
+		job.AddUniformBlock(perCamModel.myBuffer);
 
 		passJob.Add(job);
 	}

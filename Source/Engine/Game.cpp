@@ -37,6 +37,7 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
 
 #include <Physics/PhysicsWorld.h>
@@ -689,8 +690,10 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
-				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+				Handle<UniformBuffer> uniformBuffer = visualObj.GetUniformBuffer(i);
 				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+
+				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());
@@ -755,8 +758,10 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
-				UniformBlock& uniformBlock = visualObj.GetUniformBlock(i);
+				Handle<UniformBuffer> uniformBuffer = visualObj.GetUniformBuffer(i);
 				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+
+				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
 			renderJob.SetUniformSet(visualObj.GetUniforms());

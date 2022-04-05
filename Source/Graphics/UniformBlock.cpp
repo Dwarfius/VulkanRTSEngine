@@ -1,21 +1,16 @@
 #include "Precomp.h"
 #include "UniformBlock.h"
 
-UniformBlock::UniformBlock(const Descriptor& aDescriptor)
-	: myData(nullptr)
+#include "Resources/UniformBuffer.h"
+
+UniformBlock::UniformBlock(UniformBuffer& aBuffer, const Descriptor& aDescriptor)
+	: myBuffer(aBuffer)
 	, myDescriptor(aDescriptor)
 {
-	// TODO: instead of allocating own storage, it should be requesting it
-	// from the pool managed by Graphics.
-	myData = new char[myDescriptor.GetBlockSize()];
+	myData = myBuffer.Map();
 }
 
 UniformBlock::~UniformBlock()
 {
-	delete[] myData;
-}
-
-size_t UniformBlock::GetSize() const
-{
-	return myDescriptor.GetBlockSize();
+	myBuffer.Unmap();
 }

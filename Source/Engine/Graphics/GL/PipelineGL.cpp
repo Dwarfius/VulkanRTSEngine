@@ -35,22 +35,6 @@ void PipelineGL::Bind()
 	}
 }
 
-bool PipelineGL::AreDependenciesValid() const
-{
-	if (!GPUResource::AreDependenciesValid())
-	{
-		return false;
-	}
-	for (Handle<UniformBufferGL> buffer : myBuffers)
-	{
-		if (buffer->GetState() != State::Valid)
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
 void PipelineGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLProgram, "Pipeline already created!");
@@ -60,15 +44,10 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	// since they're not kept as part of myDependencies
 	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
 	const size_t adapterCount = pipeline->GetAdapterCount();
-	myBuffers.reserve(adapterCount);
 	myAdapters.reserve(adapterCount);
 	for(size_t i=0; i< adapterCount; i++)
 	{
 		myAdapters.push_back(&pipeline->GetAdapter(i));
-
-		Handle<UniformBufferGL> ubo = new UniformBufferGL(myAdapters[i]->GetDescriptor());
-		ubo->Create(aGraphics, nullptr);
-		myBuffers.push_back(ubo);
 	}
 
 	const size_t shaderCount = pipeline->GetShaderCount();

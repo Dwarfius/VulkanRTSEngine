@@ -14,6 +14,7 @@
 class GPUModel;
 class GPUPipeline; 
 class GPUTexture;
+class UniformBuffer;
 
 struct ImGUIVertex
 {
@@ -86,7 +87,7 @@ class ImGUIRenderPass : public IRenderPass
 	Handle<GPUModel> myModel;
 	Handle<GPUTexture> myFontAtlas;
 	RenderPassJob* myCurrentJob;
-	std::shared_ptr<UniformBlock> myUniformBlock;
+	Handle<UniformBuffer> myUniformBuffer;
 	std::vector<ImGUIRenderParams> myScheduledImGuiParams;
 	Model::UploadDescriptor<ImGUIVertex> myUpdateDescriptor;
 	AssertMutex myRenderJobMutex;

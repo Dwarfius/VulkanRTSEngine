@@ -5,6 +5,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
+#include <Graphics/Resources/UniformBuffer.h>
 
 #include <Core/Profiler.h>
 
@@ -27,7 +28,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		ASSERT_STR(pipeline->GetAdapterCount() == 1,
 			"Only supporting 1 adapter! Please update if changed!");
 		const Descriptor& descriptor = pipeline->GetAdapter(0).GetDescriptor();
-		myUniformBlock = std::make_shared<UniformBlock>(descriptor);
+		myUniformBuffer = aGraphics.CreateUniformBuffer(descriptor.GetBlockSize());
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	Model::BaseStorage* vertexStorage = new Model::VertStorage<ImGUIVertex>(0);
@@ -40,7 +41,8 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 
 void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
 {
-	myUniformBlock->SetUniform(0, 0, aMatrix);
+	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
+	block.SetUniform(0, 0, aMatrix);
 }
 
 void ImGUIRenderPass::UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor)
@@ -64,7 +66,8 @@ bool ImGUIRenderPass::IsReady() const
 	return myPipeline->GetState() == GPUResource::State::Valid
 		&& myFontAtlas->GetState() == GPUResource::State::Valid
 		&& (myModel->GetState() == GPUResource::State::Valid
-			|| myModel->GetState() == GPUResource::State::PendingUpload);
+			|| myModel->GetState() == GPUResource::State::PendingUpload)
+		&& myUniformBuffer->GetState() == GPUResource::State::Valid;
 }
 
 void ImGUIRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
@@ -109,7 +112,7 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 			myModel,
 			{ texture }
 		};
-		job.AddUniformBlock(*myUniformBlock);
+		job.AddUniformBlock(myUniformBuffer);
 
 		for (uint8_t i = 0; i < 4; i++)
 		{

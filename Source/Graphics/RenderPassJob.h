@@ -7,14 +7,13 @@
 class GPUPipeline;
 class GPUTexture;
 class GPUModel;
-class UniformBlock;
+class UniformBuffer;
 class Graphics;
 
 struct RenderJob
 {
 	using TextureSet = std::vector<Handle<GPUTexture>>;
-	// TODO: replace with std::vector<std::span<char>> that's backed by a pool or per frame allocator
-	using UniformSet = std::vector<std::vector<char>>;
+	using UniformSet = std::vector<Handle<UniformBuffer>>;
 
 	enum class DrawMode : char
 	{
@@ -53,12 +52,12 @@ public:
 		const TextureSet& aTextures);
 
 	// Copies a set of uniform blocks for a frame
-	void SetUniformSet(const std::vector<std::shared_ptr<UniformBlock>>& aUniformSet);
+	void SetUniformSet(const UniformSet& aUniformSet);
 
 	// Copies a single uniform block for a frame
 	// Note: It's on the caller to ensure the order matches the order of descriptors/uniform
 	// buffers for a pipeline
-	void AddUniformBlock(const UniformBlock& aBlock);
+	void AddUniformBlock(const Handle<UniformBuffer>& aBuffer);
 
 	// Check if this job has any resources which are last handles
 	bool HasLastHandles() const;

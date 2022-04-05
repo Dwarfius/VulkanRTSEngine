@@ -11,15 +11,16 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/Camera.h>
 
 void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
 {
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
-	aPipeline->ExecLambdaOnLoad([this](const Resource* aRes) {
+	aPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myBlock = std::make_shared<UniformBlock>(adapter.GetDescriptor());
+		myBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 }
 
@@ -55,9 +56,10 @@ PaintParams PaintingRenderPass::GetParams() const
 
 void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 {
-	if (!myPipeline.IsValid() ||
-		myPipeline->GetState() != GPUResource::State::Valid ||
-		aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid)
+	if (!myPipeline.IsValid() 
+		|| myPipeline->GetState() != GPUResource::State::Valid 
+		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid 
+		|| myBuffer->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
@@ -93,8 +95,9 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
-	adapter.FillUniformBlock(source, *myBlock);
-	job.AddUniformBlock(*myBlock);
+	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
+	adapter.FillUniformBlock(source, block);
+	job.AddUniformBlock(myBuffer);
 
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
@@ -130,10 +133,10 @@ void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGrap
 void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
 {
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
-	aPipeline->ExecLambdaOnLoad([this](const Resource* aRes) {
+	aPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myBlock = std::make_shared<UniformBlock>(adapter.GetDescriptor());
+		myBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 }
 
@@ -155,9 +158,10 @@ PaintParams DisplayRenderPass::GetParams() const
 
 void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 {
-	if (!myPipeline.IsValid() ||
-		myPipeline->GetState() != GPUResource::State::Valid ||
-		aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid)
+	if (!myPipeline.IsValid()
+		|| myPipeline->GetState() != GPUResource::State::Valid
+		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid
+		|| myBuffer->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
@@ -182,8 +186,9 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
-	adapter.FillUniformBlock(source, *myBlock);
-	job.AddUniformBlock(*myBlock);
+	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
+	adapter.FillUniformBlock(source, block);
+	job.AddUniformBlock(myBuffer);
 
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();

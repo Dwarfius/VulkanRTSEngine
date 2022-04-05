@@ -6,6 +6,7 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
+#include <Graphics/Resources/UniformBuffer.h>
 
 #include "Graphics/NamedFrameBuffers.h"
 #include "Terrain.h"

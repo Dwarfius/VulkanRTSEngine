@@ -2,27 +2,21 @@
 
 #include "Descriptor.h"
 
-// A class representing a single block of uniforms for submitting to the GPU.
-// Use:
-// UniformBlock block(descriptor);
-// block.SetUniform<glm::vec3>(0, glm::vec3(0.f));
+class UniformBuffer;
+
 class UniformBlock
 {
 public:
-	UniformBlock(const Descriptor& aDescriptor);
+	UniformBlock(UniformBuffer& aBuffer, const Descriptor& aDescriptor);
 	~UniformBlock();
 
 	template<class T>
 	void SetUniform(uint32_t aSlot, size_t anArrayIndex, const T& aValue);
 
-	const char* GetData() const { return myData; }
-
-	// 4-byte alligned according to std140 layour specification
-	size_t GetSize() const;
-
 private:
 	char* myData;
-	Descriptor myDescriptor;
+	UniformBuffer& myBuffer;
+	const Descriptor& myDescriptor;
 };
 
 template<class T>

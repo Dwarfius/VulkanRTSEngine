@@ -8,6 +8,7 @@
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
 #include "Resources/GPUModel.h"
+#include "Resources/UniformBuffer.h"
 
 #include <Core/Profiler.h>
 
@@ -198,6 +199,13 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 	ASSERT_STR(aGPUResource->GetState() == GPUResource::State::PendingUnload,
 		"Invalid GPU resource state!");
 	myUnloadQueue.push(aGPUResource);
+}
+
+Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
+{
+	Handle<UniformBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
+	uniformBuffer->Create(*this, {});
+	return uniformBuffer;
 }
 
 void Graphics::TriggerUpload(GPUResource* aGPUResource)

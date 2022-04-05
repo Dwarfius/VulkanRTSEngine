@@ -14,6 +14,7 @@
 class GPUPipeline;
 class Pipeline;
 class GPUTexture;
+class UniformBuffer;
 
 struct PaintingFrameBuffer
 {
@@ -82,7 +83,7 @@ private:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
-	std::shared_ptr<UniformBlock> myBlock;
+	Handle<UniformBuffer> myBuffer;
 	PaintParams myParams;
 	bool myWriteToOther = false;
 
@@ -108,7 +109,7 @@ private:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
-	std::shared_ptr<UniformBlock> myBlock;
+	Handle<UniformBuffer> myBuffer;
 	PaintParams myParams;
 	std::string_view myReadFrameBuffer;
 

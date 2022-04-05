@@ -6,21 +6,21 @@ class PipelineGL;
 class ModelGL;
 class TextureGL;
 
-class RenderPassJobGL : public RenderPassJob
+class RenderPassJobGL final : public RenderPassJob
 {
 public:
-	void Add(const RenderJob& aJob) final;
-	void AddRange(std::vector<RenderJob>&& aJobs) final;
-	void Clear() final { myJobs.clear(); };
-	operator std::vector<RenderJob>() && final { return myJobs; }
+	void Add(const RenderJob& aJob) override;
+	void AddRange(std::vector<RenderJob>&& aJobs) override;
+	void Clear() override { myJobs.clear(); };
+	operator std::vector<RenderJob>() && override { return myJobs; }
 
 private:
-	bool HasWork() const final;
-	void OnInitialize(const RenderContext& aContext) final;
-	void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) final;
-	void Clear(const RenderContext& aContext) final;
-	void SetupContext(Graphics& aGraphics, const RenderContext& aContext) final;
-	void RunJobs() override final;
+	bool HasWork() const override;
+	void OnInitialize(const RenderContext& aContext) override;
+	void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) override;
+	void Clear(const RenderContext& aContext) override;
+	void SetupContext(Graphics& aGraphics, const RenderContext& aContext) override;
+	void RunJobs() override;
 
 	constexpr static uint32_t ConvertBlendMode(RenderContext::Blending aBlendMode);
 	constexpr static uint32_t ConvertBlendEquation(RenderContext::BlendingEq aBlendEq);

@@ -255,18 +255,6 @@ void RenderPassJobGL::RunJobs()
 		{
 			pipeline->Bind();
 			myCurrentPipeline = pipeline;
-
-			// binding uniform blocks to according slots
-			size_t blockCount = pipeline->GetUBOCount();
-			ASSERT_STR(blockCount < std::numeric_limits<uint32_t>::max(), "Index of UBO block doesn't fit for binding!");
-			for (size_t i = 0; i < blockCount; i++)
-			{
-				// TODO: implement logic that doesn't rebind same slots:
-				// If pipeline A has X, Y, Z uniform blocks
-				// and pipeline B has X, V, W,
-				// if we bind from A to B (or vice versa), no need to rebind X
-				pipeline->GetUBO(i).Bind(static_cast<uint32_t>(i));
-			}
 		}
 
 		RenderJob::TextureSet& textures = r.GetTextures();
@@ -296,19 +284,16 @@ void RenderPassJobGL::RunJobs()
 		// Now we can update the uniform blocks
 		size_t adapterCount = pipeline->GetAdapterCount();
 		RenderJob::UniformSet& uniforms = r.GetUniformSet();
+		ASSERT_STR(adapterCount < std::numeric_limits<uint32_t>::max(), 
+			"Number of UBO doesn't fit for binding!");
 		for (size_t i = 0; i < adapterCount; i++)
 		{
-			// grabbing the descriptor because it has the locations
-			// of uniform values to be uploaded to
-			const UniformAdapter& adapter = pipeline->GetAdapter(i);
-			const Descriptor& descriptor = adapter.GetDescriptor();
-
-			// there's a UBO for every descriptor of the pipeline
-			UniformBufferGL& ubo = pipeline->GetUBO(i);
-			UniformBufferGL::UploadDescriptor uploadDesc;
-			uploadDesc.mySize = descriptor.GetBlockSize(); // TODO: uniform buffer already has a descriptor
-			uploadDesc.myData = uniforms[i].data();
-			ubo.UploadData(uploadDesc);
+			UniformBufferGL& buffer = *uniforms[i].Get<UniformBufferGL>();
+			// TODO: implement logic that doesn't rebind same slots:
+			// If pipeline A has X, Y, Z uniform blocks
+			// and pipeline B has X, V, W,
+			// if we bind from A to B (or vice versa), no need to rebind X
+			buffer.Bind(static_cast<uint32_t>(i));
 		}
 
 		switch (r.GetDrawMode())
