@@ -7,7 +7,7 @@
 // A utility buffer which tracks Read and Write positions individually  
 // and asserts if read-write collision happens. Read and Write heads
 // can be pointing towards the same element, but calling either 
-// Read/WriteCurrent() will trigger an assert
+// Read/Write() will trigger an assert
 template<typename T, size_t Size>
 class RWBuffer
 {
