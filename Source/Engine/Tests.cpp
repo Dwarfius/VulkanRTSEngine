@@ -6,6 +6,7 @@
 #include <Core/Resources/BinarySerializer.h>
 #include <Core/Resources/JsonSerializer.h>
 #include <Core/Pool.h>
+#include <Core/StableVector.h>
 
 void Tests::RunTests()
 {
@@ -14,6 +15,7 @@ void Tests::RunTests()
 	TestBinarySerializer();
 	TestJsonSerializer();
 	TestUtilMatches();
+	TestStableVector();
 }
 
 void Tests::TestBase64()
@@ -224,4 +226,55 @@ void Tests::TestUtilMatches()
 	ASSERT(Utils::Matches(inputStr, "Some*long*oh"));
 	ASSERT(Utils::Matches(inputStr, "**"));
 	ASSERT(Utils::Matches(inputStr, "*"));
+}
+
+void Tests::TestStableVector()
+{
+	struct TestType
+	{
+		std::string myStr;
+		uint8_t myNum;
+	};
+
+	StableVector<TestType, 2> myVec;
+	TestType& first = myVec.Allocate("Hello", 0);
+	TestType& second = myVec.Allocate("Hello", 1);
+	TestType& third = myVec.Allocate("Hello", 2);
+	TestType& fourth = myVec.Allocate("Hello", 3);
+	TestType& fifth = myVec.Allocate("Hello", 4);
+
+	{
+		uint8_t numbers[]{ 0, 1, 2, 3, 4 };
+		int counter = 0;
+		myVec.ForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			ASSERT(aVal.myNum == numbers[counter]);
+			counter++;
+		});
+		ASSERT(counter == std::extent_v<decltype(numbers)>);
+	}
+
+	myVec.Free(third);
+	{
+		uint8_t numbers[]{ 0, 1, 3, 4 };
+		int counter = 0;
+		myVec.ForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			ASSERT(aVal.myNum == numbers[counter]);
+			counter++;
+		});
+		ASSERT(counter == std::extent_v<decltype(numbers)>);
+	}
+
+	TestType& newThird = myVec.Allocate("Hello", 5);
+	{
+		uint8_t numbers[]{ 0, 1, 5, 3, 4 };
+		int counter = 0;
+		myVec.ForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			ASSERT(aVal.myNum == numbers[counter]);
+			counter++;
+		});
+		ASSERT(counter == std::extent_v<decltype(numbers)>);
+	}
 }

@@ -11,4 +11,5 @@ private:
 	static void TestBinarySerializer();
 	static void TestJsonSerializer();
 	static void TestUtilMatches();
+	static void TestStableVector();
 };
