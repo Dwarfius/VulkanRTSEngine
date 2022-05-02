@@ -240,7 +240,7 @@ void RenderPassJobGL::RunJobs()
 		// TODO: unlikely
 		if (GetRenderContext().myScissorMode == RenderContext::ScissorMode::PerObject)
 		{
-			glm::vec4 scissorRect = r.GetScissorRect();
+			glm::ivec4 scissorRect = r.GetScissorRect();
 			glScissor(static_cast<GLsizei>(scissorRect.x),
 				static_cast<GLsizei>(scissorRect.y),
 				static_cast<GLsizei>(scissorRect.z),
