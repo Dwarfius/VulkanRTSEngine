@@ -12,10 +12,6 @@ public:
 	// Changes OpenGL state, not thread safe.
 	void Bind(uint32_t aBingPoint);
 
-	// Doesn't change OpenGL state
-	char* Map() override;
-	void Unmap() override;
-
 private:
 	void OnCreate(Graphics& aGraphics) override;
 	bool OnUpload(Graphics& aGraphics) override { return true; }

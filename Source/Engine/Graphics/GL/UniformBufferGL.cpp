@@ -11,17 +11,6 @@ void UniformBufferGL::Bind(uint32_t aBindPoint)
 		buffer.myOffest, myBufferSize);
 }
 
-char* UniformBufferGL::Map()
-{
-	const Buffer& buffer = myBufferInfos.GetWrite();
-	return static_cast<char*>(myMappedBuffer) + buffer.myOffest;
-}
-
-void UniformBufferGL::Unmap()
-{
-	myBufferInfos.Advance();
-}
-
 void UniformBufferGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myUniformBuffer, "Double initialization of uniform buffer!");
