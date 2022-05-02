@@ -49,6 +49,7 @@ void ImGUIRenderPass::UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex
 {
 	// We can't upload straight to staging model, since it'll 
 	// overwrite data pending for the upcoming frame render
+	// TODO: fix this once mapped VBOs are in
 	myUpdateDescriptor = aDescriptor;
 }
 
