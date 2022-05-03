@@ -87,6 +87,7 @@ class StableVector
     };
 
 public:
+    StableVector() = default;
     ~StableVector()
     {
         PageNode* node = myStartPage.myNext;
