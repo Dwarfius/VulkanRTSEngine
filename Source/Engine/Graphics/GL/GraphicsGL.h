@@ -1,9 +1,11 @@
 #pragma once
 
-#include <Graphics/Graphics.h>
-#include <Core/RWBuffer.h>
-#include <Graphics/Resources/Model.h>
 #include "Graphics/GL/FrameBufferGL.h"
+#include "Graphics/GL/UniformBufferGL.h"
+#include <Graphics/Graphics.h>
+#include <Graphics/Resources/Model.h>
+#include <Core/RWBuffer.h>
+#include <Core/StableVector.h>
 
 class PipelineGL;
 class ModelGL;
@@ -26,6 +28,8 @@ public:
 	[[nodiscard]]
 	RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) override;
 
+	void CleanUpUBO(UniformBuffer* aUBO) override;
+
 private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 	void OnResize(int aWidth, int aHeight) override;
@@ -43,10 +47,13 @@ private:
 	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const override;
 	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const override;
 
-	UniformBuffer* CreateUniformBufferImpl(size_t aSize) const override;
+	UniformBuffer* CreateUniformBufferImpl(size_t aSize) override;
 
 	void SortRenderPassJobs() override;
 
+	StableVector<UniformBufferGL> myUBOs;
+	std::mutex myUBOsMutex;
+	tbb::concurrent_queue<UniformBufferGL*> myUBOCleanUpQueue;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	int32_t myUBOOffsetAlignment = 0;
 };

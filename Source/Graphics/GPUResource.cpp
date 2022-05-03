@@ -7,24 +7,24 @@
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
 
-void GPUResource::Destroy(GPUResource* aResource)
-{
-	if (aResource->GetState() == GPUResource::State::Valid)
-	{
-		// we don't delete the resource here, instead Graphics will take care of it
-		aResource->Unload();
-	}
-	// we can also immediately drop our dependencies
-	// this schedules their removal earlier
-	aResource->myDependencies.clear();
-}
-
 GPUResource::GPUResource()
 	: myResId(Resource::InvalidId)
 	, myState(State::Invalid)
 	, myGraphics(nullptr)
 	, myKeepResHandle(false)
 {
+}
+
+void GPUResource::Cleanup()
+{
+	if (GetState() == GPUResource::State::Valid)
+	{
+		// we don't delete the resource here, instead Graphics will take care of it
+		Unload();
+	}
+	// we can also immediately drop our dependencies
+	// this schedules their removal earlier
+	myDependencies.clear();
 }
 
 void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShouldKeepRes /* = false*/)

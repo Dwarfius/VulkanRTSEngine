@@ -2,6 +2,12 @@
 #include "UniformBufferGL.h"
 
 #include <Graphics/Descriptor.h>
+#include <Graphics/Graphics.h>
+
+void UniformBufferGL::Cleanup()
+{
+	myGraphics->CleanUpUBO(this);
+}
 
 void UniformBufferGL::Bind(uint32_t aBindPoint)
 {

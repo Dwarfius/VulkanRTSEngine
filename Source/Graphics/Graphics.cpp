@@ -213,6 +213,11 @@ void Graphics::TriggerUpload(GPUResource* aGPUResource)
 	aGPUResource->TriggerUpload();
 }
 
+void Graphics::TriggerUnload(GPUResource* aGPUResource)
+{
+	aGPUResource->TriggerUnload();
+}
+
 void Graphics::ProcessCreateQueue()
 {
 	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Create");

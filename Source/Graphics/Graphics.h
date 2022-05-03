@@ -75,6 +75,7 @@ public:
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
+	virtual void CleanUpUBO(UniformBuffer* aUBO) = 0;
 
 	Handle<UniformBuffer> CreateUniformBuffer(size_t aSize);
 
@@ -84,6 +85,7 @@ public:
 
 protected:
 	void TriggerUpload(GPUResource* aGPUResource);
+	void TriggerUnload(GPUResource* aGPUResource);
 
 	AssetTracker& myAssetTracker;
 
@@ -120,7 +122,7 @@ private:
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
 
-	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) const = 0;
+	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
 
 	void SortRenderPasses();
 	virtual void SortRenderPassJobs() = 0;

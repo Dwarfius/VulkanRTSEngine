@@ -94,6 +94,16 @@ void GraphicsGL::Display()
 	Profiler::ScopedMark profile("GraphicsGL::Display");
 	Graphics::Display();
 
+	{
+		UniformBufferGL* ubo;
+		while (myUBOCleanUpQueue.try_pop(ubo))
+		{
+			ASSERT_STR(myUBOs.Contains(ubo), "Unrecognized UBO - Where did it come from?");
+			TriggerUnload(ubo);
+			myUBOs.Free(*ubo);
+		}
+	}
+
 	myRenderPassJobs.AdvanceRead();
 
 	{
@@ -157,11 +167,13 @@ GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType) const
 	return new ShaderGL();
 }
 
-UniformBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize) const
+UniformBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize)
 {
 	const size_t alignedSize = Utils::Align(aSize, myUBOOffsetAlignment);
-	// TODO: Pool this!
-	return new UniformBufferGL(alignedSize);
+
+	// TODO: add recycling to avoid recreating GPU-side resources
+	std::lock_guard lock(myUBOsMutex);
+	return &myUBOs.Allocate(alignedSize);
 }
 
 void GraphicsGL::SortRenderPassJobs()
@@ -240,6 +252,11 @@ RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderCo
 	}
 	foundJob->Initialize(renderContext);
 	return *foundJob;
+}
+
+void GraphicsGL::CleanUpUBO(UniformBuffer* aUBO)
+{
+	myUBOCleanUpQueue.push(static_cast<UniformBufferGL*>(aUBO));
 }
 
 void GraphicsGL::OnResize(int aWidth, int aHeight)

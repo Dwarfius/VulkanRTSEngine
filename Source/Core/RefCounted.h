@@ -34,15 +34,6 @@ private:
 	std::atomic<uint32_t> myCounter;
 };
 
-// A special subclass of RefCounted that prevents deletion of
-// the object, and instead delegates it to Destroy func
-// User has to provide static void Destroy(T*)!
-template<class T>
-class RefCountedWithDestroy : public RefCounted
-{
-	void Cleanup() override final { T::Destroy(static_cast<T*>(this)); }
-};
-
 // =======================================================
 
 // A smart-handle that shares ownership of RefCounted-ables.

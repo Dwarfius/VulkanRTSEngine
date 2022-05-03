@@ -7,6 +7,8 @@ class UniformBufferGL final : public UniformBuffer
 public:
 	using UniformBuffer::UniformBuffer;
 
+	void Cleanup() override;
+
 	// Binds the UniformBuffer active range to a binding point. 
 	// GLSL uniform block must be bound to the same bind point!
 	// Changes OpenGL state, not thread safe.

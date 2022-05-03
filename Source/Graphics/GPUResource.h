@@ -8,8 +8,7 @@ class Graphics;
 // Base class for resources on the GPU. 
 // Operations with it aren't thread safe - requires external sync
 // when modifying properties of GPUResource subclasses
-class GPUResource : 
-	public RefCountedWithDestroy<GPUResource>
+class GPUResource : public RefCounted
 {
 public:
 	static void Destroy(GPUResource* aResource);
@@ -41,6 +40,8 @@ public:
 	GPUResource(const GPUResource& anOther) = delete;
 	GPUResource& operator=(const GPUResource& anOther) = delete;
 
+	void Cleanup() override;
+
 	// You can specify for the GPU resource to retain it's source resource
 	// That means it'll retain it during the entire duration of it's runtime
 	void Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShouldKeepRes = false);
@@ -67,6 +68,7 @@ protected:
 	Resource::Id myResId;
 	std::vector<Handle<GPUResource>> myDependencies;
 	State myState;
+	Graphics* myGraphics; // non owning ptr
 
 	// A convinience wrapper to set the error message in debug builds.
 	// Sets the state to Error
@@ -86,8 +88,6 @@ private:
 	void TriggerUnload();
 	//================================
 
-	Graphics* myGraphics; // non owning ptr
 	std::vector<UploadRegion> myRegionsToUpload;
-
 	bool myKeepResHandle;
 };
