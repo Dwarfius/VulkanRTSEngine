@@ -7,7 +7,9 @@ class StableVector
 {
     struct Page
     {
-        using FreeListNode = std::variant<T, size_t>;
+        using FreeListNode = std::variant<size_t, T>;
+        constexpr static uint8_t kSlotIndex = 0;
+        constexpr static uint8_t kValueIndex = 1;
 
         Page()
         {
@@ -22,9 +24,8 @@ class StableVector
         [[nodiscard]] T& Allocate(Ts&& ...anArgs)
         {
             FreeListNode& node = myItems[myFreeNode];
-            myFreeNode = std::get<1>(node);
-            node = T(std::forward<Ts>(anArgs)...);
-            return std::get<0>(node);
+            myFreeNode = std::get<kSlotIndex>(node);
+            return node.emplace<T>(std::forward<Ts>(anArgs)...);
         }
 
         void Free(T& anItem)
@@ -44,9 +45,9 @@ class StableVector
             return myFreeNode != static_cast<size_t>(-1ll);
         }
 
-        [[nodiscard]] bool Contains(const T& anItem) const
+        [[nodiscard]] bool Contains(const T* anItem) const
         {
-            const void* itemAddr = &anItem;
+            const void* itemAddr = anItem;
             const void* pageStart = std::begin(myItems);
             const void* pageEnd = std::end(myItems);
             return pageStart <= itemAddr && itemAddr < pageEnd;
@@ -57,9 +58,9 @@ class StableVector
         {
             for (FreeListNode& node : myItems)
             {
-                if (node.index() == 0)
+                if (node.index() == kValueIndex)
                 {
-                    aFunc(std::get<0>(node));
+                    aFunc(std::get<kValueIndex>(node));
                 }
             }
         }
@@ -69,9 +70,9 @@ class StableVector
         {
             for (const FreeListNode& node : myItems)
             {
-                if (node.index() == 0)
+                if (node.index() == kValueIndex)
                 {
-                    aFunc(std::get<0>(node));
+                    aFunc(std::get<kValueIndex>(node));
                 }
             }
         }
@@ -135,12 +136,25 @@ public:
         for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
-            if (page.Contains(anItem))
+            if (page.Contains(&anItem))
             {
                 page.Free(anItem);
                 return;
             }
         }
+    }
+
+    bool Contains(const T* anItem) const
+    {
+        for (const PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        {
+            const Page& page = pageNode->myPage;
+            if (page.Contains(anItem))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     template<class TFunc>

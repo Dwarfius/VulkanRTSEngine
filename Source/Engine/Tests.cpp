@@ -277,4 +277,8 @@ void Tests::TestStableVector()
 		});
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
 	}
+
+	ASSERT(myVec.Contains(&newThird));
+	TestType nonExistentType;
+	ASSERT(!myVec.Contains(&nonExistentType));
 }
