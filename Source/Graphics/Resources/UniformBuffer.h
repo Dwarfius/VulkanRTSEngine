@@ -19,11 +19,17 @@ public:
 
 	void Unmap()
 	{
-		// BUG: This advances reader too early if there are more
-		// schedules (which map-unmap) than displays (which bind to read).
-		// Currently can't split it properly as 1 ubo can be bound multiple
-		// times, so need to adjust architecture for this
-		myBufferInfos.Advance();
+		myBufferInfos.AdvanceWrite();
+		myWasMapped = true;
+	}
+
+	void AdvanceReadBuffer()
+	{
+		if (myWasMapped)
+		{
+			myBufferInfos.AdvanceRead();
+			myWasMapped = false;
+		}
 	}
 
 protected:
@@ -37,4 +43,5 @@ protected:
 	RWBuffer<Buffer, kMaxFrames> myBufferInfos;
 	void* myMappedBuffer = nullptr;
 	const size_t myBufferSize;
+	bool myWasMapped = false;
 };

@@ -104,6 +104,12 @@ void GraphicsGL::Display()
 		}
 	}
 
+	{
+		myUBOs.ForEach([](UniformBufferGL& aUBO) {
+			aUBO.AdvanceReadBuffer();
+		});
+	}
+
 	myRenderPassJobs.AdvanceRead();
 
 	{
