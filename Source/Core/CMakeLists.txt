@@ -25,6 +25,12 @@ if(NOT tbb_POPULATED)
 
 	set(CMAKE_FOLDER Extern/ThreadBuildingBlocks)
 	add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
+
+	# TBB on Win32 implicitly links libraries, which can go
+	# against CMake's custom targets like RelWithDebInfo
+	if (MSVC)
+		target_compile_definitions(tbb PUBLIC __TBB_NO_IMPLICIT_LINKAGE=1)
+	endif()
 endif()
 
 FetchContent_Declare(
