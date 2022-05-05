@@ -11,8 +11,6 @@ class Graphics;
 class GPUResource : public RefCounted
 {
 public:
-	static void Destroy(GPUResource* aResource);
-	
 	enum class State
 	{
 		Invalid,
