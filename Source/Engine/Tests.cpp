@@ -7,6 +7,7 @@
 #include <Core/Resources/JsonSerializer.h>
 #include <Core/Pool.h>
 #include <Core/StableVector.h>
+#include <Core/Utils.h>
 
 void Tests::RunTests()
 {
