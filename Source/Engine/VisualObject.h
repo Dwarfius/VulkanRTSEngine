@@ -23,7 +23,7 @@ public:
 	void SetTexture(Handle<Texture> aTexture);
 	Handle<GPUTexture> GetTexture() const { return myTexture; }
 
-	// Returns true if some dependencies need to be resolved
+	// Returns false if not all dependencies have resolved
 	bool IsResolved() const { return myIsResolved; }
 
 	glm::vec3 GetCenter() const;
