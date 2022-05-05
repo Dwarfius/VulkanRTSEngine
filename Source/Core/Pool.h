@@ -194,7 +194,7 @@ typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 	myFirstFreeSlot = std::get<0>(currFreeSpot.myDataVariant);
 
 	// finally construct the new one
-	currFreeSpot.myDataVariant = T(std::forward<TArgs...>(aConstrArgs)...);
+	currFreeSpot.myDataVariant.emplace<T>(std::forward<TArgs...>(aConstrArgs)...);
 	currFreeSpot.myGeneration = currFreeSpot.myGeneration++;
 	mySize++;
 
