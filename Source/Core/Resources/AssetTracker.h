@@ -36,6 +36,10 @@ public:
 		TAsset* aRes
 	);
 
+	// Allocates a dynamic resource an Id - allows users to manually
+	// tie/associate resources with GPUResources or anything else
+	void AssignDynamicId(Resource& aResource);
+
 	// Creates an asset and schedules for load, otherwise just returns an existing asset.
 	// Threadsafe
 	template<class TAsset>

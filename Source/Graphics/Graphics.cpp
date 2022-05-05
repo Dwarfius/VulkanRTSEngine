@@ -149,11 +149,17 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes,
 	GPUResource::UsageType aUsageType /*= GPUResource::UsageType::Static*/)
 {
 	GPUResource* newGPURes;
-	const Resource::Id resId = aRes->GetId();
+	Resource::Id resId = aRes->GetId();
 	if (resId == Resource::InvalidId)
 	{
-		// invalid id -> dynamic resource, so no need to track it 
+		// dynamic resource, so generate an Id to associate and track it
+		myAssetTracker.AssignDynamicId(*aRes.Get());
+		resId = aRes->GetId();
 		newGPURes = Create(aRes.Get(), aUsageType);
+		{
+			tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+			myResources[resId] = newGPURes;
+		}
 	}
 	else
 	{
@@ -287,8 +293,8 @@ void Graphics::ProcessUnloadQueue()
 	while (myUnloadQueue.try_pop(aResource))
 	{
 		aResource->TriggerUnload();
-		if (aResource->myResId != Resource::InvalidId)
 		{
+			tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 			myResources.erase(aResource->myResId);
 		}
 		delete aResource;

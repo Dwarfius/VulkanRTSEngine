@@ -288,9 +288,6 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			VisualComponent* visualComp = ball.myGO->AddComponent<VisualComponent>();
 			visualComp->SetModel(mySphereModel);
 			visualComp->SetTextureCount(1);
-			// BUG: this causes new GL texture to be created per every call
-			// I really need to figure out a better way to do this, as it's
-			// not the first time I trip up on this bug
 			visualComp->SetTexture(0, myGreyTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
 

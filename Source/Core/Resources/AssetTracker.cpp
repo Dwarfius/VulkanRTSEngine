@@ -74,6 +74,11 @@ void AssetTracker::RemoveResource(const Resource* aRes)
 	}
 }
 
+void AssetTracker::AssignDynamicId(Resource& aResource)
+{
+	aResource.myId = ++myCounter;
+}
+
 Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
 {
 	Resource::Id resourceId = Resource::InvalidId;

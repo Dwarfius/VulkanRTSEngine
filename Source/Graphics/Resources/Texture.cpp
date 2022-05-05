@@ -83,7 +83,6 @@ Texture::~Texture()
 
 void Texture::SetPixels(unsigned char* aPixels, bool aShouldOwn /* = true */)
 {
-	ASSERT_STR(GetId() == Resource::InvalidId, "NYI. Textures from disk are currently static due to FreePixels implementation.");
 	if (myPixels)
 	{
 		FreePixels();
