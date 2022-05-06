@@ -3,6 +3,7 @@
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Utils.h>
+#include <Core/Pool.h>
 
 #include "GameTaskManager.h"
 #include "GameObject.h"
@@ -101,6 +102,8 @@ public:
 	// If GameObject has a parent, it's retained in the world
 	void RemoveGameObject(Handle<GameObject> aGOHandle);
 
+	PoolPtr<Renderable> CreateRenderable(GameObject& aGO);
+
 	void AddTerrain(Terrain* aTerrain /* owning */, Handle<Pipeline> aPipeline);
 	void RemoveTerrain(size_t anIndex) { myTerrains.erase(myTerrains.begin() + anIndex); }
 	Terrain* GetTerrain(size_t anIndex) { return myTerrains[anIndex].myTerrain; }
@@ -139,6 +142,9 @@ private:
 	std::unordered_map<UID, Handle<GameObject>> myGameObjects;
 	std::queue<Handle<GameObject>> myAddQueue;
 	std::queue<Handle<GameObject>> myRemoveQueue;
+	
+	Pool<Renderable> myRenderables;
+	std::mutex myRenderablesMutex;
 
 	struct TerrainEntity
 	{

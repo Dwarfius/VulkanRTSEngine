@@ -14,7 +14,6 @@ GameObject::GameObject(const Transform& aTransform)
 	: myUID(UID::Create())
 	, myWorldTransf(aTransform)
 	, myLocalTransf(aTransform)
-	, myVisualObject(nullptr)
 	, myIsDead(false)
 	, myCenter(0)
 {
@@ -25,7 +24,6 @@ GameObject::GameObject(Id anId, const std::string& aPath)
 	, myUID(UID::Create())
 	, myWorldTransf(Transform())
 	, myLocalTransf(Transform())
-	, myVisualObject(nullptr)
 	, myIsDead(false)
 	, myCenter(0)
 {
@@ -38,11 +36,6 @@ GameObject::~GameObject()
 	for (ComponentBase* comp : myComponents)
 	{
 		delete comp;
-	}
-
-	if (myVisualObject)
-	{
-		delete myVisualObject;
 	}
 }
 
@@ -65,9 +58,9 @@ void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren 
 			UpdateHierarchy();
 		}
 
-		if (myVisualObject)
+		if (myRenderable.IsValid())
 		{
-			myVisualObject->SetTransform(myWorldTransf);
+			myRenderable.Get()->myVO.SetTransform(myWorldTransf);
 		}
 	}
 }
@@ -91,17 +84,20 @@ void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren 
 			UpdateHierarchy();
 		}
 
-		if (myVisualObject)
+		if (myRenderable.IsValid())
 		{
-			myVisualObject->SetTransform(myWorldTransf);
+			myRenderable.Get()->myVO.SetTransform(myWorldTransf);
 		}
 	}
 }
 
-void GameObject::SetVisualObject(VisualObject* aVisualObject)
+void GameObject::CreateRenderable()
 {
-	myVisualObject = aVisualObject;
-	myVisualObject->SetTransform(myWorldTransf);
+	ASSERT_STR(!myRenderable.IsValid(), "Multi VisualObject not supported yet!");
+
+	// TODO: store a reference to Game instead of grabbing the global instance
+	myRenderable = Game::GetInstance()->CreateRenderable(*this);
+	myRenderable.Get()->myVO.SetTransform(myWorldTransf);
 }
 
 void GameObject::Die()

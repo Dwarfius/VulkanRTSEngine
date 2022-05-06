@@ -6,10 +6,19 @@
 #include <Physics/PhysicsEntity.h>
 #include <Core/Pool.h>
 #include <Core/Resources/Resource.h>
-#include "Animation/AnimationController.h"
 
-class VisualObject;
+#include "Animation/AnimationController.h"
+#include "VisualObject.h"
+
 class ComponentBase;
+
+class GameObject;
+
+struct Renderable
+{
+	VisualObject myVO;
+	GameObject* myGO; // non-owning, non-null
+};
 
 class GameObject : public Resource, public IPhysControllable
 {
@@ -33,9 +42,9 @@ public:
 	template<class TComp>
 	TComp* GetComponent() const;
 
-	void SetVisualObject(VisualObject* aVisualObject);
-	const VisualObject* GetVisualObject() const { return myVisualObject; }
-	VisualObject* GetVisualObject() { return myVisualObject; }
+	void CreateRenderable();
+	const PoolPtr<Renderable>& GetRenderable() const { return myRenderable; }
+	PoolPtr<Renderable>& GetRenderable() { return myRenderable; }
 
 	bool IsDead() const { return myIsDead; }
 	void Die();
@@ -74,7 +83,7 @@ private:
 	glm::vec3 myCenter;
 
 	std::vector<ComponentBase*> myComponents;
-	VisualObject* myVisualObject;
+	PoolPtr<Renderable> myRenderable;
 	PoolPtr<Skeleton> mySkeleton;
 	PoolPtr<AnimationController> myAnimController;
 	

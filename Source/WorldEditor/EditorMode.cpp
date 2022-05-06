@@ -109,23 +109,23 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 		AnimationSystem& animSystem = aGame.GetAnimationSystem();
 
 		Transform objTransf = myGLTFImporter.GetTransform(0);
-		objTransf.SetPos(objTransf.GetPos() +  camTransf.GetPos());
+		objTransf.SetPos(objTransf.GetPos() + camTransf.GetPos());
 		Handle<GameObject> newGO = new GameObject(objTransf);
 		
 		GameObject* go = newGO.Get();
-		VisualObject* vo = new VisualObject();
-		go->SetVisualObject(vo);
+		go->CreateRenderable();
+		VisualObject& vo = go->GetRenderable().Get()->myVO;
 
 		Handle<Model> model = myGLTFImporter.GetModel(0);
 
-		vo->SetModel(model);
+		vo.SetModel(model);
 		if (myGLTFImporter.GetTextureCount() > 0)
 		{
-			vo->SetTexture(myGLTFImporter.GetTexture(0));
+			vo.SetTexture(myGLTFImporter.GetTexture(0));
 		}
 		else
 		{
-			vo->SetTexture(assetTracker.GetOrCreate<Texture>("gray.img"));
+			vo.SetTexture(assetTracker.GetOrCreate<Texture>("gray.img"));
 		}
 
 		if(myGLTFImporter.GetSkeletonCount() > 0)
@@ -140,11 +140,11 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 				animController.Get()->PlayClip(myGLTFImporter.GetAnimClip(0).Get());
 				go->SetAnimController(std::move(animController));
 			}
-			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));
+			vo.SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));
 		}
 		else
 		{
-			vo->SetPipeline(assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl"));
+			vo.SetPipeline(assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl"));
 		}
 
 		myGOs.push_back(go);

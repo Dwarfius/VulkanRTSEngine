@@ -98,8 +98,6 @@ void VisualComponent::CreateVOIfNeeded()
 		return;
 	}
 
-	ASSERT_STR(myOwner->GetVisualObject() == nullptr, "Multi VisualObject not supported yet!");
-
-	myVisualObject = new VisualObject();
-	myOwner->SetVisualObject(myVisualObject);
+	myOwner->CreateRenderable();
+	myVisualObject = &myOwner->GetRenderable().Get()->myVO;
 }

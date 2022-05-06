@@ -472,6 +472,12 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 	}
 }
 
+PoolPtr<Renderable> Game::CreateRenderable(GameObject& aGO)
+{
+	std::lock_guard lock(myRenderablesMutex);
+	return myRenderables.Allocate(VisualObject{}, &aGO);
+}
+
 void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 {
 #ifdef ASSERT_MUTEX
@@ -645,24 +651,15 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 {
 	Profiler::ScopedMark debugProfile("Game::RenderGameObjects");
 
-#ifdef ASSERT_MUTEX
-	AssertLock assertLock(myGOMutex);
-#endif
 	DefaultRenderPass* renderPass = aGraphics.GetRenderPass<DefaultRenderPass>();
-	// TODO: get rid of single map, and use a separate vector for Renderables
-	for (auto& [uid, gameObjHandle] : myGameObjects)
-	{
-		VisualObject* visObj = gameObjHandle->GetVisualObject();
-		if (!visObj)
-		{
-			continue;
-		}
-
-		if (visObj->IsResolved() || visObj->Resolve())
+	std::lock_guard lock(myRenderablesMutex);
+	myRenderables.ForEach([&](Renderable& aRenderable) {
+		VisualObject& visObj = aRenderable.myVO;
+		if (visObj.IsResolved() || visObj.Resolve())
 		{
 			// building a render job
-			const GameObject* gameObject = gameObjHandle.Get();
-			const VisualObject& visualObj = *visObj;
+			const GameObject* gameObject = aRenderable.myGO;
+			const VisualObject& visualObj = visObj;
 			RenderJob renderJob(
 				visualObj.GetPipeline(),
 				visualObj.GetModel(),
@@ -671,12 +668,12 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 
 			if (!renderPass->HasResources(renderJob))
 			{
-				continue;
+				return;
 			}
 
 			if (!myCamera->CheckSphere(visualObj.GetCenter(), visualObj.GetRadius()))
 			{
-				continue;
+				return;
 			}
 
 			// updating the uniforms - grabbing game state!
@@ -705,7 +702,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			);
 			renderPass->AddRenderable(renderJob, params);
 		}
-	}
+	});
 }
 
 void Game::RenderTerrains(Graphics& aGraphics)
