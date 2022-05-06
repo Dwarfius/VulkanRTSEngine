@@ -233,8 +233,11 @@ void Graphics::ProcessCreateQueue()
 	{
 		if (aResourceHandle.IsLastHandle())
 		{
-			// last handle - owner discarded, can skip
-			// it will automatically get added to the unload queue
+			// last handle - owner discarded, so can unregister
+			{
+				tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+				myResources.erase(aResourceHandle->myResId);
+			}
 			continue;
 		}
 		if (aResourceHandle->GetResource().IsValid()
@@ -264,8 +267,11 @@ void Graphics::ProcessUploadQueue()
 	{
 		if (aResourceHandle.IsLastHandle())
 		{
-			// last handle - owner discarded, can skip
-			// it will automatically get added to the unload queue
+			// last handle - owner discarded, so can unregister
+			{
+				tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+				myResources.erase(aResourceHandle->myResId);
+			}
 			continue;
 		}
 		if (!aResourceHandle->AreDependenciesValid())
