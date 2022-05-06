@@ -46,7 +46,7 @@ void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShoul
 
 void GPUResource::UpdateRegion(UploadRegion aRegion)
 {
-	ASSERT_STR(myResHandle.IsValid(), 
+	ASSERT_STR(myResHandle.IsValid() || myResId == Resource::InvalidId, 
 		"Can't update the GPU resource - source resource has been discarded!");
 	myRegionsToUpload.push_back(aRegion);
 	myState = State::PendingUpload;
@@ -55,7 +55,7 @@ void GPUResource::UpdateRegion(UploadRegion aRegion)
 
 void GPUResource::UpdateRegions(const UploadRegion* aRegions, uint8_t aRegCount)
 {
-	ASSERT_STR(myResHandle.IsValid(),
+	ASSERT_STR(myResHandle.IsValid() || myResId == Resource::InvalidId,
 		"Can't update the GPU resource - source resource has been discarded!");
 	myRegionsToUpload.insert(myRegionsToUpload.end(), aRegions, aRegions + aRegCount);
 	myState = State::PendingUpload;
