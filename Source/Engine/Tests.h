@@ -12,4 +12,5 @@ private:
 	static void TestJsonSerializer();
 	static void TestUtilMatches();
 	static void TestStableVector();
+	static void TestStaticVector();
 };

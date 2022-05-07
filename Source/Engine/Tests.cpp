@@ -7,6 +7,7 @@
 #include <Core/Resources/JsonSerializer.h>
 #include <Core/Pool.h>
 #include <Core/StableVector.h>
+#include <Core/StaticVector.h>
 #include <Core/Utils.h>
 
 void Tests::RunTests()
@@ -17,6 +18,7 @@ void Tests::RunTests()
 	TestJsonSerializer();
 	TestUtilMatches();
 	TestStableVector();
+	TestStaticVector();
 }
 
 void Tests::TestBase64()
@@ -237,17 +239,17 @@ void Tests::TestStableVector()
 		uint8_t myNum;
 	};
 
-	StableVector<TestType, 2> myVec;
-	TestType& first = myVec.Allocate("Hello", 0);
-	TestType& second = myVec.Allocate("Hello", 1);
-	TestType& third = myVec.Allocate("Hello", 2);
-	TestType& fourth = myVec.Allocate("Hello", 3);
-	TestType& fifth = myVec.Allocate("Hello", 4);
+	StableVector<TestType, 2> vec;
+	TestType& first = vec.Allocate("Hello", 0);
+	TestType& second = vec.Allocate("Hello", 1);
+	TestType& third = vec.Allocate("Hello", 2);
+	TestType& fourth = vec.Allocate("Hello", 3);
+	TestType& fifth = vec.Allocate("Hello", 4);
 
 	{
 		uint8_t numbers[]{ 0, 1, 2, 3, 4 };
 		int counter = 0;
-		myVec.ForEach([&](const TestType& aVal) {
+		vec.ForEach([&](const TestType& aVal) {
 			ASSERT(aVal.myStr == "Hello");
 			ASSERT(aVal.myNum == numbers[counter]);
 			counter++;
@@ -255,11 +257,11 @@ void Tests::TestStableVector()
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
 	}
 
-	myVec.Free(third);
+	vec.Free(third);
 	{
 		uint8_t numbers[]{ 0, 1, 3, 4 };
 		int counter = 0;
-		myVec.ForEach([&](const TestType& aVal) {
+		vec.ForEach([&](const TestType& aVal) {
 			ASSERT(aVal.myStr == "Hello");
 			ASSERT(aVal.myNum == numbers[counter]);
 			counter++;
@@ -267,11 +269,11 @@ void Tests::TestStableVector()
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
 	}
 
-	TestType& newThird = myVec.Allocate("Hello", 5);
+	TestType& newThird = vec.Allocate("Hello", 5);
 	{
 		uint8_t numbers[]{ 0, 1, 5, 3, 4 };
 		int counter = 0;
-		myVec.ForEach([&](const TestType& aVal) {
+		vec.ForEach([&](const TestType& aVal) {
 			ASSERT(aVal.myStr == "Hello");
 			ASSERT(aVal.myNum == numbers[counter]);
 			counter++;
@@ -279,7 +281,42 @@ void Tests::TestStableVector()
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
 	}
 
-	ASSERT(myVec.Contains(&newThird));
+	ASSERT(vec.Contains(&newThird));
 	TestType nonExistentType;
-	ASSERT(!myVec.Contains(&nonExistentType));
+	ASSERT(!vec.Contains(&nonExistentType));
+}
+
+void Tests::TestStaticVector()
+{
+	struct TestType
+	{
+		std::string myStr;
+		uint8_t myNum;
+	};
+	TestType item{ "Hello World", 0 };
+
+	StaticVector<TestType, 5> vec;
+	vec.PushBack(item);
+	vec.PushBack(TestType{ "Hello", 1 });
+	vec.EmplaceBack("World", 2);
+	ASSERT(vec.GetSize() == 3);
+	ASSERT(vec[1].myStr == "Hello");
+	std::string_view strings[]{ "Hello World", "Hello", "World" };
+	uint8_t numbers[]{ 0, 1, 2 };
+	uint8_t counter = 0;
+	for (const TestType& item : vec)
+	{
+		ASSERT(item.myStr == strings[counter]);
+		ASSERT(item.myNum == numbers[counter]);
+		counter++;
+	}
+
+	vec.PopBack();
+	counter = 0;
+	for (const TestType& item : vec)
+	{
+		ASSERT(item.myStr == strings[counter]);
+		ASSERT(item.myNum == numbers[counter]);
+		counter++;
+	}
 }
