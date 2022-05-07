@@ -683,6 +683,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			// building a render job
 			const GameObject* gameObject = aRenderable.myGO;
 			const VisualObject& visualObj = visObj;
+
 			RenderJob& renderJob = renderPass->AllocateJob();
 			renderJob.GetModel() = visualObj.GetModel();
 			renderJob.GetPipeline() = visualObj.GetPipeline();
@@ -699,7 +700,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
-				Handle<UniformBuffer> uniformBuffer = visualObj.GetUniformBuffer(i);
+				Handle<UniformBuffer>& uniformBuffer = visObj.GetUniformBuffer(i);
 				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
 
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
@@ -710,6 +711,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				renderJob.AddUniformBlock(buffer);
 			}
 
+			//Profiler::ScopedMark debugProfile("RenderJob::Params");
 			IRenderPass::IParams params;
 			params.myDistance = glm::distance(
 				myCamera->GetTransform().GetPos(),
@@ -776,7 +778,7 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
-				Handle<UniformBuffer> uniformBuffer = visualObj.GetUniformBuffer(i);
+				Handle<UniformBuffer>& uniformBuffer = visObj->GetUniformBuffer(i);
 				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
 
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());

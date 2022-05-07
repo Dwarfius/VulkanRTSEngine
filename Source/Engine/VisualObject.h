@@ -16,13 +16,16 @@ class VisualObject
 {
 public:
 	void SetModel(Handle<Model> aModel);
-	Handle<GPUModel> GetModel() const { return myModel; }
+	Handle<GPUModel>& GetModel() { return myModel; }
+	const Handle<GPUModel>& GetModel() const { return myModel; }
 
 	void SetPipeline(Handle<Pipeline> aPipeline);
-	Handle<GPUPipeline> GetPipeline() const { return myPipeline; }
+	Handle<GPUPipeline>& GetPipeline() { return myPipeline; }
+	const Handle<GPUPipeline>& GetPipeline() const { return myPipeline; }
 
 	void SetTexture(Handle<Texture> aTexture);
-	Handle<GPUTexture> GetTexture() const { return myTexture; }
+	Handle<GPUTexture>& GetTexture() { return myTexture; }
+	const Handle<GPUTexture>& GetTexture() const { return myTexture; }
 
 	// Returns false if not all dependencies have resolved
 	bool IsResolved() const { return myIsResolved; }
@@ -33,7 +36,8 @@ public:
 	void SetTransform(const Transform& aTransf) { myTransf = aTransf; }
 	const Transform& GetTransform() const { return myTransf; }
 
-	Handle<UniformBuffer> GetUniformBuffer(size_t anIndex) const { return myUniforms[anIndex]; }
+	Handle<UniformBuffer>& GetUniformBuffer(size_t anIndex) { return myUniforms[anIndex]; }
+	const Handle<UniformBuffer>& GetUniformBuffer(size_t anIndex) const { return myUniforms[anIndex]; }
 	const auto& GetUniforms() const { return myUniforms; }
 
 	bool Resolve();

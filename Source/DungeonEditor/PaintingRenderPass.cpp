@@ -104,8 +104,6 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	adapter.FillUniformBlock(source, block);
 	job.AddUniformBlock(myBuffer);
 
-	
-
 	myWriteToOther = !myWriteToOther;
 }
 
