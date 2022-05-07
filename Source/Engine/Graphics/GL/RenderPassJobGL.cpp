@@ -258,7 +258,7 @@ void RenderPassJobGL::RunJobs()
 		}
 
 		RenderJob::TextureSet& textures = r.GetTextures();
-		for (size_t textureInd = 0; textureInd < textures.size(); textureInd++)
+		for (size_t textureInd = 0; textureInd < textures.GetSize(); textureInd++)
 		{
 			int slotToUse = myTextureSlotsToUse[textureInd];
 			if (slotToUse == -1)

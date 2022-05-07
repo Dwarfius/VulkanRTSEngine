@@ -68,7 +68,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	RenderJob job(myPipeline, aGraphics.GetFullScreenQuad(), {});
 	if (paintParams.myPaintTexture.IsValid())
 	{
-		job.GetTextures().push_back(paintParams.myPaintTexture);
+		job.GetTextures().PushBack(paintParams.myPaintTexture);
 	}
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;

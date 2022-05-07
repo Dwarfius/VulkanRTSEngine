@@ -2,6 +2,7 @@
 
 #include <Core/Transform.h>
 #include <Core/RefCounted.h>
+#include <Core/StaticVector.h>
 
 class UniformBuffer;
 class Model;
@@ -33,7 +34,7 @@ public:
 	const Transform& GetTransform() const { return myTransf; }
 
 	Handle<UniformBuffer> GetUniformBuffer(size_t anIndex) const { return myUniforms[anIndex]; }
-	const std::vector<Handle<UniformBuffer>>& GetUniforms() const { return myUniforms; }
+	const auto& GetUniforms() const { return myUniforms; }
 
 	bool Resolve();
 
@@ -45,7 +46,7 @@ private:
 
 	// TODO: rework this to use a index-based Handle into
 	// a pool of UniformBlocks
-	std::vector<Handle<UniformBuffer>> myUniforms;
+	StaticVector<Handle<UniformBuffer>, 4> myUniforms;
 	bool myIsResolved = false;
 	bool myIsNewPipeline = false;
 };

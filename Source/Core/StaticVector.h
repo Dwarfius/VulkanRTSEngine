@@ -12,9 +12,11 @@ public:
 	constexpr StaticVector() = default;
 
 	constexpr StaticVector(std::initializer_list<T> aList)
-		: myItems(aList)
-		, myCount(aList.size())
 	{
+		for (const T& item : aList)
+		{
+			PushBack(item);
+		}
 	}
 
 	constexpr void PushBack(const T& anItem)
@@ -39,6 +41,14 @@ public:
 	{
 		ASSERT(myCount > 0);
 		myItems[--myCount].~T();
+	}
+
+	constexpr void Clear()
+	{
+		while (myCount > 0)
+		{
+			PopBack();
+		}
 	}
 
 	constexpr size_t GetSize() const

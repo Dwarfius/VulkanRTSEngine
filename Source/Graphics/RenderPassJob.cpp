@@ -17,17 +17,9 @@ RenderJob::RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
 {
 }
 
-void RenderJob::SetUniformSet(const UniformSet& aUniformSet)
-{
-	for (const Handle<UniformBuffer>& buffer : aUniformSet)
-	{
-		AddUniformBlock(buffer);
-	}
-}
-
 void RenderJob::AddUniformBlock(const Handle<UniformBuffer>& aBuffer)
 {
-	myUniforms.push_back(aBuffer);
+	myUniforms.PushBack(aBuffer);
 }
 
 bool RenderJob::HasLastHandles() const

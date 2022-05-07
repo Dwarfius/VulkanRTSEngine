@@ -693,7 +693,10 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
-			renderJob.SetUniformSet(visualObj.GetUniforms());
+			for (const Handle<UniformBuffer>& buffer : visualObj.GetUniforms())
+			{
+				renderJob.AddUniformBlock(buffer);
+			}
 
 			IRenderPass::IParams params;
 			params.myDistance = glm::distance(
@@ -761,7 +764,10 @@ void Game::RenderTerrains(Graphics& aGraphics)
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
-			renderJob.SetUniformSet(visualObj.GetUniforms());
+			for (const Handle<UniformBuffer>& buffer : visualObj.GetUniforms())
+			{
+				renderJob.AddUniformBlock(buffer);
+			}
 
 			TerrainRenderParams params;
 			params.myDistance = glm::distance(

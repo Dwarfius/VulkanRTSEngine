@@ -63,7 +63,7 @@ bool VisualObject::Resolve()
 	{
 		// Since we got a new pipeline, time to replace
 		// descriptors, UBOs and adapters
-		myUniforms.clear();
+		myUniforms.Clear();
 
 		Graphics& graphics = *Game::GetInstance()->GetGraphics();
 		const GPUPipeline* pipeline = myPipeline.Get();
@@ -73,7 +73,7 @@ bool VisualObject::Resolve()
 			const UniformAdapter& adapter = pipeline->GetAdapter(i);
 			const size_t bufferSize = adapter.GetDescriptor().GetBlockSize();
 			Handle<UniformBuffer> buffer = graphics.CreateUniformBuffer(bufferSize);
-			myUniforms.push_back(buffer);
+			myUniforms.PushBack(buffer);
 		}
 		myIsNewPipeline = false;
 		return false;

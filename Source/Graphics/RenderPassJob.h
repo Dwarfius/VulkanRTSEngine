@@ -3,6 +3,7 @@
 #include "RenderContext.h"
 
 #include <Core/RefCounted.h>
+#include <Core/StaticVector.h>
 
 class GPUPipeline;
 class GPUTexture;
@@ -12,8 +13,8 @@ class Graphics;
 
 struct RenderJob
 {
-	using TextureSet = std::vector<Handle<GPUTexture>>;
-	using UniformSet = std::vector<Handle<UniformBuffer>>;
+	using TextureSet = StaticVector<Handle<GPUTexture>, 4>;
+	using UniformSet = StaticVector<Handle<UniformBuffer>, 4>;
 
 	enum class DrawMode : char
 	{
@@ -50,9 +51,6 @@ public:
 	RenderJob() = default;
 	RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
 		const TextureSet& aTextures);
-
-	// Copies a set of uniform blocks for a frame
-	void SetUniformSet(const UniformSet& aUniformSet);
 
 	// Copies a single uniform block for a frame
 	// Note: It's on the caller to ensure the order matches the order of descriptors/uniform
