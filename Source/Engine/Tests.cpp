@@ -310,6 +310,7 @@ void Tests::TestStaticVector()
 		ASSERT(item.myNum == numbers[counter]);
 		counter++;
 	}
+	ASSERT(counter == vec.GetSize());
 
 	vec.PopBack();
 	counter = 0;
@@ -319,4 +320,5 @@ void Tests::TestStaticVector()
 		ASSERT(item.myNum == numbers[counter]);
 		counter++;
 	}
+	ASSERT(counter == vec.GetSize());
 }
