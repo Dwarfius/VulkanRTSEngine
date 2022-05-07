@@ -32,9 +32,7 @@ private:
 
 	void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) override
 	{
-		Profiler::ScopedMark scope("OnTriggerCB");
-
-		// TODO: this is horribly inefficient, but other than
+		// TODO: this is (probably)horribly inefficient, but other than
 		// keeping track of indices on PhysicsEntity (which I 
 		// can't do - no stability guarantee) I got no ideas
 		auto tankIter = std::find_if(myOwner.myTanks.begin(), myOwner.myTanks.end(), 
