@@ -17,17 +17,6 @@ DefaultRenderPass::DefaultRenderPass()
 	myDependencies.push_back(TerrainRenderPass::kId);
 }
 
-bool DefaultRenderPass::HasResources(const RenderJob& aJob) const
-{
-	constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
-		return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
-	};
-	const RenderJob::TextureSet& textures = aJob.GetTextures();
-	return CheckResource(aJob.GetModel())
-		&& CheckResource(aJob.GetPipeline())
-		&& std::all_of(textures.begin(), textures.end(), CheckResource);
-}
-
 void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
@@ -53,16 +42,6 @@ void DefaultRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
 	drawParams.myCount = hasValidCount ? aParams.myCount 
 										: aJob.GetModel().Get<GPUModel>()->GetPrimitiveCount();
 	aJob.SetDrawParams(drawParams);
-}
-
-bool TerrainRenderPass::HasResources(const RenderJob& aJob) const
-{
-	constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
-		return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
-	};
-	const RenderJob::TextureSet& textures = aJob.GetTextures();
-	return CheckResource(aJob.GetPipeline())
-		&& std::all_of(textures.begin(), textures.end(), CheckResource);
 }
 
 void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const

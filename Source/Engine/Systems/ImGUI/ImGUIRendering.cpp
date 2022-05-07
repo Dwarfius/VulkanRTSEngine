@@ -108,11 +108,10 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 			texture = params.myTexture;
 		}
 
-		RenderJob job{
-			myPipeline,
-			myModel,
-			{ texture }
-		};
+		RenderJob& job = myCurrentJob->AllocateJob();
+		job.GetPipeline() = myPipeline;
+		job.GetModel() = myModel;
+		job.GetTextures().PushBack(texture);
 		job.AddUniformBlock(myUniformBuffer);
 
 		for (uint8_t i = 0; i < 4; i++)
@@ -124,8 +123,6 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 		drawParams.myOffset = params.myOffset;
 		drawParams.myCount = params.myCount;
 		job.SetDrawParams(drawParams);
-
-		myCurrentJob->Add(job);
 	}
 
 	if (myUpdateDescriptor.myIndCount > 0)

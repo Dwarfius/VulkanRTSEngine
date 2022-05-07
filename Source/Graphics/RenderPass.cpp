@@ -25,10 +25,9 @@ RenderPass::RenderPass()
 {
 }
 
-void RenderPass::AddRenderable(RenderJob& aJob, const IParams& aParams)
+RenderJob& RenderPass::AllocateJob()
 {
-	Process(aJob, aParams);
-	myCurrentJob->Add(aJob);
+	return myCurrentJob->AllocateJob();
 }
 
 void RenderPass::BeginPass(Graphics& anInterface)

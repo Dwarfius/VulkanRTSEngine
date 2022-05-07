@@ -29,13 +29,14 @@ void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
-	RenderJob job(myPipeline, aGraphics.GetFullScreenQuad(), {});
+	RenderJob& job = passJob.AllocateJob();
+	job.GetPipeline() = myPipeline;
+	job.GetModel() = aGraphics.GetFullScreenQuad();
+	
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;
 	params.myCount = 6;
 	job.SetDrawParams(params);
-
-	passJob.Add(job);
 }
 
 void FinalCompositeRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const

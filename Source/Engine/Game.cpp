@@ -36,7 +36,9 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
 
@@ -652,29 +654,39 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 	Profiler::ScopedMark debugProfile("Game::RenderGameObjects");
 
 	DefaultRenderPass* renderPass = aGraphics.GetRenderPass<DefaultRenderPass>();
+	
+	constexpr auto IsUsable = [](const VisualObject& aVO) {
+		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
+		};
+		return CheckResource(aVO.GetModel())
+			&& CheckResource(aVO.GetPipeline())
+			&& CheckResource(aVO.GetTexture());
+	};
+
 	std::lock_guard lock(myRenderablesMutex);
 	myRenderables.ForEach([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
+
+		if (!IsUsable(visObj))
+		{
+			return;
+		}
+
+		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+		{
+			return;
+		}
+
 		if (visObj.IsResolved() || visObj.Resolve())
 		{
 			// building a render job
 			const GameObject* gameObject = aRenderable.myGO;
 			const VisualObject& visualObj = visObj;
-			RenderJob renderJob(
-				visualObj.GetPipeline(),
-				visualObj.GetModel(),
-				{ visualObj.GetTexture() }
-			);
-
-			if (!renderPass->HasResources(renderJob))
-			{
-				return;
-			}
-
-			if (!myCamera->CheckSphere(visualObj.GetCenter(), visualObj.GetRadius()))
-			{
-				return;
-			}
+			RenderJob& renderJob = renderPass->AllocateJob();
+			renderJob.GetModel() = visualObj.GetModel();
+			renderJob.GetPipeline() = visualObj.GetPipeline();
+			renderJob.GetTextures().PushBack(visualObj.GetTexture());
 
 			// updating the uniforms - grabbing game state!
 			UniformAdapterSource source{
@@ -703,7 +715,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				myCamera->GetTransform().GetPos(),
 				gameObject->GetWorldTransform().GetPos()
 			);
-			renderPass->AddRenderable(renderJob, params);
+			renderPass->Process(renderJob, params);
 		}
 	});
 }
@@ -716,10 +728,28 @@ void Game::RenderTerrains(Graphics& aGraphics)
 	AssertLock assertLock(myTerrainsMutex);
 #endif
 	TerrainRenderPass* renderPass = aGraphics.GetRenderPass<TerrainRenderPass>();
+	constexpr auto IsUsable = [](const VisualObject& aVO) {
+		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
+		};
+		return CheckResource(aVO.GetPipeline())
+			&& CheckResource(aVO.GetTexture());
+	};
 	for (TerrainEntity& entity : myTerrains)
 	{
 		VisualObject* visObj = entity.myVisualObject;
 		if (!visObj)
+		{
+			continue;
+		}
+
+		if (!IsUsable(*visObj))
+		{
+			continue;
+		}
+
+		if (visObj->GetModel().IsValid()
+			&& !myCamera->CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
 		{
 			continue;
 		}
@@ -729,22 +759,10 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			// building a render job
 			const Terrain& terrain = *entity.myTerrain;
 			const VisualObject& visualObj = *visObj;
-			RenderJob renderJob(
-				visualObj.GetPipeline(),
-				visualObj.GetModel(),
-				{ visualObj.GetTexture() }
-			);
-
-			if (!renderPass->HasResources(renderJob))
-			{
-				continue;
-			}
-
-			if (visualObj.GetModel().IsValid()
-				&& !myCamera->CheckSphere(visualObj.GetTransform().GetPos(), visualObj.GetRadius()))
-			{
-				continue;
-			}
+			RenderJob& renderJob = renderPass->AllocateJob();
+			renderJob.GetModel() = visualObj.GetModel();
+			renderJob.GetPipeline() = visualObj.GetPipeline();
+			renderJob.GetTextures().PushBack(visualObj.GetTexture());
 
 			// updating the uniforms - grabbing game state!
 			TerrainAdapter::Source source{
@@ -776,7 +794,7 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			);
 			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
 			params.myTileCount = gridTiles.x * gridTiles.y;
-			renderPass->AddRenderable(renderJob, params);
+			renderPass->Process(renderJob, params);
 		}
 	}
 }

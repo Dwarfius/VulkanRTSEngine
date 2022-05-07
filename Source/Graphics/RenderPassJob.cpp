@@ -6,17 +6,6 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
 
-RenderJob::RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
-	const TextureSet& aTextures)
-	: myPipeline(aPipeline)
-	, myModel(aModel)
-	, myTextures(aTextures)
-	, myScissorRect{ 0,0,0,0 }
-	, myDrawMode(DrawMode::Indexed)
-	, myDrawParams()
-{
-}
-
 void RenderJob::AddUniformBlock(const Handle<UniformBuffer>& aBuffer)
 {
 	myUniforms.PushBack(aBuffer);
@@ -53,15 +42,21 @@ void RenderJob::SetDrawParams(const ArrayDrawParams& aParams)
 
 //================================================
 
+RenderJob& RenderPassJob::AllocateJob()
+{
+	tbb::spin_mutex::scoped_lock lock(myJobsMutex);
+	return myJobs.emplace_back();
+}
+
 void RenderPassJob::Execute(Graphics& aGraphics)
 {
 	BindFrameBuffer(aGraphics, myContext);
 	Clear(myContext);
 
-	if (HasWork())
+	if (!myJobs.empty())
 	{
 		SetupContext(aGraphics, myContext);
-		RunJobs();
+		RunJobs(myJobs);
 	}
 }
 

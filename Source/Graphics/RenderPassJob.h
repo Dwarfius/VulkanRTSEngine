@@ -48,10 +48,6 @@ struct RenderJob
 	};
 
 public:
-	RenderJob() = default;
-	RenderJob(Handle<GPUPipeline> aPipeline, Handle<GPUModel> aModel,
-		const TextureSet& aTextures);
-
 	// Copies a single uniform block for a frame
 	// Note: It's on the caller to ensure the order matches the order of descriptors/uniform
 	// buffers for a pipeline
@@ -68,10 +64,13 @@ public:
 
 	Handle<GPUPipeline>& GetPipeline() { return myPipeline; }
 	const Handle<GPUPipeline>& GetPipeline() const { return myPipeline; }
+
 	Handle<GPUModel>& GetModel() { return myModel; }
 	const Handle<GPUModel>& GetModel() const { return myModel; }
+
 	TextureSet& GetTextures() { return myTextures; }
 	const TextureSet& GetTextures() const { return myTextures; }
+
 	UniformSet& GetUniformSet() { return myUniforms; }
 	const UniformSet& GetUniformSet() const { return myUniforms; }
 
@@ -85,8 +84,8 @@ private:
 	TextureSet myTextures;
 	UniformSet myUniforms;
 
-	int myScissorRect[4];
-	DrawMode myDrawMode;
+	int myScissorRect[4]{0, 0, 0, 0};
+	DrawMode myDrawMode = DrawMode::Indexed;
 	DrawParams myDrawParams;
 };
 
@@ -98,14 +97,14 @@ class RenderPassJob
 public:
 	virtual ~RenderPassJob() = default;
 
-	// add a single job
-	virtual void Add(const RenderJob& aJob) = 0;
-	// move a collection of jobs
-	virtual void AddRange(std::vector<RenderJob>&& aJobs) = 0;
+	// Allocate a job to be filled out
+	// Threadsafe
+	RenderJob& AllocateJob();
+
 	// clear the accumulated jobs
-	virtual void Clear() = 0;
+	void Clear() { myJobs.clear(); }
 	// reclaim memory, if possible
-	virtual operator std::vector<RenderJob>() && = 0;
+	operator std::vector<RenderJob>()&& { return myJobs; }
 
 	void Execute(Graphics& aGraphics);
 
@@ -115,8 +114,6 @@ protected:
 	const RenderContext& GetRenderContext() const { return myContext; }
 
 private:
-	// returns whether there's any work in this job
-	virtual bool HasWork() const = 0;
 	// called immediatelly after creating a job
 	virtual void OnInitialize(const RenderContext& aContext) = 0;
 	// called first before running jobs
@@ -126,7 +123,9 @@ private:
 	// called just before executing the jobs
 	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
 	// called last to submit render jobs
-	virtual void RunJobs() = 0;
+	virtual void RunJobs(std::vector<RenderJob>& aJobs) = 0;
 
 	RenderContext myContext;
+	std::vector<RenderJob> myJobs;
+	tbb::spin_mutex myJobsMutex;
 };

@@ -14,21 +14,6 @@
 
 #include <Core/Profiler.h>
 
-void RenderPassJobGL::Add(const RenderJob& aJob)
-{
-	myJobs.push_back(aJob);
-}
-
-void RenderPassJobGL::AddRange(std::vector<RenderJob>&& aJobs)
-{
-	myJobs = std::move(aJobs);
-}
-
-bool RenderPassJobGL::HasWork() const
-{
-	return !myJobs.empty();
-}
-
 void RenderPassJobGL::OnInitialize(const RenderContext& aContext)
 {
 	// do nothing explicitly
@@ -224,10 +209,10 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 	}
 }
 
-void RenderPassJobGL::RunJobs()
+void RenderPassJobGL::RunJobs(std::vector<RenderJob>& aJobs)
 {
 	Profiler::ScopedMark profile("RenderPassJobGL::RunJobs");
-	for (RenderJob& r : myJobs)
+	for (RenderJob& r : aJobs)
 	{
 		Profiler::ScopedMark profile("RenderPassJobGL::RenderJob");
 		if (r.HasLastHandles())

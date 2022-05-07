@@ -154,7 +154,9 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		perCamModel.myModel->UpdateRegion({ 0, 0 });
 
 		// Generate job
-		RenderJob job(myPipeline, perCamModel.myModel, {});
+		RenderJob& job = passJob.AllocateJob();
+		job.GetPipeline() = myPipeline;
+		job.GetModel() = perCamModel.myModel;
 
 		RenderJob::ArrayDrawParams params;
 		params.myOffset = 0;
@@ -166,7 +168,5 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
 		adapter.Fill(source, block);
 		job.AddUniformBlock(perCamModel.myBuffer);
-
-		passJob.Add(job);
 	}
 }

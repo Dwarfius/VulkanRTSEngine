@@ -8,12 +8,12 @@ public:
 	constexpr static uint32_t kId = Utils::CRC32("DefaultRenderPass");
 	DefaultRenderPass();
 
-	bool HasResources(const RenderJob& aJob) const;
 	Id GetId() const final { return kId; }
+
+	void Process(RenderJob& aJob, const IParams& aParams) const final;
 
 protected:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	void Process(RenderJob& aJob, const IParams& aParams) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 };
 
@@ -27,11 +27,11 @@ class TerrainRenderPass : public RenderPass
 public:
 	constexpr static uint32_t kId = Utils::CRC32("TerrainRenderPass");
 
-	bool HasResources(const RenderJob& aJob) const;
 	Id GetId() const final { return kId; }
+
+	void Process(RenderJob& aJob, const IParams& aParams) const final;
 
 protected:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	void Process(RenderJob& aJob, const IParams& aParams) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 };

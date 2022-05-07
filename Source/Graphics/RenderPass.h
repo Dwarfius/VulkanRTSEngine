@@ -60,12 +60,11 @@ class RenderPass : public IRenderPass
 public:
 	RenderPass();
 
-	void AddRenderable(RenderJob& aJob, const IParams& aParams);
+	RenderJob& AllocateJob();
 
 	void BeginPass(Graphics& anInterface) override final;
 	void SubmitJobs(Graphics& anInterface) override final;
 
-protected:
 	// updates the renderjob with the correct render settings
 	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
