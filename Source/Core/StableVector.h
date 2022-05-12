@@ -13,11 +13,7 @@ class StableVector
 
         Page()
         {
-            for (size_t i = 0; i < PageSize; i++)
-            {
-                myItems[i] = i + 1;
-            }
-            myItems[PageSize - 1] = static_cast<size_t>(-1ll);
+            Clear();
         }
 
         template<class... Ts>
@@ -38,6 +34,16 @@ class StableVector
             FreeListNode& node = myItems[index];
             node = myFreeNode;
             myFreeNode = index;
+        }
+
+        void Clear()
+        {
+            for (size_t i = 0; i < PageSize; i++)
+            {
+                myItems[i] = i + 1;
+            }
+            myItems[PageSize - 1] = static_cast<size_t>(-1ll);
+            myFreeNode = 0;
         }
 
         [[nodiscard]] bool HasSpace() const
@@ -128,6 +134,7 @@ public:
                 break;
             }
         }
+        myCount++;
         return freePage->Allocate(std::forward<Ts>(anArgs)...);
     }
 
@@ -139,13 +146,34 @@ public:
             if (page.Contains(&anItem))
             {
                 page.Free(anItem);
+                myCount--;
                 return;
             }
         }
     }
 
+    void Clear()
+    {
+        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        {
+            Page& page = pageNode->myPage;
+            page.Clear();
+        }
+        myCount = 0;
+    }
+
+    bool IsEmpty() const
+    {
+        return myCount == 0;
+    }
+
     bool Contains(const T* anItem) const
     {
+        if (IsEmpty())
+        {
+            return false;
+        }
+
         for (const PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             const Page& page = pageNode->myPage;
@@ -160,6 +188,11 @@ public:
     template<class TFunc>
     void ForEach(const TFunc& aFunc)
     {
+        if (IsEmpty())
+        {
+            return;
+        }
+
         for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
@@ -170,6 +203,11 @@ public:
     template<class TFunc>
     void ForEach(const TFunc& aFunc) const
     {
+        if (IsEmpty())
+        {
+            return;
+        }
+
         for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
@@ -179,4 +217,5 @@ public:
 
 private:
     PageNode myStartPage;
+    size_t myCount = 0;
 };
