@@ -25,6 +25,7 @@ public:
 
 	T& GetWrite();
 	const T& GetRead() const;
+	T& GetRead();
 	
 	// shortcut for advancing both the reader and the writer
 	void Advance() { AdvanceWrite(); AdvanceRead(); }
@@ -51,7 +52,6 @@ RWBuffer<T, Size>::RWBuffer()
 	, myWriteBuffer(1)
 	, mySwapped(false)
 {
-	myBuffers[0] = T();
 }
 
 template<typename T, size_t Size>
@@ -81,6 +81,13 @@ T& RWBuffer<T, Size>::GetWrite()
 
 template<typename T, size_t Size>
 const T& RWBuffer<T, Size>::GetRead() const
+{
+	ASSERT_STR(myWriteBuffer != myReadBuffer, "Tried to read from a write buffer!");
+	return myBuffers[myReadBuffer];
+}
+
+template<typename T, size_t Size>
+T& RWBuffer<T, Size>::GetRead()
 {
 	ASSERT_STR(myWriteBuffer != myReadBuffer, "Tried to read from a write buffer!");
 	return myBuffers[myReadBuffer];
@@ -141,6 +148,7 @@ public:
 
 	T& GetWrite() { return myBuffers[myWriteBuffer]; }
 	const T& GetRead() const { return myBuffers[1 - myWriteBuffer]; }
+	T& GetRead() { return myBuffers[1 - myWriteBuffer]; }
 
 	void Advance() { myWriteBuffer ^= 1; }
 
