@@ -4,6 +4,7 @@
 
 #include <Core/RefCounted.h>
 #include <Core/StaticVector.h>
+#include <Core/StableVector.h>
 
 class GPUPipeline;
 class GPUTexture;
@@ -102,9 +103,7 @@ public:
 	RenderJob& AllocateJob();
 
 	// clear the accumulated jobs
-	void Clear() { myJobs.clear(); }
-	// reclaim memory, if possible
-	operator std::vector<RenderJob>()&& { return myJobs; }
+	void Clear() { myJobs.Clear(); }
 
 	void Execute(Graphics& aGraphics);
 
@@ -123,9 +122,9 @@ private:
 	// called just before executing the jobs
 	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
 	// called last to submit render jobs
-	virtual void RunJobs(std::vector<RenderJob>& aJobs) = 0;
+	virtual void RunJobs(StableVector<RenderJob>& aJobs) = 0;
 
 	RenderContext myContext;
-	std::vector<RenderJob> myJobs;
+	StableVector<RenderJob> myJobs;
 	tbb::spin_mutex myJobsMutex;
 };

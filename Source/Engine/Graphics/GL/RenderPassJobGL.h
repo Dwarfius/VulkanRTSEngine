@@ -12,7 +12,7 @@ class RenderPassJobGL final : public RenderPassJob
 	void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) override;
 	void Clear(const RenderContext& aContext) override;
 	void SetupContext(Graphics& aGraphics, const RenderContext& aContext) override;
-	void RunJobs(std::vector<RenderJob>& aJobs) override;
+	void RunJobs(StableVector<RenderJob>& aJobs) override;
 
 	constexpr static uint32_t ConvertBlendMode(RenderContext::Blending aBlendMode);
 	constexpr static uint32_t ConvertBlendEquation(RenderContext::BlendingEq aBlendEq);

@@ -45,7 +45,7 @@ void RenderJob::SetDrawParams(const ArrayDrawParams& aParams)
 RenderJob& RenderPassJob::AllocateJob()
 {
 	tbb::spin_mutex::scoped_lock lock(myJobsMutex);
-	return myJobs.emplace_back();
+	return myJobs.Allocate();
 }
 
 void RenderPassJob::Execute(Graphics& aGraphics)
@@ -53,7 +53,7 @@ void RenderPassJob::Execute(Graphics& aGraphics)
 	BindFrameBuffer(aGraphics, myContext);
 	Clear(myContext);
 
-	if (!myJobs.empty())
+	if (!myJobs.IsEmpty())
 	{
 		SetupContext(aGraphics, myContext);
 		RunJobs(myJobs);

@@ -209,17 +209,16 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 	}
 }
 
-void RenderPassJobGL::RunJobs(std::vector<RenderJob>& aJobs)
+void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 {
 	Profiler::ScopedMark profile("RenderPassJobGL::RunJobs");
-	for (RenderJob& r : aJobs)
-	{
+	aJobs.ForEach([&](RenderJob& r){
 		Profiler::ScopedMark profile("RenderPassJobGL::RenderJob");
 		if (r.HasLastHandles())
 		{
 			// one of the handles has expired, meaning noone needs it anymore
 			// cheaper to skip it
-			continue;
+			return;
 		}
 
 		// TODO: unlikely
@@ -319,7 +318,7 @@ void RenderPassJobGL::RunJobs(std::vector<RenderJob>& aJobs)
 			ASSERT(false);
 			break;
 		}
-	}
+	});
 }
 
 constexpr uint32_t RenderPassJobGL::ConvertBlendMode(RenderContext::Blending blendMode)
