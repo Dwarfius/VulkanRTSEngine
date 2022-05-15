@@ -155,8 +155,8 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 
 		// Generate job
 		RenderJob& job = passJob.AllocateJob();
-		job.GetPipeline() = myPipeline;
-		job.GetModel() = perCamModel.myModel;
+		job.SetPipeline(myPipeline.Get());
+		job.SetModel(perCamModel.myModel.Get());
 
 		RenderJob::ArrayDrawParams params;
 		params.myOffset = 0;
@@ -167,6 +167,6 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 
 		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
 		adapter.Fill(source, block);
-		job.AddUniformBlock(perCamModel.myBuffer);
+		job.GetUniformSet().PushBack(perCamModel.myBuffer.Get());
 	}
 }

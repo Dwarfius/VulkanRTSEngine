@@ -100,19 +100,19 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();
 
-	for (const ImGUIRenderParams& params : myScheduledImGuiParams)
+	for (ImGUIRenderParams& params : myScheduledImGuiParams)
 	{
-		Handle<GPUTexture> texture = myFontAtlas;
+		GPUTexture* texture = myFontAtlas.Get();
 		if (params.myTexture.IsValid())
 		{
-			texture = params.myTexture;
+			texture = params.myTexture.Get();
 		}
 
 		RenderJob& job = myCurrentJob->AllocateJob();
-		job.GetPipeline() = myPipeline;
-		job.GetModel() = myModel;
+		job.SetPipeline(myPipeline.Get());
+		job.SetModel(myModel.Get());
 		job.GetTextures().PushBack(texture);
-		job.AddUniformBlock(myUniformBuffer);
+		job.GetUniformSet().PushBack(myUniformBuffer.Get());
 
 		for (uint8_t i = 0; i < 4; i++)
 		{

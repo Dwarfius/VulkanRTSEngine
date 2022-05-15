@@ -30,8 +30,8 @@ void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
 	passJob.Clear();
 
 	RenderJob& job = passJob.AllocateJob();
-	job.GetPipeline() = myPipeline;
-	job.GetModel() = aGraphics.GetFullScreenQuad();
+	job.SetPipeline(myPipeline.Get());
+	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;

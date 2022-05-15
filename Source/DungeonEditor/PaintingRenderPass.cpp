@@ -67,13 +67,13 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
-	const PaintParams paintParams = GetParams();
+	PaintParams paintParams = GetParams();
 	RenderJob& job = passJob.AllocateJob();
-	job.GetPipeline() = myPipeline;
-	job.GetModel() = aGraphics.GetFullScreenQuad();
+	job.SetPipeline(myPipeline.Get());
+	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	if (paintParams.myPaintTexture.IsValid())
 	{
-		job.GetTextures().PushBack(paintParams.myPaintTexture);
+		job.GetTextures().PushBack(paintParams.myPaintTexture.Get());
 	}
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;
@@ -102,7 +102,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	PainterAdapter adapter;
 	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
 	adapter.FillUniformBlock(source, block);
-	job.AddUniformBlock(myBuffer);
+	job.GetUniformSet().PushBack(myBuffer.Get());
 
 	myWriteToOther = !myWriteToOther;
 }
@@ -171,8 +171,8 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 	passJob.Clear();
 
 	RenderJob& job = passJob.AllocateJob();
-	job.GetPipeline() = myPipeline;
-	job.GetModel() = aGraphics.GetFullScreenQuad();
+	job.SetPipeline(myPipeline.Get());
+	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 
 	RenderJob::ArrayDrawParams params;
 	params.myOffset = 0;
@@ -195,7 +195,7 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 	PainterAdapter adapter;
 	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
 	adapter.FillUniformBlock(source, block);
-	job.AddUniformBlock(myBuffer);
+	job.GetUniformSet().PushBack(myBuffer.Get());
 }
 
 void DisplayRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const

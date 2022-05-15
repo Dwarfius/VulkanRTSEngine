@@ -6,22 +6,6 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
 
-void RenderJob::AddUniformBlock(const Handle<UniformBuffer>& aBuffer)
-{
-	myUniforms.PushBack(aBuffer);
-}
-
-bool RenderJob::HasLastHandles() const
-{
-	constexpr auto CheckLastHandle = [](const Handle<GPUResource>& aRes) {
-		return aRes.IsValid() && aRes.IsLastHandle();
-	};
-
-	return CheckLastHandle(myPipeline)
-		|| CheckLastHandle(myModel)
-		|| std::any_of(myTextures.begin(), myTextures.end(), CheckLastHandle);
-}
-
 void RenderJob::SetDrawParams(const IndexedDrawParams& aParams) 
 {
 	myDrawMode = DrawMode::Indexed;

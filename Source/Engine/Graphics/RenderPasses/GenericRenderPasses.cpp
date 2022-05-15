@@ -40,7 +40,7 @@ void DefaultRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
 	drawParams.myOffset = aParams.myOffset;
 	const bool hasValidCount = aParams.myCount != uint32_t(-1);
 	drawParams.myCount = hasValidCount ? aParams.myCount 
-										: aJob.GetModel().Get<GPUModel>()->GetPrimitiveCount();
+										: aJob.GetModel()->GetPrimitiveCount();
 	aJob.SetDrawParams(drawParams);
 }
 

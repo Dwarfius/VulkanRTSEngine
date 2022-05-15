@@ -682,21 +682,20 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 		{
 			// building a render job
 			const GameObject* gameObject = aRenderable.myGO;
-			const VisualObject& visualObj = visObj;
 
 			RenderJob& renderJob = renderPass->AllocateJob();
-			renderJob.GetModel() = visualObj.GetModel();
-			renderJob.GetPipeline() = visualObj.GetPipeline();
-			renderJob.GetTextures().PushBack(visualObj.GetTexture());
+			renderJob.SetModel(visObj.GetModel().Get());
+			renderJob.SetPipeline(visObj.GetPipeline().Get());
+			renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
 
 			// updating the uniforms - grabbing game state!
 			UniformAdapterSource source{
 				aGraphics,
 				*myCamera,
 				gameObject,
-				visualObj
+				visObj
 			};
-			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+			const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
@@ -706,9 +705,10 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
-			for (const Handle<UniformBuffer>& buffer : visualObj.GetUniforms())
+			RenderJob::UniformSet& uniformSet = renderJob.GetUniformSet();
+			for (Handle<UniformBuffer>& buffer : visObj.GetUniforms())
 			{
-				renderJob.AddUniformBlock(buffer);
+				uniformSet.PushBack(buffer.Get());
 			}
 
 			//Profiler::ScopedMark debugProfile("RenderJob::Params");
@@ -760,21 +760,21 @@ void Game::RenderTerrains(Graphics& aGraphics)
 		{
 			// building a render job
 			const Terrain& terrain = *entity.myTerrain;
-			const VisualObject& visualObj = *visObj;
+
 			RenderJob& renderJob = renderPass->AllocateJob();
-			renderJob.GetModel() = visualObj.GetModel();
-			renderJob.GetPipeline() = visualObj.GetPipeline();
-			renderJob.GetTextures().PushBack(visualObj.GetTexture());
+			renderJob.SetModel(visObj->GetModel().Get());
+			renderJob.SetPipeline(visObj->GetPipeline().Get());
+			renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
 
 			// updating the uniforms - grabbing game state!
 			TerrainAdapter::Source source{
 				aGraphics,
 				*myCamera,
 				nullptr,
-				visualObj,
+				*visObj,
 				terrain
 			};
-			const GPUPipeline* gpuPipeline = visualObj.GetPipeline().Get<const GPUPipeline>();
+			const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
 			const size_t uboCount = gpuPipeline->GetAdapterCount();
 			for (size_t i = 0; i < uboCount; i++)
 			{
@@ -784,15 +784,16 @@ void Game::RenderTerrains(Graphics& aGraphics)
 				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
 				uniformAdapter.Fill(source, uniformBlock);
 			}
-			for (const Handle<UniformBuffer>& buffer : visualObj.GetUniforms())
+			RenderJob::UniformSet& uniformSet = renderJob.GetUniformSet();
+			for (Handle<UniformBuffer>& buffer : visObj->GetUniforms())
 			{
-				renderJob.AddUniformBlock(buffer);
+				uniformSet.PushBack(buffer.Get());
 			}
 
 			TerrainRenderParams params;
 			params.myDistance = glm::distance(
 				myCamera->GetTransform().GetPos(),
-				visualObj.GetTransform().GetPos()
+				visObj->GetTransform().GetPos()
 			);
 			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
 			params.myTileCount = gridTiles.x * gridTiles.y;

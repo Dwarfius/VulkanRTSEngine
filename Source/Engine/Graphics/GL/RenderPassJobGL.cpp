@@ -214,12 +214,6 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 	Profiler::ScopedMark profile("RenderPassJobGL::RunJobs");
 	aJobs.ForEach([&](RenderJob& r){
 		Profiler::ScopedMark profile("RenderPassJobGL::RenderJob");
-		if (r.HasLastHandles())
-		{
-			// one of the handles has expired, meaning noone needs it anymore
-			// cheaper to skip it
-			return;
-		}
 
 		// TODO: unlikely
 		if (GetRenderContext().myScissorMode == RenderContext::ScissorMode::PerObject)
@@ -232,8 +226,8 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 			);
 		}
 
-		PipelineGL* pipeline = r.GetPipeline().Get<PipelineGL>();
-		ModelGL* model = r.GetModel().Get<ModelGL>();
+		PipelineGL* pipeline = static_cast<PipelineGL*>(r.GetPipeline());
+		ModelGL* model = static_cast<ModelGL*>(r.GetModel());
 
 		if (pipeline != myCurrentPipeline)
 		{
@@ -250,7 +244,7 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 				continue;
 			}
 
-			TextureGL* texture = textures[textureInd].Get<TextureGL>();
+			TextureGL* texture = static_cast<TextureGL*>(textures[textureInd]);
 			if (myCurrentTextures[slotToUse] != texture)
 			{
 				glActiveTexture(GL_TEXTURE0 + myTextureSlotsUsed + slotToUse);
@@ -272,7 +266,7 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 			"Number of UBO doesn't fit for binding!");
 		for (size_t i = 0; i < adapterCount; i++)
 		{
-			UniformBufferGL& buffer = *uniforms[i].Get<UniformBufferGL>();
+			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(uniforms[i]);
 			// TODO: implement logic that doesn't rebind same slots:
 			// If pipeline A has X, Y, Z uniform blocks
 			// and pipeline B has X, V, W,

@@ -38,6 +38,7 @@ public:
 
 	Handle<UniformBuffer>& GetUniformBuffer(size_t anIndex) { return myUniforms[anIndex]; }
 	const Handle<UniformBuffer>& GetUniformBuffer(size_t anIndex) const { return myUniforms[anIndex]; }
+	auto& GetUniforms() { return myUniforms; }
 	const auto& GetUniforms() const { return myUniforms; }
 
 	bool Resolve();

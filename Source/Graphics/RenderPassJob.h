@@ -2,7 +2,6 @@
 
 #include "RenderContext.h"
 
-#include <Core/RefCounted.h>
 #include <Core/StaticVector.h>
 #include <Core/StableVector.h>
 
@@ -14,8 +13,8 @@ class Graphics;
 
 struct RenderJob
 {
-	using TextureSet = StaticVector<Handle<GPUTexture>, 4>;
-	using UniformSet = StaticVector<Handle<UniformBuffer>, 4>;
+	using TextureSet = StaticVector<GPUTexture*, 4>;
+	using UniformSet = StaticVector<UniformBuffer*, 4>;
 
 	enum class DrawMode : char
 	{
@@ -49,25 +48,19 @@ struct RenderJob
 	};
 
 public:
-	// Copies a single uniform block for a frame
-	// Note: It's on the caller to ensure the order matches the order of descriptors/uniform
-	// buffers for a pipeline
-	void AddUniformBlock(const Handle<UniformBuffer>& aBuffer);
-
-	// Check if this job has any resources which are last handles
-	bool HasLastHandles() const;
-
 	void SetDrawParams(const IndexedDrawParams& aParams);
 	void SetDrawParams(const TesselationDrawParams& aParams);
 	void SetDrawParams(const ArrayDrawParams& aParams);
 	const DrawParams& GetDrawParams() const { return myDrawParams; }
 	DrawMode GetDrawMode() const { return myDrawMode; }
 
-	Handle<GPUPipeline>& GetPipeline() { return myPipeline; }
-	const Handle<GPUPipeline>& GetPipeline() const { return myPipeline; }
+	GPUPipeline* GetPipeline() { return myPipeline; }
+	const GPUPipeline* GetPipeline() const { return myPipeline; }
+	void SetPipeline(GPUPipeline* aPipeline) { myPipeline = aPipeline; }
 
-	Handle<GPUModel>& GetModel() { return myModel; }
-	const Handle<GPUModel>& GetModel() const { return myModel; }
+	GPUModel* GetModel() { return myModel; }
+	const GPUModel* GetModel() const { return myModel; }
+	void SetModel(GPUModel* aModel) { myModel = aModel; }
 
 	TextureSet& GetTextures() { return myTextures; }
 	const TextureSet& GetTextures() const { return myTextures; }
@@ -79,8 +72,9 @@ public:
 	void SetScissorRect(int aIndex, int aValue) { myScissorRect[aIndex] = aValue; }
 
 private:
-	Handle<GPUPipeline> myPipeline;
-	Handle<GPUModel> myModel;
+	// Note - keeping as ptr to have trivial constructor of RenderJob
+	GPUPipeline* myPipeline; // non-owning
+	GPUModel* myModel; // non-owning
 
 	TextureSet myTextures;
 	UniformSet myUniforms;
