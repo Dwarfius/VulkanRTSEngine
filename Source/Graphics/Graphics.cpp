@@ -15,9 +15,10 @@
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 {
-	// we will preserve resources for kFrames,
-	// so we will frame to a release queue kFrames away
-	for (uint8_t i = 0; i < kFrames - 1; i++)
+	// we will preserve resources until they can be used,
+	// need to move active writing queue to 1
+	// before the kMaxFramesScheduled
+	for (uint8_t i = 0; i < GraphicsConfig::kMaxFramesScheduled - 1; i++)
 	{
 		myUnloadQueues.AdvanceWrite();
 	}

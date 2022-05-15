@@ -40,7 +40,11 @@ private:
 		RenderPassJob* myJob;
 	};
 	using RenderPassJobs = std::vector<IdPasJobPair>;
-	RWBuffer<RenderPassJobs, 3> myRenderPassJobs;
+	// +1 because(assuming we have 2 frames in flight)
+	// while we have 1st mapped, we'll need to preserve 
+	// 2nd and fill 3rd
+	constexpr static uint8_t kFrames = GraphicsConfig::kMaxFramesScheduled + 1;
+	RWBuffer<RenderPassJobs, kFrames> myRenderPassJobs;
 
 	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const override;
 	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const override;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../GPUResource.h"
+#include <Graphics/GraphicsConfig.h>
+#include <Graphics/GPUResource.h>
 #include <Core/RWBuffer.h>
 
 class UniformBuffer : public GPUResource
@@ -33,8 +34,7 @@ public:
 	}
 
 protected:
-	// TODO: move this to a compile time constants struct
-	static constexpr uint8_t kMaxFrames = 3;
+	static constexpr uint8_t kMaxFrames = GraphicsConfig::kMaxFramesScheduled + 1;
 
 	struct Buffer
 	{

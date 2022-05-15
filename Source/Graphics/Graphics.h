@@ -7,6 +7,7 @@
 #include <Core/Resources/Resource.h> // needed for Resource::Id
 #include <Core/RWBuffer.h>
 #include <Graphics/GPUResource.h>
+#include <Graphics/GraphicsConfig.h>
 
 struct GLFWwindow;
 class Camera;
@@ -113,10 +114,8 @@ private:
 	tbb::concurrent_queue<Handle<GPUResource>> myUploadQueue;
 	// Not using handles since it already made here after last handle
 	// got destroyed, or requested directly
-	// TODO: Tie all graphics implementations to this constant
-	// (like UBOs, framebuffers, etc)
-	constexpr static uint8_t kFrames = 2;
-	RWBuffer<tbb::concurrent_queue<GPUResource*>, kFrames * 2 + 1> myUnloadQueues;
+	constexpr static uint8_t kQueueCount = GraphicsConfig::kMaxFramesScheduled * 2 + 1;
+	RWBuffer<tbb::concurrent_queue<GPUResource*>, kQueueCount> myUnloadQueues;
 	ResourceMap myResources;
 	tbb::spin_mutex myResourceMutex;
 
