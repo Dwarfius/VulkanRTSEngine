@@ -15,6 +15,12 @@
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 {
+	// we will preserve resources for kFrames,
+	// so we will frame to a release queue kFrames away
+	for (uint8_t i = 0; i < kFrames - 1; i++)
+	{
+		myUnloadQueues.AdvanceWrite();
+	}
 }
 
 void Graphics::Init()
@@ -62,6 +68,8 @@ void Graphics::Init()
 void Graphics::BeginGather()
 {
 	Profiler::ScopedMark profile("Graphics::BeginGather");
+
+	myUnloadQueues.AdvanceWrite();
 
 	if(myRenderPassesNeedOrdering)
 	{
@@ -204,7 +212,7 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 {
 	ASSERT_STR(aGPUResource->GetState() == GPUResource::State::PendingUnload,
 		"Invalid GPU resource state!");
-	myUnloadQueue.push(aGPUResource);
+	myUnloadQueues.GetWrite().push(aGPUResource);
 }
 
 Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
@@ -292,11 +300,13 @@ void Graphics::ProcessUploadQueue()
 	}
 }
 
-void Graphics::ProcessUnloadQueue()
+void Graphics::ProcessNextUnloadQueue()
 {
 	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::Unload");
+	myUnloadQueues.AdvanceRead();
 	GPUResource* aResource;
-	while (myUnloadQueue.try_pop(aResource))
+	tbb::concurrent_queue<GPUResource*>& unloadQueue = myUnloadQueues.GetRead();
+	while (unloadQueue.try_pop(aResource))
 	{
 		aResource->TriggerUnload();
 		{
@@ -307,11 +317,29 @@ void Graphics::ProcessUnloadQueue()
 	}
 }
 
+void Graphics::ProcessAllUnloadQueues()
+{
+	Profiler::ScopedMark profile("Graphics::ProcessGPUQueues::UnloadAll");
+	for (tbb::concurrent_queue<GPUResource*>& unloadQueue : myUnloadQueues)
+	{
+		GPUResource* aResource;
+		while (unloadQueue.try_pop(aResource))
+		{
+			aResource->TriggerUnload();
+			{
+				tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+				myResources.erase(aResource->myResId);
+			}
+			delete aResource;
+		}
+	}
+}
+
 void Graphics::ProcessGPUQueues()
 {
 	ProcessCreateQueue();
 	ProcessUploadQueue();
-	ProcessUnloadQueue();
+	ProcessNextUnloadQueue();
 }
 
 IRenderPass* Graphics::GetRenderPass(uint32_t anId) const

@@ -5,6 +5,7 @@
 #include "UniformBlock.h"
 
 #include <Core/Resources/Resource.h> // needed for Resource::Id
+#include <Core/RWBuffer.h>
 #include <Graphics/GPUResource.h>
 
 struct GLFWwindow;
@@ -96,7 +97,10 @@ protected:
 
 	void ProcessCreateQueue();
 	void ProcessUploadQueue();
-	void ProcessUnloadQueue();
+	// Unloads resoruces that were scheduled for next frame
+	void ProcessNextUnloadQueue();
+	// Unloads all resources that were scheduled
+	void ProcessAllUnloadQueues();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
 	IRenderPass* GetRenderPass(uint32_t anId) const;
 
@@ -109,7 +113,10 @@ private:
 	tbb::concurrent_queue<Handle<GPUResource>> myUploadQueue;
 	// Not using handles since it already made here after last handle
 	// got destroyed, or requested directly
-	tbb::concurrent_queue<GPUResource*> myUnloadQueue;
+	// TODO: Tie all graphics implementations to this constant
+	// (like UBOs, framebuffers, etc)
+	constexpr static uint8_t kFrames = 2;
+	RWBuffer<tbb::concurrent_queue<GPUResource*>, kFrames * 2 + 1> myUnloadQueues;
 	ResourceMap myResources;
 	tbb::spin_mutex myResourceMutex;
 

@@ -147,7 +147,7 @@ void GraphicsGL::CleanUp()
 		}
 	}
 
-	ProcessUnloadQueue();
+	ProcessAllUnloadQueues();
 	ASSERT_STR(AreResourcesEmpty(), "Leak! Everything should've been cleaned up!");
 
 	glfwDestroyWindow(myWindow);
