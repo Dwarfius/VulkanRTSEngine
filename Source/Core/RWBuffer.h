@@ -26,6 +26,7 @@ public:
 	T& GetWrite();
 	const T& GetRead() const;
 	T& GetRead();
+	bool CanReadNext() const { return glm::abs(myWriteBuffer - myReadBuffer) > 1; }
 	
 	// shortcut for advancing both the reader and the writer
 	void Advance() { AdvanceWrite(); AdvanceRead(); }
