@@ -104,24 +104,6 @@ void ImGUISystem::Render()
 		return;
 	}
 
-	// Will project scissor/clipping rectangles into framebuffer space
-	const ImVec2 clip_off = drawData->DisplayPos;         // (0,0) unless using multi-viewports
-	const ImVec2 clip_scale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
-
-	{
-		const float L = drawData->DisplayPos.x;
-		const float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
-		const float T = drawData->DisplayPos.y;
-		const float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
-		const glm::mat4 orthoProj{
-			{ 2.0f / (R - L),   0.0f,         0.0f,   0.0f },
-			{ 0.0f,         2.0f / (T - B),   0.0f,   0.0f },
-			{ 0.0f,         0.0f,			-1.0f,   0.0f },
-			{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
-		};
-		myRenderPass->SetProj(orthoProj);
-	}
-
 	using UploadDesc = Model::UploadDescriptor<ImGUIVertex>;
 	UploadDesc uploadDesc;
 	std::memset(&uploadDesc, 0, sizeof(UploadDesc));
@@ -136,8 +118,12 @@ void ImGUISystem::Render()
 	ImGUIVertex* vertBuffer = new ImGUIVertex[uploadDesc.myVertCount];
 	Model::IndexType* indBuffer = new Model::IndexType[uploadDesc.myIndCount];
 
+	std::vector<ImGUIRenderParams> renderParams;
 	uint32_t vertOffset = 0;
 	uint32_t indOffset = 0;
+	// Will project scissor/clipping rectangles into framebuffer space
+	const ImVec2 clip_off = drawData->DisplayPos;         // (0,0) unless using multi-viewports
+	const ImVec2 clip_scale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 	for (int cmdListInd = 0; cmdListInd < drawData->CmdListsCount; cmdListInd++)
 	{
 		const ImDrawList* cmdList = drawData->CmdLists[cmdListInd];
@@ -184,7 +170,7 @@ void ImGUISystem::Render()
 					params.myTexture = Handle<GPUTexture>(static_cast<GPUTexture*>(cmd->TextureId));
 				}
 
-				myRenderPass->AddImGuiRenderJob(params);
+				renderParams.push_back(params);
 			}
 		}
 
@@ -196,6 +182,24 @@ void ImGUISystem::Render()
 
 	uploadDesc.myIndOwned = true;
 	uploadDesc.myIndices = indBuffer;
-	myRenderPass->UpdateImGuiVerts(uploadDesc);
+
+	ImGUIRenderPass::ImGUIFrame frame;
+	frame.myDesc = uploadDesc;
+	frame.myParams = std::move(renderParams);
+	{
+		const float L = drawData->DisplayPos.x;
+		const float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
+		const float T = drawData->DisplayPos.y;
+		const float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
+		const glm::mat4 orthoProj{
+			{ 2.0f / (R - L),   0.0f,         0.0f,   0.0f },
+			{ 0.0f,         2.0f / (T - B),   0.0f,   0.0f },
+			{ 0.0f,         0.0f,			-1.0f,   0.0f },
+			{ (R + L) / (L - R),  (T + B) / (B - T),  0.0f,   1.0f },
+		};
+		frame.myMatrix = orthoProj;
+	}
+	myRenderPass->ScheduleFrame(std::move(frame));
+
 	myKeepAliveTextures.clear();
 }

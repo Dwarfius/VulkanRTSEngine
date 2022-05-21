@@ -35,31 +35,12 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
 	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic).Get<GPUModel>();
 	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas).Get<GPUTexture>();
-
-	std::memset(&myUpdateDescriptor, 0, sizeof(myUpdateDescriptor));
 }
 
-void ImGUIRenderPass::SetProj(const glm::mat4& aMatrix)
+void ImGUIRenderPass::ScheduleFrame(ImGUIFrame&& aFrame)
 {
-	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
-	block.SetUniform(0, 0, aMatrix);
-}
-
-void ImGUIRenderPass::UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor)
-{
-	// We can't upload straight to staging model, since it'll 
-	// overwrite data pending for the upcoming frame render
-	// TODO: fix this once mapped VBOs are in
-	myUpdateDescriptor = aDescriptor;
-}
-
-void ImGUIRenderPass::AddImGuiRenderJob(const ImGUIRenderParams& aParams)
-{
-	AssertLock lock(myRenderJobMutex);
-	// TODO: I don't like the fact that this has to cache it, this
-	// introduces a level of complexity and indirection. To improve this
-	// I feel like I need to reorganize how I handle GetRenderPassJob
-	myScheduledImGuiParams.push_back(aParams);
+	myFrames.GetWrite() = std::move(aFrame);
+	myFrames.AdvanceWrite();
 }
 
 bool ImGUIRenderPass::IsReady() const
@@ -94,13 +75,23 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 {
 	Profiler::ScopedMark mark("ImGUIRenderPass::BeginPass");
 
-	AssertLock lock(myRenderJobMutex);
 	IRenderPass::BeginPass(aGraphics);
 
 	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();
 
-	for (ImGUIRenderParams& params : myScheduledImGuiParams)
+	if (!myFrames.CanReadNext())
+	{
+		return;
+	}
+
+	myFrames.AdvanceRead();
+	ImGUIFrame& frame = myFrames.GetRead();
+
+	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
+	block.SetUniform(0, 0, frame.myMatrix);
+
+	for (ImGUIRenderParams& params : frame.myParams)
 	{
 		GPUTexture* texture = myFontAtlas.Get();
 		if (params.myTexture.IsValid())
@@ -125,11 +116,9 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 		job.SetDrawParams(drawParams);
 	}
 
-	if (myUpdateDescriptor.myIndCount > 0)
+	if (frame.myDesc.myIndCount > 0)
 	{
-		myModel->GetResource().Get<Model>()->Update(myUpdateDescriptor);
+		myModel->GetResource().Get<Model>()->Update(frame.myDesc);
 		myModel->UpdateRegion({});
 	}
-
-	myScheduledImGuiParams.clear();
 }

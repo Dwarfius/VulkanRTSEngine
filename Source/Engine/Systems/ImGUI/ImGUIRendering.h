@@ -2,12 +2,13 @@
 
 #include <glm/gtx/hash.hpp>
 #include <Core/VertexDescriptor.h>
-#include <Core/Threading/AssertMutex.h>
+#include <Core/RWBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Descriptor.h>
+#include <Graphics/GraphicsConfig.h>
 
 #include "../../Graphics/RenderPasses/GenericRenderPasses.h"
 
@@ -65,9 +66,6 @@ struct ImGUIRenderParams : public IRenderPass::IParams
 	Handle<GPUTexture> myTexture;
 };
 
-// Utility adapter if someone else wants to use it - we set the uniforms directly
-// We have to provide it because UniformAdapters that are referenced
-// in assets must be registered (even if they are not used)
 class ImGUIAdapter : RegisterUniformAdapter<ImGUIAdapter>
 {
 public:
@@ -81,41 +79,46 @@ public:
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };
 
-class ImGUIRenderPass : public IRenderPass
+class ImGUIRenderPass final : public IRenderPass
 {
-	Handle<GPUPipeline> myPipeline;
-	Handle<GPUModel> myModel;
-	Handle<GPUTexture> myFontAtlas;
-	RenderPassJob* myCurrentJob;
-	Handle<UniformBuffer> myUniformBuffer;
-	std::vector<ImGUIRenderParams> myScheduledImGuiParams;
-	Model::UploadDescriptor<ImGUIVertex> myUpdateDescriptor;
-	AssertMutex myRenderJobMutex;
-
 public:
+	struct ImGUIFrame
+	{
+		Model::UploadDescriptor<ImGUIVertex> myDesc;
+		glm::mat4 myMatrix;
+		std::vector<ImGUIRenderParams> myParams;
+	};
+
 	constexpr static uint32_t kId = Utils::CRC32("ImGUIRenderPass");
 	ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics);
 
 	Id GetId() const final { return kId; }
 
-	void SetProj(const glm::mat4& aMatrix);
-	void UpdateImGuiVerts(const Model::UploadDescriptor<ImGUIVertex>& aDescriptor);
-	void AddImGuiRenderJob(const ImGUIRenderParams& aParams);
+	void ScheduleFrame(ImGUIFrame&& aFrame);
 	bool IsReady() const;
 	void SetDestFrameBuffer(std::string_view aFrameBuffer) { myDestFrameBuffer = aFrameBuffer; }
 
 protected:
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
-	void BeginPass(Graphics& aGraphics) final;
-	void SubmitJobs(Graphics& anInterface) final
+	void BeginPass(Graphics& aGraphics) override;
+	void SubmitJobs(Graphics& anInterface) override
 	{
 		// Do nothing because we already scheduled everything 
 		// part of the BeginPass call
 	}
 
-	bool HasDynamicRenderContext() const final { return true; }
+	bool HasDynamicRenderContext() const override { return true; }
 
 	std::string_view myDestFrameBuffer;
+
+private:
+	Handle<GPUPipeline> myPipeline;
+	Handle<GPUModel> myModel;
+	Handle<GPUTexture> myFontAtlas;
+	RenderPassJob* myCurrentJob;
+	Handle<UniformBuffer> myUniformBuffer;
+	constexpr static uint8_t kFrames = GraphicsConfig::kMaxFramesScheduled + 1;
+	RWBuffer<ImGUIFrame, kFrames> myFrames;
 };
