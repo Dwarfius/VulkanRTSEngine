@@ -227,12 +227,41 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 		}
 
 		PipelineGL* pipeline = static_cast<PipelineGL*>(r.GetPipeline());
-		ModelGL* model = static_cast<ModelGL*>(r.GetModel());
-
+		ASSERT_STR(pipeline->GetState() == GPUResource::State::Valid,
+			"Pipeline must be valid&up-to-date at this point!");
 		if (pipeline != myCurrentPipeline)
 		{
 			pipeline->Bind();
 			myCurrentPipeline = pipeline;
+		}
+
+		// Now we can update the uniform blocks
+		size_t adapterCount = pipeline->GetAdapterCount();
+		RenderJob::UniformSet& uniforms = r.GetUniformSet();
+		ASSERT_STR(adapterCount < std::numeric_limits<uint32_t>::max(),
+			"Number of UBO doesn't fit for binding!");
+		for (size_t i = 0; i < adapterCount; i++)
+		{
+			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(uniforms[i]);
+			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid,
+				"UBO must be valid at this point!");
+			// TODO: implement logic that doesn't rebind same slots:
+			// If pipeline A has X, Y, Z uniform blocks
+			// and pipeline B has X, V, W,
+			// if we bind from A to B (or vice versa), no need to rebind X
+			buffer.Bind(static_cast<uint32_t>(i));
+		}
+
+		ModelGL* model = static_cast<ModelGL*>(r.GetModel());
+		if (model) [[likely]]
+		{
+			ASSERT_STR(model->GetState() == GPUResource::State::Valid,
+				"Model must be valid&up-to-date at this point!");
+			if (model != myCurrentModel)
+			{
+				model->Bind();
+				myCurrentModel = model;
+			}
 		}
 
 		RenderJob::TextureSet& textures = r.GetTextures();
@@ -245,33 +274,14 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 			}
 
 			TextureGL* texture = static_cast<TextureGL*>(textures[textureInd]);
+			ASSERT_STR(texture->GetState() == GPUResource::State::Valid,
+				"Texture must be valid&up-to-date at this point!");
 			if (myCurrentTextures[slotToUse] != texture)
 			{
 				glActiveTexture(GL_TEXTURE0 + myTextureSlotsUsed + slotToUse);
 				texture->Bind();
 				myCurrentTextures[slotToUse] = texture;
 			}
-		}
-
-		if (model != myCurrentModel)
-		{
-			model->Bind();
-			myCurrentModel = model;
-		}
-
-		// Now we can update the uniform blocks
-		size_t adapterCount = pipeline->GetAdapterCount();
-		RenderJob::UniformSet& uniforms = r.GetUniformSet();
-		ASSERT_STR(adapterCount < std::numeric_limits<uint32_t>::max(), 
-			"Number of UBO doesn't fit for binding!");
-		for (size_t i = 0; i < adapterCount; i++)
-		{
-			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(uniforms[i]);
-			// TODO: implement logic that doesn't rebind same slots:
-			// If pipeline A has X, Y, Z uniform blocks
-			// and pipeline B has X, V, W,
-			// if we bind from A to B (or vice versa), no need to rebind X
-			buffer.Bind(static_cast<uint32_t>(i));
 		}
 
 		switch (r.GetDrawMode())
