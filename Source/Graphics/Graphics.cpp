@@ -174,8 +174,17 @@ Handle<GPUResource> Graphics::GetOrCreate(Handle<T> aRes,
 	{
 		tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 		ResourceMap::iterator foundResIter = myResources.find(resId);
-		if (foundResIter != myResources.end())
+		if (foundResIter != myResources.end()
+			// If a resource got scheduled for unloading - 
+			// just create a new one instead
+			&& foundResIter->second->GetState() != GPUResource::State::PendingUnload)
 		{
+			// In theory, we can still return a resource that
+			// has just been scheduled for uploading, but I'm 
+			// not sure it'll happe. I might need to make 
+			// GPUResource's state atomic, as currently I rely on
+			// above spin-lock to ensure it'll be available across
+			// threads
 			return foundResIter->second;
 		}
 		else
@@ -213,6 +222,7 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 {
 	ASSERT_STR(aGPUResource->GetState() == GPUResource::State::PendingUnload,
 		"Invalid GPU resource state!");
+	UnregisterResource(aGPUResource);
 	myUnloadQueues.GetWrite().push(aGPUResource);
 }
 
@@ -309,6 +319,12 @@ void Graphics::ProcessNextUnloadQueue()
 	tbb::concurrent_queue<GPUResource*>& unloadQueue = myUnloadQueues.GetRead();
 	while (unloadQueue.try_pop(aResource))
 	{
+		DEBUG_ONLY(
+			Handle<GPUResource> tempHandle(aResource);
+			ASSERT_STR(tempHandle.IsLastHandle(), 
+				"Trying to cleanup something still in use!"
+			);
+		);
 		aResource->TriggerUnload();
 		{
 			tbb::spin_mutex::scoped_lock lock(myResourceMutex);
@@ -334,6 +350,14 @@ void Graphics::ProcessAllUnloadQueues()
 			delete aResource;
 		}
 	}
+}
+
+void Graphics::UnregisterResource(GPUResource* aRes)
+{
+	ASSERT_STR(aRes->GetState() == GPUResource::State::PendingUnload,
+		"Resource must be at end of it's life for it to be unregistered!");
+	tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+	myResources.erase(aRes->myResId);
 }
 
 void Graphics::ProcessGPUQueues()

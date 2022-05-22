@@ -103,6 +103,9 @@ protected:
 	// Unloads all resources that were scheduled
 	void ProcessAllUnloadQueues();
 	bool AreResourcesEmpty() const { return myResources.empty(); }
+
+	void UnregisterResource(GPUResource* aRes);
+
 	IRenderPass* GetRenderPass(uint32_t anId) const;
 
 	virtual void OnResize(int aWidth, int aHeight);

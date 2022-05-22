@@ -6,6 +6,7 @@
 
 void UniformBufferGL::Cleanup()
 {
+	myState = State::PendingUnload;
 	myGraphics->CleanUpUBO(this);
 }
 

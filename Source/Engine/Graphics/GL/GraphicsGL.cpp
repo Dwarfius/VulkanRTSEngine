@@ -262,6 +262,9 @@ RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderCo
 
 void GraphicsGL::CleanUpUBO(UniformBuffer* aUBO)
 {
+	ASSERT_STR(aUBO->GetState() == GPUResource::State::PendingUnload,
+		"UBO must be marked as end-of-life at this point!");
+	UnregisterResource(aUBO);
 	myUBOCleanUpQueue.push(static_cast<UniformBufferGL*>(aUBO));
 }
 
