@@ -13,10 +13,11 @@ class ModelGL;
 class GraphicsGL final: public Graphics
 {
 public:
-	using Graphics::Graphics;
+	GraphicsGL(AssetTracker& anAssetTracker);
 
 	void Init() override;
 	void Display() override;
+	void BeginGather() override;
 	void EndGather() override;
 	void CleanUp() override;
 
@@ -57,7 +58,8 @@ private:
 
 	StableVector<UniformBufferGL> myUBOs;
 	std::mutex myUBOsMutex;
-	tbb::concurrent_queue<UniformBufferGL*> myUBOCleanUpQueue;
+	constexpr static uint8_t kQueues = GraphicsConfig::kMaxFramesScheduled * 2 + 1;
+	RWBuffer<tbb::concurrent_queue<UniformBufferGL*>, kQueues> myUBOCleanUpQueues;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	int32_t myUBOOffsetAlignment = 0;
 };

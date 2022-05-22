@@ -227,7 +227,8 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 		}
 
 		PipelineGL* pipeline = static_cast<PipelineGL*>(r.GetPipeline());
-		ASSERT_STR(pipeline->GetState() == GPUResource::State::Valid,
+		ASSERT_STR(pipeline->GetState() == GPUResource::State::Valid
+			|| pipeline->GetState() == GPUResource::State::PendingUnload,
 			"Pipeline must be valid&up-to-date at this point!");
 		if (pipeline != myCurrentPipeline)
 		{
@@ -243,7 +244,8 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 		for (size_t i = 0; i < adapterCount; i++)
 		{
 			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(uniforms[i]);
-			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid,
+			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid
+				|| buffer.GetState() == GPUResource::State::PendingUnload,
 				"UBO must be valid at this point!");
 			// TODO: implement logic that doesn't rebind same slots:
 			// If pipeline A has X, Y, Z uniform blocks
@@ -255,7 +257,8 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 		ModelGL* model = static_cast<ModelGL*>(r.GetModel());
 		if (model) [[likely]]
 		{
-			ASSERT_STR(model->GetState() == GPUResource::State::Valid,
+			ASSERT_STR(model->GetState() == GPUResource::State::Valid
+			|| model->GetState() == GPUResource::State::PendingUnload,
 				"Model must be valid&up-to-date at this point!");
 			if (model != myCurrentModel)
 			{
@@ -274,7 +277,8 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 			}
 
 			TextureGL* texture = static_cast<TextureGL*>(textures[textureInd]);
-			ASSERT_STR(texture->GetState() == GPUResource::State::Valid,
+			ASSERT_STR(texture->GetState() == GPUResource::State::Valid
+				|| texture->GetState() == GPUResource::State::PendingUnload,
 				"Texture must be valid&up-to-date at this point!");
 			if (myCurrentTextures[slotToUse] != texture)
 			{

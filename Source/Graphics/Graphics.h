@@ -29,7 +29,7 @@ public:
 	virtual ~Graphics() = default;
 
 	virtual void Init();
-	void BeginGather();
+	virtual void BeginGather();
 	virtual void EndGather();
 	virtual void Display();
 	virtual void CleanUp();

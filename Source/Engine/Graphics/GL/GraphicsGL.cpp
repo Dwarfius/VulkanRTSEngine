@@ -32,6 +32,15 @@ void GLAPIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 	GLsizei, const GLchar*, const void*);
 #endif
 
+GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
+	: Graphics(anAssetTracker)
+{
+	for (uint8_t i = 0; i < GraphicsConfig::kMaxFramesScheduled - 1; i++)
+	{
+		myUBOCleanUpQueues.AdvanceWrite();
+	}
+}
+
 void GraphicsGL::Init()
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -95,8 +104,10 @@ void GraphicsGL::Display()
 	Graphics::Display();
 
 	{
+		myUBOCleanUpQueues.AdvanceRead();
+		tbb::concurrent_queue<UniformBufferGL*>& queue = myUBOCleanUpQueues.GetRead();
 		UniformBufferGL* ubo;
-		while (myUBOCleanUpQueue.try_pop(ubo))
+		while (queue.try_pop(ubo))
 		{
 			ASSERT_STR(myUBOs.Contains(ubo), "Unrecognized UBO - Where did it come from?");
 			TriggerUnload(ubo);
@@ -127,6 +138,13 @@ void GraphicsGL::Display()
 	}
 }
 
+void GraphicsGL::BeginGather()
+{
+	myUBOCleanUpQueues.AdvanceWrite();
+	
+	Graphics::BeginGather();
+}
+
 void GraphicsGL::EndGather()
 {
 	Graphics::EndGather();
@@ -144,6 +162,17 @@ void GraphicsGL::CleanUp()
 		for (auto [key, job] : map)
 		{
 			delete job;
+		}
+	}
+
+	for(tbb::concurrent_queue<UniformBufferGL*>& queue : myUBOCleanUpQueues)
+	{
+		UniformBufferGL* ubo;
+		while (queue.try_pop(ubo))
+		{
+			ASSERT_STR(myUBOs.Contains(ubo), "Unrecognized UBO - Where did it come from?");
+			TriggerUnload(ubo);
+			myUBOs.Free(*ubo);
 		}
 	}
 
@@ -265,7 +294,7 @@ void GraphicsGL::CleanUpUBO(UniformBuffer* aUBO)
 	ASSERT_STR(aUBO->GetState() == GPUResource::State::PendingUnload,
 		"UBO must be marked as end-of-life at this point!");
 	UnregisterResource(aUBO);
-	myUBOCleanUpQueue.push(static_cast<UniformBufferGL*>(aUBO));
+	myUBOCleanUpQueues.GetWrite().push(static_cast<UniformBufferGL*>(aUBO));
 }
 
 void GraphicsGL::OnResize(int aWidth, int aHeight)
