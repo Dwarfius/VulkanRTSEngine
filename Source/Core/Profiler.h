@@ -68,27 +68,11 @@ private:
     }
     std::atomic<uint32_t> myIdCounter = 0;
     std::vector<Storage*> myTLSStorages;
-    tbb::concurrent_queue<Mark> myStartMarks;
-    tbb::concurrent_queue<Mark> myEndMarks;
     std::array<FrameProfile, kMaxFrames> myFrameProfiles;
     std::array<FrameProfile, kInitFrames> myInitFrames;
     LongFrameCallback myOnLongFrameCB;
     size_t myFrameNum = 0;
     tbb::spin_mutex myStorageMutex;
-};
-
-class Profiler::Storage
-{
-public:
-    Storage(Profiler& aProfiler);
-
-    uint32_t StartScope(std::string_view aName);
-    void EndScope(uint32_t anId, std::string_view aName);
-private:
-    uint8_t myDepth = 0;
-    tbb::concurrent_queue<Mark>& myStartMarks;
-    tbb::concurrent_queue<Mark>& myEndMarks;
-    std::atomic<uint32_t>& myIdCounter;
 };
 
 // RAII style profiling mark - starts a mark on ctor, stops it on dtor
@@ -98,15 +82,6 @@ class Profiler::ScopedMark
     std::string_view myName;
     uint32_t myId;
 public:
-    ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance())
-        : myProfiler(aProfiler)
-        , myName(aName)
-    {
-        myId = GetStorage(myProfiler).StartScope(aName);
-    }
-
-    ~ScopedMark()
-    {
-        GetStorage(myProfiler).EndScope(myId, myName);
-    }
+    inline ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance());
+    inline ~ScopedMark();
 };
