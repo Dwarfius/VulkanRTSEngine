@@ -27,22 +27,25 @@ public:
 
 	bool NeedsToGrow() const
 	{
-		return myIndex >= myItems.size();
+		return myIndex >= myItems.capacity();
 	}
 
 	void Grow(size_t aGrowthFactor = 2.f)
 	{
+		Clear();
 		myItems.resize(myItems.capacity() * aGrowthFactor);
 	}
 
 	void Clear()
 	{
-		myIndex = 0;
+		ClearFrom(0);
 	}
 
 	// Inserting new items will start from anIndex
 	void ClearFrom(size_t anIndex)
 	{
+		myItems.erase(myItems.begin() + anIndex, myItems.end());
+		myItems.resize(myItems.capacity());
 		myIndex = anIndex;
 	}
 
@@ -128,12 +131,12 @@ public:
 
 	Iterator end() noexcept
 	{
-		return myItems.end();
+		return myItems.begin() + myIndex;
 	}
 
 	ConstIterator end() const noexcept
 	{
-		return myItems.end();
+		return myItems.begin() + myIndex;
 	}
 
 private:
