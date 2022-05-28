@@ -17,7 +17,7 @@ void Profiler::NewFrame()
 {
     ScopedMark mark("Profiler::NewFrame", *this);
 
-    Stamp endTime = Clock::now();
+    Stamp endTime = Clock::now().time_since_epoch().count();
 
     const uint32_t thisProfileInd = myFrameNum % kMaxFrames;
     const uint32_t nextProfileInd = (myFrameNum + 1) % kMaxFrames;
@@ -60,10 +60,10 @@ void Profiler::NewFrame()
 
     if (myFrameNum > 0)
     {
-        std::chrono::duration delta = profile.myEndStamp - profile.myBeginStamp;
+        int64_t delta = profile.myEndStamp - profile.myBeginStamp;
         using namespace std::chrono_literals;
         constexpr std::chrono::duration kLimit = 16ms;
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(delta) > kLimit)
+        if (delta > std::chrono::duration_cast<std::chrono::nanoseconds>(kLimit).count())
         {
             myOnLongFrameCB(profile);
         }
@@ -82,7 +82,7 @@ Profiler::Storage::Storage(Profiler& aProfiler)
 uint32_t Profiler::Storage::StartScope(std::string_view aName)
 {
     Mark newMark;
-    newMark.myStamp = Clock::now();
+    newMark.myStamp = Clock::now().time_since_epoch().count();
     std::memcpy(newMark.myName, aName.data(), aName.size());
     newMark.myName[aName.size()] = 0;
     newMark.myId = myIdCounter++;
@@ -97,7 +97,7 @@ uint32_t Profiler::Storage::StartScope(std::string_view aName)
 void Profiler::Storage::EndScope(uint32_t anId, std::string_view aName)
 {
     Mark newMark;
-    newMark.myStamp = Clock::now();
+    newMark.myStamp = Clock::now().time_since_epoch().count();
     std::memcpy(newMark.myName, aName.data(), aName.size());
     newMark.myName[aName.size()] = 0;
     newMark.myId = anId;

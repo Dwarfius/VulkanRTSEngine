@@ -47,8 +47,8 @@ namespace
 			ProfilerUI::Mark mark;
 			mark.myId = startMark.myId;
 			mark.myThreadId = startMark.myThreadId;
-			mark.myStart = startMark.myStamp.time_since_epoch().count();
-			mark.myEnd = aProfile.myEndStamp.time_since_epoch().count();
+			mark.myStart = startMark.myStamp;
+			mark.myEnd = aProfile.myEndStamp;
 			mark.myDepth = startMark.myDepth;
 			std::memcpy(mark.myName, startMark.myName, sizeof(startMark.myName));
 			marksMap.insert({ startMark.myId, mark });
@@ -61,15 +61,15 @@ namespace
 			auto iter = marksMap.find(endMark.myId);
 			if (iter != marksMap.end())
 			{
-				iter->second.myEnd = endMark.myStamp.time_since_epoch().count();
+				iter->second.myEnd = endMark.myStamp;
 			}
 			else
 			{
 				ProfilerUI::Mark mark;
 				mark.myId = endMark.myId;
 				mark.myThreadId = endMark.myThreadId;
-				mark.myStart = aProfile.myBeginStamp.time_since_epoch().count();
-				mark.myEnd = endMark.myStamp.time_since_epoch().count();
+				mark.myStart = aProfile.myBeginStamp;
+				mark.myEnd = endMark.myStamp;
 				mark.myDepth = endMark.myDepth;
 				std::memcpy(mark.myName, endMark.myName, sizeof(endMark.myName));
 				marksMap.insert({ endMark.myId, mark });
@@ -91,8 +91,8 @@ namespace
 			}
 			data.myMaxLevels[threadId] = maxLevel;
 		}
-		data.myFrameStart = aProfile.myBeginStamp.time_since_epoch().count();
-		data.myFrameEnd = aProfile.myEndStamp.time_since_epoch().count();
+		data.myFrameStart = aProfile.myBeginStamp;
+		data.myFrameEnd = aProfile.myEndStamp;
 		data.myFrameNum = aProfile.myFrameNum;
 		return data;
 	}

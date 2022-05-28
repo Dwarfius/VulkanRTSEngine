@@ -5,7 +5,7 @@
 class Profiler
 {
 	using Clock = std::chrono::high_resolution_clock;
-	using Stamp = Clock::time_point;
+	using Stamp = uint64_t;
     constexpr static uint32_t kMaxFrames = 10;
     constexpr static uint32_t kInitFrames = 5;
 public:
