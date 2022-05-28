@@ -1,22 +1,13 @@
 #include "Precomp.h"
 #include "Profiler.h"
 
-Profiler::Storage& Profiler::GetStorage()
+Profiler::Storage& Profiler::GetStorage(Profiler& aProfiler)
 {
-    static thread_local Storage threadStorage = [] {
-        Profiler& profiler = GetInstance();
-        //Storage storage(profiler.myIdCounter, profiler);
-        //profiler.AddStorage(&threadStorage);
-        // Reason why we pass in the profiler is to structure the
-        // code in a way to trigger required RVO, to bypass copies of
-        // internal mutexes. Thanks C++17!
-        return Storage(profiler.myIdCounter, profiler);
-    }();
+    static thread_local Storage threadStorage(aProfiler);
     return threadStorage;
 }
 
 Profiler::Profiler()
-    : myFrameNum(0)
 {
 	myTLSStorages.reserve(std::thread::hardware_concurrency());
 	NewFrame();
@@ -24,21 +15,39 @@ Profiler::Profiler()
 
 void Profiler::NewFrame()
 {
-	myIdCounter = 0;
+    ScopedMark mark("Profiler::NewFrame", *this);
+
+    Stamp endTime = Clock::now();
 
     const uint32_t thisProfileInd = myFrameNum % kMaxFrames;
     const uint32_t nextProfileInd = (myFrameNum + 1) % kMaxFrames;
-    std::vector<Mark> allFrameMarks;
+    std::vector<Mark> allFrameStartMarks;
+    std::vector<Mark> allFrameEndMarks;
     // counts of marks-per-frame should be stable in general case, so
     // try to use it to amortise the allocations
-    allFrameMarks.reserve(myFrameProfiles[nextProfileInd].myFrameMarks.size());
-	for (Storage* storage : myTLSStorages)
-	{
-        storage->NewFrame(allFrameMarks);
-	}
+    allFrameStartMarks.reserve(myFrameProfiles[nextProfileInd].myStartMarks.size());
+    allFrameEndMarks.reserve(myFrameProfiles[nextProfileInd].myStartMarks.size());
+
+    {
+        Mark mark;
+        while (myStartMarks.try_pop(mark))
+        {
+            allFrameStartMarks.push_back(mark);
+        }
+    }
+
+    {
+        Mark mark;
+        while (myEndMarks.try_pop(mark))
+        {
+            allFrameEndMarks.push_back(mark);
+        }
+    }
+
     FrameProfile& profile = myFrameProfiles[thisProfileInd];
-    profile.myEndStamp = Clock::now();
-    profile.myFrameMarks = std::move(allFrameMarks);
+    profile.myEndStamp = endTime;
+    profile.myStartMarks = std::move(allFrameStartMarks);
+    profile.myEndMarks = std::move(allFrameEndMarks);
     profile.myFrameNum = myFrameNum;
     myFrameProfiles[nextProfileInd].myBeginStamp = profile.myEndStamp;
     myFrameProfiles[nextProfileInd].myEndStamp = profile.myEndStamp; // current frame, not finished yet
@@ -62,99 +71,38 @@ void Profiler::NewFrame()
     myFrameNum++;
 }
 
-Profiler::Storage::Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler)
-    : myIdCounter(aGlobalCounter)
+Profiler::Storage::Storage(Profiler& aProfiler)
+    : myIdCounter(aProfiler.myIdCounter)
+    , myStartMarks(aProfiler.myStartMarks)
+    , myEndMarks(aProfiler.myEndMarks)
 {
-    myMarks.reserve(256);
     aProfiler.AddStorage(this);
 }
 
-void Profiler::Storage::BeginMark(std::string_view aName)
+uint32_t Profiler::Storage::StartScope(std::string_view aName)
 {
     Mark newMark;
-    newMark.myBeginStamp = Clock::now();
-    newMark.myEndStamp = newMark.myBeginStamp; // tag that this mark isn't finished yet
+    newMark.myStamp = Clock::now();
     std::memcpy(newMark.myName, aName.data(), aName.size());
     newMark.myName[aName.size()] = 0;
     newMark.myId = myIdCounter++;
     newMark.myThreadId = std::this_thread::get_id();
+    newMark.myDepth = myDepth++;
 
-    {
-        // Because some tasks can be cross-frame, it's possible that
-        // a thread will start the mark in the middle of us preparing for
-        // a new frame
-        tbb::spin_mutex::scoped_lock lock(myStackMutex);
+    myStartMarks.push(newMark);
 
-        int parentId = -1;
-        if (!myMarkStack.empty())
-        {
-            parentId = myMarkStack.top().myId;
-        }
-        newMark.myParentId = parentId;
-        myMarkStack.push(newMark);
-    }
+    return newMark.myId;
 }
 
-void Profiler::Storage::EndMark()
+void Profiler::Storage::EndScope(uint32_t anId, std::string_view aName)
 {
-    const Stamp timeStampBeforeLock = Clock::now();
-
-    Mark lastMark;
-
-    {
-        // Because some tasks can be cross-frame, it's possible that
-        // a thread will end the mark in the middle of us preparing for
-        // a new frame
-        tbb::spin_mutex::scoped_lock lock(myStackMutex);
-        lastMark = myMarkStack.top();
-        myMarkStack.pop();
-    }
+    Mark newMark;
+    newMark.myStamp = Clock::now();
+    std::memcpy(newMark.myName, aName.data(), aName.size());
+    newMark.myName[aName.size()] = 0;
+    newMark.myId = anId;
+    newMark.myThreadId = std::this_thread::get_id();
+    newMark.myDepth = --myDepth;
     
-    // close up the mark
-    lastMark.myEndStamp = timeStampBeforeLock;
-
-    {
-        // same as above
-        std::lock_guard lock(myMarksMutex);
-        myMarks.push_back(lastMark);
-    }
-}
-
-void Profiler::Storage::NewFrame(std::vector<Mark>& aBuffer)
-{
-    {
-        // Because some tasks can be cross-frame, it's possible that
-        // a thread will end the mark in the middle of us preparing for
-        // a new frame
-        std::lock_guard lock(myMarksMutex);
-        aBuffer.insert(aBuffer.end(), myMarks.begin(), myMarks.end());
-        myMarks.clear();
-    }
-
-    {
-        tbb::spin_mutex::scoped_lock lock(myStackMutex);
-
-        // We need to uppend unfinished marks to the buffer, because they are still
-        // valid profile marks, and they will be finished during next frame
-        constexpr uint32_t unfinishedMarksBufferSize = 32;
-        Mark unfinishedMarksBuffer[unfinishedMarksBufferSize];
-        ASSERT_STR(myMarkStack.size() < unfinishedMarksBufferSize, "Buffer too small, need an increase!");
-        uint32_t bufferInd = 0;
-        aBuffer.reserve(aBuffer.size() + myMarkStack.size());
-        while (!myMarkStack.empty())
-        {
-            unfinishedMarksBuffer[bufferInd] = myMarkStack.top();
-            aBuffer.push_back(unfinishedMarksBuffer[bufferInd]);
-            bufferInd++;
-            myMarkStack.pop();
-        }
-
-        // Need to reconstruct the stack(with the right order) 
-        // so that EndMark calls are successful in the new frame
-        for (; bufferInd > 0; bufferInd--)
-        {
-            uint32_t index = bufferInd - 1;
-            myMarkStack.push(unfinishedMarksBuffer[index]);
-        }
-    }
+    myEndMarks.push(newMark);
 }

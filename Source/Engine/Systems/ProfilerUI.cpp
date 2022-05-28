@@ -6,6 +6,7 @@
 #include "ImGUI/ImGUISystem.h"
 
 #include <Core/Utils.h>
+#include <Core/Profiler.h>
 
 #include <sstream>
 
@@ -35,6 +36,65 @@ namespace
 		default: ASSERT(false); break;
 		}
 		Utils::StringFormat(aBuffer, "%lld.%lld%s", aDuration, remainder, unitOfTime);
+	}
+
+	ProfilerUI::FrameData ProcessFrameProfile(const Profiler::FrameProfile& aProfile)
+	{
+		std::unordered_map<uint32_t, ProfilerUI::Mark> marksMap;
+
+		for (const Profiler::Mark& startMark : aProfile.myStartMarks)
+		{
+			ProfilerUI::Mark mark;
+			mark.myId = startMark.myId;
+			mark.myThreadId = startMark.myThreadId;
+			mark.myStart = startMark.myStamp.time_since_epoch().count();
+			mark.myEnd = aProfile.myEndStamp.time_since_epoch().count();
+			mark.myDepth = startMark.myDepth;
+			std::memcpy(mark.myName, startMark.myName, sizeof(startMark.myName));
+			marksMap.insert({ startMark.myId, mark });
+		}
+
+		for (const Profiler::Mark& endMark : aProfile.myEndMarks)
+		{
+			// we either have mark to "close"
+			// or it's a new one from previous frames
+			auto iter = marksMap.find(endMark.myId);
+			if (iter != marksMap.end())
+			{
+				iter->second.myEnd = endMark.myStamp.time_since_epoch().count();
+			}
+			else
+			{
+				ProfilerUI::Mark mark;
+				mark.myId = endMark.myId;
+				mark.myThreadId = endMark.myThreadId;
+				mark.myStart = aProfile.myBeginStamp.time_since_epoch().count();
+				mark.myEnd = endMark.myStamp.time_since_epoch().count();
+				mark.myDepth = endMark.myDepth;
+				std::memcpy(mark.myName, endMark.myName, sizeof(endMark.myName));
+				marksMap.insert({ endMark.myId, mark });
+			}
+		}
+
+		ProfilerUI::FrameData data;
+		for (const auto& [id, mark] : marksMap)
+		{
+			data.myThreadMarkMap[mark.myThreadId].push_back(mark);
+		}
+
+		for (const auto& [threadId, markVec] : data.myThreadMarkMap)
+		{
+			uint8_t maxLevel = 0;
+			for (const ProfilerUI::Mark& mark : markVec)
+			{
+				maxLevel = std::max(maxLevel, mark.myDepth);
+			}
+			data.myMaxLevels[threadId] = maxLevel;
+		}
+		data.myFrameStart = aProfile.myBeginStamp.time_since_epoch().count();
+		data.myFrameEnd = aProfile.myEndStamp.time_since_epoch().count();
+		data.myFrameNum = aProfile.myFrameNum;
+		return data;
 	}
 }
 
@@ -83,7 +143,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		char nodeName[64];
 		for (const FrameData& frameData : myFramesToRender)
 		{
-			Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameProfile.myFrameNum);
+			Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameNum);
 			if (ImGui::TreeNode(nodeName))
 			{
 				// Precalculate the whole height
@@ -118,7 +178,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const
 {
 	char name[64];
-	Utils::StringFormat(name, "%llu##ThreadColumn", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##ThreadColumn", aFrameData.myFrameNum);
 	ImGui::BeginChild(name, { kThreadColumnWidth, aTotalHeight });
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
@@ -145,26 +205,26 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 	// Unresizing scrollable parent window
 	char name[64];
 	char duration[32];
-	Utils::StringFormat(name, "%llu##MarksColumn", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##MarksColumn", aFrameData.myFrameNum);
 	ImGui::BeginChild(name, { 0, aTotalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
 
 	// Zoomable child window
 	const float fixedWindowWidth = ImGui::GetWindowWidth();
 	float plotWidth = fixedWindowWidth * myWidthScale;
 	plotWidth = std::max(plotWidth, fixedWindowWidth);
-	Utils::StringFormat(name, "%llu##ZoomWindow", aFrameData.myFrameProfile.myFrameNum);
+	Utils::StringFormat(name, "%llu##ZoomWindow", aFrameData.myFrameNum);
 	ImGui::BeginChild(name, { plotWidth, aTotalHeight - ImGui::GetStyle().ScrollbarSize });
 
 	// top bar for frame
-	const long long frameDuration = (aFrameData.myFrameProfile.myEndStamp - aFrameData.myFrameProfile.myBeginStamp).count();
+	const long long frameDuration = aFrameData.myFrameEnd - aFrameData.myFrameStart;
 	DurationToString(duration, frameDuration);
 	Utils::StringFormat(name, "Duration: %s", duration);
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
 	ImGui::Button(name, { plotWidth, kMarkHeight });
 
-	const long long frameStart = aFrameData.myFrameProfile.myBeginStamp.time_since_epoch().count();
-	const long long frameEnd = aFrameData.myFrameProfile.myEndStamp.time_since_epoch().count();
+	const long long frameStart = aFrameData.myFrameStart;
+	const long long frameEnd = aFrameData.myFrameEnd;
 
 	auto InverseLerpProfile = [min = frameStart, max = frameEnd](auto val) { 
 		return (val - min) / static_cast<float>(max - min); 
@@ -190,22 +250,26 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 		const float widthPerDurationRatio = plotWidth / frameDuration;
 		
 		const MarksVec& threadMarks = aFrameData.myThreadMarkMap.at(threadId);
-		const HierarchyMap& hierarchy = aFrameData.myThreadHierarchyMap.at(threadId);
-		for (const Profiler::Mark& mark : threadMarks)
+		for (const Mark& mark : threadMarks)
 		{
-			const long long markDuration = (mark.myEndStamp - mark.myBeginStamp).count();
-			const long long startTimeOffset = (mark.myBeginStamp - aFrameData.myFrameProfile.myBeginStamp).count();
+			const long long markDuration = mark.myEnd - mark.myStart;
+			const long long startTimeOffset = mark.myStart - frameStart;
 
-			const float y = yOffset + hierarchy.at(mark.myId) * kMarkHeight;
-			float x = plotWidth * InverseLerpProfile(mark.myBeginStamp.time_since_epoch().count());
-			x = std::max(x, 0.f);
+			const float y = yOffset + mark.myDepth * kMarkHeight;
+			const float x = plotWidth * InverseLerpProfile(mark.myStart);
 			float width = plotWidth - x; // by default, max possible
-			if (markDuration)
+
+			const bool isMarkFinished = mark.myEnd != frameEnd;
+			if (isMarkFinished)
 			{
 				// if we have a closed mark, then we can calculate actual width
-				const float widthRatio = InverseLerpProfile(mark.myEndStamp.time_since_epoch().count());
+				const float widthRatio = InverseLerpProfile(mark.myEnd);
 				width = widthRatio * plotWidth - x;
 			}
+			// avoid getting to 0, as ImGUI usess it as a default value
+			// to fit the internal label
+			width = std::max(width, 1.f);
+
 			ImGui::SetCursorPos({ x, y });
 
 			const int colorInd = mark.myId % (sizeof(kColors) / sizeof(ImU32));
@@ -214,7 +278,7 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
 			ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32_WHITE);
 
-			if (markDuration)
+			if (isMarkFinished)
 			{
 				DurationToString(duration, markDuration);
 				Utils::StringFormat(name, "%s - %s", mark.myName, duration);
@@ -227,15 +291,15 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 			
 			if (ImGui::IsItemHovered())
 			{
-				if (markDuration)
+				if (isMarkFinished)
 				{
-					ImGui::SetTooltip("Name: %s\nDuration: %s\nId: %d\nParent Id: %d",
-						mark.myName, duration, mark.myId, mark.myParentId);
+					ImGui::SetTooltip("Name: %s\nDuration: %s",
+						mark.myName, duration);
 				}
 				else
 				{
-					ImGui::SetTooltip("Name: %s\nDuration: Ongoing\nId: %d\nParent Id: %d",
-						mark.myName, mark.myId, mark.myParentId);
+					ImGui::SetTooltip("Name: %s\nDuration: Ongoing",
+						mark.myName);
 				}
 			}
 			ImGui::PopStyleVar();
@@ -246,55 +310,3 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 	ImGui::EndChild();
 	ImGui::EndChild();
 }
-
-ProfilerUI::HierarchyMap ProfilerUI::CalculateHierarchy(const MarksVec& aMarks, uint32_t& aMaxLevel)
-{
-	// we need to figure out how to display the stacked bars representing
-	// marks, so for that we will calculate the nested-level of every Mark
-	HierarchyMap hierarchyMap;
-	hierarchyMap.reserve(aMarks.size());
-	// While we're at it, calculate the max nested level, so that we can determine
-	// the height of hierarchy
-	aMaxLevel = 0;
-	for (const Profiler::Mark& mark : aMarks)
-	{
-		if (mark.myParentId == -1)
-		{
-			// no parent -> initial level
-			hierarchyMap[mark.myId] = 0;
-		}
-		else
-		{
-			// parent exists -> parents level + 1
-			uint32_t newLevel = hierarchyMap.at(mark.myParentId) + 1;
-			hierarchyMap[mark.myId] = newLevel;
-			// update the max level
-			aMaxLevel = std::max(aMaxLevel, newLevel);
-		}
-	}
-	return hierarchyMap;
-}
-
-ProfilerUI::FrameData ProfilerUI::ProcessFrameProfile(const Profiler::FrameProfile& aProfile)
-{
-	FrameData data;
-	data.myThreadMarkMap = Utils::GroupBy<ThreadMarkMap>(aProfile.myFrameMarks,
-		[](const Profiler::Mark& aMark) { return aMark.myThreadId; }
-	);
-	for (auto& threadMarksPair : data.myThreadMarkMap)
-	{
-		ProfilerUI::MarksVec& threadMarks = threadMarksPair.second;
-		// first, we need to sort the collection in order to be
-		// able to construct a hierarchy map
-		std::sort(threadMarks.begin(), threadMarks.end(), 
-			[](const Profiler::Mark& aLeft, const Profiler::Mark& aRight) {
-			return aLeft.myId < aRight.myId;
-		});
-		uint32_t maxLevel = 0;
-		data.myThreadHierarchyMap[threadMarksPair.first] = std::move(CalculateHierarchy(threadMarks, maxLevel));
-		data.myMaxLevels[threadMarksPair.first] = maxLevel;
-	}
-	data.myFrameProfile = std::move(aProfile);
-	return data;
-}
-

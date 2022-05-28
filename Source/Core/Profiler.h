@@ -1,9 +1,5 @@
 #pragma once
 
-#include <array>
-#include <stack>
-#include "Threading/AssertMutex.h"
-
 // A singleton class that manages the collection of profiling data in
 // profiling Marks, which contains timestamps of start-end, name and thread ids
 class Profiler
@@ -21,12 +17,11 @@ public:
     // Also keeps track of it's parent via IDs
     struct Mark
 	{
-		Stamp myBeginStamp;
-		Stamp myEndStamp;
-		char myName[64];
-		int myId;
-		int myParentId;
-		std::thread::id myThreadId;
+        char myName[64]; // TODO: move this out
+        std::thread::id myThreadId; // TODO: look at moving it out
+		Stamp myStamp;
+		uint32_t myId;
+		uint8_t myDepth;
 	};
     static_assert(std::is_trivially_copyable_v<Mark>, "Relying on fast copies!");
     static_assert(std::is_trivially_destructible_v<Mark>, "Relying on noop destructors!");
@@ -38,7 +33,8 @@ public:
         Stamp myBeginStamp;
         Stamp myEndStamp;
         size_t myFrameNum;
-        std::vector<Mark> myFrameMarks;
+        std::vector<Mark> myStartMarks;
+        std::vector<Mark> myEndMarks;
     };
 
     static Profiler& GetInstance()
@@ -57,7 +53,7 @@ public:
 private:
     class Storage;
     // Returns a thread-local storage for accumulating Marks for current frame
-    static Storage& GetStorage();
+    static Storage& GetStorage(Profiler& aProfiler);
 
     // Initializes and automatically prepares for recording into the new frame
     Profiler();
@@ -70,42 +66,47 @@ private:
         tbb::spin_mutex::scoped_lock lock(myStorageMutex);
         myTLSStorages.push_back(aStorage);
     }
-    std::atomic<int> myIdCounter;
+    std::atomic<uint32_t> myIdCounter = 0;
     std::vector<Storage*> myTLSStorages;
+    tbb::concurrent_queue<Mark> myStartMarks;
+    tbb::concurrent_queue<Mark> myEndMarks;
     std::array<FrameProfile, kMaxFrames> myFrameProfiles;
     std::array<FrameProfile, kInitFrames> myInitFrames;
     LongFrameCallback myOnLongFrameCB;
-    size_t myFrameNum;
+    size_t myFrameNum = 0;
     tbb::spin_mutex myStorageMutex;
 };
 
 class Profiler::Storage
 {
 public:
-    Storage(std::atomic<int>& aGlobalCounter, Profiler& aProfiler);
+    Storage(Profiler& aProfiler);
 
-    void BeginMark(std::string_view aName);
-    void EndMark();
-    void NewFrame(std::vector<Mark>& aBuffer);
+    uint32_t StartScope(std::string_view aName);
+    void EndScope(uint32_t anId, std::string_view aName);
 private:
-    std::stack<Mark> myMarkStack;
-    std::vector<Mark> myMarks;
-    tbb::spin_mutex myStackMutex;
-    std::mutex myMarksMutex;
-    std::atomic<int>& myIdCounter;
+    uint8_t myDepth = 0;
+    tbb::concurrent_queue<Mark>& myStartMarks;
+    tbb::concurrent_queue<Mark>& myEndMarks;
+    std::atomic<uint32_t>& myIdCounter;
 };
 
 // RAII style profiling mark - starts a mark on ctor, stops it on dtor
 class Profiler::ScopedMark
 {
+    Profiler& myProfiler;
+    std::string_view myName;
+    uint32_t myId;
 public:
-    ScopedMark(std::string_view aName)
+    ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance())
+        : myProfiler(aProfiler)
+        , myName(aName)
     {
-        GetStorage().BeginMark(aName);
+        myId = GetStorage(myProfiler).StartScope(aName);
     }
 
     ~ScopedMark()
     {
-        GetStorage().EndMark();
+        GetStorage(myProfiler).EndScope(myId, myName);
     }
 };

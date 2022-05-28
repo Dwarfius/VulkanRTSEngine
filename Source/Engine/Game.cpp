@@ -275,8 +275,8 @@ void Game::Init(bool aUseDefaultCompositePass)
 
 void Game::RunMainThread()
 {
-	Profiler::GetInstance().NewFrame();
 	Profiler::ScopedMark mainProfile(__func__);
+	Profiler::GetInstance().NewFrame();
 	glfwPollEvents();
 
 	// TODO: refactor to get rid of this requirement to avoid triggering
