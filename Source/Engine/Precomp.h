@@ -16,6 +16,7 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <variant>
 
 #ifdef USE_AUDIO
 #include <AL/alut.h>

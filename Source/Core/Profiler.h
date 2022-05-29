@@ -82,6 +82,6 @@ class Profiler::ScopedMark
     std::string_view myName;
     uint32_t myId;
 public:
-    inline ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance());
-    inline ~ScopedMark();
+    ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance());
+    ~ScopedMark();
 };

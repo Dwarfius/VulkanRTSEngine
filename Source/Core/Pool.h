@@ -3,7 +3,6 @@
 #ifdef ASSERT_MUTEX
 #include "Threading/AssertRWMutex.h"
 #endif
-#include <variant>
 #include "Profiler.h"
 
 // A collection object that has ability to grow like a vector, 
