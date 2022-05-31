@@ -282,9 +282,12 @@ void GameObject::Serialize(Serializer& aSerializer)
 					aSerializer.Serialize("myCompType", compType);
 				}
 
-				if (Serializer::Scope compScope = aSerializer.SerializeObject("myCompData"))
+				if (myComponents[i])
 				{
-					myComponents[i]->Serialize(aSerializer);
+					if (Serializer::Scope compScope = aSerializer.SerializeObject("myCompData"))
+					{
+						myComponents[i]->Serialize(aSerializer);
+					}
 				}
 			}
 		}
