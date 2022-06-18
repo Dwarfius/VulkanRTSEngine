@@ -38,6 +38,11 @@ public:
 		myCreateFuncs.insert({ aName, aFunc });
 	}
 
+	bool Contains(std::string_view aName) const
+	{
+		return myCreateFuncs.contains(aName);
+	}
+
 	ComponentBase* Create(std::string_view aName) const
 	{
 		auto funcIter = myCreateFuncs.find(aName);

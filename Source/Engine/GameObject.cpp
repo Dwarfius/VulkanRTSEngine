@@ -260,7 +260,8 @@ void GameObject::Serialize(Serializer& aSerializer)
 					aSerializer.Serialize("myCompType", compType);
 					if (!compType.empty())
 					{
-						if (compType != oldCompName)
+						if (compType != oldCompName
+							&& ComponentRegister::Get().Contains(compType))
 						{
 							if (myComponents[i])
 							{
@@ -272,6 +273,10 @@ void GameObject::Serialize(Serializer& aSerializer)
 					}
 					else
 					{
+						if (myComponents[i])
+						{
+							delete myComponents[i];
+						}
 						myComponents[i] = nullptr;
 					}
 				}
