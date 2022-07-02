@@ -15,72 +15,52 @@ public:
 	void ReadFrom(const std::vector<char>& aBuffer) final;
 	void WriteTo(std::vector<char>& aBuffer) const final;
 
-	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) final;
+	void Serialize(std::string_view aName, bool& aValue) override;
+	void Serialize(std::string_view aName, uint8_t& aValue) override;
+	void Serialize(std::string_view aName, uint16_t& aValue) override;
+	void Serialize(std::string_view aName, uint32_t& aValue) override;
+	void Serialize(std::string_view aName, uint64_t& aValue) override;
+	void Serialize(std::string_view aName, int8_t& aValue) override;
+	void Serialize(std::string_view aName, int16_t& aValue) override;
+	void Serialize(std::string_view aName, int32_t& aValue) override;
+	void Serialize(std::string_view aName, int64_t& aValue) override;
+	void Serialize(std::string_view aName, float& aValue) override;
+	void Serialize(std::string_view aName, std::string& aValue) override;
+	void Serialize(std::string_view aName, glm::vec2& aValue) override;
+	void Serialize(std::string_view aName, glm::vec3& aValue) override;
+	void Serialize(std::string_view aName, glm::vec4& aValue) override;
+	void Serialize(std::string_view aName, glm::quat& aValue) override;
+	void Serialize(std::string_view aName, glm::mat4& aValue) override;
+
+	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) override;
 
 private:
-	void SerializeImpl(std::string_view aName, const VariantType& aValue) final;
-	void SerializeImpl(size_t anIndex, const VariantType& aValue) final;
-	void DeserializeImpl(std::string_view aName, VariantType& aValue) const final;
-	void DeserializeImpl(size_t anIndex, VariantType& aValue) const final;
+	bool BeginSerializeObjectImpl(std::string_view aName) override;
+	void EndSerializeObjectImpl(std::string_view aName) override;
 
-	void SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) final;
-	void SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const* aNames, size_t aNamesLength) final;
-	void DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const final;
-	void DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) const final;
+	bool BeginSerializeArrayImpl(std::string_view aName, size_t& aCount) override;
+	void EndSerializeArrayImpl(std::string_view aName) override;
 
-	void BeginSerializeObjectImpl(std::string_view aName) final;
-	void BeginSerializeObjectImpl(size_t anIndex) final;
-	void EndSerializeObjectImpl(std::string_view aName) final;
-	void EndSerializeObjectImpl(size_t anIndex) final;
-	// TODO: [[nodiscard]]
-	bool BeginDeserializeObjectImpl(std::string_view aName) const final;
-	// TODO: [[nodiscard]]
-	bool BeginDeserializeObjectImpl(size_t anIndex) const final;
-	void EndDeserializeObjectImpl(std::string_view aName) const final;
-	void EndDeserializeObjectImpl(size_t anIndex) const final;
+	void SerializeSpan(bool* aValues, size_t aSize) override;
+	void SerializeSpan(uint8_t* aValues, size_t aSize) override;
+	void SerializeSpan(uint16_t* aValues, size_t aSize) override;
+	void SerializeSpan(uint32_t* aValues, size_t aSize) override;
+	void SerializeSpan(uint64_t* aValues, size_t aSize) override;
+	void SerializeSpan(int8_t* aValues, size_t aSize) override;
+	void SerializeSpan(int16_t* aValues, size_t aSize) override;
+	void SerializeSpan(int32_t* aValues, size_t aSize) override;
+	void SerializeSpan(int64_t* aValues, size_t aSize) override;
+	void SerializeSpan(float* aValues, size_t aSize) override;
+	void SerializeSpan(std::string* aValues, size_t aSize) override;
+	void SerializeSpan(glm::vec2* aValues, size_t aSize) override;
+	void SerializeSpan(glm::vec3* aValues, size_t aSize) override;
+	void SerializeSpan(glm::vec4* aValues, size_t aSize) override;
+	void SerializeSpan(glm::quat* aValues, size_t aSize) override;
+	void SerializeSpan(glm::mat4* aValues, size_t aSize) override;
 
-	void BeginSerializeArrayImpl(std::string_view aName, size_t aCount) final;
-	void BeginSerializeArrayImpl(size_t anIndex, size_t aCount) final;
-	void EndSerializeArrayImpl(std::string_view aName) final;
-	void EndSerializeArrayImpl(size_t anIndex) final;
-	// TODO: [[nodiscard]]
-	bool BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const final;
-	// TODO: [[nodiscard]]
-	bool BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const final;
-	void EndDeserializeArrayImpl(std::string_view aName) const final;
-	void EndDeserializeArrayImpl(size_t anIndex) const final;
+	void SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength) override;
 
-	// Read/Write Impl
 private:
-	void Write(bool aValue);
-	void Read(bool& aValue) const;
-	void Write(char aValue);
-	void Read(char& aValue) const;
-	void Write(uint32_t aValue);
-	void Read(uint32_t& aValue) const;
-	void Write(int32_t aValue);
-	void Read(int32_t& aValue) const;
-	void Write(uint64_t aValue);
-	void Read(uint64_t& aValue) const;
-	void Write(int64_t aValue);
-	void Read(int64_t& aValue) const;
-	void Write(float aValue);
-	void Read(float& aValue) const;
-	void Write(const std::string& aValue);
-	void Read(std::string& aValue) const;
-	void Write(const ResourceProxy& aValue);
-	void Read(ResourceProxy& aValue) const;
-	void Write(const glm::vec2& aValue);
-	void Read(glm::vec2& aValue) const;
-	void Write(const glm::vec3& aValue);
-	void Read(glm::vec3& aValue) const;
-	void Write(const glm::vec4& aValue);
-	void Read(glm::vec4& aValue) const;
-	void Write(const glm::quat& aValue);
-	void Read(glm::quat& aValue) const;
-	void Write(const glm::mat4& aValue);
-	void Read(glm::mat4& aValue) const;
-
 	std::vector<char> myBuffer;
-	mutable size_t myIndex;
+	size_t myIndex;
 };

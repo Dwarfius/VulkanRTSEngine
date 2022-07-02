@@ -129,10 +129,10 @@ void Texture::LoadFromMemory(const char* aData, size_t aLength, int aDesiredChan
 
 void Texture::Serialize(Serializer& aSerializer)
 {
-	aSerializer.SerializeEnum("myFormat", myFormat);
-	aSerializer.SerializeEnum("myWrapMode", myWrapMode);
-	aSerializer.SerializeEnum("myMinFilter", myMinFilter);
-	aSerializer.SerializeEnum("myMagFilter", myMagFilter);
+	aSerializer.Serialize("myFormat", myFormat);
+	aSerializer.Serialize("myWrapMode", myWrapMode);
+	aSerializer.Serialize("myMinFilter", myMinFilter);
+	aSerializer.Serialize("myMagFilter", myMagFilter);
 	aSerializer.Serialize("myEnableMipMaps", myEnableMipmaps);
 
 	std::string oldExt = myImgExtension;

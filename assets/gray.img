@@ -1,3 +1,8 @@
 {
+	"myFormat":6,
+	"myWrapMode":0,
+	"myMinFilter":0,
+	"myMagFilter":0,
+	"myEnableMipMaps":false,
 	"myImgExtension":"png"
 }

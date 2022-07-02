@@ -43,7 +43,6 @@ void Graphics::Init()
 			using ThisType = PosUVVertex; // for copy-paste convenience
 			return {
 				sizeof(ThisType),
-				2,
 				{
 					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myPos) },
 					{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUV) }

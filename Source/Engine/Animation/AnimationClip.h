@@ -46,6 +46,8 @@ public:
 			, myValue(0, aPos.x, aPos.y, aPos.z)
 		{
 		}
+
+		void Serialize(Serializer& aSerializer);
 	};
 
 	struct BoneTrack
@@ -55,6 +57,8 @@ public:
 		BoneIndex myBone;
 		Property myAffectedProperty;
 		Interpolation myInterpolation;
+
+		void Serialize(Serializer& aSerializer);
 	};
 
 public:

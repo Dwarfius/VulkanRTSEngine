@@ -167,11 +167,11 @@ void PhysicsEntity::DeferDelete()
 
 void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEntity)
 {
-	aSerializer.SerializeEnum("myType", myType);
+	aSerializer.Serialize("myType", myType);
 
 	PhysicsShapeBase::Type shapeType = myShape ?
 		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
-	aSerializer.SerializeEnum("myShape", shapeType);
+	aSerializer.Serialize("myShape", shapeType);
 	
 	float mass = myBody && myType == Type::Dynamic 
 		? static_cast<btRigidBody*>(myBody)->getMass() 
@@ -271,13 +271,8 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 			aSerializer.Serialize("myDepth", depth);
 			aSerializer.Serialize("myMinHeight", minHeight);
 			aSerializer.Serialize("myMaxHeight", maxHeight);
-			if (Serializer::Scope heightsScope = aSerializer.SerializeArray("myHeights", heights))
-			{
-				for (size_t i = 0; i < heights.size(); i++)
-				{
-					aSerializer.Serialize(i, heights[i]);
-				}
-			}
+			aSerializer.Serialize("myHeights", heights);
+
 			// Bullet doesn't expose heightfield data, so we can't modify existing shape
 			// so we only support creating it once
 			if (createShape)

@@ -18,208 +18,60 @@ void ImGUISerializer::WriteTo(std::vector<char>&) const
 	ASSERT_STR(false, "Not supported!");
 }
 
-void ImGUISerializer::SerializeExternal(std::string_view, std::vector<char>&)
+void ImGUISerializer::Serialize(std::string_view aName, bool& aValue) 
 {
-	// NOOP for now
+	ImGui::Checkbox(aName.data(), &aValue);
 }
 
-void ImGUISerializer::SerializeImpl(std::string_view, const VariantType&)
+void ImGUISerializer::Serialize(std::string_view aName, uint8_t& aValue)
 {
-	// NOOP - this serializer is always reading!
+	ImGui::InputScalar(aName.data(), ImGuiDataType_U8, &aValue);
 }
 
-void ImGUISerializer::SerializeImpl(size_t, const VariantType&)
+void ImGUISerializer::Serialize(std::string_view aName, uint16_t& aValue)
 {
-	// NOOP - this serializer is always reading!
+	ImGui::InputScalar(aName.data(), ImGuiDataType_U16, &aValue);
 }
 
-void ImGUISerializer::DeserializeImpl(std::string_view aName, VariantType& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, uint32_t& aValue)
 {
-	std::visit([&](auto&& aVarValue) {
-		Display(aName, aVarValue);
-	}, aValue);
+	ImGui::InputScalar(aName.data(), ImGuiDataType_U32, &aValue);
 }
 
-void ImGUISerializer::DeserializeImpl(size_t anIndex, VariantType& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, uint64_t& aValue)
 {
-	std::visit([&](auto&& aVarValue) {
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", anIndex);
-		Display(indexLbl, aVarValue);
-	}, aValue);
+	ImGui::InputScalar(aName.data(), ImGuiDataType_U64, &aValue);
 }
 
-void ImGUISerializer::SerializeEnumImpl(std::string_view, size_t, const char* const*, size_t)
+void ImGUISerializer::Serialize(std::string_view aName, int8_t& aValue)
 {
-	// NOOP - this serializer is always reading!
+	ImGui::InputScalar(aName.data(), ImGuiDataType_S8, &aValue);
 }
 
-void ImGUISerializer::SerializeEnumImpl(size_t, size_t, const char* const*, size_t)
+void ImGUISerializer::Serialize(std::string_view aName, int16_t& aValue)
 {
-	// NOOP - this serializer is always reading!
+	ImGui::InputScalar(aName.data(), ImGuiDataType_S16, &aValue);
 }
 
-void ImGUISerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t) const
+void ImGUISerializer::Serialize(std::string_view aName, int32_t& aValue)
 {
-	ImGui::LabelText(aName.data(), aNames[anEnumValue]);
+	ImGui::InputScalar(aName.data(), ImGuiDataType_S32, &aValue);
 }
 
-void ImGUISerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const* aNames, size_t)  const
+void ImGUISerializer::Serialize(std::string_view aName, int64_t& aValue)
 {
-	char indexLbl[16] = { 0 };
-	Utils::StringFormat(indexLbl, "%llu", anIndex);
-	ImGui::LabelText(indexLbl, aNames[anEnumValue]);
+	ImGui::InputScalar(aName.data(), ImGuiDataType_S64, &aValue);
 }
 
-void ImGUISerializer::BeginSerializeObjectImpl(std::string_view)
+void ImGUISerializer::Serialize(std::string_view aName, float& aValue)
 {
-	// NOOP - this serializer is always reading!
+	ImGui::InputFloat(aName.data(), &aValue);
 }
 
-void ImGUISerializer::BeginSerializeObjectImpl(size_t)
+void ImGUISerializer::Serialize(std::string_view aName, std::string& aValue)
 {
-	// NOOP - this serializer is always reading!
-}
-
-void ImGUISerializer::EndSerializeObjectImpl(std::string_view)
-{
-	// NOOP - this serializer is always reading!
-}
-
-void ImGUISerializer::EndSerializeObjectImpl(size_t)
-{
-	// NOOP - this serializer is always reading!
-}
-
-bool ImGUISerializer::BeginDeserializeObjectImpl(std::string_view aName) const
-{
-	return ImGui::TreeNode(aName.data());
-}
-
-bool ImGUISerializer::BeginDeserializeObjectImpl(size_t anIndex) const
-{
-	char indexLbl[16] = { 0 };
-	Utils::StringFormat(indexLbl, "%zu", anIndex);
-	return ImGui::TreeNode(indexLbl);
-}
-
-void ImGUISerializer::EndDeserializeObjectImpl(std::string_view) const
-{
-	ImGui::TreePop();
-}
-
-void ImGUISerializer::EndDeserializeObjectImpl(size_t) const
-{
-	ImGui::TreePop();
-}
-
-void ImGUISerializer::BeginSerializeArrayImpl(std::string_view aName, size_t aCount)
-{
-	// NOOP - this serializer is always reading!
-}
-
-void ImGUISerializer::BeginSerializeArrayImpl(size_t anIndex, size_t aCount)
-{
-	// NOOP - this serializer is always reading!
-}
-
-void ImGUISerializer::EndSerializeArrayImpl(std::string_view aName)
-{
-	// NOOP - this serializer is always reading!
-}
-
-void ImGUISerializer::EndSerializeArrayImpl(size_t anIndex)
-{
-	// NOOP - this serializer is always reading!
-}
-
-bool ImGUISerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const
-{
-	if (aCount >= kArrayTooBigLimit)
-	{
-		ImGui::LabelText(aName.data(), "Large array[%zu]", aCount);
-		return false;
-	}
-
-	const bool isOpen = ImGui::TreeNode(aName.data());
-	if (isOpen)
-	{
-		if (ImGui::Button("Add new"))
-		{
-			aCount++;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Clear"))
-		{
-			aCount = 0;
-		}
-	}
-	return isOpen;
-}
-
-bool ImGUISerializer::BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const
-{
-	char indexLbl[16] = { 0 };
-	Utils::StringFormat(indexLbl, "%zu", anIndex);
-
-	if (aCount >= kArrayTooBigLimit)
-	{
-		ImGui::LabelText(indexLbl, "Large array[%zu]", aCount);
-		return false;
-	}
-	
-	const bool isOpen = ImGui::TreeNode(indexLbl);
-	if (isOpen)
-	{
-		if (ImGui::Button("Add new"))
-		{
-			aCount++;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Clear"))
-		{
-			aCount = 0;
-		}
-	}
-	return isOpen;
-}
-
-void ImGUISerializer::EndDeserializeArrayImpl(std::string_view aName) const
-{
-	ImGui::TreePop();
-}
-
-void ImGUISerializer::EndDeserializeArrayImpl(size_t anIndex) const
-{
-	ImGui::TreePop();
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, bool& aValue) const
-{
-	ImGui::Checkbox(aLabel.data(), &aValue);
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, uint64_t& aValue) const
-{
-	ImGui::InputScalar(aLabel.data(), ImGuiDataType_U64, &aValue);
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, int64_t& aValue) const
-{
-	ImGui::InputScalar(aLabel.data(), ImGuiDataType_S64, &aValue);
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, float& aValue) const
-{
-	ImGui::InputFloat(aLabel.data(), &aValue);
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, std::string& aValue) const
-{
-	ImGui::InputText(aLabel.data(), aValue.data(), aValue.capacity() + 1, ImGuiInputTextFlags_CallbackResize, 
-		[](ImGuiInputTextCallbackData* aData) 
+	ImGui::InputText(aName.data(), aValue.data(), aValue.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+		[](ImGuiInputTextCallbackData* aData)
 	{
 		std::string* valueStr = static_cast<std::string*>(aData->UserData);
 		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
@@ -231,37 +83,308 @@ void ImGUISerializer::Display(std::string_view aLabel, std::string& aValue) cons
 	}, &aValue);
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, ResourceProxy& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, glm::vec2& aValue)
 {
-	// TODO: expand this
-	// for now, just displaying the path
-	ImGui::LabelText(aLabel.data(), aValue.myPath.c_str());
+	ImGui::InputFloat2(aName.data(), glm::value_ptr(aValue));
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, glm::vec2& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, glm::vec3& aValue)
 {
-	ImGui::InputFloat2(aLabel.data(), glm::value_ptr(aValue));
+	ImGui::InputFloat3(aName.data(), glm::value_ptr(aValue));
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, glm::vec3& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, glm::vec4& aValue)
 {
-	ImGui::InputFloat3(aLabel.data(), glm::value_ptr(aValue));
+	ImGui::InputFloat4(aName.data(), glm::value_ptr(aValue));
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, glm::vec4& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, glm::quat& aValue)
 {
-	ImGui::InputFloat4(aLabel.data(), glm::value_ptr(aValue));
+	ImGui::InputFloat4(aName.data(), glm::value_ptr(aValue));
 }
 
-void ImGUISerializer::Display(std::string_view aLabel, glm::quat& aValue) const
-{
-	ImGui::InputFloat4(aLabel.data(), glm::value_ptr(aValue));
-}
-
-void ImGUISerializer::Display(std::string_view aLabel, glm::mat4& aValue) const
+void ImGUISerializer::Serialize(std::string_view aName, glm::mat4& aValue)
 {
 	for (char i = 0; i < 4; i++)
 	{
-		ImGui::InputFloat4(aLabel.data(), glm::value_ptr(aValue[i]));
+		ImGui::InputFloat4(aName.data(), glm::value_ptr(aValue[i]));
+	}
+}
+
+void ImGUISerializer::SerializeExternal(std::string_view, std::vector<char>&)
+{
+	// NOOP for now
+}
+
+bool ImGUISerializer::BeginSerializeObjectImpl(std::string_view aName)
+{
+	const bool isPartOfArray = aName.empty();
+	if (isPartOfArray)
+	{
+		State& state = myStateStack.top();
+
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		state.myCurrIndex++;
+
+		return ImGui::TreeNode(indexLbl);
+	}
+	else
+	{
+		return ImGui::TreeNode(aName.data());
+	}
+}
+
+void ImGUISerializer::EndSerializeObjectImpl(std::string_view)
+{
+	ImGui::TreePop();
+}
+
+bool ImGUISerializer::BeginSerializeArrayImpl(std::string_view aName, size_t& aCount)
+{
+	if (aCount >= kArrayTooBigLimit)
+	{
+		ImGui::LabelText(aName.data(), "Large array[%zu]", aCount);
+		return false;
+	}
+
+	const bool isOpen = ImGui::TreeNode(aName.data());
+	if (isOpen)
+	{
+		myStateStack.push({});
+
+		if (ImGui::Button("Add new"))
+		{
+			aCount++;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Clear"))
+		{
+			aCount = 0;
+		}
+	}
+	return isOpen;
+}
+
+void ImGUISerializer::EndSerializeArrayImpl(std::string_view aName)
+{
+	ImGui::TreePop();
+	myStateStack.pop();
+}
+
+void ImGUISerializer::SerializeSpan(bool* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::Checkbox(indexLbl, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(uint8_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_U8, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(uint16_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_U16, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(uint32_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_U32, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(uint64_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_U64, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(int8_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_S8, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(int16_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_S16, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(int32_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_S32, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(int64_t* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputScalar(indexLbl, ImGuiDataType_S64, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(float* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputFloat(indexLbl, aValues + i);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(std::string* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+
+		std::string& value = aValues[i];
+		ImGui::InputText(indexLbl, value.data(), value.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+			[](ImGuiInputTextCallbackData* aData)
+		{
+			std::string* valueStr = static_cast<std::string*>(aData->UserData);
+			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
+			{
+				valueStr->resize(aData->BufTextLen);
+				aData->Buf = valueStr->data();
+			}
+			return 0;
+		}, &value);
+	}
+}
+
+void ImGUISerializer::SerializeSpan(glm::vec2* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputFloat2(indexLbl, glm::value_ptr(aValues[i]));
+	}
+}
+
+void ImGUISerializer::SerializeSpan(glm::vec3* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputFloat3(indexLbl, glm::value_ptr(aValues[i]));
+	}
+}
+
+void ImGUISerializer::SerializeSpan(glm::vec4* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i]));
+	}
+}
+
+void ImGUISerializer::SerializeSpan(glm::quat* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i]));
+	}
+}
+
+void ImGUISerializer::SerializeSpan(glm::mat4* aValues, size_t aSize)
+{
+	for (size_t i = 0; i < aSize; i++)
+	{
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", i);
+		for (char m = 0; m < 4; m++)
+		{
+			ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i][m]));
+		}
+	}
+}
+
+void ImGUISerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t)
+{
+	const bool isPartOfArray = aName.empty();
+	if (isPartOfArray)
+	{
+		State& state = myStateStack.top();
+		
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		state.myCurrIndex++;
+
+		ImGui::LabelText(indexLbl, aNames[anEnumValue]);
+	}
+	else
+	{
+		ImGui::LabelText(aName.data(), aNames[anEnumValue]);
+	}
+}
+
+void ImGUISerializer::SerializeResource(std::string_view aName, ResourceProxy& aValue)
+{
+	// TODO: expand this
+	// for now, just displaying the path
+	const bool isPartOfArray = aName.empty();
+	if (isPartOfArray)
+	{
+		State& state = myStateStack.top();
+
+		char indexLbl[16] = { 0 };
+		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		state.myCurrIndex++;
+
+		ImGui::LabelText(indexLbl, aValue.myPath.c_str());
+		
+	}
+	else
+	{
+		ImGui::LabelText(aName.data(), aValue.myPath.c_str());
 	}
 }

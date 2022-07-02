@@ -3,6 +3,59 @@
 
 #include "../File.h"
 
+namespace Impl
+{
+    template<class T>
+    void SerializeBasic(std::string_view aName, T& aValue, nlohmann::json& aJson, bool aIsReading)
+    {
+        if (aIsReading)
+        {
+            aValue = aJson[std::string(aName)].get<T>();
+        }
+        else
+        {
+            aJson[std::string(aName)] = aValue;
+        }
+    }
+
+    template<class T>
+    void SerializeBasic(size_t anIndex, T& aValue, nlohmann::json& aJson, bool aIsReading)
+    {
+        if (aIsReading)
+        {
+            aValue = aJson[anIndex].get<T>();
+        }
+        else
+        {
+            aJson.push_back(aValue);
+        }
+    }
+
+    template<class T>
+    void SerializeSpan(T* aValues, size_t aSize, nlohmann::json& aJson, bool aIsReading)
+    {
+        if (aIsReading)
+        {
+            ASSERT_STR(aJson.is_array(), "Unexpected type!");
+            ASSERT_STR(aJson.size() == aSize, "Missmatching size!");
+
+            const nlohmann::json::array_t& vector = 
+                *aJson.get_ptr<const nlohmann::json::array_t*>();
+            for (size_t i=0; i<aSize; i++)
+            {
+                aValues[i] = vector[i].get<T>();
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < aSize; i++)
+            {
+                aJson.emplace_back(aValues[i]);
+            }
+        }
+    }
+}
+
 void JsonSerializer::ReadFrom(const std::vector<char>& aBuffer)
 {
     myCurrObj = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
@@ -11,7 +64,7 @@ void JsonSerializer::ReadFrom(const std::vector<char>& aBuffer)
 
 void JsonSerializer::WriteTo(std::vector<char>& aBuffer) const
 {
-    ASSERT_STR(myObjStack.empty(), "Tried to write to buffer before unrolling the entire obj stack!");
+    ASSERT_STR(myStateStack.empty(), "Tried to write to buffer before unrolling the entire obj stack!");
     const std::string& generatedJson = myCurrObj.dump();
     aBuffer.resize(generatedJson.size());
 	generatedJson.copy(aBuffer.data(), generatedJson.size());
@@ -31,252 +84,452 @@ void JsonSerializer::SerializeExternal(std::string_view aFile, std::vector<char>
     }
 }
 
-void JsonSerializer::SerializeImpl(std::string_view aName, const VariantType& aValue)
+void JsonSerializer::Serialize(std::string_view aName, bool& aValue)
 {
-	std::visit([&](auto&& aVarValue) {
-		myCurrObj[std::string(aName)] = aVarValue;
-	}, aValue);
-}
-
-void JsonSerializer::SerializeImpl(size_t anIndex, const VariantType& aValue)
-{
-    std::visit([&](auto&& aVarValue) {
-        myCurrObj[anIndex] = aVarValue;
-    }, aValue);
-}
-
-void JsonSerializer::DeserializeImpl(std::string_view aName, VariantType& aValue) const
-{
-    std::visit([&](auto&& aVarValue) {
-        ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-        using Type = std::decay_t<decltype(aVarValue)>;
-        const nlohmann::json& jsonElem = myCurrObj[std::string(aName)];
-        if (!jsonElem.is_null())
-        {
-            aVarValue = std::move(jsonElem.get<Type>());
-        }
-    }, aValue);
-}
-
-void JsonSerializer::DeserializeImpl(size_t anIndex, VariantType& aValue) const
-{
-    std::visit([&](auto&& aVarValue) {
-        ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-        using Type = std::decay_t<decltype(aVarValue)>;
-        const nlohmann::json& jsonElem = myCurrObj[anIndex];
-        if (!jsonElem.is_null())
-        {
-            aVarValue = std::move(jsonElem.get<Type>());
-        }
-    }, aValue);
-}
-
-void JsonSerializer::SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const*, size_t)
-{
-    myCurrObj[std::string(aName)] = anEnumValue;
-}
-
-void JsonSerializer::SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const*, size_t)
-{
-    myCurrObj[anIndex] = anEnumValue;
-}
-
-void JsonSerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const*, size_t) const
-{
-    const nlohmann::json& jsonElem = myCurrObj[std::string(aName)];
-    if (!jsonElem.is_null())
+    if (aName.empty())
     {
-        anEnumValue = jsonElem.get<size_t>();
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
     }
 }
 
-void JsonSerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const*, size_t) const
+void JsonSerializer::Serialize(std::string_view aName, uint8_t& aValue)
 {
-    const nlohmann::json& jsonElem = myCurrObj[anIndex];
-    if (!jsonElem.is_null())
+    if (aName.empty())
     {
-        anEnumValue = jsonElem.get<size_t>();
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
     }
 }
 
-void JsonSerializer::BeginSerializeObjectImpl(std::string_view /*aName*/)
+void JsonSerializer::Serialize(std::string_view aName, uint16_t& aValue)
 {
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = nlohmann::json::object();
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
 }
 
-void JsonSerializer::BeginSerializeObjectImpl(size_t /*anIndex*/)
+void JsonSerializer::Serialize(std::string_view aName, uint32_t& aValue)
 {
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = nlohmann::json::object();
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, uint64_t& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, int8_t& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, int16_t& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, int32_t& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, int64_t& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, float& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, std::string& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, glm::vec2& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, glm::vec3& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, glm::vec4& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, glm::quat& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::Serialize(std::string_view aName, glm::mat4& aValue)
+{
+    if (aName.empty())
+    {
+        State& state = myStateStack.top();
+        Impl::SerializeBasic(state.myCurrIndex++, aValue, myCurrObj, IsReading());
+
+    }
+    else
+    {
+        Impl::SerializeBasic(aName, aValue, myCurrObj, IsReading());
+    }
+}
+
+void JsonSerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength)
+{
+    // it is possible to have an array of objects, and this is
+    // denoted by a missing name
+    const bool isPartOfArray = aName.empty();
+    if (IsReading())
+    {
+        nlohmann::json::iterator iter;
+        if (isPartOfArray)
+        {
+            State& state = myStateStack.top();
+            iter = myCurrObj.begin() + state.myCurrIndex;
+            state.myCurrIndex++;
+        }
+        else
+        {
+            iter = myCurrObj.find(std::string(aName));
+            
+        }
+        ASSERT_STR(iter != myCurrObj.end(), "Failed to find the object!");
+
+        anEnumValue = (*iter).get<size_t>();
+    }
+    else
+    {
+        if (isPartOfArray)
+        {
+            myCurrObj.push_back(anEnumValue);
+        }
+        else
+        {
+            myCurrObj[std::string(aName)] = anEnumValue;
+        }
+    }
+}
+
+bool JsonSerializer::BeginSerializeObjectImpl(std::string_view aName)
+{
+    // it is possible to have an array of objects, and this is
+    // denoted by a missing name
+    const bool isPartOfArray = aName.empty();
+    if (IsReading())
+    {
+        nlohmann::json::iterator iter;
+        if (isPartOfArray)
+        {
+            State& state = myStateStack.top();
+            iter = myCurrObj.begin() + state.myCurrIndex;
+            state.myCurrIndex++;
+        }
+        else
+        {
+            iter = myCurrObj.find(std::string(aName));
+        } 
+        ASSERT_STR(iter != myCurrObj.end(), "Failed to find the object!");
+        
+        // TODO: replace all the copies by values with a copy of pointers to
+        // objects
+        myStateStack.push({ myCurrObj, 0 });
+        myCurrObj = iter.value();
+    }
+    else
+    {
+        myStateStack.push({ std::move(myCurrObj), 0 });
+        myCurrObj = nlohmann::json::object();
+    }
+    return true;
 }
 
 void JsonSerializer::EndSerializeObjectImpl(std::string_view aName)
 {
-    nlohmann::json parent = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(parent.is_object(), "Current object is not a json object!");
-    parent[std::string(aName)] = std::move(myCurrObj);
-    myCurrObj = std::move(parent);
-}
-
-void JsonSerializer::EndSerializeObjectImpl(size_t anIndex)
-{
-    nlohmann::json parent = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(parent.is_array(), "Current object is not a json array!");
-    parent[anIndex] = std::move(myCurrObj);
-    myCurrObj = std::move(parent);
-}
-
-bool JsonSerializer::BeginDeserializeObjectImpl(std::string_view aName) const
-{
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-    auto iter = myCurrObj.find(std::string(aName));
-    if (iter == myCurrObj.end()) // TODO: [[unlikely]]
+    // it is possible to have an array of objects, and this is
+    // denoted by a missing name
+    const bool isPartOfArray = aName.empty();
+    if (IsReading())
     {
-        return false;
+        State state = std::move(myStateStack.top());
+        myCurrObj = std::move(state.myCurrObj);
+        myStateStack.pop();
     }
-    nlohmann::json childObj = std::move(iter.value());
-    ASSERT_STR(childObj.is_object(), "Current object is not a json object!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = std::move(childObj);
-    return true;
-}
-
-bool JsonSerializer::BeginDeserializeObjectImpl(size_t anIndex) const
-{
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-    if (anIndex >= myCurrObj.size()) // TODO: [[unlikely]]
+    else
     {
-        return false;
+        State state = std::move(myStateStack.top());
+        nlohmann::json parent = std::move(state.myCurrObj);
+        myStateStack.pop();
+
+        if (isPartOfArray)
+        {
+            parent.emplace_back(std::move(myCurrObj));
+        }
+        else
+        {
+            parent[std::string(aName)] = std::move(myCurrObj);
+        }
+        myCurrObj = std::move(parent);
     }
-    nlohmann::json childObj = myCurrObj.at(anIndex);
-    ASSERT_STR(childObj.is_object(), "Current object is not a json object!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = std::move(childObj);
+}
+
+bool JsonSerializer::BeginSerializeArrayImpl(std::string_view aName, size_t& aCount)
+{
+    // We don't support arrays-of-arrays serialization
+    // as there's no way to invoke this serialization right now
+    if (IsReading())
+    {
+        const auto& iter = myCurrObj.find(std::string(aName));
+        ASSERT_STR(iter != myCurrObj.end(), "Failed to find an array!");
+        
+        myStateStack.push({ myCurrObj, 0 });
+        myCurrObj = iter.value();
+        aCount = myCurrObj.size();
+    }
+    else
+    {
+        myStateStack.push({ std::move(myCurrObj), 0 });
+        myCurrObj = nlohmann::json::array();
+    }
     return true;
-}
-
-void JsonSerializer::EndDeserializeObjectImpl(std::string_view /*aName*/) const
-{
-    myCurrObj = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-}
-
-void JsonSerializer::EndDeserializeObjectImpl(size_t /*anIndex*/) const
-{
-    myCurrObj = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-}
-
-void JsonSerializer::BeginSerializeArrayImpl(std::string_view aName, size_t /*aCount*/)
-{
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = nlohmann::json::array();
-}
-
-void JsonSerializer::BeginSerializeArrayImpl(size_t anIndex, size_t /*aCount*/)
-{
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = nlohmann::json::array();
 }
 
 void JsonSerializer::EndSerializeArrayImpl(std::string_view aName)
 {
-    nlohmann::json parent = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(parent.is_object(), "Current object is not a json object!");
-    parent[std::string(aName)] = std::move(myCurrObj);
-    myCurrObj = std::move(parent);
-}
-
-void JsonSerializer::EndSerializeArrayImpl(size_t anIndex)
-{
-    nlohmann::json parent = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(parent.is_array(), "Current object is not a json array!");
-    parent[anIndex] = std::move(myCurrObj);
-    myCurrObj = std::move(parent);
-}
-
-bool JsonSerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const
-{
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
-    auto iter = myCurrObj.find(std::string(aName));
-    if (iter == myCurrObj.end()) // TODO: [[unlikely]]
+    // We don't support arrays-of-arrays serialization
+    // as there's no way to invoke this serialization right now
+    if (IsReading())
     {
-        return false;
+        State state = std::move(myStateStack.top());
+        myCurrObj = std::move(state.myCurrObj);
+        myStateStack.pop();
     }
-    nlohmann::json childObj = std::move(iter.value());
-    ASSERT_STR(childObj.is_array(), "Current object is not a json array!");
-    aCount = childObj.size();
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = std::move(childObj);
-    return true;
-}
-
-bool JsonSerializer::BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const
-{
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
-    if (anIndex >= myCurrObj.size()) // TODO: [[unlikely]]
+    else
     {
-        return false;
+        State state = std::move(myStateStack.top());
+        nlohmann::json parent = std::move(state.myCurrObj);
+        myStateStack.pop();
+
+        parent[std::string(aName)] = std::move(myCurrObj);
+        myCurrObj = std::move(parent);
     }
-    nlohmann::json childObj = myCurrObj.at(anIndex);
-    ASSERT_STR(childObj.is_array(), "Current object is not a json array!");
-    aCount = childObj.size();
-    myObjStack.push(std::move(myCurrObj));
-    myCurrObj = std::move(childObj);
-    return true;
 }
 
-void JsonSerializer::EndDeserializeArrayImpl(std::string_view /*aName*/) const
+void JsonSerializer::SerializeSpan(bool* aValues, size_t aSize)
 {
-    myCurrObj = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(myCurrObj.is_object(), "Current object is not a json object!");
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
 }
 
-void JsonSerializer::EndDeserializeArrayImpl(size_t /*anIndex*/) const
+void JsonSerializer::SerializeSpan(uint8_t* aValues, size_t aSize)
 {
-    myCurrObj = std::move(myObjStack.top());
-    myObjStack.pop();
-    ASSERT_STR(myCurrObj.is_array(), "Current object is not a json array!");
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(uint16_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(uint32_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(uint64_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(int8_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(int16_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(int32_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(int64_t* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(float* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(std::string* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(glm::vec2* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(glm::vec3* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(glm::vec4* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(glm::quat* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
+}
+
+void JsonSerializer::SerializeSpan(glm::mat4* aValues, size_t aSize)
+{
+    Impl::SerializeSpan(aValues, aSize, myCurrObj, IsReading());
 }
 
 namespace nlohmann
 {
-    template<>
-    struct adl_serializer<JsonSerializer::ResourceProxy>
-    {
-        static void to_json(json& j, const JsonSerializer::ResourceProxy& res)
-        {
-            if (!res.myPath.empty())
-            {
-                j = json{ {"Res", res.myPath} };
-            }
-            else
-            {
-                j = nullptr;
-            }
-        }
-
-        static void from_json(const json& j, JsonSerializer::ResourceProxy& res)
-        {
-            if (j.is_object())
-            {
-                res.myPath = j["Res"].get<std::string>();
-            }
-        }
-    };
-
     template<>
     struct adl_serializer<glm::vec2>
     {

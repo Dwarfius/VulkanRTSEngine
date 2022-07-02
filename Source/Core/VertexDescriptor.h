@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DataEnum.h"
+#include "StaticVector.h"
 
 class Serializer;
 
@@ -42,18 +43,17 @@ struct VertexDescriptor
 	};
 
 	static constexpr uint8_t kMaxMembers = 16;
-	static constexpr VertexDescriptor GetEmpty() { return { 0, 0, {} }; }
+	static constexpr VertexDescriptor GetEmpty() { return { 0, {} }; }
 
 	uint8_t mySize;
-	uint8_t myMemberCount;
-	MemberDescriptor myMembers[kMaxMembers];
+	StaticVector<MemberDescriptor, kMaxMembers> myMembers;
 
 	// TODO: replace with c++20 operator<=>!
 	constexpr bool operator==(const VertexDescriptor& aOther) const
 	{
 		auto CheckMembers = [](const VertexDescriptor& aLeft, const VertexDescriptor& aRight)
 		{
-			for (uint8_t index = 0; index < aLeft.myMemberCount; index++)
+			for (uint8_t index = 0; index < aLeft.myMembers.GetSize(); index++)
 			{
 				if (aLeft.myMembers[index] != aRight.myMembers[index])
 				{
@@ -63,7 +63,7 @@ struct VertexDescriptor
 			return true;
 		};
 		return mySize == aOther.mySize
-			&& myMemberCount == aOther.myMemberCount
+			&& myMembers.GetSize() == aOther.myMembers.GetSize()
 			&& CheckMembers(*this, aOther);
 	}
 

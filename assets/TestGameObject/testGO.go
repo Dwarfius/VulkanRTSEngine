@@ -18,7 +18,7 @@
 					"myType" : 0,
 					"myShape": 1,
 					"myMass": 0,
-					"myOrigin": [0, 0, 0],
+					"myOffset": [0, 0, 0],
 					"myHalfExtents": [0.5, 0.5, 0.5]
 				}
 			}

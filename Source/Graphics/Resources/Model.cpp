@@ -65,7 +65,7 @@ void Model::Serialize(Serializer& aSerializer)
 	aSerializer.Serialize("myVersion", version);
 	ASSERT_STR(version == 1, "Unsupported version!");
 
-	if (Serializer::Scope vertsScope = aSerializer.SerializeObject("myVertices"))
+	if (Serializer::ObjectScope vertsScope{ aSerializer, "myVertices" })
 	{
 		VertexDescriptor descriptor;
 		VertexDescriptor oldDescriptor;
@@ -74,10 +74,7 @@ void Model::Serialize(Serializer& aSerializer)
 			descriptor = GetVertexDescriptor();
 			oldDescriptor = descriptor;
 		}
-		if (Serializer::Scope descriptorScope = aSerializer.SerializeObject("myDescriptor"))
-		{
-			descriptor.Serialize(aSerializer);
-		}
+		aSerializer.Serialize("myDescriptor", descriptor);
 
 		if (aSerializer.IsReading() && (oldDescriptor != descriptor || !myVertices))
 		{
@@ -99,13 +96,7 @@ void Model::Serialize(Serializer& aSerializer)
 		myVertices->Serialize(aSerializer);
 	}
 
-	if (Serializer::Scope indexScope = aSerializer.SerializeArray("myIndices", myIndices))
-	{
-		for (size_t i = 0; i < myIndices.size(); i++)
-		{
-			aSerializer.Serialize(i, myIndices[i]);
-		}
-	}
+	aSerializer.Serialize("myIndices", myIndices);
 	myHasIndices = myIndices.size() > 0;
 
 	aSerializer.Serialize("myAABBMin", myAABBMin);
@@ -113,7 +104,7 @@ void Model::Serialize(Serializer& aSerializer)
 	myCenter = myAABBMin + (myAABBMax - myAABBMin) / 2.f;
 	mySphereRadius = glm::length(myAABBMax - myCenter);
 
-	aSerializer.SerializeEnum("myPrimitiveType", myPrimitiveType);
+	aSerializer.Serialize("myPrimitiveType", myPrimitiveType);
 }
 
 void Serialize(Serializer& aSerializer, Vertex& aVert)

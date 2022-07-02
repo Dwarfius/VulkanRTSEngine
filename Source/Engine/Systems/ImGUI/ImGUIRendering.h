@@ -36,7 +36,6 @@ struct ImGUIVertex
 		using ThisType = ImGUIVertex; // for copy-paste convenience
 		return {
 			sizeof(ThisType),
-			3,
 			{
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myPos) },
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myUv) },

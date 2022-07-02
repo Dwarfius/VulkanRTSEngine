@@ -121,7 +121,7 @@ void PhysicsComponent::RequestAddToWorld(PhysicsWorld& aWorld) const
 
 void PhysicsComponent::Serialize(Serializer& aSerializer)
 {
-	if (Serializer::Scope entityScope = aSerializer.SerializeObject("myPhysEntity"))
+	if (Serializer::ObjectScope entityScope{ aSerializer, "myPhysEntity" })
 	{
 		if (!myEntity)
 		{

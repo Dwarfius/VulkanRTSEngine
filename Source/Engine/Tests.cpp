@@ -146,18 +146,8 @@ struct Test
 		aSerializer.Serialize("my3", my3);
 		aSerializer.Serialize("my4", my4);
 		aSerializer.Serialize("my5", my5);
-		if (Serializer::Scope scope = aSerializer.SerializeArray("my6", my6))
-		{
-			for (size_t i = 0; i < my6.size(); i++)
-			{
-				aSerializer.Serialize(i, my6[i]);
-			}
-		}
-
-		if (Serializer::Scope scope = aSerializer.SerializeObject("my7"))
-		{
-			my7.Serialize(aSerializer);
-		}
+		aSerializer.Serialize("my6", my6);
+		aSerializer.Serialize("my7", my7);
 	}
 
 	void Match(const Test& aOther) const

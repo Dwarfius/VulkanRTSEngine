@@ -210,34 +210,28 @@ void GameObject::Serialize(Serializer& aSerializer)
 		return;
 	}
 
-	if (Serializer::Scope uidScope = aSerializer.SerializeObject("myUID"))
-	{
-		myUID.Serialize(aSerializer);
-	}
+	aSerializer.Serialize("myUID", myUID);
 	
 	// we can reconstruct world from local, so only serializing local
-	if (Serializer::Scope localTransfScope = aSerializer.SerializeObject("myLocalTransf"))
+	aSerializer.Serialize("myLocalTransf", myLocalTransf);
+	if (isReading)
 	{
-		myLocalTransf.Serialize(aSerializer);
-		if (isReading)
+		// because we're serializing hierarchy top to bottom,
+		// parent GO can set the myParent early
+		if(myParent.IsValid())
 		{
-			// because we're serializing hierarchy top to bottom,
-			// parent GO can set the myParent early
-			if(myParent.IsValid())
-			{
-				myWorldTransf = myParent->GetWorldTransform() * myLocalTransf;
-			}
-			else
-			{
-				myWorldTransf = myLocalTransf;
-			}
+			myWorldTransf = myParent->GetWorldTransform() * myLocalTransf;
+		}
+		else
+		{
+			myWorldTransf = myLocalTransf;
 		}
 	}
 
 	aSerializer.Serialize("myCenter", myCenter);
 
 	size_t compsCount = myComponents.size();
-	if (Serializer::Scope compsScope = aSerializer.SerializeArray("myComponents", compsCount))
+	if (Serializer::ArrayScope compsScope{ aSerializer, "myComponents", compsCount })
 	{
 		if (isReading)
 		{
@@ -246,7 +240,7 @@ void GameObject::Serialize(Serializer& aSerializer)
 
 		for (size_t i = 0; i < compsCount; i++)
 		{
-			if (Serializer::Scope compTypeScope = aSerializer.SerializeObject(i))
+			if (Serializer::ObjectScope compTypeScope{ aSerializer, Serializer::kArrayElem })
 			{
 				if (isReading)
 				{
@@ -289,7 +283,7 @@ void GameObject::Serialize(Serializer& aSerializer)
 
 				if (myComponents[i])
 				{
-					if (Serializer::Scope compScope = aSerializer.SerializeObject("myCompData"))
+					if (Serializer::ObjectScope compScope{ aSerializer, "myCompData" })
 					{
 						myComponents[i]->Serialize(aSerializer);
 					}
@@ -300,15 +294,15 @@ void GameObject::Serialize(Serializer& aSerializer)
 
 	// We're skipping parent serialization as it doesn't make much sense in
 	// saving who's the parent of current object, as we serialize hierarchy top to bottom
-	if (Serializer::Scope childrenScope = aSerializer.SerializeArray("myChildren", myChildren))
+	aSerializer.Serialize("myChildren", myChildren);
+	if (isReading)
 	{
-		for (size_t i = 0; i < myChildren.size(); i++)
+		for (Handle<GameObject>& child : myChildren)
 		{
-			aSerializer.Serialize(i, myChildren[i]);
 			// This is potentially dangerous - circular dep!
 			// To mitigate, children's serialization starts with a check if they own
 			// the last handle
-			myChildren[i]->myParent = this; 
+			child->myParent = this;
 		}
 	}
 }

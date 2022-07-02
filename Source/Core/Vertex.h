@@ -22,7 +22,6 @@ struct Vertex
 		using ThisType = Vertex; // for copy-paste convenience
 		return {
 			sizeof(ThisType),
-			3,
 			{  
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myPos) },
 				{ VertexDescriptor::MemberType::F32, 2, offsetof(ThisType, myUv) },
@@ -50,7 +49,6 @@ struct PosColorVertex
 		using ThisType = PosColorVertex; // for copy-paste convenience
 		return {
 			sizeof(ThisType),
-			2,
 			{
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myPos) },
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myColor) }

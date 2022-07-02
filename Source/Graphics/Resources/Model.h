@@ -226,7 +226,7 @@ template<class T>
 void Model::VertStorage<T>::Serialize(Serializer& aSerializer)
 {
 	size_t oldCount = myCount;
-	if (Serializer::Scope vertsScope = aSerializer.SerializeArray("myVerts", myCount))
+	if (Serializer::ArrayScope vertsScope{ aSerializer, "myVerts", myCount })
 	{
 		if (aSerializer.IsReading() && oldCount != myCount)
 		{
@@ -239,7 +239,7 @@ void Model::VertStorage<T>::Serialize(Serializer& aSerializer)
 		T* verts = GetData();
 		for (size_t i = 0; i < myCount; i++)
 		{
-			if (Serializer::Scope vertScope = aSerializer.SerializeObject(i))
+			if (Serializer::ObjectScope vertScope{ aSerializer, Serializer::kArrayElem })
 			{
 				using SerializeHelpers::Serialize;
 				Serialize(aSerializer, verts[i]);

@@ -13,7 +13,6 @@ struct SkinnedVertex
 		using ThisType = SkinnedVertex; // for copy-paste convenience
 		return {
 			sizeof(ThisType),
-			5,
 			{
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myPos) },
 				{ VertexDescriptor::MemberType::F32, 3, offsetof(ThisType, myNormal) },

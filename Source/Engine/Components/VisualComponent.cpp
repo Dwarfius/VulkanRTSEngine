@@ -41,10 +41,7 @@ void VisualComponent::SetTexture(size_t anIndex, Handle<Texture> aTexture)
 
 void VisualComponent::Serialize(Serializer& aSerializer)
 {
-	if (Serializer::Scope transfScope = aSerializer.SerializeObject("myTransf"))
-	{
-		myTransf.Serialize(aSerializer);
-	}
+	aSerializer.Serialize("myTransf", myTransf);
 
 	bool modelChanged = false;
 	{
@@ -61,14 +58,16 @@ void VisualComponent::Serialize(Serializer& aSerializer)
 	}
 
 	bool textureChanged = false;
-	if(Serializer::Scope texturesScope = aSerializer.SerializeArray("myTextures", myTextureResources))
+	size_t textureSize = myTextureResources.size();
+	if (Serializer::ArrayScope texturesScope{ aSerializer, "myTextures", textureSize })
 	{
+		myTextureResources.resize(textureSize);
 		ASSERT_STR(myTextureResources.size() == 1, "Multi-texture support mising from VisualObject!");
 		for (size_t i = 0; i < myTextureResources.size(); i++)
 		{
 			std::string oldTexture = myTextureResources[i];
-			aSerializer.Serialize(i, myTextureResources[i]);
-			textureChanged = myTextureResources[i] != oldTexture;
+			aSerializer.Serialize(Serializer::kArrayElem, myTextureResources[i]);
+			textureChanged |= myTextureResources[i] != oldTexture;
 		}
 	}
 

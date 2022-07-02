@@ -1,6 +1,153 @@
 #include "Precomp.h"
 #include "BinarySerializer.h"
 
+namespace Impl
+{
+	// Serialization of (unsigned-)integrals by octets
+	template<class T>
+	void SerializeBasic(std::vector<char>& aBuffer, size_t& anIndex, T& aValue, bool aIsReading)
+	{
+		using UnsignedT = std::make_unsigned_t<T>;
+		constexpr size_t kIters = sizeof(UnsignedT) / sizeof(char);
+		
+		if (aIsReading)
+		{
+			UnsignedT unsignedValue = 0;
+			for (uint8_t i = 0; i < kIters; i++)
+			{
+				uint8_t byteVal = static_cast<uint8_t>(aBuffer[anIndex + i]);
+				unsignedValue |= byteVal << (i * 8);
+			}
+			aValue = std::bit_cast<T>(unsignedValue);
+			anIndex += kIters;
+		}
+		else
+		{
+			size_t currPos = aBuffer.size();
+			aBuffer.resize(aBuffer.size() + kIters);
+
+			UnsignedT unsignedValue = std::bit_cast<UnsignedT>(aValue);
+			for (uint8_t i = 0; i < kIters; i++)
+			{
+				uint8_t byteVal = static_cast<uint8_t>(unsignedValue >> (i * 8));
+				aBuffer[currPos + i] = byteVal;
+			}
+		}
+	}
+
+	template<>
+	void SerializeBasic<bool>(std::vector<char>& aBuffer, size_t& anIndex, bool& aValue, bool aIsReading)
+	{
+		uint8_t value = std::bit_cast<uint8_t>(aValue);
+		SerializeBasic(aBuffer, anIndex, value, aIsReading);
+		aValue = std::bit_cast<bool>(value);
+	}
+
+	template<>
+	void SerializeBasic<float>(std::vector<char>& aBuffer, size_t& anIndex, float& aValue, bool aIsReading)
+	{
+		uint32_t value = std::bit_cast<uint32_t>(aValue);
+		SerializeBasic(aBuffer, anIndex, value, aIsReading);
+		aValue = std::bit_cast<float>(value);
+	}
+
+	template<class T>
+	void SerializeSpan(std::vector<char>& aBuffer, size_t& anIndex, T* aValues, size_t aSize, bool aIsReading)
+	{
+		using UnsignedT = std::make_unsigned_t<T>;
+		constexpr size_t kIters = sizeof(UnsignedT) / sizeof(char);
+
+		if (aIsReading)
+		{
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				UnsignedT unsignedValue = 0;
+				for (uint8_t i = 0; i < kIters; i++)
+				{
+					uint8_t byteVal = static_cast<uint8_t>(aBuffer[anIndex + i]);
+					unsignedValue |= byteVal << (i * 8);
+				}
+				aValues[elem] = std::bit_cast<T>(unsignedValue);
+				anIndex += kIters;
+			}
+		}
+		else
+		{
+			size_t currPos = aBuffer.size();
+			aBuffer.resize(aBuffer.size() + kIters * aSize);
+
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				UnsignedT unsignedValue = std::bit_cast<UnsignedT>(aValues[elem]);
+				for (uint8_t i = 0; i < kIters; i++)
+				{
+					uint8_t byteVal = static_cast<uint8_t>(unsignedValue >> (i * 8));
+					aBuffer[currPos + elem * kIters + i] = byteVal;
+				}
+			}
+		}
+	}
+
+	template<>
+	void SerializeSpan<bool>(std::vector<char>& aBuffer, size_t& anIndex, bool* aValues, size_t aSize, bool aIsReading)
+	{
+		if (aIsReading)
+		{
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				aValues[elem] = aBuffer[anIndex + elem] != 0;
+			}
+		}
+		else
+		{
+			size_t currPos = aBuffer.size();
+			aBuffer.resize(aBuffer.size() + aSize);
+
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				aBuffer[currPos + elem] = static_cast<uint8_t>(aValues[elem]);
+			}
+		}
+	}
+
+	template<>
+	void SerializeSpan<float>(std::vector<char>& aBuffer, size_t& anIndex, float* aValues, size_t aSize, bool aIsReading)
+	{
+		using UnsignedT = uint32_t;
+		constexpr size_t kIters = sizeof(float) / sizeof(char);
+
+		if (aIsReading)
+		{
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				UnsignedT unsignedValue = 0;
+				for (uint8_t i = 0; i < kIters; i++)
+				{
+					uint8_t byteVal = static_cast<uint8_t>(aBuffer[anIndex + i]);
+					unsignedValue |= byteVal << (i * 8);
+				}
+				aValues[elem] = std::bit_cast<float>(unsignedValue);
+				anIndex += kIters;
+			}
+		}
+		else
+		{
+			size_t currPos = aBuffer.size();
+			aBuffer.resize(aBuffer.size() + kIters * aSize);
+
+			for (size_t elem = 0; elem < aSize; elem++)
+			{
+				UnsignedT unsignedValue = std::bit_cast<UnsignedT>(aValues[elem]);
+				for (uint8_t i = 0; i < kIters; i++)
+				{
+					uint8_t byteVal = static_cast<uint8_t>(unsignedValue >> (i * 8));
+					aBuffer[currPos + elem * kIters + i] = byteVal;
+				}
+			}
+		}
+	}
+}
+
 void BinarySerializer::ReadFrom(const std::vector<char>& aBuffer)
 {
 	myBuffer = aBuffer;
@@ -12,93 +159,106 @@ void BinarySerializer::WriteTo(std::vector<char>& aBuffer) const
 	aBuffer = myBuffer;
 }
 
+void BinarySerializer::Serialize(std::string_view, bool& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, uint8_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, uint16_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, uint32_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, uint64_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, int8_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, int16_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, int32_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, int64_t& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, float& aValue)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, aValue, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, std::string& aValue)
+{
+	const bool isReading = IsReading();
+	size_t size = aValue.size();
+	Impl::SerializeBasic(myBuffer, myIndex, size, isReading);
+	aValue.resize(size);
+
+	Impl::SerializeSpan(myBuffer, myIndex, aValue.data(), size, isReading);
+}
+
+void BinarySerializer::Serialize(std::string_view, glm::vec2& aValue)
+{
+	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 2, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, glm::vec3& aValue)
+{
+	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 3, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, glm::vec4& aValue)
+{
+	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 4, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, glm::quat& aValue)
+{
+	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 4, IsReading());
+}
+
+void BinarySerializer::Serialize(std::string_view, glm::mat4& aValue)
+{
+	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 16, IsReading());
+}
+
 void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob)
 {
 	std::string filename(aFile);
-	Serializer::Serialize("myExternFile", filename);
+	Serialize("myExternFile", filename);
 	size_t size = aBlob.size();
-	Serializer::Serialize("myExternFileSize", size);
-	if (IsReading())
-	{
-		aBlob.resize(size);
-		for (size_t i = 0; i < size; i++)
-		{
-			Read(aBlob[i]);
-		}
-	}
-	else
-	{
-		size_t currPos = myBuffer.size();
-		myBuffer.resize(myBuffer.size() + size);
-		for (size_t i = 0; i < size; i++)
-		{
-			Write(aBlob[i]);
-		}
-	}
+	Serialize("myExternFileSize", size);
+	aBlob.resize(size);
+
+	Impl::SerializeSpan(myBuffer, myIndex, aBlob.data(), size, IsReading());
 }
 
-void BinarySerializer::SerializeImpl(std::string_view, const VariantType& aValue)
-{
-	std::visit([&](auto&& aVarValue) {
-		Write(aVarValue);
-	}, aValue);
-}
-
-void BinarySerializer::SerializeImpl(size_t, const VariantType& aValue)
-{
-	std::visit([&](auto&& aVarValue) {
-		Write(aVarValue);
-	}, aValue);
-}
-
-void BinarySerializer::DeserializeImpl(std::string_view, VariantType& aValue) const
-{
-	std::visit([&](auto&& aVarValue) {
-		using Type = std::decay_t<decltype(aVarValue)>;
-		Type valueToRead;
-		Read(valueToRead);
-		aVarValue = valueToRead;
-	}, aValue);
-}
-
-void BinarySerializer::DeserializeImpl(size_t, VariantType& aValue) const
-{
-	std::visit([&](auto&& aVarValue) {
-		using Type = std::decay_t<decltype(aVarValue)>;
-		Type valueToRead;
-		Read(valueToRead);
-		aVarValue = valueToRead;
-	}, aValue);
-}
-
-void BinarySerializer::SerializeEnumImpl(std::string_view aName, size_t anEnumValue, const char* const*, size_t)
-{
-	Write(anEnumValue);
-}
-
-void BinarySerializer::SerializeEnumImpl(size_t anIndex, size_t anEnumValue, const char* const*, size_t)
-{
-	Write(anEnumValue);
-}
-
-void BinarySerializer::DeserializeEnumImpl(std::string_view aName, size_t& anEnumValue, const char* const*, size_t) const
-{
-	Read(anEnumValue);
-}
-
-void BinarySerializer::DeserializeEnumImpl(size_t anIndex, size_t& anEnumValue, const char* const*, size_t) const
-{
-	Read(anEnumValue);
-}
-
-void BinarySerializer::BeginSerializeObjectImpl(std::string_view)
+bool BinarySerializer::BeginSerializeObjectImpl(std::string_view)
 {
 	// NOOP
-}
-
-void BinarySerializer::BeginSerializeObjectImpl(size_t)
-{
-	// NOOP
+	return true;
 }
 
 void BinarySerializer::EndSerializeObjectImpl(std::string_view)
@@ -106,41 +266,10 @@ void BinarySerializer::EndSerializeObjectImpl(std::string_view)
 	// NOOP
 }
 
-void BinarySerializer::EndSerializeObjectImpl(size_t)
+bool BinarySerializer::BeginSerializeArrayImpl(std::string_view aName, size_t& aCount)
 {
-	// NOOP
-}
-
-bool BinarySerializer::BeginDeserializeObjectImpl(std::string_view) const
-{
-	// NOOP
+	Impl::SerializeBasic(myBuffer, myIndex, aCount, IsReading());
 	return true;
-}
-
-bool BinarySerializer::BeginDeserializeObjectImpl(size_t) const
-{
-	// NOOP
-	return true;
-}
-
-void BinarySerializer::EndDeserializeObjectImpl(std::string_view) const
-{
-	// NOOP
-}
-
-void BinarySerializer::EndDeserializeObjectImpl(size_t) const
-{
-	// NOOP
-}
-
-void BinarySerializer::BeginSerializeArrayImpl(std::string_view aName, size_t aCount)
-{
-	SerializeImpl(aName, aCount);
-}
-
-void BinarySerializer::BeginSerializeArrayImpl(size_t anIndex, size_t aCount)
-{
-	SerializeImpl(anIndex, aCount);
 }
 
 void BinarySerializer::EndSerializeArrayImpl(std::string_view)
@@ -148,260 +277,121 @@ void BinarySerializer::EndSerializeArrayImpl(std::string_view)
 	// NOOP
 }
 
-void BinarySerializer::EndSerializeArrayImpl(size_t)
+void BinarySerializer::SerializeSpan(bool* aValues, size_t aSize) 
 {
-	// NOOP
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-bool BinarySerializer::BeginDeserializeArrayImpl(std::string_view aName, size_t& aCount) const
+void BinarySerializer::SerializeSpan(uint8_t* aValues, size_t aSize) 
 {
-	VariantType variant = size_t{};
-	DeserializeImpl(aName, variant);
-	aCount = std::get<size_t>(variant);
-	return true;
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-bool BinarySerializer::BeginDeserializeArrayImpl(size_t anIndex, size_t& aCount) const
+void BinarySerializer::SerializeSpan(uint16_t* aValues, size_t aSize) 
 {
-	VariantType variant = size_t{};
-	DeserializeImpl(anIndex, variant);
-	aCount = std::get<size_t>(variant);
-	return true;
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::EndDeserializeArrayImpl(std::string_view) const
+void BinarySerializer::SerializeSpan(uint32_t* aValues, size_t aSize) 
 {
-	// NOOP
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::EndDeserializeArrayImpl(size_t) const
+void BinarySerializer::SerializeSpan(uint64_t* aValues, size_t aSize) 
 {
-	// NOOP
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::Write(bool aValue)
+void BinarySerializer::SerializeSpan(int8_t* aValues, size_t aSize) 
 {
-	myBuffer.push_back(aValue);
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::Read(bool& aValue) const
+void BinarySerializer::SerializeSpan(int16_t* aValues, size_t aSize) 
 {
-	aValue = myBuffer[myIndex] != 0;
-	myIndex++;
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::Write(char aValue)
+void BinarySerializer::SerializeSpan(int32_t* aValues, size_t aSize) 
 {
-	myBuffer.push_back(aValue);
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::Read(char& aValue) const
+void BinarySerializer::SerializeSpan(int64_t* aValues, size_t aSize) 
 {
-	aValue = myBuffer[myIndex];
-	myIndex++;
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
 }
 
-void BinarySerializer::Write(uint32_t aValue)
+void BinarySerializer::SerializeSpan(float* aValues, size_t aSize) 
 {
-	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
-	size_t currPos = myBuffer.size();
-	myBuffer.resize(myBuffer.size() + kIters);
-	for (size_t i = 0; i < kIters; i++)
+	Impl::SerializeSpan(myBuffer, myIndex, aValues, aSize, IsReading());
+}
+
+void BinarySerializer::SerializeSpan(std::string* aValues, size_t aSize) 
+{
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
 	{
-		const char byteVal = static_cast<const char>(aValue >> (i * 8));
-		myBuffer[currPos + i] = byteVal;
+		std::string& value = aValues[i];
+		size_t size = value.size();
+		Impl::SerializeBasic(myBuffer, myIndex, size, isReading);
+		value.resize(size);
+
+		Impl::SerializeSpan(myBuffer, myIndex, value.data(), size, isReading);
 	}
 }
 
-void BinarySerializer::Read(uint32_t& aValue) const
+void BinarySerializer::SerializeSpan(glm::vec2* aValues, size_t aSize) 
 {
-	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
-	aValue = 0;
-	for (size_t i = 0; i < kIters; i++)
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
 	{
-		unsigned char byteVal = myBuffer[myIndex + i];
-		uint32_t value = byteVal;
-		aValue |= value << (i * 8);
-	}
-	myIndex += kIters;
-}
-
-void BinarySerializer::Write(int32_t aValue)
-{
-	uint32_t value = std::bit_cast<uint32_t>(aValue);
-	Write(value);
-}
-
-void BinarySerializer::Read(int32_t& aValue) const
-{
-	uint32_t value;
-	Read(value);
-	aValue = std::bit_cast<int32_t>(value);
-}
-
-void BinarySerializer::Write(uint64_t aValue)
-{
-	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
-	size_t currPos = myBuffer.size();
-	myBuffer.resize(myBuffer.size() + kIters);
-	for (size_t i = 0; i < kIters; i++)
-	{
-		const char byteVal = static_cast<const char>(aValue >> (i * 8));
-		myBuffer[currPos + i] = byteVal;
+		Impl::SerializeSpan(myBuffer, myIndex, 
+			glm::value_ptr(aValues[i]), 2, isReading);
 	}
 }
 
-void BinarySerializer::Read(uint64_t& aValue) const
+void BinarySerializer::SerializeSpan(glm::vec3* aValues, size_t aSize)
 {
-	constexpr size_t kIters = sizeof(aValue) / sizeof(char);
-	aValue = 0;
-	for (size_t i = 0; i < kIters; i++)
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
 	{
-		unsigned char byteVal = myBuffer[myIndex + i];
-		uint64_t value = byteVal;
-		aValue |= value << (i * 8);
-	}
-	myIndex += kIters;
-}
-
-void BinarySerializer::Write(int64_t aValue)
-{
-	uint64_t value = std::bit_cast<uint64_t>(aValue);
-	Write(value);
-}
-
-void BinarySerializer::Read(int64_t& aValue) const
-{
-	uint64_t value;
-	Read(value);
-	aValue = std::bit_cast<int64_t>(value);
-}
-
-void BinarySerializer::Write(float aValue)
-{
-	uint32_t value = std::bit_cast<uint32_t>(aValue);
-	Write(value);
-}
-
-void BinarySerializer::Read(float& aValue) const
-{
-	uint32_t value;
-	Read(value);
-	aValue = std::bit_cast<float>(value);
-}
-
-void BinarySerializer::Write(const std::string& aValue)
-{
-	// Size
-	Write(aValue.size());
-
-	// Contents
-	const size_t kIters = aValue.size();
-	size_t currPos = myBuffer.size();
-	myBuffer.resize(myBuffer.size() + kIters);
-	for (size_t i = 0; i < kIters; i++)
-	{
-		myBuffer[currPos + i] = aValue[i];
+		Impl::SerializeSpan(myBuffer, myIndex,
+			glm::value_ptr(aValues[i]), 3, isReading);
 	}
 }
 
-void BinarySerializer::Read(std::string& aValue) const
+void BinarySerializer::SerializeSpan(glm::vec4* aValues, size_t aSize) 
 {
-	// Size
-	uint64_t size;
-	Read(size);
-
-	// Contents
-	aValue.resize(size);
-	for (size_t i = 0; i < size; i++)
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
 	{
-		aValue[i] = myBuffer[myIndex + i];
-	}
-	myIndex += size;
-}
-
-void BinarySerializer::Write(const ResourceProxy& aValue)
-{
-	Write(aValue.myPath);
-}
-
-void BinarySerializer::Read(ResourceProxy& aValue) const
-{
-	Read(aValue.myPath);
-}
-
-void BinarySerializer::Write(const glm::vec2& aValue)
-{
-	Write(aValue.x);
-	Write(aValue.y);
-}
-
-void BinarySerializer::Read(glm::vec2& aValue) const
-{
-	Read(aValue.x);
-	Read(aValue.y);
-}
-
-void BinarySerializer::Write(const glm::vec3& aValue)
-{
-	Write(aValue.x);
-	Write(aValue.y);
-	Write(aValue.z);
-}
-
-void BinarySerializer::Read(glm::vec3& aValue) const
-{
-	Read(aValue.x);
-	Read(aValue.y);
-	Read(aValue.z);
-}
-
-void BinarySerializer::Write(const glm::vec4& aValue)
-{
-	Write(aValue.x);
-	Write(aValue.y);
-	Write(aValue.z);
-	Write(aValue.w);
-}
-
-void BinarySerializer::Read(glm::vec4& aValue) const
-{
-	Read(aValue.x);
-	Read(aValue.y);
-	Read(aValue.z);
-	Read(aValue.w);
-}
-
-void BinarySerializer::Write(const glm::quat& aValue)
-{
-	Write(aValue.x);
-	Write(aValue.y);
-	Write(aValue.z);
-	Write(aValue.w);
-}
-
-void BinarySerializer::Read(glm::quat& aValue) const
-{
-	Read(aValue.x);
-	Read(aValue.y);
-	Read(aValue.z);
-	Read(aValue.w);
-}
-
-void BinarySerializer::Write(const glm::mat4& aValue)
-{
-	constexpr int matLength = glm::mat4::length() * glm::mat4::length();
-	for (uint8_t index = 0; index < matLength; index++)
-	{
-		Write(glm::value_ptr(aValue)[index]);
+		Impl::SerializeSpan(myBuffer, myIndex,
+			glm::value_ptr(aValues[i]), 4, isReading);
 	}
 }
 
-void BinarySerializer::Read(glm::mat4& aValue) const
+void BinarySerializer::SerializeSpan(glm::quat* aValues, size_t aSize) 
 {
-	constexpr int matLength = glm::mat4::length() * glm::mat4::length();
-	for (uint8_t index = 0; index < matLength; index++)
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
 	{
-		Read(glm::value_ptr(aValue)[index]);
+		Impl::SerializeSpan(myBuffer, myIndex,
+			glm::value_ptr(aValues[i]), 4, isReading);
 	}
+}
+
+void BinarySerializer::SerializeSpan(glm::mat4* aValues, size_t aSize) 
+{
+	const bool isReading = IsReading();
+	for (size_t i = 0; i < aSize; i++)
+	{
+		Impl::SerializeSpan(myBuffer, myIndex,
+			glm::value_ptr(aValues[i]), 16, isReading);
+	}
+}
+
+void BinarySerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength)
+{
+	Impl::SerializeBasic(myBuffer, myIndex, anEnumValue, IsReading());
 }

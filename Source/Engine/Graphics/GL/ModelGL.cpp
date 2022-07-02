@@ -63,7 +63,7 @@ void ModelGL::OnCreate(Graphics& aGraphics)
 
 	myVertDescriptor = model->GetVertexDescriptor();
 	const GLsizei vertSize = static_cast<GLsizei>(myVertDescriptor.mySize);	
-	const uint8_t vertMemberCount = myVertDescriptor.myMemberCount;
+	const uint8_t vertMemberCount = static_cast<uint8_t>(myVertDescriptor.myMembers.GetSize());
 	for (uint8_t vertMemberInd = 0; vertMemberInd < vertMemberCount; vertMemberInd++)
 	{
 		const VertexDescriptor::MemberDescriptor memberDesc = myVertDescriptor.myMembers[vertMemberInd];

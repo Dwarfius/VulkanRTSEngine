@@ -7,6 +7,21 @@
 
 static_assert(std::is_same_v<AnimationClip::BoneIndex, Skeleton::BoneIndex>, "Bone Indices must match!");
 
+void AnimationClip::Mark::Serialize(Serializer& aSerializer)
+{
+	aSerializer.Serialize("myTimeStamp", myTimeStamp);
+	aSerializer.Serialize("myValue", myValue);
+}
+
+void AnimationClip::BoneTrack::Serialize(Serializer& aSerializer)
+{
+	aSerializer.Serialize("myTrackStart", myTrackStart);
+	aSerializer.Serialize("myMarkCount", myMarkCount);
+	aSerializer.Serialize("myBone", myBone);
+	aSerializer.Serialize("myAffectedProperty", myAffectedProperty);
+	aSerializer.Serialize("myInterpolation", myInterpolation);
+}
+
 AnimationClip::AnimationClip(float aLength, bool aIsLooping)
 	: myLength(aLength)
 	, myIsLooping(aIsLooping)
@@ -130,35 +145,8 @@ glm::quat AnimationClip::CalculateQuat(size_t aMarkInd, float aTime, const BoneT
 
 void AnimationClip::Serialize(Serializer& aSerializer)
 {
-	if (Serializer::Scope tracksScope = aSerializer.SerializeArray("myTracks", myTracks))
-	{
-		for (size_t i = 0; i < myTracks.size(); i++)
-		{
-			if (Serializer::Scope trackScope = aSerializer.SerializeObject(i))
-			{
-				AnimationClip::BoneTrack& track = myTracks[i];
-				aSerializer.Serialize("myTrackStart", track.myTrackStart);
-				aSerializer.Serialize("myMarkCount", track.myMarkCount);
-				aSerializer.Serialize("myBone", track.myBone);
-				aSerializer.SerializeEnum("myAffectedProperty", track.myAffectedProperty);
-				aSerializer.SerializeEnum("myInterpolation", track.myInterpolation);
-			}
-		}
-	}
-
-	if (Serializer::Scope marksScope = aSerializer.SerializeArray("myMarks", myMarks))
-	{
-		for (size_t i = 0; i < myMarks.size(); i++)
-		{
-			if (Serializer::Scope markkScope = aSerializer.SerializeObject(i))
-			{
-				AnimationClip::Mark& mark = myMarks[i];
-				aSerializer.Serialize("myTimeStamp", mark.myTimeStamp);
-				aSerializer.Serialize("myValue", mark.myValue);
-			}
-		}
-	}
-
+	aSerializer.Serialize("myTracks", myTracks);
+	aSerializer.Serialize("myMarks", myMarks);
 	aSerializer.Serialize("myLength", myLength);
 	aSerializer.Serialize("myIsLooping", myIsLooping);
 }

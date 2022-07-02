@@ -16,7 +16,7 @@ Shader::Shader(Resource::Id anId, const std::string& aPath)
 
 void Shader::Serialize(Serializer& aSerializer)
 {
-	aSerializer.SerializeEnum("myType", myType);
+	aSerializer.Serialize("myType", myType);
 
 	std::string shaderSrcFile = GetPath();
 	shaderSrcFile = shaderSrcFile.replace(shaderSrcFile.size() - 3, 3, "txt");
