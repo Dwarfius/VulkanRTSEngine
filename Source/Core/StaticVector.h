@@ -56,6 +56,29 @@ public:
 		return myCount;
 	}
 
+	// If the new size is smaller than current,
+	// destroys all elements in the orphaned range.
+	// If the new size is larger it does NOT construct
+	// new elements
+	// If the new size is the same - NOOP
+	constexpr void Resize(size_t aNewSize)
+	{
+		ASSERT(aNewSize <= N);
+		if (myCount >= aNewSize)
+		{
+			// Shrinking with destruction of elements
+			while (myCount != aNewSize)
+			{
+				PopBack();
+			}
+		}
+		else
+		{
+			// Growing - skipping constructing elements
+			myCount = static_cast<uint16_t>(aNewSize);
+		}
+	}
+
 	constexpr T& operator[](size_t anIndex)
 	{
 		ASSERT(anIndex < myCount);
@@ -86,6 +109,16 @@ public:
 	constexpr ConstIter end() const
 	{
 		return ConstIter(myItems.data(), myCount);
+	}
+
+	constexpr T* data()
+	{
+		return myItems.data();
+	}
+
+	constexpr const T* data() const
+	{
+		return myItems.data();
 	}
 
 private:
