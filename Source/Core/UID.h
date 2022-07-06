@@ -8,14 +8,14 @@ public:
 	static void Init();
 	static UID Create();
 
-	UID();
-
 	// pass in char[33] array
 	void GetString(char* aString) const;
 
 	bool operator==(const UID& other) const
 	{
-		return myMac == other.myMac && myTime == other.myTime && myRndNum == other.myRndNum;
+		return myMac == other.myMac 
+			&& myTime == other.myTime 
+			&& myRndNum == other.myRndNum;
 	}
 
 	void Serialize(Serializer& aSerializer);
@@ -28,9 +28,9 @@ private:
 	friend struct std::hash<UID>;
 
 	// have 2 bytes unoccupied at the start - could reuse as a tag?
-	size_t myMac;
-	uint32_t myTime;
-	uint32_t myRndNum;
+	size_t myMac = 0;
+	uint32_t myTime = 0;
+	uint32_t myRndNum = 0;
 };
 
 namespace std

@@ -55,13 +55,6 @@ UID UID::Create()
 	return newUID;
 }
 
-UID::UID()
-	: myMac(0)
-	, myTime(0)
-	, myRndNum(0)
-{
-}
-
 void UID::GetString(char* aString) const
 {
 	std::snprintf(aString, 32, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
