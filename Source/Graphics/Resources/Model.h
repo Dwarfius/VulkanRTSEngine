@@ -14,6 +14,7 @@ public:
 	template<class T>
 	struct UploadDescriptor
 	{
+		// TODO: provide a default constructor to zero out everything
 		const T* myVertices;
 		size_t myVertCount;
 		const IndexType* myIndices; // optional
@@ -83,7 +84,8 @@ public:
 	};
 
 public:
-	// TODO: instead of baseStorage pointer, use template<class VertexT>
+	// TODO: simplify the constructors, as the user doesn't have to know BaseStorage.
+	// Provide a way to pass in indices from the get-go as well
 	Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices);
 	Model(Resource::Id anId, const std::string& aPath);
 	~Model();

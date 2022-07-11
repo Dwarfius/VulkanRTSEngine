@@ -27,6 +27,8 @@
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
 
+#include <filesystem>
+
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
@@ -73,6 +75,8 @@ EditorMode::EditorMode(Game& aGame)
 	myAnimTest = new AnimationTest(aGame);
 
 	solver.Init(aGame);
+
+	CreateDefaultResources(aGame);
 }
 
 EditorMode::~EditorMode()
@@ -166,6 +170,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 
 	solver.Update(aGame, aDeltaTime);
+
+	DrawMenu(aGame);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
@@ -223,6 +229,345 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 	const glm::quat yawRot(glm::radians(yawDelta));
 
 	aCamTransf.SetRotation(yawRot * aCamTransf.GetRotation() * pitchRot);
+}
+
+void EditorMode::CreateDefaultResources(Game& aGame)
+{
+	AssetTracker& assetTracker = aGame.GetAssetTracker();
+
+	// Plane
+	{
+		Vertex verts[]{
+			{ { -0.5f, 0, -0.5f }, { 0, 0 }, { 0, 1, 0 } },
+			{ { 0.5f, 0, -0.5f }, { 1, 0 }, { 0, 1, 0 } },
+			{ { -0.5f, 0, 0.5f }, { 0, 1 }, { 0, 1, 0 } },
+			{ { 0.5f, 0, 0.5f }, { 1, 1 }, { 0, 1, 0 } }
+		};
+		Model::IndexType indices[]{
+			0, 2, 1,
+			2, 3, 1
+		};
+		myPlane = new Model(
+			Model::PrimitiveType::Triangles,
+			new Model::VertStorage<Vertex>(4),
+			true
+		);
+
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = verts;
+		uploadDesc.myVertCount = 4;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndices = indices;
+		uploadDesc.myIndCount = 6;
+		uploadDesc.myIndOwned = false;
+		uploadDesc.myNextDesc = nullptr;
+		myPlane->Update(uploadDesc);
+		assetTracker.AssignDynamicId(*myPlane.Get());
+	}
+
+	// Sphere
+	{
+		constexpr uint8_t kVertSegments = 32;
+		constexpr uint8_t kHorSegments = kVertSegments + 1;
+
+		std::vector<Vertex> vertices;
+		constexpr float kOneOverHorSegments = 1.f / kHorSegments;
+		for (uint8_t x = 0; x <= kHorSegments; x++)
+		{
+			const float u = kOneOverHorSegments * x + kOneOverHorSegments / 2.f;
+			vertices.emplace_back(
+				glm::vec3{ 0, 1, 0 },
+				glm::vec2{ 1.f - u, 0.f },
+				glm::vec3{ 0, 1, 0 }
+			);
+		}
+		constexpr float kOveOverVertSegments = 1.f / kVertSegments;
+		for (uint8_t j = 0; j < kVertSegments - 1; j++)
+		{
+			// Vertical angle, covers half-circle
+			const float alpha = glm::pi<float>() / 2.f 
+				+ glm::pi<float>() / kVertSegments * (j + 1);
+			const float y = glm::sin(alpha);
+			const float cosA = glm::cos(alpha);
+			for (uint8_t i = 0; i <= kHorSegments; i++)
+			{
+				// Horizontal angle, covers full circle
+				const float beta = glm::two_pi<float>() / kHorSegments * i;
+				const float x = cosA * glm::cos(beta);
+				const float z = cosA * glm::sin(beta);
+
+				const glm::vec3 pos{ x, y, z };
+
+				const float u = kOneOverHorSegments * i;
+				const float v = kOveOverVertSegments * (j + 1);
+				const glm::vec2 uv = { 1.f - u, v	};
+				vertices.emplace_back(
+					pos, 
+					uv,
+					pos // since it's a unit sphere, we can reuse pos as normal
+				);
+			}
+		}
+		for (uint8_t x = 0; x <= kHorSegments; x++)
+		{
+			const float u = kOneOverHorSegments * x + kOneOverHorSegments / 2.f;
+			vertices.emplace_back(
+				glm::vec3{ 0, -1, 0 },
+				glm::vec2{ 1.f - u, 1.f },
+				glm::vec3{ 0, -1, 0 }
+			);
+		}
+
+		std::vector<Model::IndexType> indices;
+		// top fan
+		for (uint8_t x = 0; x < kHorSegments; x++)
+		{
+			indices.push_back(x);
+			indices.push_back(kHorSegments + 1 + (x + 1));
+			indices.push_back(kHorSegments + 1 + x);
+		}
+		// quads
+		for (uint8_t y = 0; y < kVertSegments - 2; y++)
+		{
+			for (uint8_t x = 0; x <= kHorSegments; x++)
+			{
+				constexpr Model::IndexType kTopOffset = kHorSegments;
+				constexpr Model::IndexType width = kHorSegments + 1;
+				const Model::IndexType topLeft = kTopOffset + y * width + x;
+				const Model::IndexType topRight = kTopOffset + y * width + x + 1;
+				const Model::IndexType bottomLeft = kTopOffset + (y + 1) * width + x;
+				const Model::IndexType bottomRight = kTopOffset + (y + 1) * width + x + 1;
+
+				// top left triangle
+				indices.push_back(topLeft);
+				indices.push_back(topRight);
+				indices.push_back(bottomLeft);
+
+				// bottom right triangle
+				indices.push_back(bottomLeft);
+				indices.push_back(topRight);
+				indices.push_back(bottomRight);
+			}
+		}
+		// bottom fan
+		for (uint8_t x = 0; x < kHorSegments; x++)
+		{
+			const Model::IndexType lastVert = static_cast<Model::IndexType>(vertices.size() - kHorSegments - 1);
+			const Model::IndexType ringStart = lastVert - kHorSegments - 1;
+			indices.push_back(lastVert + x);
+			indices.push_back(ringStart + x);
+			indices.push_back(ringStart + x + 1);
+		}
+
+		mySphere = new Model(
+			Model::PrimitiveType::Triangles, 
+			new Model::VertStorage<Vertex>(0), 
+			false
+		);
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = vertices.data();
+		uploadDesc.myVertCount = vertices.size();
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndices = indices.data();
+		uploadDesc.myIndCount = indices.size();
+		uploadDesc.myIndOwned = false;
+		uploadDesc.myNextDesc = nullptr;
+		mySphere->Update(uploadDesc);
+		assetTracker.AssignDynamicId(*mySphere.Get());
+	}
+
+	// Box
+	{
+		constexpr float kDiagComp = 0.57735026f;
+		Vertex verts[]{
+			// front
+			{ { -0.5f, -0.5f, 0.5f }, { 0, 1 }, { -kDiagComp, -kDiagComp, kDiagComp } },
+			{ { 0.5f, -0.5f, 0.5f }, { 1, 1 }, { kDiagComp, -kDiagComp, kDiagComp } },
+			{ { 0.5f, 0.5f, 0.5f }, { 1, 0 }, { kDiagComp, kDiagComp, kDiagComp } },
+			{ { -0.5f, 0.5f, 0.5f }, { 0, 0 }, { -kDiagComp, kDiagComp, kDiagComp } },
+
+			// back
+			{ { -0.5f, -0.5f, -0.5f }, { 1, 1 }, { -kDiagComp, -kDiagComp, -kDiagComp } },
+			{ { 0.5f, -0.5f, -0.5f }, { 0, 1 }, { kDiagComp, -kDiagComp, -kDiagComp } },
+			{ { 0.5f, 0.5f, -0.5f }, { 0, 0 }, { kDiagComp, kDiagComp, -kDiagComp } },
+			{ { -0.5f, 0.5f, -0.5f }, { 1, 0 }, { -kDiagComp, kDiagComp, -kDiagComp } }
+		};
+		Model::IndexType indices[]{
+			0, 1, 2,
+			2, 3, 0,
+			1, 5, 6,
+			6, 2, 1,
+			7, 6, 5,
+			5, 4, 7,
+			4, 0, 3,
+			3, 7, 4,
+			4, 5, 1,
+			1, 0, 4,
+			3, 2, 6,
+			6, 7, 3
+		};
+		myBox = new Model(
+			Model::PrimitiveType::Triangles,
+			new Model::VertStorage<Vertex>(8),
+			true
+		);
+
+		Model::UploadDescriptor<Vertex> uploadDesc;
+		uploadDesc.myVertices = verts;
+		uploadDesc.myVertCount = 8;
+		uploadDesc.myVertsOwned = false;
+		uploadDesc.myIndices = indices;
+		uploadDesc.myIndCount = 36;
+		uploadDesc.myIndOwned = false;
+		uploadDesc.myNextDesc = nullptr;
+		myBox->Update(uploadDesc);
+		assetTracker.AssignDynamicId(*myBox.Get());
+	}
+	
+	// UV Texture
+	myUVTexture = assetTracker.GetOrCreate<Texture>("UVTest.img");
+
+	// Default Pipeline
+	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Engine/default.ppl"
+	);
+}
+
+void EditorMode::DrawMenu(Game& aGame)
+{
+	std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
+	if (ImGui::Begin("Entity Creation"))
+	{
+		ImGui::Text("Shapes");
+		if (ImGui::Button("Create Plane"))
+		{
+			CreatePlane(aGame);
+		}
+		if (ImGui::Button("Create Sphere"))
+		{
+			CreateSphere(aGame);
+		}
+		if (ImGui::Button("Create Box"))
+		{
+			CreateBox(aGame);
+		}
+		if (ImGui::Button("Create Mesh"))
+		{
+			CreateMesh(aGame);
+		}
+	}
+	ImGui::End();
+
+	if (myMenuFunction)
+	{
+		myMenuFunction(aGame);
+	}
+}
+
+void EditorMode::CreatePlane(Game& aGame)
+{
+	Transform transf = aGame.GetCamera()->GetTransform();
+	transf.Translate(transf.GetForward() * 5.f);
+	transf.SetRotation(glm::vec3{ 0,0,0 });
+	Handle<GameObject> go = new GameObject(transf);
+	VisualComponent* visComp = go->AddComponent<VisualComponent>();
+	visComp->SetModel(myPlane);
+	visComp->SetTextureCount(1);
+	visComp->SetTexture(0, myUVTexture);
+	visComp->SetPipeline(myDefaultPipeline);
+
+	aGame.AddGameObject(go);
+}
+
+void EditorMode::CreateSphere(Game& aGame)
+{
+	Transform transf = aGame.GetCamera()->GetTransform();
+	transf.Translate(transf.GetForward() * 5.f);
+	transf.SetRotation(glm::vec3{ 0,0,0 });
+	Handle<GameObject> go = new GameObject(transf);
+	VisualComponent* visComp = go->AddComponent<VisualComponent>();
+	visComp->SetModel(mySphere);
+	visComp->SetTextureCount(1);
+	visComp->SetTexture(0, myUVTexture);
+	visComp->SetPipeline(myDefaultPipeline);
+
+	aGame.AddGameObject(go);
+}
+
+void EditorMode::CreateBox(Game& aGame)
+{
+	Transform transf = aGame.GetCamera()->GetTransform();
+	transf.Translate(transf.GetForward() * 5.f);
+	transf.SetRotation(glm::vec3{ 0,0,0 });
+	Handle<GameObject> go = new GameObject(transf);
+	VisualComponent* visComp = go->AddComponent<VisualComponent>();
+	visComp->SetModel(myBox);
+	visComp->SetTextureCount(1);
+	visComp->SetTexture(0, myUVTexture);
+	visComp->SetPipeline(myDefaultPipeline);
+
+	aGame.AddGameObject(go);
+}
+
+void EditorMode::CreateMesh(Game& aGame)
+{
+	// TODO
+}
+
+void EditorMode::DrawAssets(Game& aGame)
+{
+	std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
+	if (ImGui::Begin("Assets"))
+	{
+		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
+		if (ImGui::Button("Scan"))
+		{
+			namespace fs = std::filesystem;
+			std::error_code errCode;
+			fs::recursive_directory_iterator iter(Resource::kAssetsFolder.CStr(), errCode);
+			for (fs::path path : iter)
+			{
+				Asset asset{
+					path.string(),
+					path.extension().string()
+				};
+				// TODO: ignore unrelated crap
+				myAssets.emplace_back(std::move(asset));
+			}
+			std::ranges::sort(myAssets, std::less<Asset>());
+		}
+		ImGui::Separator();
+
+		if (!myAssets.empty())
+		{
+			std::string_view currExt;
+			for (const Asset& asset : myAssets)
+			{
+				if (asset.myType != currExt)
+				{
+					ImGui::Text(asset.myType.c_str());
+					currExt = asset.myType;
+				}
+
+				if (ImGui::Button(asset.myPath.c_str()))
+				{
+					mySelectedAsset = &asset;
+				}
+			}
+		}
+	}
+	ImGui::End();
+}
+
+bool EditorMode::GetPickedAsset(Asset& anAsset)
+{
+	if (mySelectedAsset)
+	{
+		anAsset = *mySelectedAsset;
+		mySelectedAsset = nullptr;
+		return true;
+	}
+	return false;
 }
 
 void EditorMode::AddTestSkeleton(Game& aGame)
