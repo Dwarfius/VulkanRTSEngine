@@ -131,9 +131,6 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 		uploadDesc.myVertCount = vertsFound;
 		uploadDesc.myIndices = modelIndices.data();
 		uploadDesc.myIndCount = modelIndices.size();
-		uploadDesc.myNextDesc = nullptr;
-		uploadDesc.myVertsOwned = false;
-		uploadDesc.myIndOwned = false;
 		model->Update(uploadDesc);
 
 		model->SetAABB(aabbMin, aabbMax);

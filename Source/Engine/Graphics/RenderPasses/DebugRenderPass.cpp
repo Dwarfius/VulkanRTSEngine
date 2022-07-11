@@ -59,7 +59,6 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 		).Get<GPUModel>();
 		
 		PerCameraModel::UploadDesc desc;
-		std::memset(&desc, 0, sizeof(PerCameraModel::UploadDesc));
 
 		ASSERT_STR(myPipeline->GetState() == GPUResource::State::Valid,
 			"Not ready to add cameras, pipeline hasn't loaded yet!");
@@ -90,7 +89,6 @@ void DebugRenderPass::AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDeb
 		if (currDesc->myNextDesc == nullptr)
 		{
 			currDesc->myNextDesc = new PerCameraModel::UploadDesc();
-			std::memset(currDesc->myNextDesc, 0, sizeof(PerCameraModel::UploadDesc));
 		}
 	}
 

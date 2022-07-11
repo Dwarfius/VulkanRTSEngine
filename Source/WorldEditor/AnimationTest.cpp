@@ -226,9 +226,6 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 	uploadDesc.myVertCount = verts.size();
 	uploadDesc.myIndices = indices.data();
 	uploadDesc.myIndCount = indices.size();
-	uploadDesc.myNextDesc = nullptr;
-	uploadDesc.myVertsOwned = false;
-	uploadDesc.myIndOwned = false;
 	model->Update(uploadDesc);
 
 	glm::vec3 min(std::numeric_limits<float>::max());

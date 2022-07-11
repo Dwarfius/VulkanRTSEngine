@@ -106,7 +106,6 @@ void ImGUISystem::Render()
 
 	using UploadDesc = Model::UploadDescriptor<ImGUIVertex>;
 	UploadDesc uploadDesc;
-	std::memset(&uploadDesc, 0, sizeof(UploadDesc));
 
 	for (int i = 0; i < drawData->CmdListsCount; i++)
 	{

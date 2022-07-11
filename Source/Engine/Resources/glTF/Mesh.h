@@ -178,9 +178,6 @@ namespace glTF
 		uploadDesc.myVertCount = vertices.size();
 		uploadDesc.myIndices = indices.data();
 		uploadDesc.myIndCount = indices.size();
-		uploadDesc.myNextDesc = nullptr;
-		uploadDesc.myVertsOwned = false;
-		uploadDesc.myIndOwned = false;
 		aModel->Update(uploadDesc);
 		aModel->SetAABB(min, max);
 	}

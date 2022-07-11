@@ -14,12 +14,16 @@ public:
 	template<class T>
 	struct UploadDescriptor
 	{
-		// TODO: provide a default constructor to zero out everything
-		const T* myVertices;
-		size_t myVertCount;
-		const IndexType* myIndices; // optional
-		size_t myIndCount; // optional
-		UploadDescriptor<T>* myNextDesc; // optional, used to chain multiple uploads together
+		UploadDescriptor()
+			: myVertsOwned(false)
+			, myIndOwned(false)
+		{}
+
+		const T* myVertices = nullptr;
+		size_t myVertCount = 0;
+		const IndexType* myIndices = nullptr; // optional
+		size_t myIndCount = 0; // optional
+		UploadDescriptor<T>* myNextDesc = nullptr; // optional, used to chain multiple uploads together
 		bool myVertsOwned : 4; // indicates whether myVertices in this descriptor need cleaning up
 		bool myIndOwned : 4; // indicates whether myIndices in this descriptor need cleaning up
 	};

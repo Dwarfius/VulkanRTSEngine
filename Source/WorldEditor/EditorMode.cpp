@@ -256,11 +256,8 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		Model::UploadDescriptor<Vertex> uploadDesc;
 		uploadDesc.myVertices = verts;
 		uploadDesc.myVertCount = 4;
-		uploadDesc.myVertsOwned = false;
 		uploadDesc.myIndices = indices;
 		uploadDesc.myIndCount = 6;
-		uploadDesc.myIndOwned = false;
-		uploadDesc.myNextDesc = nullptr;
 		myPlane->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*myPlane.Get());
 	}
@@ -367,11 +364,8 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		Model::UploadDescriptor<Vertex> uploadDesc;
 		uploadDesc.myVertices = vertices.data();
 		uploadDesc.myVertCount = vertices.size();
-		uploadDesc.myVertsOwned = false;
 		uploadDesc.myIndices = indices.data();
 		uploadDesc.myIndCount = indices.size();
-		uploadDesc.myIndOwned = false;
-		uploadDesc.myNextDesc = nullptr;
 		mySphere->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*mySphere.Get());
 	}
@@ -415,11 +409,8 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		Model::UploadDescriptor<Vertex> uploadDesc;
 		uploadDesc.myVertices = verts;
 		uploadDesc.myVertCount = 8;
-		uploadDesc.myVertsOwned = false;
 		uploadDesc.myIndices = indices;
 		uploadDesc.myIndCount = 36;
-		uploadDesc.myIndOwned = false;
-		uploadDesc.myNextDesc = nullptr;
 		myBox->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*myBox.Get());
 	}
