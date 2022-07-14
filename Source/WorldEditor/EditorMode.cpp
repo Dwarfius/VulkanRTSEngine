@@ -252,6 +252,7 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 			std::span{ verts },
 			std::span{ indices }
 		);
+		myPlane->SetAABB({ -0.5f, 0.f, -0.5f }, { 0.5f, 0.f, 0.5f });
 		assetTracker.AssignDynamicId(*myPlane.Get());
 	}
 
@@ -354,6 +355,8 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 			std::span{ vertices },
 			std::span{ indices }
 		);
+		mySphere->SetAABB({ -1.f, -1.f, -1.f }, { 1.f, 1.f, 1.f });
+		mySphere->SetSphereRadius(1.f);
 		assetTracker.AssignDynamicId(*mySphere.Get());
 	}
 
@@ -392,6 +395,7 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 			std::span{ verts },
 			std::span{ indices }
 		);
+		myBox->SetAABB({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f });
 		assetTracker.AssignDynamicId(*myBox.Get());
 	}
 	
