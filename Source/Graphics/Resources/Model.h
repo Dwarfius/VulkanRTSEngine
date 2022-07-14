@@ -62,15 +62,6 @@ public:
 			}
 		}
 
-		VertStorage(size_t aCount, const T* const aSource)
-			: VertStorage(aCount)
-		{
-			if (myCount)
-			{
-				std::memcpy(myData, aSource, aCount * sizeof(T));
-			}
-		}
-
 		~VertStorage()
 		{
 			if (myData)
@@ -88,9 +79,12 @@ public:
 	};
 
 public:
-	// TODO: simplify the constructors, as the user doesn't have to know BaseStorage.
-	// Provide a way to pass in indices from the get-go as well
-	Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices);
+	template<class VertType, size_t VertSpanSize>
+	Model(PrimitiveType aPrimitiveType, std::span<VertType, VertSpanSize> aVerts, bool aHasIndices);
+
+	template<class VertType, size_t VertSpanSize, size_t IndexSpanSize>
+	Model(PrimitiveType aPrimitiveType, std::span<VertType, VertSpanSize> aVerts, std::span<IndexType, IndexSpanSize> aIndices);
+
 	Model(Resource::Id anId, const std::string& aPath);
 	~Model();
 
@@ -141,6 +135,25 @@ private:
 	PrimitiveType myPrimitiveType = PrimitiveType::Triangles;
 	bool myHasIndices = false;
 };
+
+template<class VertType, size_t VertSpanSize>
+Model::Model(PrimitiveType aPrimitiveType, std::span<VertType, VertSpanSize> aVerts, bool aHasIndices)
+	: myPrimitiveType(aPrimitiveType)
+	, myVertices(new VertStorage<VertType>(aVerts.size()))
+	, myHasIndices(aHasIndices)
+{
+	VertType* vertices = static_cast<VertStorage<VertType>*>(myVertices)->GetData();
+	std::memcpy(vertices, aVerts.data(), aVerts.size_bytes());
+}
+
+template<class VertType, size_t VertSpanSize, size_t IndexSpanSize>
+Model::Model(PrimitiveType aPrimitiveType, std::span<VertType, VertSpanSize> aVerts, std::span<IndexType, IndexSpanSize> anIndices)
+	: Model(aPrimitiveType, aVerts, true)
+{
+	myIndices.resize(anIndices.size());
+	IndexType* indices = myIndices.data();
+	std::memcpy(indices, anIndices.data(), anIndices.size_bytes());
+}
 
 template<class T>
 const Model::VertStorage<T>* Model::GetVertexStorage() const

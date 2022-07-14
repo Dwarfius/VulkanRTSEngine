@@ -8,6 +8,7 @@
 #include <random>
 #include <mutex>
 #include <variant>
+#include <span>
 
 #include <tbb/tbb.h>
 

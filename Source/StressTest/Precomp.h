@@ -9,6 +9,7 @@
 #include <mutex>
 #include <array>
 #include <variant>
+#include <span>
 
 #include <tbb/tbb.h>
 

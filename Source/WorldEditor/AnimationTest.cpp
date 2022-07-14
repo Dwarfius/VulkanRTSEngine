@@ -218,15 +218,11 @@ Handle<Model> AnimationTest::GenerateModel(const Skeleton& aSkeleton)
 		}
 	}
 
-	Model::VertStorage<SkinnedVertex>* storage = new Model::VertStorage<SkinnedVertex>(verts.size());
-	Model* model = new Model(Model::PrimitiveType::Triangles, storage, true);
-
-	Model::UploadDescriptor<SkinnedVertex> uploadDesc;
-	uploadDesc.myVertices = verts.data();
-	uploadDesc.myVertCount = verts.size();
-	uploadDesc.myIndices = indices.data();
-	uploadDesc.myIndCount = indices.size();
-	model->Update(uploadDesc);
+	Model* model = new Model(
+		Model::PrimitiveType::Triangles, 
+		std::span{ verts },
+		std::span{ indices }
+	);
 
 	glm::vec3 min(std::numeric_limits<float>::max());
 	glm::vec3 max(std::numeric_limits<float>::min());

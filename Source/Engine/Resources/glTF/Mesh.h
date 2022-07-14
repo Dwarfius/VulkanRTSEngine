@@ -173,12 +173,11 @@ namespace glTF
 			}
 		}
 
-		Model::UploadDescriptor<T> uploadDesc;
-		uploadDesc.myVertices = vertices.data();
-		uploadDesc.myVertCount = vertices.size();
-		uploadDesc.myIndices = indices.data();
-		uploadDesc.myIndCount = indices.size();
-		aModel->Update(uploadDesc);
+		aModel = new Model(
+			Model::PrimitiveType::Triangles, 
+			std::span{ vertices }, 
+			std::span{ indices }
+		);
 		aModel->SetAABB(min, max);
 	}
 }

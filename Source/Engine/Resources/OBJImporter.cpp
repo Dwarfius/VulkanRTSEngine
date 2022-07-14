@@ -123,15 +123,11 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 			modelIndices[indexCount++] = iter->second;
 		}
 
-		Model::VertStorage<Vertex>* storage = new Model::VertStorage<Vertex>(modelVertices.size());
-		Handle<Model> model = new Model(Model::PrimitiveType::Triangles, storage, true);
-
-		Model::UploadDescriptor<Vertex> uploadDesc;
-		uploadDesc.myVertices = modelVertices.data();
-		uploadDesc.myVertCount = vertsFound;
-		uploadDesc.myIndices = modelIndices.data();
-		uploadDesc.myIndCount = modelIndices.size();
-		model->Update(uploadDesc);
+		Handle<Model> model = new Model(
+			Model::PrimitiveType::Triangles,
+			std::span{ modelVertices },
+			std::span{ modelIndices }
+		);
 
 		model->SetAABB(aabbMin, aabbMax);
 		model->SetSphereRadius(sphereRadius);

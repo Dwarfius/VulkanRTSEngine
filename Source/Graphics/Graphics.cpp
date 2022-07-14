@@ -60,8 +60,11 @@ void Graphics::Init()
 		{ {  1.f, -1.f }, { 1.f, 0.f } },
 		{ {  1.f,  1.f }, { 1.f, 1.f } }
 	};
-	Model::VertStorage<PosUVVertex>* buffer = new Model::VertStorage<PosUVVertex>(6, vertices);
-	Handle<Model> cpuModel = new Model(Model::PrimitiveType::Triangles, buffer, false);
+	Handle<Model> cpuModel = new Model(
+		Model::PrimitiveType::Triangles, 
+		std::span<PosUVVertex>{vertices},
+		false
+	);
 	myFullScrenQuad = GetOrCreate(cpuModel).Get<GPUModel>();
 }
 

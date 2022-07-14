@@ -249,16 +249,9 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		};
 		myPlane = new Model(
 			Model::PrimitiveType::Triangles,
-			new Model::VertStorage<Vertex>(4),
-			true
+			std::span{ verts },
+			std::span{ indices }
 		);
-
-		Model::UploadDescriptor<Vertex> uploadDesc;
-		uploadDesc.myVertices = verts;
-		uploadDesc.myVertCount = 4;
-		uploadDesc.myIndices = indices;
-		uploadDesc.myIndCount = 6;
-		myPlane->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*myPlane.Get());
 	}
 
@@ -358,15 +351,9 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 
 		mySphere = new Model(
 			Model::PrimitiveType::Triangles, 
-			new Model::VertStorage<Vertex>(0), 
-			false
+			std::span{ vertices },
+			std::span{ indices }
 		);
-		Model::UploadDescriptor<Vertex> uploadDesc;
-		uploadDesc.myVertices = vertices.data();
-		uploadDesc.myVertCount = vertices.size();
-		uploadDesc.myIndices = indices.data();
-		uploadDesc.myIndCount = indices.size();
-		mySphere->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*mySphere.Get());
 	}
 
@@ -402,16 +389,9 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		};
 		myBox = new Model(
 			Model::PrimitiveType::Triangles,
-			new Model::VertStorage<Vertex>(8),
-			true
+			std::span{ verts },
+			std::span{ indices }
 		);
-
-		Model::UploadDescriptor<Vertex> uploadDesc;
-		uploadDesc.myVertices = verts;
-		uploadDesc.myVertCount = 8;
-		uploadDesc.myIndices = indices;
-		uploadDesc.myIndCount = 36;
-		myBox->Update(uploadDesc);
 		assetTracker.AssignDynamicId(*myBox.Get());
 	}
 	

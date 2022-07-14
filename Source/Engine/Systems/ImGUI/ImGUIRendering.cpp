@@ -31,8 +31,11 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		myUniformBuffer = aGraphics.CreateUniformBuffer(descriptor.GetBlockSize());
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
-	Model::BaseStorage* vertexStorage = new Model::VertStorage<ImGUIVertex>(0);
-	Handle<Model> model = new Model(Model::PrimitiveType::Triangles, vertexStorage, true);
+	Handle<Model> model = new Model(
+		Model::PrimitiveType::Triangles, 
+		std::span<ImGUIVertex>{},
+		true
+	);
 	myModel = aGraphics.GetOrCreate(model, true, GPUResource::UsageType::Dynamic).Get<GPUModel>();
 	myFontAtlas = aGraphics.GetOrCreate(aFontAtlas).Get<GPUTexture>();
 }

@@ -109,7 +109,7 @@ namespace glTF
 				}
 			);
 			// Assuming that indexing is always present
-			Handle<Model> model = new Model(Model::PrimitiveType::Triangles, nullptr, true);
+			Handle<Model> model;
 			if (weightsAttribIter == attribs.end())
 			{
 				// no skinning, so create a simple model 

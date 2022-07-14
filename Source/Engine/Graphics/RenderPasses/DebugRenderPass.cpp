@@ -51,21 +51,23 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 {
 	if (aCamIndex >= myCameraModels.size())
 	{
-		Model::BaseStorage* storage = new Model::VertStorage<PosColorVertex>(0);
-		Handle<Model> model = new Model(Model::PrimitiveType::Lines, storage, false);
+		Handle<Model> model = new Model(
+			Model::PrimitiveType::Lines, 
+			std::span<PosColorVertex, 0>{}, 
+			false
+		);
 		Handle<GPUModel> gpuModel = aGraphics.GetOrCreate(model, 
 			true, 
 			GPUResource::UsageType::Dynamic
 		).Get<GPUModel>();
 		
-		PerCameraModel::UploadDesc desc;
-
 		ASSERT_STR(myPipeline->GetState() == GPUResource::State::Valid,
 			"Not ready to add cameras, pipeline hasn't loaded yet!");
 		ASSERT_STR(myPipeline->GetAdapterCount() == 1, 
 			"DebugRenderPass needs a pipeline with Camera adapter only!");
 		const size_t bufferSize = myPipeline->GetAdapter(0).GetDescriptor().GetBlockSize();
 		Handle<UniformBuffer> buffer = aGraphics.CreateUniformBuffer(bufferSize);
+		PerCameraModel::UploadDesc desc;
 		myCameraModels.emplace_back(gpuModel, aCamera, desc, buffer);
 	}
 	else

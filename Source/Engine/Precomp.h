@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <variant>
+#include <span>
 
 #ifdef USE_AUDIO
 #include <AL/alut.h>

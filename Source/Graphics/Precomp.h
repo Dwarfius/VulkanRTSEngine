@@ -11,6 +11,7 @@
 #include <memory>
 #include <limits>
 #include <mutex>
+#include <span>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

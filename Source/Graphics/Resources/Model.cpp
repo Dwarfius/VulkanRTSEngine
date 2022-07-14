@@ -7,13 +7,6 @@
 #include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
-Model::Model(PrimitiveType aPrimitiveType, BaseStorage* aStorage, bool aHasIndices)
-	: myPrimitiveType(aPrimitiveType)
-	, myVertices(aStorage)
-	, myHasIndices(aHasIndices)
-{
-}
-
 Model::Model(Resource::Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
 {
