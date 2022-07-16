@@ -11,6 +11,8 @@ void FileDialog::Draw(std::string_view anExt)
 		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
 		if (ImGui::Button("Scan") || !myHadInitScan)
 		{
+			myFiles.clear();
+
 			namespace fs = std::filesystem;
 			std::error_code errCode;
 			fs::recursive_directory_iterator iter(Resource::kAssetsFolder.CStr(), errCode);
