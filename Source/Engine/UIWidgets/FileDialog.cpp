@@ -9,7 +9,7 @@ void FileDialog::Draw(std::string_view anExt)
 	if (ImGui::Begin("Assets"))
 	{
 		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
-		if (ImGui::Button("Scan"))
+		if (ImGui::Button("Scan") || !myHadInitScan)
 		{
 			namespace fs = std::filesystem;
 			std::error_code errCode;
@@ -29,6 +29,7 @@ void FileDialog::Draw(std::string_view anExt)
 				myFiles.emplace_back(std::move(file));
 			}
 			std::ranges::sort(myFiles, std::less<File>());
+			myHadInitScan = true;
 		}
 		ImGui::Separator();
 

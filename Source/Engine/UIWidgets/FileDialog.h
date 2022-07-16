@@ -36,5 +36,6 @@ private:
 	constexpr static uint8_t kMaxFilterSize = 50;
 	char myFilter[kMaxFilterSize]{};
 	const File* myPickedFile = nullptr;
+	bool myHadInitScan = false;
 };
 
