@@ -487,7 +487,7 @@ void EditorMode::CreateBox(Game& aGame)
 void EditorMode::CreateMesh(Game& aGame)
 {
 	myMenuFunction = [this](Game& aGame) {
-		myFileDialog.Draw();
+		myFileDialog.DrawFor<Model>();
 
 		FileDialog::File selectedFile;
 		if (myFileDialog.GetPickedFile(selectedFile))

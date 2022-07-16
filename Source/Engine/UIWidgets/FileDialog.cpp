@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <Core/Resources/Resource.h>
 
-void FileDialog::Draw()
+void FileDialog::Draw(std::string_view anExt)
 {
 	if (ImGui::Begin("Assets"))
 	{
@@ -16,11 +16,16 @@ void FileDialog::Draw()
 			fs::recursive_directory_iterator iter(Resource::kAssetsFolder.CStr(), errCode);
 			for (fs::path path : iter)
 			{
+				std::string ext = path.extension().string();
+				if (!ext.ends_with(anExt))
+				{
+					continue;
+				}
+
 				File file{
 					path.string().substr(Resource::kAssetsFolder.GetLength() - 1),
-					path.extension().string()
+					ext
 				};
-				// TODO: ignore unrelated crap
 				myFiles.emplace_back(std::move(file));
 			}
 			std::ranges::sort(myFiles, std::less<File>());

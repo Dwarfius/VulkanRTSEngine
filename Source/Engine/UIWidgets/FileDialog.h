@@ -19,7 +19,16 @@ public:
 	};
 
 public:
-	void Draw();
+	// Expects extension name without the .
+	void Draw(std::string_view anExt = {});
+
+	template<class T>
+	void DrawFor()
+	{
+		std::string_view resExt = T::kExtension;
+		Draw(resExt.substr(1));
+	}
+
 	bool GetPickedFile(File& anAsset);
 
 private:
