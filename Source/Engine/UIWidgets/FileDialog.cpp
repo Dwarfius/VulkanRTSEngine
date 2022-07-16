@@ -9,7 +9,8 @@ void FileDialog::Draw(std::string_view anExt)
 	if (ImGui::Begin("Assets"))
 	{
 		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
-		if (ImGui::Button("Scan") || !myHadInitScan)
+		if (ImGui::Button("Scan") 
+			|| anExt != myLastExt)
 		{
 			myFiles.clear();
 
@@ -31,7 +32,10 @@ void FileDialog::Draw(std::string_view anExt)
 				myFiles.emplace_back(std::move(file));
 			}
 			std::ranges::sort(myFiles, std::less<File>());
-			myHadInitScan = true;
+			
+			ASSERT(anExt.size() < std::extent_v<decltype(myLastExt)>);
+			std::memcpy(myLastExt, anExt.data(), anExt.size());
+			myLastExt[anExt.size()] = 0;
 		}
 		ImGui::Separator();
 
