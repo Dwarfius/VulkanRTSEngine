@@ -486,12 +486,34 @@ void EditorMode::CreateBox(Game& aGame)
 
 void EditorMode::CreateMesh(Game& aGame)
 {
-	// TODO
+	myMenuFunction = [this](Game& aGame) {
+		DrawAssets(aGame);
+
+		if (mySelectedAsset)
+		{
+			AssetTracker& assetTracker = aGame.GetAssetTracker();
+			Handle<Model> newModel = assetTracker.GetOrCreate<Model>(mySelectedAsset->myPath);
+
+			Transform transf = aGame.GetCamera()->GetTransform();
+			transf.Translate(transf.GetForward() * 5.f);
+			transf.SetRotation(glm::vec3{ 0,0,0 });
+			Handle<GameObject> go = new GameObject(transf);
+			VisualComponent* visComp = go->AddComponent<VisualComponent>();
+			visComp->SetModel(newModel);
+			visComp->SetTextureCount(1);
+			visComp->SetTexture(0, myUVTexture);
+			visComp->SetPipeline(myDefaultPipeline);
+
+			aGame.AddGameObject(go);
+
+			myMenuFunction = nullptr;
+			mySelectedAsset = nullptr;
+		}
+	};
 }
 
 void EditorMode::DrawAssets(Game& aGame)
 {
-	std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Assets"))
 	{
 		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
@@ -503,7 +525,7 @@ void EditorMode::DrawAssets(Game& aGame)
 			for (fs::path path : iter)
 			{
 				Asset asset{
-					path.string(),
+					path.string().substr(Resource::kAssetsFolder.GetLength() - 1),
 					path.extension().string()
 				};
 				// TODO: ignore unrelated crap
