@@ -5,6 +5,7 @@
 #include <Engine/Animation/AnimationClip.h>
 #include <Core/Pool.h>
 #include <Engine/Resources/GLTFImporter.h>
+#include <Engine/UIWidgets/FileDialog.h>
 
 #include "HexSolver.h"
 
@@ -49,28 +50,7 @@ private:
 	Handle<Texture> myUVTexture;
 	Handle<Pipeline> myDefaultPipeline;
 	std::function<void(Game& aGame)> myMenuFunction;
-	bool myDrawAssets = false;
-
-	struct Asset;
-	void DrawAssets(Game& aGame);
-	bool GetPickedAsset(Asset& anAsset);
-
-	struct Asset
-	{
-		std::string myPath;
-		std::string myType;
-
-		auto operator<=>(const Asset& aOther) const
-		{
-			if (auto res = myType <=> aOther.myType; res != 0)
-			{
-				return res;
-			}
-			return myPath <=> aOther.myPath;
-		}
-	};
-	std::vector<Asset> myAssets;
-	const Asset* mySelectedAsset = nullptr;
+	FileDialog myFileDialog;
 
 	// Other
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;

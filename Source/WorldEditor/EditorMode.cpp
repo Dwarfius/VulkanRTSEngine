@@ -487,12 +487,13 @@ void EditorMode::CreateBox(Game& aGame)
 void EditorMode::CreateMesh(Game& aGame)
 {
 	myMenuFunction = [this](Game& aGame) {
-		DrawAssets(aGame);
+		myFileDialog.Draw();
 
-		if (mySelectedAsset)
+		FileDialog::File selectedFile;
+		if (myFileDialog.GetPickedFile(selectedFile))
 		{
 			AssetTracker& assetTracker = aGame.GetAssetTracker();
-			Handle<Model> newModel = assetTracker.GetOrCreate<Model>(mySelectedAsset->myPath);
+			Handle<Model> newModel = assetTracker.GetOrCreate<Model>(selectedFile.myPath);
 
 			Transform transf = aGame.GetCamera()->GetTransform();
 			transf.Translate(transf.GetForward() * 5.f);
@@ -507,64 +508,8 @@ void EditorMode::CreateMesh(Game& aGame)
 			aGame.AddGameObject(go);
 
 			myMenuFunction = nullptr;
-			mySelectedAsset = nullptr;
 		}
 	};
-}
-
-void EditorMode::DrawAssets(Game& aGame)
-{
-	if (ImGui::Begin("Assets"))
-	{
-		ImGui::LabelText("Path", Resource::kAssetsFolder.CStr());
-		if (ImGui::Button("Scan"))
-		{
-			namespace fs = std::filesystem;
-			std::error_code errCode;
-			fs::recursive_directory_iterator iter(Resource::kAssetsFolder.CStr(), errCode);
-			for (fs::path path : iter)
-			{
-				Asset asset{
-					path.string().substr(Resource::kAssetsFolder.GetLength() - 1),
-					path.extension().string()
-				};
-				// TODO: ignore unrelated crap
-				myAssets.emplace_back(std::move(asset));
-			}
-			std::ranges::sort(myAssets, std::less<Asset>());
-		}
-		ImGui::Separator();
-
-		if (!myAssets.empty())
-		{
-			std::string_view currExt;
-			for (const Asset& asset : myAssets)
-			{
-				if (asset.myType != currExt)
-				{
-					ImGui::Text(asset.myType.c_str());
-					currExt = asset.myType;
-				}
-
-				if (ImGui::Button(asset.myPath.c_str()))
-				{
-					mySelectedAsset = &asset;
-				}
-			}
-		}
-	}
-	ImGui::End();
-}
-
-bool EditorMode::GetPickedAsset(Asset& anAsset)
-{
-	if (mySelectedAsset)
-	{
-		anAsset = *mySelectedAsset;
-		mySelectedAsset = nullptr;
-		return true;
-	}
-	return false;
 }
 
 void EditorMode::AddTestSkeleton(Game& aGame)
