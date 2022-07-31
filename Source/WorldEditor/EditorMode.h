@@ -42,11 +42,15 @@ private:
 	void CreatePlane(Game& aGame);
 	void CreateSphere(Game& aGame);
 	void CreateBox(Game& aGame);
+	void CreateCylinder(Game& aGame);
+	void CreateCone(Game& aGame);
 	void CreateMesh(Game& aGame);
 	
 	Handle<Model> myPlane;
 	Handle<Model> mySphere;
 	Handle<Model> myBox;
+	Handle<Model> myCylinder;
+	Handle<Model> myCone;
 	Handle<Texture> myUVTexture;
 	Handle<Pipeline> myDefaultPipeline;
 	std::function<void(Game& aGame)> myMenuFunction;

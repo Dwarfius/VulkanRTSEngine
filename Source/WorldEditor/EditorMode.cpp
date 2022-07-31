@@ -398,6 +398,120 @@ void EditorMode::CreateDefaultResources(Game& aGame)
 		myBox->SetAABB({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f });
 		assetTracker.AssignDynamicId(*myBox.Get());
 	}
+
+	// Cylinder
+	{
+		constexpr uint8_t kSides = 32;
+		constexpr float kHeight = 1.f;
+
+		std::vector<Vertex> vertices;
+		for (uint8_t i = 0; i < kSides; i++)
+		{
+			const float currAngle = glm::two_pi<float>() / kSides * i;
+			const float x = glm::cos(currAngle);
+			const float z = glm::sin(currAngle);
+			// top
+			vertices.emplace_back(
+				glm::vec3{ x, kHeight / 2.f, z }, 
+				glm::vec2{ 0, 0 }, 
+				glm::vec3{ 0, 0, 0 } // TODO
+			);
+
+			// bottom
+			vertices.emplace_back(
+				glm::vec3{ x, kHeight / -2.f, z },
+				glm::vec2{ 0, 0 },
+				glm::vec3{ 0, 0, 0 } // TODO
+			);
+		}
+
+		std::vector<Model::IndexType> indices;
+		// top circle
+		for (uint8_t i = 0; i < kSides - 2; i++)
+		{
+			indices.push_back(0);
+			indices.push_back((i + 2) * 2);
+			indices.push_back((i + 1) * 2);
+		}
+
+		// middle
+		for (uint8_t i = 0; i < kSides * 2; i += 2)
+		{
+			indices.push_back(i);
+			indices.push_back((i + 2) % (kSides * 2));
+			indices.push_back(i + 1);
+
+			indices.push_back(i + 1);
+			indices.push_back((i + 2) % (kSides * 2));
+			indices.push_back((i + 3) % (kSides * 2));
+		}
+
+		// bottom circle
+		for (uint8_t i = 0; i < kSides - 2; i++)
+		{
+			indices.push_back(1);
+			indices.push_back(1 + (i + 1) * 2);
+			indices.push_back(1 + (i + 2) * 2);
+		}
+
+		myCylinder = new Model(
+			Model::PrimitiveType::Triangles,
+			std::span{ vertices },
+			std::span{ indices }
+		);
+		myCylinder->SetAABB({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f });
+		assetTracker.AssignDynamicId(*myCylinder.Get());
+	}
+
+	// Cone
+	{
+		constexpr uint8_t kSides = 32;
+		constexpr float kHeight = 1.f;
+
+		std::vector<Vertex> vertices;
+		vertices.emplace_back(
+			glm::vec3{ 0, kHeight / 2.f, 0 },
+			glm::vec2{ 0, 0 },
+			glm::vec3{ 0, 1, 0 }
+		);
+		for (uint8_t i = 0; i < kSides; i++)
+		{
+			const float currAngle = glm::two_pi<float>() / kSides * i;
+			const float x = glm::cos(currAngle);
+			const float z = glm::sin(currAngle);
+			// bottom
+			vertices.emplace_back(
+				glm::vec3{ x, kHeight / -2.f, z },
+				glm::vec2{ 0, 0 },
+				glm::vec3{ 0, 0, 0 } // TODO
+			);
+		}
+
+		std::vector<Model::IndexType> indices;
+		// diagonal faces
+		for (uint8_t i = 0; i < kSides; i++)
+		{
+			indices.push_back(0);
+			indices.push_back(1 + (i + 1) % kSides);
+			indices.push_back(1 + i);
+		}
+
+		// bottom circle
+		for (uint8_t i = 0; i < kSides - 2; i++)
+		{
+			indices.push_back(1);
+			indices.push_back(1 + (i + 1));
+			indices.push_back(1 + (i + 2));
+		}
+
+		myCone = new Model(
+			Model::PrimitiveType::Triangles,
+			std::span{ vertices },
+			std::span{ indices }
+		);
+		myCone->SetAABB({ -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f });
+		assetTracker.AssignDynamicId(*myCone.Get());
+	}
 	
 	// UV Texture
 	myUVTexture = assetTracker.GetOrCreate<Texture>("UVTest.img");
@@ -425,6 +539,14 @@ void EditorMode::DrawMenu(Game& aGame)
 		if (ImGui::Button("Create Box"))
 		{
 			CreateBox(aGame);
+		}
+		if (ImGui::Button("Create Cylinder"))
+		{
+			CreateCylinder(aGame);
+		}
+		if (ImGui::Button("Create Cone"))
+		{
+			CreateCone(aGame);
 		}
 		if (ImGui::Button("Create Mesh"))
 		{
@@ -477,6 +599,36 @@ void EditorMode::CreateBox(Game& aGame)
 	Handle<GameObject> go = new GameObject(transf);
 	VisualComponent* visComp = go->AddComponent<VisualComponent>();
 	visComp->SetModel(myBox);
+	visComp->SetTextureCount(1);
+	visComp->SetTexture(0, myUVTexture);
+	visComp->SetPipeline(myDefaultPipeline);
+
+	aGame.AddGameObject(go);
+}
+
+void EditorMode::CreateCylinder(Game& aGame)
+{
+	Transform transf = aGame.GetCamera()->GetTransform();
+	transf.Translate(transf.GetForward() * 5.f);
+	transf.SetRotation(glm::vec3{ 0,0,0 });
+	Handle<GameObject> go = new GameObject(transf);
+	VisualComponent* visComp = go->AddComponent<VisualComponent>();
+	visComp->SetModel(myCylinder);
+	visComp->SetTextureCount(1);
+	visComp->SetTexture(0, myUVTexture);
+	visComp->SetPipeline(myDefaultPipeline);
+
+	aGame.AddGameObject(go);
+}
+
+void EditorMode::CreateCone(Game& aGame)
+{
+	Transform transf = aGame.GetCamera()->GetTransform();
+	transf.Translate(transf.GetForward() * 5.f);
+	transf.SetRotation(glm::vec3{ 0,0,0 });
+	Handle<GameObject> go = new GameObject(transf);
+	VisualComponent* visComp = go->AddComponent<VisualComponent>();
+	visComp->SetModel(myCone);
 	visComp->SetTextureCount(1);
 	visComp->SetTexture(0, myUVTexture);
 	visComp->SetPipeline(myDefaultPipeline);
