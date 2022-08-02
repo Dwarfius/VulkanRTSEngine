@@ -375,6 +375,11 @@ void Game::AddRenderContributor(OnRenderCallback aCallback)
 	myRenderThread->AddRenderContributor(aCallback);
 }
 
+void Game::AddRenderGameObjectCallback(OnRenderGOCallback aCallback)
+{
+	myRenderGOCallbacks.push_back(aCallback);
+}
+
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
@@ -668,12 +673,19 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 	myRenderables.ParallelForEach([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
 
-		if (!IsUsable(visObj))
+		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
 		{
 			return;
 		}
 
-		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+		// Custom passes - let them do what-ever they want to
+		for (OnRenderGOCallback& callback : myRenderGOCallbacks)
+		{
+			callback(aGraphics, aRenderable);
+		}
+
+		// Default Pass handling
+		if (!IsUsable(visObj))
 		{
 			return;
 		}

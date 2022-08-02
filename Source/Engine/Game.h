@@ -47,6 +47,7 @@ public:
 	typedef void (*ReportError)(int, const char*);
 
 	using OnRenderCallback = std::function<void(Graphics&)>;
+	using OnRenderGOCallback = std::function<void(Graphics&, const Renderable&)>;
 
 public:
 	Game(ReportError aReporterFunc);
@@ -93,6 +94,7 @@ public:
 	const EngineSettings& GetEngineSettings() const { return mySettings; }
 
 	void AddRenderContributor(OnRenderCallback aCallback);
+	void AddRenderGameObjectCallback(OnRenderGOCallback aCallback);
 
 	// Adds GameObject and it's children to the world
 	// Does not add the parent of the GameObject to the world -
@@ -145,6 +147,7 @@ private:
 	
 	Pool<Renderable> myRenderables;
 	std::mutex myRenderablesMutex;
+	std::vector<OnRenderGOCallback> myRenderGOCallbacks;
 
 	struct TerrainEntity
 	{
