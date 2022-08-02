@@ -27,8 +27,6 @@
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsShapes.h>
 
-#include <filesystem>
-
 EditorMode::EditorMode(Game& aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
