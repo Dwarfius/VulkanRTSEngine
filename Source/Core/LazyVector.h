@@ -115,6 +115,7 @@ public:
 	LazyVector& operator=(BaseStorage&& aVector)
 	{
 		myItems = std::move(aVector);
+		myIndex = myItems.size();
 		return *this;
 	}
 
