@@ -30,7 +30,7 @@ public:
 		return myIndex >= myItems.capacity();
 	}
 
-	void Grow(size_t aGrowthFactor = 2.f)
+	void Grow(size_t aGrowthFactor = 2)
 	{
 		Clear();
 		myItems.resize(myItems.capacity() * aGrowthFactor);
