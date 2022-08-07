@@ -690,47 +690,54 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 			return;
 		}
 
-		if (visObj.IsResolved() || visObj.Resolve())
+		const GameObject* gameObject = aRenderable.myGO;
+
+		// Before building a render-job, we need to try to 
+		// pre-allocate all the the UBOs - since if we can't, 
+		// we need to early out without spawning a job
+		const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		ASSERT_STR(uboCount < 4,
+			"Tried to push %llu UBOs into a render job that supports only 4!",
+			uboCount);
+
+		// updating the uniforms - grabbing game state!
+		UniformAdapterSource source{
+			aGraphics,
+			*myCamera,
+			gameObject,
+			visObj
+		};
+		RenderJob::UniformSet uniformSet;
+		for (size_t i = 0; i < uboCount; i++)
 		{
-			// building a render job
-			const GameObject* gameObject = aRenderable.myGO;
-
-			RenderJob& renderJob = renderPass->AllocateJob();
-			renderJob.SetModel(visObj.GetModel().Get());
-			renderJob.SetPipeline(visObj.GetPipeline().Get());
-			renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
-
-			// updating the uniforms - grabbing game state!
-			UniformAdapterSource source{
-				aGraphics,
-				*myCamera,
-				gameObject,
-				visObj
-			};
-			const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
-			const size_t uboCount = gpuPipeline->GetAdapterCount();
-			for (size_t i = 0; i < uboCount; i++)
-			{
-				Handle<UniformBuffer>& uniformBuffer = visObj.GetUniformBuffer(i);
-				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-
-				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
-				uniformAdapter.Fill(source, uniformBlock);
-			}
-			RenderJob::UniformSet& uniformSet = renderJob.GetUniformSet();
-			for (Handle<UniformBuffer>& buffer : visObj.GetUniforms())
-			{
-				uniformSet.PushBack(buffer.Get());
-			}
-
-			//Profiler::ScopedMark debugProfile("RenderJob::Params");
-			IRenderPass::IParams params;
-			params.myDistance = glm::distance(
-				myCamera->GetTransform().GetPos(),
-				gameObject->GetWorldTransform().GetPos()
+			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+			UniformBuffer* uniformBuffer = renderPass->AllocateUBO(
+				aGraphics, 
+				uniformAdapter.GetDescriptor().GetBlockSize()
 			);
-			renderPass->Process(renderJob, params);
+			if (!uniformBuffer)
+			{
+				return;
+			}
+
+			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
+			uniformAdapter.Fill(source, uniformBlock);
+			uniformSet.PushBack(uniformBuffer);
 		}
+		// Building a render job
+		RenderJob& renderJob = renderPass->AllocateJob();
+		renderJob.SetModel(visObj.GetModel().Get());
+		renderJob.SetPipeline(visObj.GetPipeline().Get());
+		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
+		renderJob.GetUniformSet() = uniformSet;
+
+		IRenderPass::IParams params;
+		params.myDistance = glm::distance(
+			myCamera->GetTransform().GetPos(),
+			gameObject->GetWorldTransform().GetPos()
+		);
+		renderPass->Process(renderJob, params);
 	});
 }
 
@@ -768,49 +775,56 @@ void Game::RenderTerrains(Graphics& aGraphics)
 			continue;
 		}
 
-		if (visObj->IsResolved() || visObj->Resolve())
+		// building a render job
+		const Terrain& terrain = *entity.myTerrain;
+
+		const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		ASSERT_STR(uboCount < 4,
+			"Tried to push %llu UBOs into a render job that supports only 4!",
+			uboCount);
+
+		// updating the uniforms - grabbing game state!
+		TerrainAdapter::Source source{
+			aGraphics,
+			*myCamera,
+			nullptr,
+			*visObj,
+			terrain
+		};
+
+		RenderJob::UniformSet uniformSet;
+		for (size_t i = 0; i < uboCount; i++)
 		{
-			// building a render job
-			const Terrain& terrain = *entity.myTerrain;
-
-			RenderJob& renderJob = renderPass->AllocateJob();
-			renderJob.SetModel(visObj->GetModel().Get());
-			renderJob.SetPipeline(visObj->GetPipeline().Get());
-			renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
-
-			// updating the uniforms - grabbing game state!
-			TerrainAdapter::Source source{
+			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+			UniformBuffer* uniformBuffer = renderPass->AllocateUBO(
 				aGraphics,
-				*myCamera,
-				nullptr,
-				*visObj,
-				terrain
-			};
-			const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
-			const size_t uboCount = gpuPipeline->GetAdapterCount();
-			for (size_t i = 0; i < uboCount; i++)
-			{
-				Handle<UniformBuffer>& uniformBuffer = visObj->GetUniformBuffer(i);
-				const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-
-				UniformBlock uniformBlock(*uniformBuffer.Get(), uniformAdapter.GetDescriptor());
-				uniformAdapter.Fill(source, uniformBlock);
-			}
-			RenderJob::UniformSet& uniformSet = renderJob.GetUniformSet();
-			for (Handle<UniformBuffer>& buffer : visObj->GetUniforms())
-			{
-				uniformSet.PushBack(buffer.Get());
-			}
-
-			TerrainRenderParams params;
-			params.myDistance = glm::distance(
-				myCamera->GetTransform().GetPos(),
-				visObj->GetTransform().GetPos()
+				uniformAdapter.GetDescriptor().GetBlockSize()
 			);
-			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-			params.myTileCount = gridTiles.x * gridTiles.y;
-			renderPass->Process(renderJob, params);
+			if (!uniformBuffer)
+			{
+				return;
+			}
+
+			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
+			uniformAdapter.Fill(source, uniformBlock);
+			uniformSet.PushBack(uniformBuffer);
 		}
+
+		RenderJob& renderJob = renderPass->AllocateJob();
+		renderJob.SetModel(visObj->GetModel().Get());
+		renderJob.SetPipeline(visObj->GetPipeline().Get());
+		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
+		renderJob.GetUniformSet() = uniformSet;
+		
+		TerrainRenderParams params;
+		params.myDistance = glm::distance(
+			myCamera->GetTransform().GetPos(),
+			visObj->GetTransform().GetPos()
+		);
+		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+		params.myTileCount = gridTiles.x * gridTiles.y;
+		renderPass->Process(renderJob, params);
 	}
 }
 

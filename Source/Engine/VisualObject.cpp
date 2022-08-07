@@ -20,8 +20,6 @@ void VisualObject::SetModel(Handle<Model> aModel)
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = Game::GetInstance()->GetGraphics()->GetOrCreate(aPipeline).Get<GPUPipeline>();
-	myIsResolved = false;
-	myIsNewPipeline = true;
 }
 
 void VisualObject::SetTexture(Handle<Texture> aTexture)
@@ -43,42 +41,4 @@ float VisualObject::GetRadius() const
 	const float maxScale = std::max({ scale.x, scale.y, scale.z });
 	const float radius = myModel->GetSphereRadius();
 	return maxScale * radius;
-}
-
-bool VisualObject::Resolve()
-{
-	// TODO: get another look at this, I think it can be resolved
-	// via Pipeline and ExecLambdaOnLoad
-	if (myPipeline->GetState() != GPUResource::State::Valid
-		|| std::any_of(myUniforms.begin(), myUniforms.end(), 
-			[](const Handle<UniformBuffer>& aBuffer)
-				{ return aBuffer->GetState() != GPUResource::State::Valid; }
-			)
-		)
-	{
-		return false;
-	}
-
-	if (myIsNewPipeline)
-	{
-		// Since we got a new pipeline, time to replace
-		// descriptors, UBOs and adapters
-		myUniforms.Clear();
-
-		Graphics& graphics = *Game::GetInstance()->GetGraphics();
-		const GPUPipeline* pipeline = myPipeline.Get();
-		size_t descriptorCount = pipeline->GetAdapterCount();
-		for (size_t i = 0; i < descriptorCount; i++)
-		{
-			const UniformAdapter& adapter = pipeline->GetAdapter(i);
-			const size_t bufferSize = adapter.GetDescriptor().GetBlockSize();
-			Handle<UniformBuffer> buffer = graphics.CreateUniformBuffer(bufferSize);
-			myUniforms.PushBack(buffer);
-		}
-		myIsNewPipeline = false;
-		return false;
-	}
-
-	myIsResolved = true;
-	return myIsResolved;
 }

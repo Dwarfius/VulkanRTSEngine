@@ -2,12 +2,14 @@
 
 #include "RenderPassJob.h"
 
-#include <Core/LazyVector.h>
 #include <Core/CRC32.h>
 
 class RenderContext;
 class Graphics;
 class Camera;
+class UniformBuffer;
+template<class T>
+class Handle;
 
 // The goal behind the render passes is to be able to 
 // setup a a render environment, sort the objects, and 
@@ -30,7 +32,6 @@ public:
 		float myDistance = 0;
 	};
 public:
-	IRenderPass();
 	virtual ~IRenderPass() = default;
 
 	virtual void BeginPass(Graphics& anInterface);
@@ -49,7 +50,7 @@ protected:
 	virtual void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const = 0;
 
 	RenderContext myRenderContext;
-	bool myHasValidContext;
+	bool myHasValidContext = false;
 	std::vector<Id> myDependencies;
 };
 
@@ -58,16 +59,48 @@ protected:
 class RenderPass : public IRenderPass
 {
 public:
-	RenderPass();
-
 	RenderJob& AllocateJob();
+	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
 	void BeginPass(Graphics& anInterface) override final;
-	void SubmitJobs(Graphics& anInterface) override final;
+	void SubmitJobs(Graphics& anInterface) override final {}
 
 	// updates the renderjob with the correct render settings
 	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
 private:
-	RenderPassJob* myCurrentJob;
+	RenderPassJob* myCurrentJob = nullptr;
+	
+	struct UBOBucket
+	{
+		// Note: not using LazyVector as it's not thread safe
+		std::vector<Handle<UniformBuffer>> myUBOs;
+		std::atomic<uint32_t> myUBOCounter;
+		size_t mySize;
+
+		UBOBucket(size_t aSize);
+
+		UBOBucket(UBOBucket&& aOther) noexcept
+		{
+			*this = std::move(aOther);
+		}
+
+		UBOBucket& operator=(UBOBucket&& aOther) noexcept
+		{
+			myUBOs = std::move(aOther.myUBOs);
+			mySize = std::move(aOther.mySize);
+			myUBOCounter = aOther.myUBOCounter.load();
+			return *this;
+		}
+
+		int operator<(const UBOBucket& aOther) const
+		{
+			return mySize < aOther.mySize;
+		}
+
+		UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
+		void PrepForPass(Graphics& aGraphics);
+	};
+	std::vector<UBOBucket> myUBOBuckets;
+	tbb::concurrent_unordered_set<size_t> myNewBuckets;
 };
