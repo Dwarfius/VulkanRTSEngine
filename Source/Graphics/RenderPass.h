@@ -11,10 +11,10 @@ class Camera;
 
 // The goal behind the render passes is to be able to 
 // setup a a render environment, sort the objects, and 
-// submit them as required. This abstraction is intended 
-// to simplify performance-scaling by running the 
-// renderpasses in parallel, as well as enable use render-pass
-// concept.
+// submit them as required. It is implemented to make use
+// of parallelism, both of the render-pass use(both can be 
+// used for building concurrently) as well as job creation
+// (objects get submitted concurrently to generate jobs from)
 
 // implementation interface
 class IRenderPass
