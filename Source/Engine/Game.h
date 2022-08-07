@@ -47,7 +47,7 @@ public:
 	typedef void (*ReportError)(int, const char*);
 
 	using OnRenderCallback = std::function<void(Graphics&)>;
-	using OnRenderGOCallback = std::function<void(Graphics&, Renderable&)>;
+	using OnRenderGOCallback = std::function<void(Graphics&, Renderable&, Camera&)>;
 
 public:
 	Game(ReportError aReporterFunc);

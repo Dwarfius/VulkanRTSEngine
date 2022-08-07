@@ -681,7 +681,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 		// Custom passes - let them do what-ever they want to
 		for (OnRenderGOCallback& callback : myRenderGOCallbacks)
 		{
-			callback(aGraphics, aRenderable);
+			callback(aGraphics, aRenderable, *myCamera);
 		}
 
 		// Default Pass handling
