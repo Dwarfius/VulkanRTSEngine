@@ -50,9 +50,6 @@ void RenderPass::BeginPass(Graphics& anInterface)
 
 	for (size_t newBucket : myNewBuckets)
 	{
-		ASSERT(!std::any_of(myUBOBuckets.begin(), myUBOBuckets.end(),
-			[newBucket](auto& bucket) { return bucket.mySize == newBucket; }
-		));
 		myUBOBuckets.emplace_back(newBucket);
 	}
 	myNewBuckets.clear();
