@@ -21,15 +21,15 @@ public:
 	void Unmap()
 	{
 		myBufferInfos.AdvanceWrite();
-		myWasMapped = true;
+		myMappedCount++;
 	}
 
 	void AdvanceReadBuffer()
 	{
-		if (myWasMapped)
+		if (myMappedCount)
 		{
 			myBufferInfos.AdvanceRead();
-			myWasMapped = false;
+			myMappedCount--;
 		}
 	}
 
@@ -43,5 +43,5 @@ protected:
 	RWBuffer<Buffer, kMaxFrames> myBufferInfos;
 	void* myMappedBuffer = nullptr;
 	const size_t myBufferSize;
-	bool myWasMapped = false;
+	uint8_t myMappedCount = 0;
 };

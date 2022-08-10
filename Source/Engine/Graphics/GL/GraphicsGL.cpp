@@ -121,8 +121,27 @@ void GraphicsGL::Display()
 		});
 	}
 
-	myRenderPassJobs.AdvanceRead();
+	{
+		Profiler::ScopedMark profile("GraphicsGL::WaitForUBOSync");
+		// Before starting to execute accumulated jobs
+		// we need to wait for completion of last frame
+		// when mapped region was used previously (3 frames ago)
+		// otherwise we risk posioning the UBOs
+		// uploads of which might've been deferred by the driver
+		GLsync fence = static_cast<GLsync>(myFrameFences[myReadFenceInd]);
+		if (fence) [[likely]]
+		{
+			GLenum status;
+			do
+			{
+				status = glClientWaitSync(fence, 0, 0);
+			} while (status != GL_ALREADY_SIGNALED);
+		}
+		myReadFenceInd++;
+		myReadFenceInd %= GraphicsConfig::kMaxFramesScheduled + 1;
+	}
 
+	myRenderPassJobs.AdvanceRead();
 	{
 		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
 		const RenderPassJobs& jobs = myRenderPassJobs.GetRead();
@@ -133,6 +152,13 @@ void GraphicsGL::Display()
 	}
 
 	{
+		glDeleteSync(static_cast<GLsync>(myFrameFences[myWriteFenceInd]));
+		myFrameFences[myWriteFenceInd] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		myWriteFenceInd++;
+		myWriteFenceInd %= GraphicsConfig::kMaxFramesScheduled + 1;
+	}
+
+	{
 		Profiler::ScopedMark swapProfile("GraphicsGL::SwapBuffers");
 		glfwSwapBuffers(myWindow);
 	}
@@ -140,6 +166,8 @@ void GraphicsGL::Display()
 
 void GraphicsGL::BeginGather()
 {
+	
+
 	myUBOCleanUpQueues.AdvanceWrite();
 	
 	Graphics::BeginGather();
