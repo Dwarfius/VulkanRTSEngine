@@ -62,7 +62,7 @@ private:
 	RWBuffer<tbb::concurrent_queue<UniformBufferGL*>, kQueues> myUBOCleanUpQueues;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	int32_t myUBOOffsetAlignment = 0;
-	uint8_t myWriteFenceInd = 1;
+	uint8_t myWriteFenceInd = GraphicsConfig::kMaxFramesScheduled;
 	uint8_t myReadFenceInd = 0;
 	void* myFrameFences[3]{ nullptr };
 };
