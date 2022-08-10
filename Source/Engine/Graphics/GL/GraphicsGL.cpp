@@ -166,8 +166,6 @@ void GraphicsGL::Display()
 
 void GraphicsGL::BeginGather()
 {
-	
-
 	myUBOCleanUpQueues.AdvanceWrite();
 	
 	Graphics::BeginGather();
