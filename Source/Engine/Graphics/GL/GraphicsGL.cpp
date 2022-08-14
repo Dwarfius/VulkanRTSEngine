@@ -93,6 +93,10 @@ void GraphicsGL::Init()
 	// This prevents problems from some textures not being word aligned
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+	// Enabled by default - and some workflows need it off
+	// and I don't see the difference, so gonna skip this stge
+	glDisable(GL_DITHER);
+
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &myUBOOffsetAlignment);
 
 	Graphics::Init();
@@ -349,7 +353,15 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 {
 	switch (aId)
 	{
-	case 131204: return; // unbound sampler or badly defined texture at sampler
+	case 131204: 
+		// "Unbound sampler or badly defined texture at sampler"
+		// Engine marks slots for use in a render pass 
+		// even if they might not end up all being used 
+	case 131220: 
+		// "A fragment program/shader is required to correctly 
+		// render to an integer framebuffer."
+		// Can happen during a call to Clear with a uint framebuffer
+		return; 
 	default: break;
 	}
 
