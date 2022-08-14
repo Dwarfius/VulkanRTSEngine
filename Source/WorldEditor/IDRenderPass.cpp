@@ -39,6 +39,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 {
 	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
 		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
+		[[unlikely]]
 	{
 		return;
 	}
@@ -46,6 +47,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 	VisualObject& vo = aRenderable.myVO;
 	Handle<GPUModel>& model = vo.GetModel();
 	if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
+		[[unlikely]]
 	{
 		return;
 	}
