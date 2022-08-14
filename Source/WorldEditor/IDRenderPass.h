@@ -9,6 +9,7 @@
 #include <Core/RWBuffer.h>
 
 struct Renderable;
+class GameObject;
 
 class IDRenderPass : public RenderPass
 {
