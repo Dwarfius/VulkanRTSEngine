@@ -62,8 +62,8 @@ public:
 	RenderJob& AllocateJob();
 	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
-	void BeginPass(Graphics& anInterface) override final;
-	void SubmitJobs(Graphics& anInterface) override final {}
+	void BeginPass(Graphics& anInterface) override;
+	void SubmitJobs(Graphics& anInterface) override {}
 
 	// updates the renderjob with the correct render settings
 	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
