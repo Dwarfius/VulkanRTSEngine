@@ -25,13 +25,25 @@
 #define DATA_ENUM_FUNC18(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC17(Func, __VA_ARGS__))
 #define DATA_ENUM_FUNC19(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC18(Func, __VA_ARGS__))
 #define DATA_ENUM_FUNC20(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC19(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC21(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC20(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC22(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC21(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC23(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC22(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC24(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC23(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC25(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC24(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC26(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC25(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC27(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC26(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC28(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC27(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC29(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC28(Func, __VA_ARGS__))
+#define DATA_ENUM_FUNC30(Func, Arg, ...) Func(Arg) DATA_ENUM_EXPAND(DATA_ENUM_FUNC29(Func, __VA_ARGS__))
 
 #define DATA_ENUM_PICK_21TH(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, \
-	_11, _12, _13, _14, _15, _16, _17, _18, _19, _20, N, ...) N
+	_11, _12, _13, _14, _15, _16, _17, _18, _19, _20, \
+	_21, _22, _23, _24, _25, _26, _27, _28, _29, _30, N, ...) N
 // Determines the size of __VA_ARGS__ by sliding the correct responce to the
 // "answer window" that DATA_ENUM_PICK_11TH provides
 #define DATA_ENUM_NUM_ARGS(...) \
 	DATA_ENUM_EXPAND(DATA_ENUM_PICK_21TH(__VA_ARGS__, \
+	30, 29, 28, 27, 26, 25, 24, 23, 22, 21, \
 	20, 19, 18, 17, 16, 15, 14, 13, 12, 11, \
 	10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 
