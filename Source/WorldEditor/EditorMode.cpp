@@ -79,13 +79,17 @@ EditorMode::EditorMode(Game& aGame)
 
 	CreateDefaultResources(aGame);
 
-	Handle<Pipeline> idPipeline = assetTracker.GetOrCreate<Pipeline>(
+	Handle<Pipeline> idDefaultPipeline = assetTracker.GetOrCreate<Pipeline>(
 		"Editor/IDPipeline.ppl"
+	);
+	Handle<Pipeline> idSkinnedPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDSkinnedPipeline.ppl"
 	);
 	Graphics& graphics = *aGame.GetGraphics();
 	IDRenderPass* idRenderPass = new IDRenderPass(
 		graphics,
-		graphics.GetOrCreate(idPipeline).Get<GPUPipeline>()
+		graphics.GetOrCreate(idDefaultPipeline).Get<GPUPipeline>(),
+		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(idRenderPass);
 	aGame.AddRenderGameObjectCallback(

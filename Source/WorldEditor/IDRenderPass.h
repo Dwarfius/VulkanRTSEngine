@@ -18,7 +18,10 @@ public:
 
 public:
 	constexpr static uint32_t kId = Utils::CRC32("IDRenderPass");
-	IDRenderPass(Graphics& aGraphics, const Handle<GPUPipeline>& aPipeline);
+	IDRenderPass(Graphics& aGraphics, 
+		const Handle<GPUPipeline>& aDefaultPipeline,
+		const Handle<GPUPipeline>& aSkinningPipeline
+	);
 
 	Id GetId() const final { return kId; }
 
@@ -41,7 +44,8 @@ protected:
 		std::atomic<ObjID> myCounter = 0;
 	};
 	RWBuffer<FrameObjs, 3> myFrameGOs;
-	Handle<GPUPipeline> myPipeline;
+	Handle<GPUPipeline> myDefaultPipeline;
+	Handle<GPUPipeline> mySkinningPipeline;
 };
 
 // the engine provides a default render buffer, that

@@ -17,8 +17,12 @@ namespace
 	};
 }
 
-IDRenderPass::IDRenderPass(Graphics& aGraphics, const Handle<GPUPipeline>& aPipeline)
-	: myPipeline(aPipeline)
+IDRenderPass::IDRenderPass(Graphics& aGraphics, 
+	const Handle<GPUPipeline>& aDefaultPipeline,
+	const Handle<GPUPipeline>& aSkinningPipeline
+)
+	: myDefaultPipeline(aDefaultPipeline)
+	, mySkinningPipeline(aSkinningPipeline)
 {
 	aGraphics.AddNamedFrameBuffer(IDFrameBuffer::kName, IDFrameBuffer::kDescriptor);
 }
@@ -28,12 +32,13 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 	RenderPass::BeginPass(aGraphics);
 
 	myFrameGOs.Advance();
-	myFrameGOs.GetWrite().myCounter = 0;
+	myFrameGOs.GetWrite().myCounter = 1;
 }
 
 void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
 {
-	if (myPipeline->GetState() != GPUResource::State::Valid)
+	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
+		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
@@ -63,7 +68,11 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 		vo,
 		newID
 	};
-	const GPUPipeline* gpuPipeline = myPipeline.Get<const GPUPipeline>();
+
+	const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
+	const GPUPipeline* gpuPipeline = isSkinned ?
+		mySkinningPipeline.Get<const GPUPipeline>() :
+		myDefaultPipeline.Get<const GPUPipeline>();
 	const size_t uboCount = gpuPipeline->GetAdapterCount();
 	RenderJob::UniformSet uniformSet;
 	for (size_t i = 0; i < uboCount; i++)
@@ -84,7 +93,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 	}
 
 	RenderJob& job = AllocateJob();
-	job.SetPipeline(myPipeline.Get());
+	job.SetPipeline(isSkinned ? mySkinningPipeline.Get() : myDefaultPipeline.Get());
 	job.SetModel(model.Get());
 	job.GetUniformSet() = uniformSet;
 

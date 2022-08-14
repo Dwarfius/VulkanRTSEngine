@@ -1,0 +1,12 @@
+{  
+    "myType":0,
+    "myShaders":[
+        "Editor/IDSkinnedPipelineVert.shd",
+        "Editor/IDPipelineFrag.shd"
+    ],
+    "myAdapters":[  
+        "ObjectMatricesAdapter",
+        "SkeletonAdapter",
+        "IDAdapter"
+    ]
+}
