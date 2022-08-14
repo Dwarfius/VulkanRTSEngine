@@ -34,11 +34,6 @@ protected:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 
-	struct ObjIDPair
-	{
-		GameObject* myGO;
-		ObjID myID;
-	};
 	struct FrameObjs
 	{
 		std::array<GameObject*, kMaxObjects> myGOs;
