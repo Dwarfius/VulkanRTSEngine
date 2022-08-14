@@ -10,7 +10,7 @@ Serializer::Serializer(AssetTracker& anAssetTracker, bool aIsReading)
 {
 }
 
-void Serializer::SerializeVersion(int8_t& aVersion)
+void Serializer::SerializeVersion(uint8_t& aVersion)
 {
 	if (myIsReading)
 	{

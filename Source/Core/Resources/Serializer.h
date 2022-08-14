@@ -143,7 +143,7 @@ public:
 	template<SerializerConcepts::Resource T, uint16_t N>
 	void Serialize(std::string_view aName, StaticVector<T, N>& aVec);
 
-	void SerializeVersion(int8_t& aVersion);
+	void SerializeVersion(uint8_t& aVersion);
 	virtual void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) = 0;
 
 	bool IsReading() const { return myIsReading; }
