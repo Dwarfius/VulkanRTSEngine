@@ -266,6 +266,7 @@ bool PipelineGL::AreUBOsValid()
 			// page 109
 			switch (uniforms[uniformInd].myType)
 			{
+			case GL_UNSIGNED_INT:
 			case GL_INT:
 				if (declaredType != Descriptor::UniformType::Int)
 				{
