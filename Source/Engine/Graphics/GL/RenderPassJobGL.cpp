@@ -55,6 +55,38 @@ void RenderPassJobGL::Clear(const RenderContext& aContext)
 		glDisable(GL_SCISSOR_TEST);
 	}
 
+	if (aContext.myEnableBlending)
+	{
+		glEnable(GL_BLEND);
+
+		const uint32_t blendEq = ConvertBlendEquation(aContext.myBlendingEq);
+		glBlendEquation(blendEq);
+
+		const uint32_t srcBlend = ConvertBlendMode(aContext.mySourceBlending);
+		const uint32_t dstBlend = ConvertBlendMode(aContext.myDestinationBlending);
+		glBlendFunc(srcBlend, dstBlend);
+
+		const bool hasConstColor = aContext.mySourceBlending == RenderContext::Blending::ConstantColor
+			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantColor
+			|| aContext.mySourceBlending == RenderContext::Blending::ConstantAlpha
+			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantAlpha
+			|| aContext.myDestinationBlending == RenderContext::Blending::ConstantColor
+			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantColor
+			|| aContext.myDestinationBlending == RenderContext::Blending::ConstantAlpha
+			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantAlpha;
+		if (hasConstColor)
+		{
+			glBlendColor(aContext.myBlendColor[0],
+				aContext.myBlendColor[1],
+				aContext.myBlendColor[2],
+				aContext.myBlendColor[3]);
+		}
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+
 	uint32_t clearMask = 0;
 	if (aContext.myShouldClearColor)
 	{
@@ -155,38 +187,6 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 	else
 	{
 		glDisable(GL_CULL_FACE);
-	}
-
-	if (aContext.myEnableBlending)
-	{
-		glEnable(GL_BLEND);
-
-		const uint32_t blendEq = ConvertBlendEquation(aContext.myBlendingEq);
-		glBlendEquation(blendEq);
-
-		const uint32_t srcBlend = ConvertBlendMode(aContext.mySourceBlending);
-		const uint32_t dstBlend = ConvertBlendMode(aContext.myDestinationBlending);
-		glBlendFunc(srcBlend, dstBlend);
-
-		const bool hasConstColor = aContext.mySourceBlending == RenderContext::Blending::ConstantColor
-			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantColor
-			|| aContext.mySourceBlending == RenderContext::Blending::ConstantAlpha
-			|| aContext.mySourceBlending == RenderContext::Blending::OneMinusConstantAlpha
-			|| aContext.myDestinationBlending == RenderContext::Blending::ConstantColor
-			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantColor
-			|| aContext.myDestinationBlending == RenderContext::Blending::ConstantAlpha
-			|| aContext.myDestinationBlending == RenderContext::Blending::OneMinusConstantAlpha;
-		if (hasConstColor)
-		{
-			glBlendColor(aContext.myBlendColor[0], 
-				aContext.myBlendColor[1], 
-				aContext.myBlendColor[2], 
-				aContext.myBlendColor[3]);
-		}
-	}
-	else
-	{
-		glDisable(GL_BLEND);
 	}
 
 	switch (aContext.myPolygonMode)
