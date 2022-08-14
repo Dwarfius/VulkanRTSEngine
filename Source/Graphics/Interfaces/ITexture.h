@@ -18,6 +18,17 @@ public:
 		UNorm_RGB,
 		UNorm_RGBA,
 
+		// 32-byte per component
+		I_R,
+		I_RG,
+		I_RGB,
+		I_RGBA,
+
+		U_R,
+		U_RG,
+		U_RGB,
+		U_RGBA,
+
 		// Depth
 		Depth16,
 		Depth24,

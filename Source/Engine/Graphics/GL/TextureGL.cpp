@@ -16,13 +16,21 @@ uint32_t TextureGL::TranslateInternalFormat(Format aFormat)
 	{
 	case Texture::Format::SNorm_R:		return GL_R8;
 	case Texture::Format::UNorm_R:		return GL_R8;
+	case Texture::Format::I_R:			return GL_R32I;
+	case Texture::Format::U_R:			return GL_R32UI;
 	case Texture::Format::SNorm_RG:		return GL_RG8_SNORM;
 	case Texture::Format::UNorm_RG:		return GL_RG8;
+	case Texture::Format::I_RG:			return GL_RG32I;
+	case Texture::Format::U_RG:			return GL_RG32UI;
 	case Texture::Format::SNorm_RGB:	return GL_RGB8_SNORM;
 	case Texture::Format::UNorm_RGB:	return GL_RGB8;
+	case Texture::Format::I_RGB:		return GL_RGB32I;
+	case Texture::Format::U_RGB:		return GL_RGB32UI;
 	case Texture::Format::SNorm_RGBA:	return GL_RGBA8_SNORM;
 	case Texture::Format::UNorm_RGBA:	return GL_RGBA8;
 	case Texture::Format::UNorm_BGRA:	return GL_RGBA8;
+	case Texture::Format::I_RGBA:		return GL_RGBA32I;
+	case Texture::Format::U_RGBA:		return GL_RGBA32UI;
 	case Texture::Format::Depth16:		return GL_DEPTH_COMPONENT16;
 	case Texture::Format::Depth24:		return GL_DEPTH_COMPONENT24;
 	case Texture::Format::Depth32F:		return GL_DEPTH_COMPONENT32F;
@@ -31,6 +39,7 @@ uint32_t TextureGL::TranslateInternalFormat(Format aFormat)
 	case Texture::Format::Depth32F_Stencil8:	return GL_DEPTH32F_STENCIL8;
 	default: ASSERT(false);
 	}
+	static_assert(Format::GetSize() == 23, "Update above switch!");
 	return 0;
 }
 
@@ -40,13 +49,21 @@ uint32_t TextureGL::TranslateFormat(Format aFormat)
 	{
 	case Texture::Format::SNorm_R:
 	case Texture::Format::UNorm_R:		return GL_RED;
+	case Texture::Format::I_R:			
+	case Texture::Format::U_R:			return GL_RED_INTEGER;
 	case Texture::Format::SNorm_RG:
 	case Texture::Format::UNorm_RG:		return GL_RG;
+	case Texture::Format::I_RG:
+	case Texture::Format::U_RG:			return GL_RG_INTEGER;
 	case Texture::Format::SNorm_RGB:
 	case Texture::Format::UNorm_RGB:	return GL_RGB;
+	case Texture::Format::I_RGB:
+	case Texture::Format::U_RGB:		return GL_RGB_INTEGER;
 	case Texture::Format::SNorm_RGBA:
 	case Texture::Format::UNorm_RGBA:	return GL_RGBA;
 	case Texture::Format::UNorm_BGRA:	return GL_BGRA;
+	case Texture::Format::I_RGBA:
+	case Texture::Format::U_RGBA:		return GL_RGBA_INTEGER;
 	case Texture::Format::Depth16:
 	case Texture::Format::Depth24:
 	case Texture::Format::Depth32F:		return GL_DEPTH_COMPONENT;
@@ -55,6 +72,7 @@ uint32_t TextureGL::TranslateFormat(Format aFormat)
 	case Texture::Format::Depth32F_Stencil8:	return GL_DEPTH_STENCIL;
 	default: ASSERT(false);
 	}
+	static_assert(Format::GetSize() == 23, "Update above switch!");
 	return 0;
 }
 
@@ -72,6 +90,14 @@ uint32_t TextureGL::DeterminePixelDataType(Format aFormat)
 	case Texture::Format::UNorm_RGBA:	
 	case Texture::Format::UNorm_BGRA:	return GL_UNSIGNED_BYTE;
 	case Texture::Format::Depth16:		return GL_UNSIGNED_SHORT;
+	case Texture::Format::I_R:
+	case Texture::Format::I_RG:
+	case Texture::Format::I_RGB:
+	case Texture::Format::I_RGBA:		return GL_INT;
+	case Texture::Format::U_R:
+	case Texture::Format::U_RG:
+	case Texture::Format::U_RGB:
+	case Texture::Format::U_RGBA:
 	case Texture::Format::Depth24:		return GL_UNSIGNED_INT;
 	case Texture::Format::Depth32F:		return GL_FLOAT;
 	case Texture::Format::Stencil8:		return GL_UNSIGNED_BYTE;
@@ -79,6 +105,7 @@ uint32_t TextureGL::DeterminePixelDataType(Format aFormat)
 	case Texture::Format::Depth32F_Stencil8:	return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
 	default: ASSERT(false);
 	}
+	static_assert(Format::GetSize() == 23, "Update above switch!");
 	return 0;
 }
 
