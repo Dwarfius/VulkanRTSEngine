@@ -1,0 +1,23 @@
+#version 420
+
+layout(location = 0) in vec3 position;
+
+out flat uint idOut;
+
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
+{
+	mat4 Model;
+	mat4 ModelView;
+	mat4 MVP;
+};
+
+layout (std140, binding = 1) uniform IDAdapter
+{
+	uint ID;	
+};
+
+void main() 
+{
+    gl_Position = MVP * vec4(position, 1.0);
+    idOut = ID;
+}

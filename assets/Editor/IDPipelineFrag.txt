@@ -1,0 +1,10 @@
+#version 420
+
+in flat uint idOut;
+
+layout(location = 0) out uint idToPaint;
+
+void main() 
+{
+    idToPaint = idOut;
+}

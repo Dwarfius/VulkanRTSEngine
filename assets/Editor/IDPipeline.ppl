@@ -1,0 +1,11 @@
+{  
+    "myType":0,
+    "myShaders":[
+        "Editor/IDPipelineVert.shd",
+        "Editor/IDPipelineFrag.shd"
+    ],
+    "myAdapters":[  
+        "ObjectMatricesAdapter",
+        "IDAdapter"
+    ]
+}

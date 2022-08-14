@@ -2,6 +2,7 @@
 #include "EditorMode.h"
 
 #include "AnimationTest.h"
+#include "IDRenderPass.h"
 
 #include <Engine/Game.h>
 #include <Engine/Input.h>
@@ -22,6 +23,7 @@
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/GPUPipeline.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
@@ -39,9 +41,10 @@ EditorMode::EditorMode(Game& aGame)
 	bool res = myGLTFImporter.Load(resPath.CStr());
 	ASSERT(res);
 	Handle<Model> model = myGLTFImporter.GetModel(0);
-	aGame.GetAssetTracker().SaveAndTrack("TestGameObject/modelTestSave.model", model);
+	AssetTracker& assetTracker = aGame.GetAssetTracker();
+	assetTracker.SaveAndTrack("TestGameObject/modelTestSave.model", model);
 
-	myGO = aGame.GetAssetTracker().GetOrCreate<GameObject>("TestGameObject/testGO.go");
+	myGO = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
 	myGO->ExecLambdaOnLoad([&](Resource* aRes){
 		GameObject* go = static_cast<GameObject*>(aRes);
 		aGame.AddGameObject(go);
@@ -75,6 +78,21 @@ EditorMode::EditorMode(Game& aGame)
 	solver.Init(aGame);
 
 	CreateDefaultResources(aGame);
+
+	Handle<Pipeline> idPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDPipeline.ppl"
+	);
+	Graphics& graphics = *aGame.GetGraphics();
+	IDRenderPass* idRenderPass = new IDRenderPass(
+		graphics,
+		graphics.GetOrCreate(idPipeline).Get<GPUPipeline>()
+	);
+	aGame.GetGraphics()->AddRenderPass(idRenderPass);
+	aGame.AddRenderGameObjectCallback(
+		[idRenderPass](Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
+	{
+		idRenderPass->ScheduleRenderable(aGraphics, aRenderable, aCamera);
+	});
 }
 
 EditorMode::~EditorMode()
