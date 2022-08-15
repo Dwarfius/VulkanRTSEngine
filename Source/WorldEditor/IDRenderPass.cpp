@@ -4,14 +4,22 @@
 #include <Engine/VisualObject.h>
 #include <Engine/GameObject.h>
 #include <Engine/Graphics/Adapters/AdapterSourceData.h>
+#include <Engine/Graphics/Adapters/TerrainAdapter.h>
+#include <Engine/Graphics/RenderPasses/GenericRenderPasses.h>
 
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/UniformBuffer.h>
 
 namespace
 {
-	struct IDAdapterSourceData : UniformAdapterSource
+	struct IDGOAdapterSourceData : UniformAdapterSource
+	{
+		IDRenderPass::ObjID myID;
+	};
+
+	struct IDTerrainAdapterSourceData : TerrainAdapter::Source
 	{
 		IDRenderPass::ObjID myID;
 	};
@@ -19,10 +27,12 @@ namespace
 
 IDRenderPass::IDRenderPass(Graphics& aGraphics, 
 	const Handle<GPUPipeline>& aDefaultPipeline,
-	const Handle<GPUPipeline>& aSkinningPipeline
+	const Handle<GPUPipeline>& aSkinningPipeline,
+	const Handle<GPUPipeline>& aTerrainPipeline
 )
 	: myDefaultPipeline(aDefaultPipeline)
 	, mySkinningPipeline(aSkinningPipeline)
+	, myTerrainPipeline(aTerrainPipeline)
 {
 	aGraphics.AddNamedFrameBuffer(IDFrameBuffer::kName, IDFrameBuffer::kDescriptor);
 }
@@ -32,7 +42,8 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 	RenderPass::BeginPass(aGraphics);
 
 	myFrameGOs.Advance();
-	myFrameGOs.GetWrite().myCounter = 1;
+	myFrameGOs.GetWrite().myGOCounter = 1;
+	myFrameGOs.GetWrite().myTerrainCounter = 1;
 }
 
 void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
@@ -55,7 +66,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 	// assuming we'll be able to render the GO
 	// save it for tracking
 	FrameObjs& currFrame = myFrameGOs.GetWrite();
-	ObjID newID = currFrame.myCounter++;
+	ObjID newID = currFrame.myGOCounter++;
 	if (newID >= kMaxObjects)
 	{
 		return;
@@ -63,7 +74,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 	currFrame.myGOs[newID] = aRenderable.myGO;
 
 	// updating the uniforms - grabbing game state!
-	IDAdapterSourceData source{
+	IDGOAdapterSourceData source{
 		aGraphics,
 		aCamera,
 		aRenderable.myGO,
@@ -105,6 +116,72 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 	job.SetDrawParams(drawParams);
 }
 
+void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera)
+{
+	if (myTerrainPipeline->GetState() != GPUResource::State::Valid)
+		[[unlikely]]
+	{
+		return;
+	}
+
+	Handle<GPUTexture>& texture = aVisObject.GetTexture();
+	if (!texture.IsValid() || texture->GetState() != GPUResource::State::Valid)
+		[[unlikely]]
+	{
+		return;
+	}
+
+	// assuming we'll be able to render the terrain
+	// save it for tracking
+	FrameObjs& currFrame = myFrameGOs.GetWrite();
+	ObjID newID = currFrame.myTerrainCounter++;
+	if (newID >= kMaxObjects)
+	{
+		return;
+	}
+	currFrame.myTerrains[newID] = &aTerrain;
+
+	// updating the uniforms - grabbing game state!
+	IDTerrainAdapterSourceData source{
+		aGraphics,
+		aCamera,
+		nullptr,
+		aVisObject,
+		aTerrain,
+		newID | kTerrainBit
+	};
+
+	const GPUPipeline* gpuPipeline = myTerrainPipeline.Get<const GPUPipeline>();
+	const size_t uboCount = gpuPipeline->GetAdapterCount();
+	RenderJob::UniformSet uniformSet;
+	for (size_t i = 0; i < uboCount; i++)
+	{
+		const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+		UniformBuffer* ubo = AllocateUBO(
+			aGraphics,
+			uniformAdapter.GetDescriptor().GetBlockSize()
+		);
+		if (!ubo)
+		{
+			return;
+		}
+
+		UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
+		uniformAdapter.Fill(source, uniformBlock);
+		uniformSet.PushBack(ubo);
+	}
+
+	RenderJob& job = AllocateJob();
+	job.SetPipeline(myTerrainPipeline.Get());
+	job.GetTextures().PushBack(texture.Get());
+	job.GetUniformSet() = uniformSet;
+
+	RenderJob::TesselationDrawParams drawParams;
+	const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(aTerrain);
+	drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+	job.SetDrawParams(drawParams);
+}
+
 void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = IDFrameBuffer::kName;
@@ -117,10 +194,23 @@ void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) 
 
 	aContext.myShouldClearColor = true;
 	aContext.myShouldClearDepth = true;
+
+	aContext.myTexturesToActivate[0] = 0; // for Terrain
 }
 
 void IDAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
-	const IDAdapterSourceData& source = static_cast<const IDAdapterSourceData&>(aData);
-	aUB.SetUniform(0, 0, source.myID);
+	const UniformAdapterSource& genericData = static_cast<const UniformAdapterSource&>(aData);
+	if (genericData.myGO) [[likely]]
+	{
+		const IDGOAdapterSourceData& source = 
+			static_cast<const IDGOAdapterSourceData&>(aData);
+		aUB.SetUniform(0, 0, source.myID);
+	}
+	else
+	{
+		const IDTerrainAdapterSourceData& source = 
+			static_cast<const IDTerrainAdapterSourceData&>(aData);
+		aUB.SetUniform(0, 0, source.myID);
+	}
 }

@@ -1,0 +1,75 @@
+#version 420
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(quads, fractional_even_spacing, cw) in;
+
+layout (std140, binding = 0) uniform ObjectMatricesAdapter
+{
+	mat4 Model;
+	mat4 ModelView;
+	mat4 MVP;
+};
+
+layout (std140, binding = 1) uniform TerrainAdapter
+{
+	vec3 GridOrigin;
+	float TileSize;
+	int GridWidth;
+	int GridHeight;
+	float YScale;
+	vec4 ColorsAndHeightLevels[5];
+};
+
+layout(location = 0) in DataIn
+{
+	vec2 TexCoords;
+	flat uint ID;
+} In[];
+
+layout(location = 0) out DataOut
+{
+	vec2 TexCoords;
+	flat uint ID;
+} Out;
+
+uniform sampler2D TexHeightmap;
+
+// ===================================================================
+
+#define PI 3.1415926535897f
+
+// NOTE: make sure this is in sync with tess-control.tctr
+// produce a sine field
+float terrain(vec2 uv)
+{
+#define USE_SINE_FIELD 0
+#if USE_SINE_FIELD
+	vec2 denormalizedUV = uv * vec2(GridWidth, GridHeight);
+	vec2 piCycles = denormalizedUV * (PI / 2.f);
+	float h = (sin(piCycles.x) + sin(piCycles.y)) / 2.f;
+	return h * YScale * 0.5f; // div by 2 because h is [-1, 1] and not [0, 1]
+#else
+	// need to remap the current [0, Size-1] scale to [0.5, Size-1.5],
+	// to avoid the texture being sampled at the borders producing
+	// incorrect interpolation results
+	vec2 texSize = vec2(textureSize(TexHeightmap, 0));
+	vec2 denormalizedUV = 0.5f + uv * (texSize-1.f);
+	vec2 remappedUV = denormalizedUV / texSize;
+	return texture(TexHeightmap, remappedUV).x * YScale;
+#endif
+}
+
+// ===================================================================
+
+void main()
+{
+	// only have 1 control point
+	vec3 pos = gl_in[0].gl_Position.xyz;
+    pos.xz += gl_TessCoord.xy * TileSize;
+    vec2 uv = In[0].TexCoords + vec2(gl_TessCoord.x / GridWidth, gl_TessCoord.y / GridHeight);
+    pos.y = terrain(uv);
+    gl_Position = MVP * vec4(pos, 1);
+
+    Out.ID = In[0].ID;
+    Out.TexCoords = uv;
+}

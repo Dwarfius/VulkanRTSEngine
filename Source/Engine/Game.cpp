@@ -380,6 +380,11 @@ void Game::AddRenderGameObjectCallback(OnRenderGOCallback aCallback)
 	myRenderGOCallbacks.push_back(aCallback);
 }
 
+void Game::AddRenderTerrainCallback(OnRenderTerrainCallback aCallback)
+{
+	myRenderTerrainCallbacks.push_back(aCallback);
+}
+
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
@@ -762,6 +767,12 @@ void Game::RenderTerrains(Graphics& aGraphics)
 		if (!visObj)
 		{
 			continue;
+		}
+
+		// Custom passes - let them do what-ever they want to
+		for (OnRenderTerrainCallback& callback : myRenderTerrainCallbacks)
+		{
+			callback(aGraphics, *entity.myTerrain, *visObj, *myCamera);
 		}
 
 		if (!IsUsable(*visObj))

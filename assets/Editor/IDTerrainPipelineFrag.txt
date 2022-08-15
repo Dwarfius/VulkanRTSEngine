@@ -1,0 +1,14 @@
+#version 420
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) in DataIn
+{
+	vec2 TexCoords;
+	flat uint ID;
+};
+layout(location = 0) out uint outID;
+
+void main() 
+{
+	outID = ID;
+}

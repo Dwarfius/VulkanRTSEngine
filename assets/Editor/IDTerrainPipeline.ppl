@@ -1,0 +1,15 @@
+{  
+	"myType":0,
+	"myShaders":[
+		"Editor/IDTerrainPipelineVert.shd",
+		"Editor/IDTerrainPipelineFrag.shd",
+		"Editor/IDTerrainPipelineCtrl.shd",
+		"Editor/IDTerrainPipelineEval.shd"
+	],
+	"myAdapters":[
+		"ObjectMatricesAdapter",
+		"TerrainAdapter",
+		"CameraAdapter",
+		"IDAdapter"
+	]
+}

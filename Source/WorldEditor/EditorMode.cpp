@@ -85,17 +85,27 @@ EditorMode::EditorMode(Game& aGame)
 	Handle<Pipeline> idSkinnedPipeline = assetTracker.GetOrCreate<Pipeline>(
 		"Editor/IDSkinnedPipeline.ppl"
 	);
+	Handle<Pipeline> idTerrainPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDTerrainPipeline.ppl"
+	);
 	Graphics& graphics = *aGame.GetGraphics();
 	IDRenderPass* idRenderPass = new IDRenderPass(
 		graphics,
 		graphics.GetOrCreate(idDefaultPipeline).Get<GPUPipeline>(),
-		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>()
+		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>(),
+		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(idRenderPass);
 	aGame.AddRenderGameObjectCallback(
 		[idRenderPass](Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
 	{
 		idRenderPass->ScheduleRenderable(aGraphics, aRenderable, aCamera);
+	});
+	aGame.AddRenderTerrainCallback(
+		[idRenderPass](Graphics& aGraphics, Terrain& aTerrain, 
+			VisualObject& aVisObject, Camera& aCamera)
+	{
+		idRenderPass->ScheduleTerrain(aGraphics, aTerrain, aVisObject, aCamera);
 	});
 }
 

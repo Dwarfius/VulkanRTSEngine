@@ -48,6 +48,7 @@ public:
 
 	using OnRenderCallback = std::function<void(Graphics&)>;
 	using OnRenderGOCallback = std::function<void(Graphics&, Renderable&, Camera&)>;
+	using OnRenderTerrainCallback = std::function<void(Graphics&, Terrain&, VisualObject&, Camera&)>;
 
 public:
 	Game(ReportError aReporterFunc);
@@ -95,6 +96,7 @@ public:
 
 	void AddRenderContributor(OnRenderCallback aCallback);
 	void AddRenderGameObjectCallback(OnRenderGOCallback aCallback);
+	void AddRenderTerrainCallback(OnRenderTerrainCallback aCallback);
 
 	// Adds GameObject and it's children to the world
 	// Does not add the parent of the GameObject to the world -
@@ -148,6 +150,7 @@ private:
 	Pool<Renderable> myRenderables;
 	std::mutex myRenderablesMutex;
 	std::vector<OnRenderGOCallback> myRenderGOCallbacks;
+	std::vector<OnRenderTerrainCallback> myRenderTerrainCallbacks;
 
 	struct TerrainEntity
 	{
