@@ -2,7 +2,7 @@
 
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/Descriptor.h>
-#include "Graphics/Adapters/AdapterSourceData.h"
+#include "AdapterSourceData.h"
 
 class Terrain;
 
