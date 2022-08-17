@@ -14,7 +14,7 @@ uint32_t TextureGL::TranslateInternalFormat(Format aFormat)
 {
 	switch (aFormat)
 	{
-	case Texture::Format::SNorm_R:		return GL_R8;
+	case Texture::Format::SNorm_R:		return GL_R8_SNORM;
 	case Texture::Format::UNorm_R:		return GL_R8;
 	case Texture::Format::I_R:			return GL_R32I;
 	case Texture::Format::U_R:			return GL_R32UI;
@@ -103,6 +103,39 @@ uint32_t TextureGL::DeterminePixelDataType(Format aFormat)
 	case Texture::Format::Stencil8:		return GL_UNSIGNED_BYTE;
 	case Texture::Format::Depth24_Stencil8:		return GL_UNSIGNED_INT_24_8;
 	case Texture::Format::Depth32F_Stencil8:	return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+	default: ASSERT(false);
+	}
+	static_assert(Format::GetSize() == 23, "Update above switch!");
+	return 0;
+}
+
+size_t TextureGL::GetPixelDataTypeSize(Format aFormat)
+{
+	switch (aFormat)
+	{
+	case Texture::Format::SNorm_R:
+	case Texture::Format::UNorm_R:		return sizeof(char);
+	case Texture::Format::SNorm_RG:
+	case Texture::Format::UNorm_RG:		return sizeof(char) * 2;
+	case Texture::Format::SNorm_RGB:
+	case Texture::Format::UNorm_RGB:	return sizeof(char) * 3;
+	case Texture::Format::SNorm_RGBA:
+	case Texture::Format::UNorm_RGBA:
+	case Texture::Format::UNorm_BGRA:	return sizeof(char) * 4;
+	case Texture::Format::I_R:
+	case Texture::Format::U_R:			return sizeof(int);
+	case Texture::Format::I_RG:
+	case Texture::Format::U_RG:			return sizeof(int) * 2;
+	case Texture::Format::I_RGB:
+	case Texture::Format::U_RGB:		return sizeof(int) * 3;
+	case Texture::Format::I_RGBA:
+	case Texture::Format::U_RGBA:		return sizeof(int) * 4;
+	case Texture::Format::Depth16:		return sizeof(char) * 2;
+	case Texture::Format::Depth24:		return sizeof(char) * 3;
+	case Texture::Format::Depth32F:		return sizeof(char) * 4;
+	case Texture::Format::Stencil8:		return sizeof(char);
+	case Texture::Format::Depth24_Stencil8: return sizeof(char) * 4;
+	case Texture::Format::Depth32F_Stencil8:	return sizeof(char) * 5;
 	default: ASSERT(false);
 	}
 	static_assert(Format::GetSize() == 23, "Update above switch!");

@@ -4,7 +4,7 @@
 
 class Texture;
 
-class TextureGL : public GPUTexture
+class TextureGL final : public GPUTexture
 {
 public:
 	void Bind();
@@ -12,11 +12,12 @@ public:
 	static uint32_t TranslateInternalFormat(Format aFormat);
 	static uint32_t TranslateFormat(Format aFormat);
 	static uint32_t DeterminePixelDataType(Format aFormat);
+	static size_t GetPixelDataTypeSize(Format aFormat);
 
 private:
-	void OnCreate(Graphics& aGraphics) override final;
-	bool OnUpload(Graphics& aGraphics) override final;
-	void OnUnload(Graphics& aGraphics) override final;
+	void OnCreate(Graphics& aGraphics) override;
+	bool OnUpload(Graphics& aGraphics) override;
+	void OnUnload(Graphics& aGraphics) override;
 
 	void UpdateTexParams(const Texture* aTexture);
 
