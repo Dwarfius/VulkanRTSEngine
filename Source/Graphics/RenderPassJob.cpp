@@ -42,6 +42,11 @@ void RenderPassJob::Execute(Graphics& aGraphics)
 		SetupContext(aGraphics, myContext);
 		RunJobs(myJobs);
 	}
+
+	if (myContext.myDownloadTexture)
+	{
+		DownloadFrameBuffer(aGraphics, *myContext.myDownloadTexture);
+	}
 }
 
 void RenderPassJob::Initialize(const RenderContext& aContext)

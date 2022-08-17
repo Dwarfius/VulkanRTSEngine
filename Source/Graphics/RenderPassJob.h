@@ -117,6 +117,9 @@ private:
 	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
 	// called last to submit render jobs
 	virtual void RunJobs(StableVector<RenderJob>& aJobs) = 0;
+	// called if the user has requested the result of rendering to the framebuffer
+	// to be downloaded back to CPU
+	virtual void DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture) = 0;
 
 	RenderContext myContext;
 	StableVector<RenderJob> myJobs;

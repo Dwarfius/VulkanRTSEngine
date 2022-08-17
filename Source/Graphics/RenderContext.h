@@ -1,5 +1,7 @@
 #pragma once
 
+class Texture;
+
 // TODO: add stencil settings
 // A generic class used to configure the render
 // state before rendering
@@ -84,6 +86,7 @@ public:
 	FrameBufferTexture myFrameBufferReadTextures[kFrameBufferReadTextures];
 
 	std::string_view myFrameBuffer;
+	Texture* myDownloadTexture = nullptr;
 
 	// Taking defaults from OpenGL
 	// Constant color for blending, RGBA

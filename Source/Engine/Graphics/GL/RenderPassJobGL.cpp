@@ -329,6 +329,42 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 	});
 }
 
+void RenderPassJobGL::DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture)
+{
+	const RenderContext& context = GetRenderContext();
+	const uint32_t width = context.myViewportSize[0];
+	const uint32_t height = context.myViewportSize[1];
+
+	Texture::Format format;
+	if (context.myFrameBuffer.empty())
+	{
+		format = Texture::Format::SNorm_RGB;
+	}
+	else
+	{
+		const FrameBuffer& buffer = aGraphics.GetNamedFrameBuffer(
+			context.myFrameBuffer
+		);
+		format = buffer.myColors[0].myFormat;
+	}
+	const size_t pixelSize = TextureGL::GetPixelDataTypeSize(format);
+	
+	unsigned char* buffer = new unsigned char[width * height * pixelSize];
+	aTexture.SetWidth(width);
+	aTexture.SetHeight(height);
+	aTexture.SetFormat(format);
+	aTexture.SetPixels(buffer);
+
+	// TODO: this forces a stall on the GPU - use mapped buffers instead
+	const uint32_t x = context.myViewportOrigin[0];
+	const uint32_t y = context.myViewportOrigin[1];
+	glReadPixels(x, y, width, height,
+		TextureGL::TranslateFormat(format),
+		TextureGL::DeterminePixelDataType(format),
+		buffer
+	);
+}
+
 constexpr uint32_t RenderPassJobGL::ConvertBlendMode(RenderContext::Blending blendMode)
 {
 	switch (blendMode)
