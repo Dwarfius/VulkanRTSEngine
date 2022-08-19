@@ -21,6 +21,9 @@ public:
 	static constexpr ObjID kMaxObjects = 1024;
 	static constexpr ObjID kMaxTerrains = 8;
 
+	using PickedObject = std::variant<std::monostate, GameObject*, Terrain*>;
+	using Callback = std::function<void(PickedObject& aObj)>;
+
 public:
 	constexpr static uint32_t kId = Utils::CRC32("IDRenderPass");
 	IDRenderPass(Graphics& aGraphics, 
@@ -36,11 +39,22 @@ public:
 	void ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera);
 	void Process(RenderJob& aJob, const IParams& aParams) const final {}
 
+	// The callback will be invoked at the end of next frame
+	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
+
 protected:
 	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 	bool HasDynamicRenderContext() const final { return true; }
+	void ResolveClick();
 
 	constexpr static ObjID kTerrainBit = 1 << 31;
+
+	enum class State
+	{
+		None,
+		Schedule,
+		Render
+	};
 
 	struct FrameObjs
 	{
@@ -50,10 +64,14 @@ protected:
 		std::atomic<ObjID> myGOCounter = 0;
 		std::atomic<ObjID> myTerrainCounter = 0;
 	};
-	RWBuffer<FrameObjs, 3> myFrameGOs;
+	FrameObjs myFrameGOs;
 	Handle<GPUPipeline> myDefaultPipeline;
 	Handle<GPUPipeline> mySkinningPipeline;
 	Handle<GPUPipeline> myTerrainPipeline;
+	glm::uvec2 myMousePos;
+	Callback myCallback;
+	mutable Texture* myDownloadTexture = nullptr;
+	State myState = State::None;
 };
 
 // the engine provides a default render buffer, that

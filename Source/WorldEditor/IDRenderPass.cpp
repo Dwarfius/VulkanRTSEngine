@@ -11,6 +11,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/Texture.h>
 
 namespace
 {
@@ -41,13 +42,34 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 {
 	RenderPass::BeginPass(aGraphics);
 
-	myFrameGOs.Advance();
-	myFrameGOs.GetWrite().myGOCounter = 1;
-	myFrameGOs.GetWrite().myTerrainCounter = 1;
+	if (myState == State::None)
+	{
+		return;
+	}
+
+	if(myState == State::Render)
+	{
+		ASSERT(myDownloadTexture->GetPixels());
+		ResolveClick();
+
+		delete myDownloadTexture;
+		myDownloadTexture = nullptr;
+		myState = State::None;
+		return;
+	}
+
+	myFrameGOs.myGOCounter = 0;
+	myFrameGOs.myTerrainCounter = 0;
+	myState = State::Render;
 }
 
 void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
 {
+	if (myState == State::None) [[likely]]
+	{
+		return;
+	}
+
 	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
 		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
@@ -65,13 +87,12 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 
 	// assuming we'll be able to render the GO
 	// save it for tracking
-	FrameObjs& currFrame = myFrameGOs.GetWrite();
-	ObjID newID = currFrame.myGOCounter++;
+	ObjID newID = myFrameGOs.myGOCounter++;
 	if (newID >= kMaxObjects)
 	{
 		return;
 	}
-	currFrame.myGOs[newID] = aRenderable.myGO;
+	myFrameGOs.myGOs[newID] = aRenderable.myGO;
 
 	// updating the uniforms - grabbing game state!
 	IDGOAdapterSourceData source{
@@ -79,7 +100,7 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 		aCamera,
 		aRenderable.myGO,
 		vo,
-		newID
+		newID + 1
 	};
 
 	const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
@@ -118,6 +139,11 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 
 void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera)
 {
+	if (myState == State::None) [[likely]]
+	{
+		return;
+	}
+
 	if (myTerrainPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
 	{
@@ -133,13 +159,12 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, Visua
 
 	// assuming we'll be able to render the terrain
 	// save it for tracking
-	FrameObjs& currFrame = myFrameGOs.GetWrite();
-	ObjID newID = currFrame.myTerrainCounter++;
+	ObjID newID = myFrameGOs.myTerrainCounter++;
 	if (newID >= kMaxObjects)
 	{
 		return;
 	}
-	currFrame.myTerrains[newID] = &aTerrain;
+	myFrameGOs.myTerrains[newID] = &aTerrain;
 
 	// updating the uniforms - grabbing game state!
 	IDTerrainAdapterSourceData source{
@@ -182,6 +207,15 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, Visua
 	job.SetDrawParams(drawParams);
 }
 
+void IDRenderPass::GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback)
+{
+	ASSERT_STR(myState == State::None, "Only support 1 picking request at the same time!");
+	myCallback = aCallback;
+	myMousePos = aMousePos;
+	myDownloadTexture = new Texture();
+	myState = State::Schedule;
+}
+
 void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = IDFrameBuffer::kName;
@@ -196,6 +230,9 @@ void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) 
 	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0; // for Terrain
+
+	aContext.myDownloadTexture = myState == State::Schedule ? 
+		myDownloadTexture : nullptr;
 }
 
 void IDAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
@@ -213,4 +250,32 @@ void IDAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& a
 			static_cast<const IDTerrainAdapterSourceData&>(aData);
 		aUB.SetUniform(0, 0, source.myID);
 	}
+}
+
+void IDRenderPass::ResolveClick()
+{
+	ASSERT_STR(myMousePos.x < myDownloadTexture->GetWidth(), 
+		"Mouse outside of the viewport!");
+	ASSERT_STR(myMousePos.y < myDownloadTexture->GetHeight(),
+		"Mouse outside of the viewport!");
+
+	const uint32_t y = myDownloadTexture->GetHeight() - myMousePos.y;
+	const uint32_t pixelInd = y * myDownloadTexture->GetWidth() + myMousePos.x;
+	const unsigned char* pixel = myDownloadTexture->GetPixels() + pixelInd * sizeof(ObjID);
+	ObjID pickedID = *pixel;
+	pickedID |= *(pixel + 1) << 8;
+	pickedID |= *(pixel + 2) << 16;
+	pickedID |= *(pixel + 3) << 24;
+
+	PickedObject pickedObj;
+	if (pickedID >= kTerrainBit)
+	{
+		pickedObj = myFrameGOs.myTerrains[pickedID - kTerrainBit];
+	}
+	else if(pickedID > 0)
+	{
+		pickedObj = myFrameGOs.myGOs[pickedID - 1];
+	}
+	myCallback(pickedObj);
+	myState = State::None;
 }

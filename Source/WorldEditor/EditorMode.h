@@ -19,6 +19,8 @@ class AnimationTest;
 class Model;
 class Texture;
 class Pipeline;
+class IDRenderPass;
+class Terrain;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -55,6 +57,13 @@ private:
 	Handle<Pipeline> myDefaultPipeline;
 	std::function<void(Game& aGame)> myMenuFunction;
 	FileDialog myFileDialog;
+	
+	// Object Picking
+	void UpdatePickedObject(Game& aGame);
+
+	IDRenderPass* myIDRenderPass; // non-owning
+	GameObject* myPickedGO = nullptr;
+	Terrain* myPickedTerrain = nullptr;
 
 	// Other
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;

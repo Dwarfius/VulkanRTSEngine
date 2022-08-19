@@ -15,6 +15,7 @@
 #include <Engine/Animation/AnimationSystem.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
 #include <Engine/Resources/GLTFImporter.h>
+#include <Engine/Resources/ImGUISerializer.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Utils.h>
@@ -89,20 +90,21 @@ EditorMode::EditorMode(Game& aGame)
 		"Editor/IDTerrainPipeline.ppl"
 	);
 	Graphics& graphics = *aGame.GetGraphics();
-	IDRenderPass* idRenderPass = new IDRenderPass(
+	myIDRenderPass = new IDRenderPass(
 		graphics,
 		graphics.GetOrCreate(idDefaultPipeline).Get<GPUPipeline>(),
 		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>(),
 		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
-	aGame.GetGraphics()->AddRenderPass(idRenderPass);
+	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
 	aGame.AddRenderGameObjectCallback(
-		[idRenderPass](Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
+		[idRenderPass = myIDRenderPass]
+		(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
 	{
 		idRenderPass->ScheduleRenderable(aGraphics, aRenderable, aCamera);
 	});
 	aGame.AddRenderTerrainCallback(
-		[idRenderPass](Graphics& aGraphics, Terrain& aTerrain, 
+		[idRenderPass = myIDRenderPass](Graphics& aGraphics, Terrain& aTerrain,
 			VisualObject& aVisObject, Camera& aCamera)
 	{
 		idRenderPass->ScheduleTerrain(aGraphics, aTerrain, aVisObject, aCamera);
@@ -202,6 +204,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	solver.Update(aGame, aDeltaTime);
 
 	DrawMenu(aGame);
+
+	UpdatePickedObject(aGame);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
@@ -692,6 +696,73 @@ void EditorMode::CreateMesh(Game& aGame)
 			myMenuFunction = nullptr;
 		}
 	};
+}
+
+void EditorMode::UpdatePickedObject(Game& aGame)
+{
+	if(!ImGui::GetIO().WantCaptureMouse
+		&& Input::GetMouseBtnPressed(0))
+	{
+		glm::uvec2 mousePos;
+		mousePos.x = static_cast<uint32_t>(Input::GetMousePos().x);
+		mousePos.y = static_cast<uint32_t>(Input::GetMousePos().y);
+		myIDRenderPass->GetPickedEntity(mousePos,
+			[&](IDRenderPass::PickedObject& anObj)
+		{
+			myPickedGO = nullptr;
+			myPickedTerrain = nullptr;
+			std::visit([&](auto&& aValue) {
+				using T = std::decay_t<decltype(aValue)>;
+				if constexpr (std::is_same_v<T, GameObject*>)
+				{
+					myPickedGO = aValue;
+				}
+				else if constexpr (std::is_same_v<T, Terrain*>)
+				{
+					myPickedTerrain = aValue;
+				}
+				else
+				{
+					static_assert(std::is_same_v<T, std::monostate>,
+						"Not all cases handled!");
+				}
+			}, anObj);
+		});
+	}
+
+	{
+		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
+		if (ImGui::Begin("Picked Entity"))
+		{
+			if (myPickedGO)
+			{
+				char buffer[33];
+				myPickedGO->GetUID().GetString(buffer);
+				ImGui::Text("Picked Game Object: %s", buffer);
+				
+				ImGUISerializer serializer(aGame.GetAssetTracker());
+				myPickedGO->Serialize(serializer);
+			}
+			else if (myPickedTerrain)
+			{
+				ImGui::Text("Picked terrain");
+			}
+		}
+		ImGui::End();
+	}
+
+	if (myPickedGO)
+	{
+		const PoolPtr<Renderable>& renderable = myPickedGO->GetRenderable();
+		const VisualObject& visObj = renderable.Get()->myVO;
+		const glm::vec3 center = visObj.GetCenter();
+		const float radius = visObj.GetRadius();
+		aGame.GetDebugDrawer().AddSphere(
+			center,
+			radius,
+			{ 0, 1, 0 }
+		);
+	}
 }
 
 void EditorMode::AddTestSkeleton(Game& aGame)
