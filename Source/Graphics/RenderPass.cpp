@@ -43,17 +43,22 @@ void RenderPass::BeginPass(Graphics& anInterface)
 	myCurrentJob = &anInterface.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();
 	// Note: this is not thread safe if same pass is started concurrently
-	for (UBOBucket& uboBucket : myUBOBuckets)
-	{
-		uboBucket.PrepForPass(anInterface);
-	}
-
 	for (size_t newBucket : myNewBuckets)
 	{
 		myUBOBuckets.emplace_back(newBucket);
 	}
 	myNewBuckets.clear();
+
+	for (UBOBucket& uboBucket : myUBOBuckets)
+	{
+		uboBucket.PrepForPass(anInterface);
+	}
 	std::sort(myUBOBuckets.begin(), myUBOBuckets.end());
+}
+
+void RenderPass::PreallocateUBOs(size_t aSize)
+{
+	myNewBuckets.emplace(aSize);
 }
 
 RenderPass::UBOBucket::UBOBucket(size_t aSize)
@@ -76,12 +81,6 @@ UniformBuffer* RenderPass::UBOBucket::AllocateUBO(Graphics& aGraphics, size_t aS
 
 void RenderPass::UBOBucket::PrepForPass(Graphics& aGraphics)
 {
-	// Just a way to start with a 32-ubo set on first growth
-	if (myUBOCounter == 0)
-	{
-		myUBOCounter = 32;
-	}
-
 	if (myUBOCounter >= myUBOs.size())
 	{
 		const float counter = static_cast<float>(myUBOCounter);

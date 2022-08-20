@@ -68,6 +68,9 @@ public:
 	// updates the renderjob with the correct render settings
 	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
+protected:
+	void PreallocateUBOs(size_t aSize);
+
 private:
 	RenderPassJob* myCurrentJob = nullptr;
 	
@@ -75,7 +78,7 @@ private:
 	{
 		// Note: not using LazyVector as it's not thread safe
 		std::vector<Handle<UniformBuffer>> myUBOs;
-		std::atomic<uint32_t> myUBOCounter;
+		std::atomic<uint32_t> myUBOCounter = 32;
 		size_t mySize;
 
 		UBOBucket(size_t aSize);
