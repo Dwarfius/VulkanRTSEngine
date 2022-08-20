@@ -40,27 +40,25 @@ IDRenderPass::IDRenderPass(Graphics& aGraphics,
 
 void IDRenderPass::BeginPass(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
-
-	if (myState == State::None)
+	switch (myState)
 	{
-		return;
-	}
-
-	if(myState == State::Render)
-	{
+	case State::None:
+		break;
+	case State::Schedule:
+		myFrameGOs.myGOCounter = 0;
+		myFrameGOs.myTerrainCounter = 0;
+		myState = State::Render;
+		break;
+	case State::Render:
 		ASSERT(myDownloadTexture->GetPixels());
 		ResolveClick();
 
 		delete myDownloadTexture;
 		myDownloadTexture = nullptr;
 		myState = State::None;
-		return;
+		break;
 	}
-
-	myFrameGOs.myGOCounter = 0;
-	myFrameGOs.myTerrainCounter = 0;
-	myState = State::Render;
+	RenderPass::BeginPass(aGraphics);
 }
 
 void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
@@ -231,7 +229,7 @@ void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) 
 
 	aContext.myTexturesToActivate[0] = 0; // for Terrain
 
-	aContext.myDownloadTexture = myState == State::Schedule ? 
+	aContext.myDownloadTexture = myState == State::Render ? 
 		myDownloadTexture : nullptr;
 }
 
