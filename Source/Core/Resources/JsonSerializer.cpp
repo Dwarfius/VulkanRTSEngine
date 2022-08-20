@@ -10,11 +10,11 @@ namespace Impl
     {
         if (aIsReading)
         {
-            aValue = aJson[std::string(aName)].get<T>();
+            aValue = aJson[aName].get<T>();
         }
         else
         {
-            aJson[std::string(aName)] = aValue;
+            aJson[aName] = aValue;
         }
     }
 
