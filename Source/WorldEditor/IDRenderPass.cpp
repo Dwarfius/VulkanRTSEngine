@@ -5,6 +5,8 @@
 #include <Engine/GameObject.h>
 #include <Engine/Graphics/Adapters/AdapterSourceData.h>
 #include <Engine/Graphics/Adapters/TerrainAdapter.h>
+#include <Engine/Graphics/Adapters/ObjectMatricesAdapter.h>
+#include <Engine/Graphics/Adapters/SkeletonAdapter.h>
 #include <Engine/Graphics/RenderPasses/GenericRenderPasses.h>
 
 #include <Graphics/Resources/GPUModel.h>
@@ -35,7 +37,15 @@ IDRenderPass::IDRenderPass(Graphics& aGraphics,
 	, mySkinningPipeline(aSkinningPipeline)
 	, myTerrainPipeline(aTerrainPipeline)
 {
-	aGraphics.AddNamedFrameBuffer(IDFrameBuffer::kName, IDFrameBuffer::kDescriptor);
+	aGraphics.AddNamedFrameBuffer(
+		IDFrameBuffer::kName, 
+		IDFrameBuffer::kDescriptor
+	);
+
+	PreallocateUBOs(IDAdapter::ourDescriptor.GetBlockSize());
+	PreallocateUBOs(ObjectMatricesAdapter::ourDescriptor.GetBlockSize());
+	PreallocateUBOs(SkeletonAdapter::ourDescriptor.GetBlockSize());
+	PreallocateUBOs(TerrainAdapter::ourDescriptor.GetBlockSize());
 }
 
 void IDRenderPass::BeginPass(Graphics& aGraphics)
