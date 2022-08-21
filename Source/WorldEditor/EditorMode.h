@@ -57,6 +57,8 @@ private:
 	Handle<Pipeline> myDefaultPipeline;
 	std::function<void(Game& aGame)> myMenuFunction;
 	FileDialog myFileDialog;
+
+	void DrawGizmos(Game& aGame);
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);
