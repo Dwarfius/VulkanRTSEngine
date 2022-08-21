@@ -72,12 +72,15 @@ void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren 
 	{
 		myWorldTransf = aTransf;
 
-		Transform parentTransf;
 		if (myParent.IsValid())
 		{
-			parentTransf = myParent->GetWorldTransform();
+			myLocalTransf = myParent->GetWorldTransform() * myWorldTransf.GetInverted();
 		}
-		myLocalTransf = parentTransf * myWorldTransf.GetInverted();
+		else
+		{
+			myLocalTransf = myWorldTransf;
+		}
+		
 
 		if (aMoveChildren)
 		{
