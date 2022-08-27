@@ -59,6 +59,8 @@ private:
 	FileDialog myFileDialog;
 
 	void DrawGizmos(Game& aGame);
+	glm::vec3 myOldMousePosWS;
+	uint8_t myPickedAxis = 3;
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);

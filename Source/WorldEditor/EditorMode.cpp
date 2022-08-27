@@ -25,6 +25,7 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
+#include <Graphics/Utils.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
@@ -704,33 +705,35 @@ void EditorMode::DrawGizmos(Game& aGame)
 {
 	if (!myPickedGO)
 	{
+		myPickedAxis = 3;
 		return;
 	}
 
-	const Transform transf = myPickedGO->GetWorldTransform();
-	DebugDrawer& drawer = aGame.GetDebugDrawer();
+	Transform transf = myPickedGO->GetWorldTransform();
 	constexpr float kGizmoRange = 1.f;
 	const glm::vec3 origin = transf.GetPos();
 	const glm::vec3 right = transf.GetRight() * kGizmoRange;
 	const glm::vec3 up = transf.GetUp() * kGizmoRange;
 	const glm::vec3 forward = transf.GetForward() * kGizmoRange;
 
-	const glm::vec2 screenSize{
-		aGame.GetGraphics()->GetWidth(),
-		aGame.GetGraphics()->GetHeight()
+	const glm::vec3 ends[3]{
+		origin + right,
+		origin + up,
+		origin + forward
 	};
-	const Camera& camera = *aGame.GetCamera();
-	auto project = [=](glm::vec3 aWorldPos)	{
-		const glm::vec4 projected = camera.Get() * glm::vec4(aWorldPos, 1);
-		const glm::vec2 denormalized = glm::vec2(projected.x, projected.y) 
-			/ projected.w;
-		const glm::vec2 normalized = denormalized / 2.f + 0.5f;
-		const glm::vec2 normalizedYFlipped{ normalized.x, 1.f - normalized.y };
-		const glm::vec2 screenSpace = normalizedYFlipped * screenSize;
-		return screenSpace;
+	const glm::vec3 colors[3]{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1}
 	};
+	const glm::vec2 mousePos = Input::GetMousePos();
+	constexpr glm::vec3 kHighlightColor{ 1, 1, 0 };
+	if (!Input::GetMouseBtn(0))
+	{
+		myPickedAxis = 3;
+	}
 
-	auto generateArrow = [](glm::vec3 aStart, glm::vec3 anEnd, glm::vec3 (&aVerts)[3]) {
+	auto GenerateArrow = [](glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3]) {
 		const glm::vec3 dir = glm::normalize(anEnd - aStart);
 		glm::quat origRotation;
 		if (glm::abs(dir.y) >= 0.99f)
@@ -747,13 +750,14 @@ void EditorMode::DrawGizmos(Game& aGame)
 		glm::quat rotation = glm::quat({ 0, kYawAngle, 0 });
 		for (uint8_t i = 0; i < 3; i++)
 		{
-			glm::vec3 arrowEdge = origRotation * rotation * glm::vec3{1, 0, 0};
+			glm::vec3 arrowEdge = origRotation * rotation * glm::vec3{ 1, 0, 0 };
 			aVerts[i] = anEnd + arrowEdge * 0.1f;
 			rotation = glm::quat({ 0, 0, kRollAngle }) * rotation;
 		}
 	};
 
-	auto drawArrow = [&](glm::vec3 aStart, glm::vec3 anEnd, const glm::vec3(&aVerts)[3], glm::vec3 aColor) {
+	DebugDrawer& drawer = aGame.GetDebugDrawer();
+	auto DrawArrow = [&](glm::vec3 aStart, glm::vec3 anEnd, const glm::vec3(&aVerts)[3], glm::vec3 aColor) {
 		drawer.AddLine(aStart, anEnd, aColor);
 		for (uint8_t i = 0; i < 3; i++)
 		{
@@ -764,60 +768,80 @@ void EditorMode::DrawGizmos(Game& aGame)
 		drawer.AddLine(aVerts[2], aVerts[0], aColor);
 	};
 
-	// taken from https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle
-	auto pointInTriangle = [&](glm::vec2 aPoint, glm::vec2 aA, glm::vec2 aB, glm::vec2 aC) {
-		const float A = 1 / 2.f * (-aB.y * aC.x + aA.y * (-aB.x + aC.x) + aA.x * (aB.y - aC.y) + aB.x * aC.y);
-		const float sign = A < 0 ? -1.f : 1.f;
-		const float s = (aA.y * aC.x - aA.x * aC.y + (aC.y - aA.y) * aPoint.x + (aA.x - aC.x) * aPoint.y) * sign;
-		const float t = (aA.x * aB.y - aA.y * aB.x + (aA.y - aB.y) * aPoint.x + (aB.x - aA.x) * aPoint.y) * sign;
-
-		return s > 0 && t > 0 && (s + t) < 2 * A * sign;
+	const glm::vec2 screenSize{
+		aGame.GetGraphics()->GetWidth(),
+		aGame.GetGraphics()->GetHeight()
 	};
-
-	const glm::vec3 ends[3]{
-		origin + right,
-		origin + up,
-		origin + forward
-	};
-	const glm::vec3 colors[3]{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1}
-	};
-	const glm::vec2 mousePos = Input::GetMousePos();
-	constexpr glm::vec3 kHighlightColor{ 1, 1, 0 };
+	const Camera& camera = *aGame.GetCamera();
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		glm::vec3 arrowVertices[3];
-		generateArrow(origin, ends[i], arrowVertices);
+		GenerateArrow(origin, ends[i], arrowVertices);
 
-		const glm::vec2 projectedEnd = project(ends[i]);
-		const bool isHighlighted = pointInTriangle(
-			mousePos,
-			projectedEnd,
-			project(arrowVertices[0]),
-			project(arrowVertices[1])
-		) || pointInTriangle(
-			mousePos,
-			projectedEnd,
-			project(arrowVertices[1]),
-			project(arrowVertices[2])
-		) || pointInTriangle(
-			mousePos,
-			projectedEnd,
-			project(arrowVertices[2]),
-			project(arrowVertices[0])
+		const glm::vec2 projectedEnd = Utils::WorldToScreen(
+			ends[i], 
+			screenSize, 
+			camera.Get()
 		);
+		const glm::vec2 projectedArrows[3]{
+			Utils::WorldToScreen(arrowVertices[0], screenSize, camera.Get()),
+			Utils::WorldToScreen(arrowVertices[1], screenSize, camera.Get()),
+			Utils::WorldToScreen(arrowVertices[2], screenSize, camera.Get())
+		};
+		const bool isHighlighted = Utils::IsInTriangle(
+			mousePos,
+			projectedEnd,
+			projectedArrows[0],
+			projectedArrows[1]
+		) || Utils::IsInTriangle(
+			mousePos,
+			projectedEnd,
+			projectedArrows[1],
+			projectedArrows[2]
+		) || Utils::IsInTriangle(
+			mousePos,
+			projectedEnd,
+			projectedArrows[2],
+			projectedArrows[0]
+		);
+		if (isHighlighted && myPickedAxis == 3)
+		{
+			myPickedAxis = i;
 
-		drawArrow(origin, ends[i], arrowVertices,
-			isHighlighted ? kHighlightColor : colors[i]
-		);
+			const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
+			const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
+			const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
+			const Utils::Ray axisRay{ origin, glm::normalize(ends[myPickedAxis] - origin) };
+			float ignore, t;
+			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+			myOldMousePosWS = axisRay.myOrigin + axisRay.myDir * t;
+		}
+
+		const glm::vec3 color = isHighlighted || myPickedAxis == i 
+			? kHighlightColor : colors[i];
+		DrawArrow(origin, ends[i], arrowVertices, color);
+	}
+
+	if (Input::GetMouseBtn(0) && myPickedAxis < 3)
+	{
+		const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
+		const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
+		const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
+		const Utils::Ray axisRay{ origin, glm::normalize(ends[myPickedAxis] - origin) };
+		float ignore, t;
+		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
+
+		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosWS;
+		myOldMousePosWS = newMappedMouseWS;
+		transf.Translate(mouseDeltaWS);
+		myPickedGO->SetWorldTransform(transf);
 	}
 }
 
 void EditorMode::UpdatePickedObject(Game& aGame)
 {
-	if(!ImGui::GetIO().WantCaptureMouse
+	if(!ImGui::GetIO().WantCaptureMouse && myPickedAxis == 3
 		&& Input::GetMouseBtnPressed(0))
 	{
 		glm::uvec2 mousePos;
