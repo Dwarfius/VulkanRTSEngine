@@ -9,6 +9,7 @@
 
 #include "HexSolver.h"
 #include "DefaultAssets.h"
+#include "Gizmos.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -49,9 +50,7 @@ private:
 	std::function<void(Game& aGame)> myMenuFunction;
 	FileDialog myFileDialog;
 
-	void DrawGizmos(Game& aGame);
-	glm::vec3 myOldMousePosWS;
-	uint8_t myPickedAxis = 3;
+	Gizmos myGizmos;
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);

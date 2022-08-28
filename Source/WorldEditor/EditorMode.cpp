@@ -25,7 +25,6 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUPipeline.h>
-#include <Graphics/Utils.h>
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
@@ -206,8 +205,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	DrawMenu(aGame);
 
 	UpdatePickedObject(aGame);
-
-	DrawGizmos(aGame);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
@@ -409,148 +406,47 @@ void EditorMode::CreateMesh(Game& aGame)
 	};
 }
 
-void EditorMode::DrawGizmos(Game& aGame)
-{
-	if (!myPickedGO)
-	{
-		myPickedAxis = 3;
-		return;
-	}
-
-	Transform transf = myPickedGO->GetWorldTransform();
-	constexpr float kGizmoRange = 1.f;
-	const glm::vec3 origin = transf.GetPos();
-	const glm::vec3 right = transf.GetRight() * kGizmoRange;
-	const glm::vec3 up = transf.GetUp() * kGizmoRange;
-	const glm::vec3 forward = transf.GetForward() * kGizmoRange;
-
-	const glm::vec3 ends[3]{
-		origin + right,
-		origin + up,
-		origin + forward
-	};
-	const glm::vec3 colors[3]{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1}
-	};
-	const glm::vec2 mousePos = Input::GetMousePos();
-	constexpr glm::vec3 kHighlightColor{ 1, 1, 0 };
-	if (!Input::GetMouseBtn(0))
-	{
-		myPickedAxis = 3;
-	}
-
-	auto GenerateArrow = [](glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3]) {
-		const glm::vec3 dir = glm::normalize(anEnd - aStart);
-		glm::quat origRotation;
-		if (glm::abs(dir.y) >= 0.99f)
-		{
-			origRotation = glm::quatLookAtLH(dir, { 1, 0, 0 });
-		}
-		else
-		{
-			origRotation = glm::quatLookAtLH(dir, { 0, 1, 0 });
-		}
-
-		constexpr float kYawAngle = glm::radians(60.f);
-		constexpr float kRollAngle = glm::radians(120.f);
-		glm::quat rotation = glm::quat({ 0, kYawAngle, 0 });
-		for (uint8_t i = 0; i < 3; i++)
-		{
-			glm::vec3 arrowEdge = origRotation * rotation * glm::vec3{ 1, 0, 0 };
-			aVerts[i] = anEnd + arrowEdge * 0.1f;
-			rotation = glm::quat({ 0, 0, kRollAngle }) * rotation;
-		}
-	};
-
-	DebugDrawer& drawer = aGame.GetDebugDrawer();
-	auto DrawArrow = [&](glm::vec3 aStart, glm::vec3 anEnd, const glm::vec3(&aVerts)[3], glm::vec3 aColor) {
-		drawer.AddLine(aStart, anEnd, aColor);
-		for (uint8_t i = 0; i < 3; i++)
-		{
-			drawer.AddLine(anEnd, aVerts[i], aColor);
-		}
-		drawer.AddLine(aVerts[0], aVerts[1], aColor);
-		drawer.AddLine(aVerts[1], aVerts[2], aColor);
-		drawer.AddLine(aVerts[2], aVerts[0], aColor);
-	};
-
-	const glm::vec2 screenSize{
-		aGame.GetGraphics()->GetWidth(),
-		aGame.GetGraphics()->GetHeight()
-	};
-	const Camera& camera = *aGame.GetCamera();
-	for (uint8_t i = 0; i < 3; i++)
-	{
-		glm::vec3 arrowVertices[3];
-		GenerateArrow(origin, ends[i], arrowVertices);
-
-		const glm::vec2 projectedEnd = Utils::WorldToScreen(
-			ends[i], 
-			screenSize, 
-			camera.Get()
-		);
-		const glm::vec2 projectedArrows[3]{
-			Utils::WorldToScreen(arrowVertices[0], screenSize, camera.Get()),
-			Utils::WorldToScreen(arrowVertices[1], screenSize, camera.Get()),
-			Utils::WorldToScreen(arrowVertices[2], screenSize, camera.Get())
-		};
-		const bool isHighlighted = Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[0],
-			projectedArrows[1]
-		) || Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[1],
-			projectedArrows[2]
-		) || Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[2],
-			projectedArrows[0]
-		);
-		if (isHighlighted && myPickedAxis == 3)
-		{
-			myPickedAxis = i;
-
-			const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-			const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-			const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
-			const Utils::Ray axisRay{ origin, glm::normalize(ends[myPickedAxis] - origin) };
-			float ignore, t;
-			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
-			myOldMousePosWS = axisRay.myOrigin + axisRay.myDir * t;
-		}
-
-		const glm::vec3 color = isHighlighted || myPickedAxis == i 
-			? kHighlightColor : colors[i];
-		DrawArrow(origin, ends[i], arrowVertices, color);
-	}
-
-	if (Input::GetMouseBtn(0) && myPickedAxis < 3)
-	{
-		const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-		const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-		const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
-		const Utils::Ray axisRay{ origin, glm::normalize(ends[myPickedAxis] - origin) };
-		float ignore, t;
-		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
-		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
-
-		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosWS;
-		myOldMousePosWS = newMappedMouseWS;
-		transf.Translate(mouseDeltaWS);
-		myPickedGO->SetWorldTransform(transf);
-	}
-}
-
 void EditorMode::UpdatePickedObject(Game& aGame)
 {
-	if(!ImGui::GetIO().WantCaptureMouse && myPickedAxis == 3
-		&& Input::GetMouseBtnPressed(0))
+	if(myPickedGO || myPickedTerrain)
+	{
+		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
+		if (ImGui::Begin("Picked Entity"))
+		{
+			if (myPickedGO)
+			{
+				char buffer[33];
+				myPickedGO->GetUID().GetString(buffer);
+				ImGui::Text("Picked Game Object: %s", buffer);
+
+				ImGUISerializer serializer(aGame.GetAssetTracker());
+				myPickedGO->Serialize(serializer);
+			}
+			else if (myPickedTerrain)
+			{
+				ImGui::Text("Picked terrain");
+			}
+		}
+		ImGui::End();
+	}
+
+	bool canUseInput = !ImGui::GetIO().WantCaptureMouse;
+	if (myPickedGO)
+	{
+		const PoolPtr<Renderable>& renderable = myPickedGO->GetRenderable();
+		const VisualObject& visObj = renderable.Get()->myVO;
+		const glm::vec3 center = visObj.GetCenter();
+		const float radius = visObj.GetRadius();
+		aGame.GetDebugDrawer().AddSphere(
+			center,
+			radius,
+			{ 0, 1, 0 }
+		);
+
+		canUseInput &= !myGizmos.Draw(*myPickedGO, aGame);
+	}
+
+	if(canUseInput && Input::GetMouseBtnPressed(0))
 	{
 		glm::uvec2 mousePos;
 		mousePos.x = static_cast<uint32_t>(Input::GetMousePos().x);
@@ -577,40 +473,6 @@ void EditorMode::UpdatePickedObject(Game& aGame)
 				}
 			}, anObj);
 		});
-	}
-
-	{
-		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
-		if (ImGui::Begin("Picked Entity"))
-		{
-			if (myPickedGO)
-			{
-				char buffer[33];
-				myPickedGO->GetUID().GetString(buffer);
-				ImGui::Text("Picked Game Object: %s", buffer);
-				
-				ImGUISerializer serializer(aGame.GetAssetTracker());
-				myPickedGO->Serialize(serializer);
-			}
-			else if (myPickedTerrain)
-			{
-				ImGui::Text("Picked terrain");
-			}
-		}
-		ImGui::End();
-	}
-
-	if (myPickedGO)
-	{
-		const PoolPtr<Renderable>& renderable = myPickedGO->GetRenderable();
-		const VisualObject& visObj = renderable.Get()->myVO;
-		const glm::vec3 center = visObj.GetCenter();
-		const float radius = visObj.GetRadius();
-		aGame.GetDebugDrawer().AddSphere(
-			center,
-			radius,
-			{ 0, 1, 0 }
-		);
 	}
 }
 
