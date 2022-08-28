@@ -272,23 +272,23 @@ void EditorMode::DrawMenu(Game& aGame)
 		ImGui::Text("Shapes");
 		if (ImGui::Button("Create Plane"))
 		{
-			CreatePlane(aGame);
+			CreateGOWithMesh(aGame, myDefAssets.GetPlane());
 		}
 		if (ImGui::Button("Create Sphere"))
 		{
-			CreateSphere(aGame);
+			CreateGOWithMesh(aGame, myDefAssets.GetSphere());
 		}
 		if (ImGui::Button("Create Box"))
 		{
-			CreateBox(aGame);
+			CreateGOWithMesh(aGame, myDefAssets.GetBox());
 		}
 		if (ImGui::Button("Create Cylinder"))
 		{
-			CreateCylinder(aGame);
+			CreateGOWithMesh(aGame, myDefAssets.GetCylinder());
 		}
 		if (ImGui::Button("Create Cone"))
 		{
-			CreateCone(aGame);
+			CreateGOWithMesh(aGame, myDefAssets.GetCone());
 		}
 		if (ImGui::Button("Create Mesh"))
 		{
@@ -303,74 +303,14 @@ void EditorMode::DrawMenu(Game& aGame)
 	}
 }
 
-void EditorMode::CreatePlane(Game& aGame)
+void EditorMode::CreateGOWithMesh(Game& aGame, Handle<Model> aModel)
 {
 	Transform transf = aGame.GetCamera()->GetTransform();
 	transf.Translate(transf.GetForward() * 5.f);
 	transf.SetRotation(glm::vec3{ 0,0,0 });
 	Handle<GameObject> go = new GameObject(transf);
 	VisualComponent* visComp = go->AddComponent<VisualComponent>();
-	visComp->SetModel(myDefAssets.GetPlane());
-	visComp->SetTextureCount(1);
-	visComp->SetTexture(0, myDefAssets.GetUVTexture());
-	visComp->SetPipeline(myDefAssets.GetPipeline());
-
-	aGame.AddGameObject(go);
-}
-
-void EditorMode::CreateSphere(Game& aGame)
-{
-	Transform transf = aGame.GetCamera()->GetTransform();
-	transf.Translate(transf.GetForward() * 5.f);
-	transf.SetRotation(glm::vec3{ 0,0,0 });
-	Handle<GameObject> go = new GameObject(transf);
-	VisualComponent* visComp = go->AddComponent<VisualComponent>();
-	visComp->SetModel(myDefAssets.GetSphere());
-	visComp->SetTextureCount(1);
-	visComp->SetTexture(0, myDefAssets.GetUVTexture());
-	visComp->SetPipeline(myDefAssets.GetPipeline());
-
-	aGame.AddGameObject(go);
-}
-
-void EditorMode::CreateBox(Game& aGame)
-{
-	Transform transf = aGame.GetCamera()->GetTransform();
-	transf.Translate(transf.GetForward() * 5.f);
-	transf.SetRotation(glm::vec3{ 0,0,0 });
-	Handle<GameObject> go = new GameObject(transf);
-	VisualComponent* visComp = go->AddComponent<VisualComponent>();
-	visComp->SetModel(myDefAssets.GetBox());
-	visComp->SetTextureCount(1);
-	visComp->SetTexture(0, myDefAssets.GetUVTexture());
-	visComp->SetPipeline(myDefAssets.GetPipeline());
-
-	aGame.AddGameObject(go);
-}
-
-void EditorMode::CreateCylinder(Game& aGame)
-{
-	Transform transf = aGame.GetCamera()->GetTransform();
-	transf.Translate(transf.GetForward() * 5.f);
-	transf.SetRotation(glm::vec3{ 0,0,0 });
-	Handle<GameObject> go = new GameObject(transf);
-	VisualComponent* visComp = go->AddComponent<VisualComponent>();
-	visComp->SetModel(myDefAssets.GetCylinder());
-	visComp->SetTextureCount(1);
-	visComp->SetTexture(0, myDefAssets.GetUVTexture());
-	visComp->SetPipeline(myDefAssets.GetPipeline());
-
-	aGame.AddGameObject(go);
-}
-
-void EditorMode::CreateCone(Game& aGame)
-{
-	Transform transf = aGame.GetCamera()->GetTransform();
-	transf.Translate(transf.GetForward() * 5.f);
-	transf.SetRotation(glm::vec3{ 0,0,0 });
-	Handle<GameObject> go = new GameObject(transf);
-	VisualComponent* visComp = go->AddComponent<VisualComponent>();
-	visComp->SetModel(myDefAssets.GetCone());
+	visComp->SetModel(aModel);
 	visComp->SetTextureCount(1);
 	visComp->SetTexture(0, myDefAssets.GetUVTexture());
 	visComp->SetPipeline(myDefAssets.GetPipeline());
@@ -389,17 +329,7 @@ void EditorMode::CreateMesh(Game& aGame)
 			AssetTracker& assetTracker = aGame.GetAssetTracker();
 			Handle<Model> newModel = assetTracker.GetOrCreate<Model>(selectedFile.myPath);
 
-			Transform transf = aGame.GetCamera()->GetTransform();
-			transf.Translate(transf.GetForward() * 5.f);
-			transf.SetRotation(glm::vec3{ 0,0,0 });
-			Handle<GameObject> go = new GameObject(transf);
-			VisualComponent* visComp = go->AddComponent<VisualComponent>();
-			visComp->SetModel(newModel);
-			visComp->SetTextureCount(1);
-			visComp->SetTexture(0, myDefAssets.GetUVTexture());
-			visComp->SetPipeline(myDefAssets.GetPipeline());
-
-			aGame.AddGameObject(go);
+			CreateGOWithMesh(aGame, newModel);
 
 			myMenuFunction = nullptr;
 		}

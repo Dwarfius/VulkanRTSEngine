@@ -39,11 +39,7 @@ private:
 
 	// Editor UI menu
 	void DrawMenu(Game& aGame);
-	void CreatePlane(Game& aGame);
-	void CreateSphere(Game& aGame);
-	void CreateBox(Game& aGame);
-	void CreateCylinder(Game& aGame);
-	void CreateCone(Game& aGame);
+	void CreateGOWithMesh(Game& aGame, Handle<Model> aModel);
 	void CreateMesh(Game& aGame);
 	
 	DefaultAssets myDefAssets;
