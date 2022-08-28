@@ -74,6 +74,9 @@ if(NOT glfw_POPULATED)
 	set_target_properties(glfw PROPERTIES
 		FOLDER "Extern/GLFW3"
 	)
+	set_target_properties(update_mappings PROPERTIES
+		FOLDER "Extern/GLFW3"
+	)
 endif()
 
 FetchContent_Declare(
