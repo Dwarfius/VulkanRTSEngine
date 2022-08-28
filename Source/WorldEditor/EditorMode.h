@@ -8,6 +8,7 @@
 #include <Engine/UIWidgets/FileDialog.h>
 
 #include "HexSolver.h"
+#include "DefaultAssets.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -16,9 +17,6 @@ class Transform;
 class Game;
 class AnimationSystem;
 class AnimationTest;
-class Model;
-class Texture;
-class Pipeline;
 class IDRenderPass;
 class Terrain;
 
@@ -39,7 +37,6 @@ private:
 	float myFlightSpeed = 2.f;
 
 	// Editor UI menu
-	void CreateDefaultResources(Game& aGame);
 	void DrawMenu(Game& aGame);
 	void CreatePlane(Game& aGame);
 	void CreateSphere(Game& aGame);
@@ -48,13 +45,7 @@ private:
 	void CreateCone(Game& aGame);
 	void CreateMesh(Game& aGame);
 	
-	Handle<Model> myPlane;
-	Handle<Model> mySphere;
-	Handle<Model> myBox;
-	Handle<Model> myCylinder;
-	Handle<Model> myCone;
-	Handle<Texture> myUVTexture;
-	Handle<Pipeline> myDefaultPipeline;
+	DefaultAssets myDefAssets;
 	std::function<void(Game& aGame)> myMenuFunction;
 	FileDialog myFileDialog;
 
