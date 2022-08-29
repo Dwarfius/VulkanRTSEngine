@@ -484,10 +484,16 @@ void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
 	}
 }
 
-PoolPtr<Renderable> Game::CreateRenderable(GameObject& aGO)
+Renderable& Game::CreateRenderable(GameObject& aGO)
 {
 	std::lock_guard lock(myRenderablesMutex);
 	return myRenderables.Allocate(VisualObject{}, &aGO);
+}
+
+void Game::DeleteRenderable(Renderable& aRenderable)
+{
+	std::lock_guard lock(myRenderablesMutex);
+	myRenderables.Free(aRenderable);
 }
 
 void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
@@ -675,7 +681,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 	};
 
 	std::lock_guard lock(myRenderablesMutex);
-	myRenderables.ParallelForEach([&](Renderable& aRenderable) {
+	myRenderables.ForEach([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
 
 		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))

@@ -47,7 +47,7 @@ AnimationTest::AnimationTest(Game& aGame)
 	Handle<Pipeline> skinnedPipeline = tracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl");
 	Handle<Texture> wireframeTexture = tracker.GetOrCreate<Texture>("Engine/wireframe.img");
 	go->CreateRenderable();
-	VisualObject& vo = go->GetRenderable().Get()->myVO;
+	VisualObject& vo = go->GetRenderable()->myVO;
 	vo.SetPipeline(skinnedPipeline);
 	vo.SetTexture(wireframeTexture);
 	vo.SetModel(GenerateModel(*skeleton));

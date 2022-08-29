@@ -43,8 +43,8 @@ public:
 	TComp* GetComponent() const;
 
 	void CreateRenderable();
-	const PoolPtr<Renderable>& GetRenderable() const { return myRenderable; }
-	PoolPtr<Renderable>& GetRenderable() { return myRenderable; }
+	const Renderable* GetRenderable() const { return myRenderable; }
+	Renderable* GetRenderable() { return myRenderable; }
 
 	bool IsDead() const { return myIsDead; }
 	void Die();
@@ -83,7 +83,7 @@ private:
 	glm::vec3 myCenter;
 
 	std::vector<ComponentBase*> myComponents;
-	PoolPtr<Renderable> myRenderable;
+	Renderable* myRenderable = nullptr; // owning
 	PoolPtr<Skeleton> mySkeleton;
 	PoolPtr<AnimationController> myAnimController;
 	

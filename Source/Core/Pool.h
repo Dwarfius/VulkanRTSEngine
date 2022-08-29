@@ -8,7 +8,8 @@
 // A collection object that has ability to grow like a vector, 
 // while guarantying pointer stability (via proxy type called Ptr).
 // The purpose is to help maintain cache coherence
-// Note: can be adapted as a backing storage for a pooling allocator
+// It is not thread safe since an Allocate can cause a realloc,
+// so dereferencing Ptr can end up in stale memory
 template<class T>
 class Pool
 {

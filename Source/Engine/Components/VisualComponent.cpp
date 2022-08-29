@@ -98,5 +98,5 @@ void VisualComponent::CreateVOIfNeeded()
 	}
 
 	myOwner->CreateRenderable();
-	myVisualObject = &myOwner->GetRenderable().Get()->myVO;
+	myVisualObject = &myOwner->GetRenderable()->myVO;
 }

@@ -149,7 +149,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 		
 		GameObject* go = newGO.Get();
 		go->CreateRenderable();
-		VisualObject& vo = go->GetRenderable().Get()->myVO;
+		VisualObject& vo = go->GetRenderable()->myVO;
 
 		Handle<Model> model = myGLTFImporter.GetModel(0);
 
@@ -363,8 +363,8 @@ void EditorMode::UpdatePickedObject(Game& aGame)
 	bool canUseInput = !ImGui::GetIO().WantCaptureMouse;
 	if (myPickedGO)
 	{
-		const PoolPtr<Renderable>& renderable = myPickedGO->GetRenderable();
-		const VisualObject& visObj = renderable.Get()->myVO;
+		const Renderable* renderable = myPickedGO->GetRenderable();
+		const VisualObject& visObj = renderable->myVO;
 		const glm::vec3 center = visObj.GetCenter();
 		const float radius = visObj.GetRadius();
 		aGame.GetDebugDrawer().AddSphere(

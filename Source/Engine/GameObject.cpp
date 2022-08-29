@@ -37,6 +37,11 @@ GameObject::~GameObject()
 	{
 		delete comp;
 	}
+
+	if (myRenderable)
+	{
+		Game::GetInstance()->DeleteRenderable(*myRenderable);
+	}
 }
 
 void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren /* = true */)
@@ -58,9 +63,9 @@ void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren 
 			UpdateHierarchy();
 		}
 
-		if (myRenderable.IsValid())
+		if (myRenderable)
 		{
-			myRenderable.Get()->myVO.SetTransform(myWorldTransf);
+			myRenderable->myVO.SetTransform(myWorldTransf);
 		}
 	}
 }
@@ -87,20 +92,20 @@ void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren 
 			UpdateHierarchy();
 		}
 
-		if (myRenderable.IsValid())
+		if (myRenderable)
 		{
-			myRenderable.Get()->myVO.SetTransform(myWorldTransf);
+			myRenderable->myVO.SetTransform(myWorldTransf);
 		}
 	}
 }
 
 void GameObject::CreateRenderable()
 {
-	ASSERT_STR(!myRenderable.IsValid(), "Multi VisualObject not supported yet!");
+	ASSERT_STR(!myRenderable, "Multi VisualObject not supported yet!");
 
 	// TODO: store a reference to Game instead of grabbing the global instance
-	myRenderable = Game::GetInstance()->CreateRenderable(*this);
-	myRenderable.Get()->myVO.SetTransform(myWorldTransf);
+	myRenderable = &Game::GetInstance()->CreateRenderable(*this);
+	myRenderable->myVO.SetTransform(myWorldTransf);
 }
 
 void GameObject::Die()

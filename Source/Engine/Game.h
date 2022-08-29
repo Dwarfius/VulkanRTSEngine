@@ -3,7 +3,7 @@
 #include <Core/UID.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Utils.h>
-#include <Core/Pool.h>
+#include <Core/StableVector.h>
 
 #include "GameTaskManager.h"
 #include "GameObject.h"
@@ -106,7 +106,8 @@ public:
 	// If GameObject has a parent, it's retained in the world
 	void RemoveGameObject(Handle<GameObject> aGOHandle);
 
-	PoolPtr<Renderable> CreateRenderable(GameObject& aGO);
+	Renderable& CreateRenderable(GameObject& aGO);
+	void DeleteRenderable(Renderable& aRenderable);
 
 	void AddTerrain(Terrain* aTerrain /* owning */, Handle<Pipeline> aPipeline);
 	void RemoveTerrain(size_t anIndex) { myTerrains.erase(myTerrains.begin() + anIndex); }
@@ -147,7 +148,7 @@ private:
 	std::queue<Handle<GameObject>> myAddQueue;
 	std::queue<Handle<GameObject>> myRemoveQueue;
 	
-	Pool<Renderable> myRenderables;
+	StableVector<Renderable> myRenderables;
 	std::mutex myRenderablesMutex;
 	std::vector<OnRenderGOCallback> myRenderGOCallbacks;
 	std::vector<OnRenderTerrainCallback> myRenderTerrainCallbacks;
