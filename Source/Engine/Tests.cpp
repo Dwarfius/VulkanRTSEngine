@@ -245,6 +245,16 @@ void Tests::TestStableVector()
 			counter++;
 		});
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
+
+		std::atomic<uint32_t> atomicCounter = 0;
+		std::atomic<uint32_t> atomicSum = 0;
+		vec.ParallelForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			atomicSum += aVal.myNum;
+			atomicCounter++;
+		});
+		ASSERT(atomicCounter == counter);
+		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
 	}
 
 	vec.Free(third);
@@ -257,6 +267,16 @@ void Tests::TestStableVector()
 			counter++;
 		});
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
+
+		std::atomic<uint32_t> atomicCounter = 0;
+		std::atomic<uint32_t> atomicSum = 0;
+		vec.ParallelForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			atomicSum += aVal.myNum;
+			atomicCounter++;
+		});
+		ASSERT(atomicCounter == counter);
+		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
 	}
 
 	TestType& newThird = vec.Allocate("Hello", 5);
@@ -269,6 +289,16 @@ void Tests::TestStableVector()
 			counter++;
 		});
 		ASSERT(counter == std::extent_v<decltype(numbers)>);
+
+		std::atomic<uint32_t> atomicCounter = 0;
+		std::atomic<uint32_t> atomicSum = 0;
+		vec.ParallelForEach([&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			atomicSum += aVal.myNum;
+			atomicCounter++;
+		});
+		ASSERT(atomicCounter == counter);
+		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
 	}
 
 	ASSERT(vec.Contains(&newThird));

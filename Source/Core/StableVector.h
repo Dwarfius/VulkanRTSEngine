@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include "Profiler.h"
 
 template<class T, size_t PageSize = 256>
 class StableVector
@@ -11,6 +12,40 @@ class StableVector
         constexpr static uint8_t kSlotIndex = 0;
         constexpr static uint8_t kValueIndex = 1;
 
+        // Note: A convenience stopgap to help with ParallelFor
+        // Not intended to be a proper iterator implementation, so
+        // before exposing to users it needs being rounded up
+        struct Iterator
+        {
+            T& operator*() const
+            {
+                return std::get<kValueIndex>(myPage->myItems[myIndex]);
+            }
+
+            void operator++(int)
+            {
+                do
+                {
+                    myIndex++;
+                } while (myIndex < PageSize
+                    && !IsValid());
+            }
+
+            bool operator==(const Iterator & aOther) const
+            {
+                return myPage == aOther.myPage 
+                    && myIndex == aOther.myIndex;
+            }
+
+            bool IsValid() const
+            {
+                return myPage->myItems[myIndex].index() == kValueIndex;
+            }
+
+            Page* myPage;
+            size_t myIndex;
+        };
+
         Page()
         {
             Clear();
@@ -19,6 +54,7 @@ class StableVector
         template<class... Ts>
         [[nodiscard]] T& Allocate(Ts&& ...anArgs)
         {
+            myCount++;
             FreeListNode& node = myItems[myFreeNode];
             myFreeNode = std::get<kSlotIndex>(node);
             return node.emplace<T>(std::forward<Ts>(anArgs)...);
@@ -34,6 +70,7 @@ class StableVector
             FreeListNode& node = myItems[index];
             node = myFreeNode;
             myFreeNode = index;
+            myCount--;
         }
 
         void Clear()
@@ -44,6 +81,7 @@ class StableVector
             }
             myItems[PageSize - 1] = static_cast<size_t>(-1ll);
             myFreeNode = 0;
+            myCount = 0;
         }
 
         [[nodiscard]] bool HasSpace() const
@@ -83,14 +121,75 @@ class StableVector
             }
         }
 
+        Iterator begin() 
+        { 
+            Iterator iter{ this, 0 }; 
+            if (!iter.IsValid())
+            {
+                iter++;
+            }
+            return iter;
+        }
+        Iterator begin() const
+        {
+            Iterator iter{ this, 0 };
+            if (!iter.IsValid())
+            {
+                iter++;
+            }
+            return iter;
+        }
+
+        Iterator end() { return { this, PageSize }; }
+        Iterator end() const { return { this, PageSize }; }
+
         FreeListNode myItems[PageSize];
         size_t myFreeNode = 0;
+        size_t myCount = 0;
     };
 
     struct PageNode
     {
         Page myPage;
         PageNode* myNext = nullptr;
+    };
+
+    // Note: A convenience stopgap to help with ParallelFor
+    // Not intended to be a proper iterator implementation, so
+    // before exposing to users it needs being rounded up
+    struct Iterator
+    {
+        T& operator*()
+        {
+            return *myPageIter;
+        }
+
+        void operator++(int)
+        {
+            do
+            {
+                myPageIter++;
+                if (myPageIter == myPageNode->myPage.end())
+                {
+                    myPageNode = myPageNode->myNext;
+                    if (myPageNode)
+                    {
+                        myPageIter = myPageNode->myPage.begin();
+                    }
+                }
+            } while (myPageNode != nullptr
+                && myPageIter != myPageNode->myPage.end()
+                && !myPageIter.IsValid());
+        }
+
+        bool operator==(const Iterator& aOther) const
+        {
+            return myPageNode == aOther.myPageNode
+                && myPageIter == aOther.myPageIter;
+        }
+
+        PageNode* myPageNode;
+        Page::Iterator myPageIter;
     };
 
 public:
@@ -213,6 +312,88 @@ public:
             Page& page = pageNode->myPage;
             page.ForEach(aFunc);
         }
+    }
+
+    template<class TFunc>
+    void ParallelForEach(const TFunc& aFunc)
+    {
+        if (IsEmpty())
+        {
+            return;
+        }
+
+        DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
+        // Attempt to have 2 batches per thread, so that it's easier to schedule around
+        const size_t batchSize = std::max(myCount / std::thread::hardware_concurrency() / 2, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, myCount, batchSize),
+            [&](tbb::blocked_range<size_t> aRange)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+
+            // Find starting iterator
+            size_t index = aRange.begin();
+            PageNode* node = &myStartPage;
+            while (index >= node->myPage.myCount)
+            {
+                index -= node->myPage.myCount;
+                node = node->myNext;
+            }
+
+            // Iterate over the chunk
+            Iterator iter{ node, { &node->myPage, index } };
+            if (!iter.myPageIter.IsValid())
+            {
+                iter++;
+            }
+            for (size_t i = 0; i < aRange.size(); i++)
+            {
+                aFunc(*iter);
+                iter++;
+                DEBUG_ONLY(foundCount++;);
+            }
+        });
+        ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
+    }
+
+    template<class TFunc>
+    void ParallelForEach(const TFunc& aFunc) const
+    {
+        if (IsEmpty())
+        {
+            return;
+        }
+
+        DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
+        // Attempt to have 2 batches per thread, so that it's easier to schedule around
+        const size_t batchSize = std::max(myCount / std::thread::hardware_concurrency() / 2, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, myCount, batchSize),
+            [&](tbb::blocked_range<size_t> aRange)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+
+            // Find starting iterator
+            size_t index = aRange.begin();
+            PageNode* node = &myStartPage;
+            while (index >= node->myPage.myCount)
+            {
+                index -= node->myPage.myCount;
+                node = node->myNext;
+            }
+
+            // Iterate over the chunk
+            Iterator iter{ node, { &node->myPage, index } };
+            if (!iter.myPageIter.IsValid())
+            {
+                iter++;
+            }
+            for (size_t i = 0; i < aRange.size(); i++)
+            {
+                aFunc(*iter);
+                iter++;
+                DEBUG_ONLY(foundCount++;);
+            }
+        });
+        ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
     }
 
 private:
