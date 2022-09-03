@@ -26,8 +26,8 @@ private:
 	>;
 
 	uint32_t GetCoord(uint32_t aX, uint32_t aY) const { return aY * mySize + aX; }
-	void Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, const TDistr& aDistr, TElem* aData);
-	void Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, const TDistr& aDistr, TElem* aData);
+	void Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, TDistr& aDistr, TElem* aData);
+	void Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, TDistr& aDistr, TElem* aData);
 
 	std::mt19937 myEngine;
 	const uint32_t mySize;
@@ -98,7 +98,7 @@ void DiamondSquareAlgo<TElem>::Generate(TElem* aData)
 }
 
 template<class TElem>
-void DiamondSquareAlgo<TElem>::Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, const TDistr& aDistr, TElem* aData)
+void DiamondSquareAlgo<TElem>::Square(uint32_t aTopLeftX, uint32_t aTopLeftY, uint32_t aSize, TDistr& aDistr, TElem* aData)
 {
 	TElem sum = aData[GetCoord(aTopLeftX, aTopLeftY)];
 	sum += aData[GetCoord(aTopLeftX + aSize, aTopLeftY)];
@@ -112,7 +112,7 @@ void DiamondSquareAlgo<TElem>::Square(uint32_t aTopLeftX, uint32_t aTopLeftY, ui
 }
 
 template<class TElem>
-void DiamondSquareAlgo<TElem>::Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, const TDistr& aDistr, TElem* aData)
+void DiamondSquareAlgo<TElem>::Diamond(uint32_t aCenterX, uint32_t aCenterY, uint32_t aHalfSize, TDistr& aDistr, TElem* aData)
 {
 	ASSERT(aCenterX < mySize && aCenterY < mySize);
 	uint8_t count = 0;
