@@ -681,7 +681,7 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 	};
 
 	std::lock_guard lock(myRenderablesMutex);
-	myRenderables.ForEach([&](Renderable& aRenderable) {
+	myRenderables.ParallelForEach([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
 
 		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
