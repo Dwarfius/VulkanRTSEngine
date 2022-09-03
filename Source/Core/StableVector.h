@@ -143,6 +143,17 @@ class StableVector
         Iterator end() { return { this, PageSize }; }
         Iterator end() const { return { this, PageSize }; }
 
+        // Note: linear complexity!
+        Iterator GetIterAt(size_t anElemNum)
+        {
+            Iterator iter = begin();
+            while (anElemNum-- > 0)
+            {
+                iter++;
+            }
+            return iter;
+        }
+
         FreeListNode myItems[PageSize];
         size_t myFreeNode = 0;
         size_t myCount = 0;
@@ -340,11 +351,7 @@ public:
             }
 
             // Iterate over the chunk
-            Iterator iter{ node, { &node->myPage, index } };
-            if (!iter.myPageIter.IsValid())
-            {
-                iter++;
-            }
+            Iterator iter{ node, node->myPage.GetIterAt(index) };
             for (size_t i = 0; i < aRange.size(); i++)
             {
                 aFunc(*iter);
@@ -381,11 +388,7 @@ public:
             }
 
             // Iterate over the chunk
-            Iterator iter{ node, { &node->myPage, index } };
-            if (!iter.myPageIter.IsValid())
-            {
-                iter++;
-            }
+            Iterator iter{ node, node->myPage.GetIterAt(index) };
             for (size_t i = 0; i < aRange.size(); i++)
             {
                 aFunc(*iter);
