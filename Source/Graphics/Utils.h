@@ -27,7 +27,14 @@ namespace Utils
 		glm::vec3 myOrigin;
 		glm::vec3 myDir;
 	};
-	// Dind parametric factors Ta and Tb for 2 points closest
+	// Find parametric factors Ta and Tb for 2 points closest
 	// between rays A and B
 	void GetClosestTBetweenRays(const Ray& aA, const Ray& aB, float& aAT, float& aBT);
+
+	struct Plane
+	{
+		glm::vec3 myPoint;
+		glm::vec3 myNormal;
+	};
+	bool Intersects(const Ray& aRay, const Plane& aPlane, float& aRayT);
 }

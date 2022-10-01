@@ -78,4 +78,17 @@ namespace Utils
 			aBT = 0;
 		}
 	}
+
+	// Taken from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+	bool Intersects(const Ray& aRay, const Plane& aPlane, float& aRayT)
+	{
+		const float denominator = glm::dot(aPlane.myNormal, aRay.myDir);
+		if (glm::abs(denominator) > glm::epsilon<float>())
+		{
+			const glm::vec3 planeToRayOrigin = aPlane.myPoint - aRay.myOrigin;
+			aRayT = glm::dot(planeToRayOrigin, aPlane.myNormal) / denominator;
+			return aRayT >= 0;
+		}
+		return false;
+	}
 }

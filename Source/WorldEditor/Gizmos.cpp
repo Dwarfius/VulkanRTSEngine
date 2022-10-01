@@ -10,6 +10,8 @@
 
 #include <Core/Transform.h>
 
+#include <glm/gtx/vector_angle.hpp>
+
 bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 {
 	Transform transf = aGameObj.GetWorldTransform();
@@ -23,7 +25,7 @@ bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 
 bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 {
-	return DrawTranslation(aTransf, aGame);
+	return DrawRotation(aTransf, aGame);
 }
 
 bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
@@ -44,7 +46,7 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		{0, 0, 1}
 	};
 	const glm::vec2 mousePos = Input::GetMousePos();
-	constexpr glm::vec3 kHighlightColor{ 1, 1, 0 };
+	
 	if (!Input::GetMouseBtn(0))
 	{
 		myPickedAxis = Axis::None;
@@ -132,7 +134,7 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 			const Utils::Ray axisRay{ origin, glm::normalize(ends[i] - origin) };
 			float ignore, t;
 			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
-			myOldMousePosWS = axisRay.myOrigin + axisRay.myDir * t;
+			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
 		}
 
 		const glm::vec3 color = isHighlighted 
@@ -154,10 +156,105 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
 
-		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosWS;
-		myOldMousePosWS = newMappedMouseWS;
+		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosOrDir;
+		myOldMousePosOrDir = newMappedMouseWS;
 		aTransf.Translate(mouseDeltaWS);
 		return true;
+	}
+
+	return myPickedAxis != Axis::None;
+}
+
+bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
+{
+	const glm::vec3& center = aTransf.GetPos();
+	constexpr glm::vec3 kColors[]{
+		{ 1, 0, 0 },
+		{ 0, 1, 0 },
+		{ 0, 0, 1 }
+	};
+	const glm::vec3 circleNormals[]{
+		{-1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1}
+	};
+
+	const glm::vec2 mousePos = Input::GetMousePos();
+	const glm::vec2 screenSize{
+		aGame.GetGraphics()->GetWidth(),
+		aGame.GetGraphics()->GetHeight()
+	};
+	const Camera& camera = *aGame.GetCamera();
+	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
+	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
+	const Utils::Ray screenRay{ start, glm::normalize(end - start) };
+	auto CircleCheck = [](glm::vec3 aCenter, glm::vec3 aNormal, float aRadius, 
+		const Utils::Ray& aRay, glm::vec3& anIntersectPoint)
+	{
+		const Utils::Plane circlePlane{ aCenter, aNormal };
+		float rayT;
+		if (Utils::Intersects(aRay, circlePlane, rayT))
+		{
+			anIntersectPoint = aRay.myOrigin + rayT * aRay.myDir;
+			const float distance = glm::distance(aCenter, anIntersectPoint);
+			return glm::abs(distance - aRadius) < 0.05f;
+		}
+		return false;
+	};
+
+	if (!Input::GetMouseBtn(0))
+	{
+		myPickedAxis = Axis::None;
+	}
+
+	DebugDrawer& drawer = aGame.GetDebugDrawer();
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		glm::vec3 intersectionPoint;
+		const bool intersects = CircleCheck(center, circleNormals[i],
+			kGizmoRange, screenRay, intersectionPoint);
+		if (intersects && myPickedAxis == Axis::None)
+		{
+			myPickedAxis = static_cast<Axis>(i);
+
+			myRotationDirStart = glm::normalize(intersectionPoint - center);
+			myOldMousePosOrDir = myRotationDirStart;
+		}
+		
+		const glm::vec3 color = static_cast<Axis>(i) == myPickedAxis ?
+			kHighlightColor : kColors[i];
+		drawer.AddCircle(center, circleNormals[i], kGizmoRange, color);
+	}
+
+	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
+	{
+		// draw out a rotation indicator
+		drawer.AddLine(center, center + myRotationDirStart * kGizmoRange, { 1, 1, 1 });
+
+		// going to recheck the plane intersection to get new coordinates
+		const glm::vec3& circleNormal = circleNormals[static_cast<uint8_t>(myPickedAxis)];
+		float rayT;
+		Utils::Intersects(screenRay, { center, circleNormal }, rayT);
+		const glm::vec3 newIntersection = screenRay.myOrigin + rayT * screenRay.myDir;
+		const glm::vec3 dirNormalized = glm::normalize(newIntersection - center);
+
+		drawer.AddLine(center, center + dirNormalized * kGizmoRange, { 1, 1, 1 });
+
+		const float angleDelta = glm::orientedAngle(
+			myOldMousePosOrDir,
+			dirNormalized, 
+			circleNormal
+		);
+
+		if (glm::abs(angleDelta) >= glm::radians(0.1f))
+		{
+			aTransf.Rotate({
+				myPickedAxis == Axis::Right ? -angleDelta : 0,
+				myPickedAxis == Axis::Up ? angleDelta : 0,
+				myPickedAxis == Axis::Forward ? angleDelta : 0,
+				});
+			myOldMousePosOrDir = dirNormalized;
+		}
 	}
 
 	return myPickedAxis != Axis::None;

@@ -13,7 +13,14 @@ class Gizmos
 		Forward,
 		None
 	};
+
+	enum class Mode : uint8_t
+	{
+		Translation,
+		Rotation
+	};
 	constexpr static float kGizmoRange = 1.f;
+	constexpr static glm::vec3 kHighlightColor{ 1, 1, 0 };
 
 public:
 	// Returns true if currently handling input
@@ -23,7 +30,10 @@ public:
 
 private:
 	bool DrawTranslation(Transform& aTransf, Game& aGame);
+	bool DrawRotation(Transform& aTransf, Game& aGame);
 
-	glm::vec3 myOldMousePosWS;
+	glm::vec3 myOldMousePosOrDir;
+	glm::vec3 myRotationDirStart;
 	Axis myPickedAxis = Axis::None;
+	Mode myMode = Mode::Translation;
 };
