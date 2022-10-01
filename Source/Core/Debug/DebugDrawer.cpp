@@ -57,7 +57,7 @@ void DebugDrawer::AddLine(glm::vec3 aFrom, glm::vec3 aTo, glm::vec3 aFromColor, 
 
 void DebugDrawer::AddCircle(glm::vec3 aCenter, glm::vec3 aUp, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive /* = 1*/)
 {
-	constexpr char kSegments = 8;
+	constexpr char kSegments = 16;
 	constexpr glm::vec3 kUp{ 0, 1, 0 };
 	constexpr glm::vec3 kRight{ 1, 0, 0 };
 	constexpr glm::vec3 kForward{ 0, 0, 1 };
@@ -68,16 +68,18 @@ void DebugDrawer::AddCircle(glm::vec3 aCenter, glm::vec3 aUp, float aRadius, glm
 	constexpr float kDeltaAngle = glm::two_pi<float>() / kSegments;
 	for (char i = 0; i < kSegments; i++)
 	{
-		const float x1 = aRadius * glm::cos(angle);
-		const float y1 = aRadius * glm::sin(angle);
+		const float x1 = glm::cos(angle);
+		const float y1 = glm::sin(angle);
+		const glm::vec3 oldDir = glm::normalize(x1 * right + y1 * forward);
 
 		angle += kDeltaAngle;
 
-		const float x2 = aRadius * glm::cos(angle);
-		const float y2 = aRadius * glm::sin(angle);
+		const float x2 = glm::cos(angle);
+		const float y2 = glm::sin(angle);
+		const glm::vec3 newDir = glm::normalize(x2 * right + y2 * forward);
 
-		const glm::vec3 from = aCenter + x1 * right + y1 * forward;
-		const glm::vec3 to = aCenter + x2 * right + y2 * forward;
+		const glm::vec3 from = aCenter + oldDir * aRadius;
+		const glm::vec3 to = aCenter + newDir * aRadius;
 		AddLine(from, to, aColor, aFramesToLive);
 	}
 }
