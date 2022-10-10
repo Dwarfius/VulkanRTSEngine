@@ -12,6 +12,22 @@
 
 #include <glm/gtx/vector_angle.hpp>
 
+namespace 
+{
+	constexpr glm::vec3 kColors[]{
+		{ 1, 0, 0 },
+		{ 0, 1, 0 },
+		{ 0, 0, 1 }
+	};
+
+	constexpr glm::vec3 kNormals[]{
+		{ -1, 0, 0 },
+		{ 0, 1, 0 },
+		{ 0, 0, 1 }
+	};
+	constexpr float kTolerance = 0.1f;
+}
+
 bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 {
 	Transform transf = aGameObj.GetWorldTransform();
@@ -25,11 +41,12 @@ bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 
 bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 {
-	return DrawRotation(aTransf, aGame);
+	return DrawScale(aTransf, aGame);
 }
 
 bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 {
+	// TODO: simplify this func!
 	const glm::vec3 origin = aTransf.GetPos();
 	const glm::vec3 right = aTransf.GetRight() * kGizmoRange;
 	const glm::vec3 up = aTransf.GetUp() * kGizmoRange;
@@ -39,11 +56,6 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		origin + right,
 		origin + up,
 		origin + forward
-	};
-	const glm::vec3 colors[3]{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1}
 	};
 	const glm::vec2 mousePos = Input::GetMousePos();
 	
@@ -139,7 +151,7 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 
 		const glm::vec3 color = isHighlighted 
 			|| myPickedAxis == static_cast<Axis>(i)
-			? kHighlightColor : colors[i];
+			? kHighlightColor : kColors[i];
 		DrawArrow(origin, ends[i], arrowVertices, color);
 	}
 
@@ -159,7 +171,6 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosOrDir;
 		myOldMousePosOrDir = newMappedMouseWS;
 		aTransf.Translate(mouseDeltaWS);
-		return true;
 	}
 
 	return myPickedAxis != Axis::None;
@@ -168,16 +179,6 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 {
 	const glm::vec3& center = aTransf.GetPos();
-	constexpr glm::vec3 kColors[]{
-		{ 1, 0, 0 },
-		{ 0, 1, 0 },
-		{ 0, 0, 1 }
-	};
-	const glm::vec3 circleNormals[]{
-		{-1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1}
-	};
 
 	const glm::vec2 mousePos = Input::GetMousePos();
 	const glm::vec2 screenSize{
@@ -211,7 +212,7 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		glm::vec3 intersectionPoint;
-		const bool intersects = CircleCheck(center, circleNormals[i],
+		const bool intersects = CircleCheck(center, kNormals[i],
 			kGizmoRange, screenRay, intersectionPoint);
 		if (intersects && myPickedAxis == Axis::None)
 		{
@@ -223,7 +224,7 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 		
 		const glm::vec3 color = static_cast<Axis>(i) == myPickedAxis ?
 			kHighlightColor : kColors[i];
-		drawer.AddCircle(center, circleNormals[i], kGizmoRange, color);
+		drawer.AddCircle(center, kNormals[i], kGizmoRange, color);
 	}
 
 	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
@@ -232,9 +233,9 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 		drawer.AddLine(center, center + myRotationDirStart * kGizmoRange, { 1, 1, 1 });
 
 		// going to recheck the plane intersection to get new coordinates
-		const glm::vec3& circleNormal = circleNormals[static_cast<uint8_t>(myPickedAxis)];
+		const glm::vec3& circleNormal = kNormals[static_cast<uint8_t>(myPickedAxis)];
 		float rayT;
-		Utils::Intersects(screenRay, { center, circleNormal }, rayT);
+		Utils::Intersects(screenRay, Utils::Plane{ center, circleNormal }, rayT);
 		const glm::vec3 newIntersection = screenRay.myOrigin + rayT * screenRay.myDir;
 		const glm::vec3 dirNormalized = glm::normalize(newIntersection - center);
 
@@ -252,9 +253,81 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 				myPickedAxis == Axis::Right ? -angleDelta : 0,
 				myPickedAxis == Axis::Up ? angleDelta : 0,
 				myPickedAxis == Axis::Forward ? angleDelta : 0,
-				});
+				}
+			);
 			myOldMousePosOrDir = dirNormalized;
 		}
+	}
+
+	return myPickedAxis != Axis::None;
+}
+
+bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
+{
+	const glm::vec3 center = aTransf.GetPos();
+
+	const glm::vec2 mousePos = Input::GetMousePos();
+	const glm::vec2 screenSize{
+		aGame.GetGraphics()->GetWidth(),
+		aGame.GetGraphics()->GetHeight()
+	};
+	const Camera& camera = *aGame.GetCamera();
+	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
+	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
+	const Utils::Ray screenRay{ start, glm::normalize(end - start) };
+
+	if (!Input::GetMouseBtn(0))
+	{
+		myPickedAxis = Axis::None;
+	}
+
+	constexpr glm::vec3 kBoxExtents{ 0.1f };
+	DebugDrawer& drawer = aGame.GetDebugDrawer();
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		const glm::vec3 endPoint = center + kNormals[i] * kGizmoRange;
+		const Utils::AABB box{ 
+			endPoint - kBoxExtents, 
+			endPoint + kBoxExtents 
+		};
+
+		float t;
+		const bool isHighlighted = !ImGui::GetIO().WantCaptureMouse
+			&& Utils::Intersects(screenRay, box, t);
+		if (isHighlighted && myPickedAxis == Axis::None)
+		{
+			myPickedAxis = static_cast<Axis>(i);
+
+			// we can't use intersection point with AABB because any
+			// face of AABB doesn't lie on the plane containing the
+			// picked axis (it'll be slightly out of it), so to avoid jumps
+			// we need to remap it onto the axis
+			const Utils::Ray axisRay{ center, kNormals[i] };
+			float ignore;
+			Utils::GetClosestTBetweenRays(screenRay, axisRay, ignore, t);
+			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
+		}
+
+		const glm::vec3 color = isHighlighted ? kHighlightColor : kColors[i];
+		drawer.AddLine(center, endPoint, color);
+		drawer.AddAABB(box.myMin, box.myMax, color);
+	}
+
+	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
+	{
+		const Utils::Ray axisRay{ center, kNormals[static_cast<uint32_t>(myPickedAxis)] };
+
+		float ignore, t;
+		Utils::GetClosestTBetweenRays(screenRay, axisRay, ignore, t);
+
+		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
+		const glm::vec3 delta = newMappedMouseWS - myOldMousePosOrDir;
+		const glm::vec3 newScale = aTransf.GetScale() + glm::vec3{ 
+			-delta.x, delta.y, delta.z 
+		};
+		aTransf.SetScale(newScale);
+
+		myOldMousePosOrDir = newMappedMouseWS;
 	}
 
 	return myPickedAxis != Axis::None;

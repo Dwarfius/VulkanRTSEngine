@@ -3,6 +3,7 @@
 class GameObject;
 class Transform;
 class Game;
+class DebugDrawer;
 
 class Gizmos
 {
@@ -31,6 +32,7 @@ public:
 private:
 	bool DrawTranslation(Transform& aTransf, Game& aGame);
 	bool DrawRotation(Transform& aTransf, Game& aGame);
+	bool DrawScale(Transform& aTransf, Game& aGame);
 
 	glm::vec3 myOldMousePosOrDir;
 	glm::vec3 myRotationDirStart;

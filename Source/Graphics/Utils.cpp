@@ -91,4 +91,22 @@ namespace Utils
 		}
 		return false;
 	}
+
+	// Taken from https://tavianator.com/2022/ray_box_boundary.html
+	bool Intersects(const Ray& aRay, const AABB& aBox, float& aRayT)
+	{
+		float tMax = std::numeric_limits<float>::max();
+		aRayT = 0;
+
+		const glm::vec3 invDir = 1.f / aRay.myDir;
+		for (int32_t i = 0; i < glm::vec3::length(); i++)
+		{
+			const float t1 = (aBox.myMin[i] - aRay.myOrigin[i]) * invDir[i];
+			const float t2 = (aBox.myMax[i] - aRay.myOrigin[i]) * invDir[i];
+
+			aRayT = glm::min(glm::max(t1, aRayT), glm::max(t2, aRayT));
+			tMax = glm::max(glm::min(t1, tMax), glm::min(t2, tMax));
+		}
+		return aRayT <= tMax;
+	}
 }

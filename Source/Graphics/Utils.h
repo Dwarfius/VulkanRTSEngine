@@ -37,4 +37,11 @@ namespace Utils
 		glm::vec3 myNormal;
 	};
 	bool Intersects(const Ray& aRay, const Plane& aPlane, float& aRayT);
+
+	struct AABB
+	{
+		glm::vec3 myMin;
+		glm::vec3 myMax;
+	};
+	bool Intersects(const Ray& aRay, const AABB& aBox, float& aRayT);
 }
