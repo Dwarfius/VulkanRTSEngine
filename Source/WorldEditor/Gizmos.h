@@ -3,7 +3,6 @@
 class GameObject;
 class Transform;
 class Game;
-class DebugDrawer;
 
 class Gizmos
 {
