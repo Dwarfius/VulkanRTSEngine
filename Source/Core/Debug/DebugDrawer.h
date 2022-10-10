@@ -24,7 +24,9 @@ public:
 
 	void AddCircle(glm::vec3 aCenter, glm::vec3 aUp, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive = 1);
 
-	void AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, uint32_t aFrameToLive = 1);
+	void AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive = 1);
+
+	void AddAABB(glm::vec3 aMin, glm::vec3 aMax, glm::vec3 aColor, uint32_t aFramesToLive = 1);
 
 	const PosColorVertex* GetCurrentVertices() const;
 	size_t GetCurrentVertexCount() const;

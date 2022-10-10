@@ -91,6 +91,35 @@ void DebugDrawer::AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, 
 	AddCircle(aCenter, glm::vec3{ 0, 0, 1 }, aRadius, aColor, aFramesToLive);
 }
 
+void DebugDrawer::AddAABB(glm::vec3 aMin, glm::vec3 aMax, glm::vec3 aColor, uint32_t aFramesToLive /* = 1 */)
+{
+	// bottom square
+	const glm::vec3 aBot = aMin;
+	const glm::vec3 bBot{ aMax.x, aMin.y, aMin.z };
+	const glm::vec3 cBot{ aMax.x, aMin.y, aMax.z };
+	const glm::vec3 dBot{ aMin.x, aMin.y, aMax.z };
+	AddLine(aBot, bBot, aColor);
+	AddLine(aBot, dBot, aColor);
+	AddLine(bBot, cBot, aColor);
+	AddLine(dBot, cBot, aColor);
+
+	// top square
+	const glm::vec3 aTop{ aBot.x, aMax.y, aBot.z };
+	const glm::vec3 bTop{ bBot.x, aMax.y, bBot.z };
+	const glm::vec3 cTop{ cBot.x, aMax.y, cBot.z };
+	const glm::vec3 dTop{ dBot.x, aMax.y, dBot.z };
+	AddLine(aTop, bTop, aColor);
+	AddLine(aTop, dTop, aColor);
+	AddLine(bTop, cTop, aColor);
+	AddLine(dTop, cTop, aColor);
+
+	// verticals
+	AddLine(aBot, aTop, aColor);
+	AddLine(bBot, bTop, aColor);
+	AddLine(cBot, cTop, aColor);
+	AddLine(dBot, dTop, aColor);
+}
+
 const PosColorVertex* DebugDrawer::GetCurrentVertices() const
 {
 	return myFrameCaches.GetRead().myVertices.Data();
