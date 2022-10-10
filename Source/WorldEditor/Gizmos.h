@@ -18,7 +18,8 @@ class Gizmos
 	enum class Mode : uint8_t
 	{
 		Translation,
-		Rotation
+		Rotation,
+		Scale
 	};
 	constexpr static float kGizmoRange = 1.f;
 	constexpr static glm::vec3 kHighlightColor{ 1, 1, 0 };

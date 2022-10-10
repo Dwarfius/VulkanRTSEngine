@@ -4,6 +4,7 @@
 #include <Engine/Game.h>
 #include <Engine/GameObject.h>
 #include <Engine/Input.h>
+#include <Engine/Systems/ImGUI/ImGUISystem.h>
 
 #include <Graphics/Utils.h>
 #include <Graphics/Camera.h>
@@ -41,7 +42,84 @@ bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 
 bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 {
-	return DrawScale(aTransf, aGame);
+	{
+		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
+		if (ImGui::Begin("Gizmo Options"))
+		{
+			const ImU32 activeColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
+
+			if (myMode == Mode::Translation)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+			}
+			if (ImGui::Button("Translate"))
+			{
+				myMode = Mode::Translation;
+			}
+			if (myMode == Mode::Translation)
+			{
+				ImGui::PopStyleColor();
+			}
+			ImGui::SameLine();
+
+			if (myMode == Mode::Rotation)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+			}
+			if (ImGui::Button("Rotate"))
+			{
+				myMode = Mode::Rotation;
+			}
+			if (myMode == Mode::Rotation)
+			{
+				ImGui::PopStyleColor();
+			}
+			ImGui::SameLine();
+
+			if (myMode == Mode::Scale)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+			}
+			if (ImGui::Button("Scale"))
+			{
+				myMode = Mode::Scale;
+			}
+			if (myMode == Mode::Scale)
+			{
+				ImGui::PopStyleColor();
+			}
+		}
+		ImGui::End();
+
+		if (!ImGui::GetIO().WantCaptureKeyboard)
+		{
+			if (Input::GetKeyPressed(Input::Keys::T))
+			{
+				myMode = Mode::Translation;
+			}
+			if (Input::GetKeyPressed(Input::Keys::R))
+			{
+				myMode = Mode::Rotation;
+			}
+			if (Input::GetKeyPressed(Input::Keys::S))
+			{
+				myMode = Mode::Scale;
+			}
+		}
+	}
+
+	switch (myMode)
+	{
+	case Mode::Translation:
+		return DrawTranslation(aTransf, aGame);
+	case Mode::Rotation:
+		return DrawRotation(aTransf, aGame);
+	case Mode::Scale:
+		return DrawScale(aTransf, aGame);
+	default:
+		ASSERT(false);
+		return false;
+	}
 }
 
 bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
