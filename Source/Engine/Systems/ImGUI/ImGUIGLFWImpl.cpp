@@ -35,7 +35,7 @@ void ImGUIGLFWImpl::Init(GLFWwindow& aWindow)
     Remap(ImGuiKey_Space, Input::Keys::Space);
     Remap(ImGuiKey_Enter, Input::Keys::Enter);
     Remap(ImGuiKey_Escape, Input::Keys::Escape);
-    Remap(ImGuiKey_KeyPadEnter, Input::Keys::KeyPadEnter);
+    Remap(ImGuiKey_KeypadEnter, Input::Keys::KeyPadEnter);
     Remap(ImGuiKey_A, Input::Keys::A);
     Remap(ImGuiKey_C, Input::Keys::C);
     Remap(ImGuiKey_V, Input::Keys::V);
@@ -51,7 +51,7 @@ void ImGUIGLFWImpl::Init(GLFWwindow& aWindow)
     };
     io.ClipboardUserData = &aWindow;
 #if defined(_WIN32)
-    io.ImeWindowHandle = (void*)glfwGetWin32Window(&aWindow);
+    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)glfwGetWin32Window(&aWindow);
 #endif
 
     // Create mouse cursors

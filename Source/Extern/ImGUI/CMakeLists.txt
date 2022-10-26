@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
 	ImGUI
 	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG        v1.85
+	GIT_TAG        v1.88
 )
 
 FetchContent_GetProperties(ImGUI)
@@ -47,6 +47,5 @@ target_include_directories(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME}
 	PUBLIC
 		IMGUI_USER_CONFIG="${CMAKE_CURRENT_SOURCE_DIR}/imconfig.h"
-	PRIVATE
 		IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 )
