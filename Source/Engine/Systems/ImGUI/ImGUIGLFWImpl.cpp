@@ -51,7 +51,8 @@ void ImGUIGLFWImpl::Init(GLFWwindow& aWindow)
     };
     io.ClipboardUserData = &aWindow;
 #if defined(_WIN32)
-    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)glfwGetWin32Window(&aWindow);
+    // TODO: uncomment once https://github.com/ocornut/imgui/issues/5535 is fixed
+    //ImGui::GetMainViewport()->PlatformHandleRaw = (void*)glfwGetWin32Window(&aWindow);
 #endif
 
     // Create mouse cursors
