@@ -152,7 +152,7 @@ StressTest::~StressTest()
 void StressTest::Update(Game& aGame, float aDeltaTime)
 {
 	Profiler::ScopedMark mark("StressTest::Update");
-	DrawUI(aGame);
+	DrawUI(aGame, aDeltaTime);
 	if (aGame.IsPaused())
 	{
 		return;
@@ -163,7 +163,7 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 	UpdateBalls(aGame, aDeltaTime);
 }
 
-void StressTest::DrawUI(Game& aGame)
+void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 {
 	std::lock_guard imguiLock(aGame.GetImGUISystem().GetMutex());
 	if (ImGui::Begin("Stress Test"))
@@ -180,6 +180,15 @@ void StressTest::DrawUI(Game& aGame)
 		ImGui::InputFloat("Shot Life", &myShotLife);
 		ImGui::InputFloat("Shot Speed", &myShotSpeed);
 		ImGui::Text("Cannonballs: %llu", myBalls.size());
+
+		std::rotate(
+			std::begin(myDeltaHistory), 
+			std::begin(myDeltaHistory) + 1, 
+			std::end(myDeltaHistory)
+		);
+		myDeltaHistory[kHistorySize - 1] = aDeltaTime * 1000;
+
+		ImGui::PlotLines("Delta(ms)", myDeltaHistory, kHistorySize, 0, nullptr);
 	}
 	ImGui::End();
 }

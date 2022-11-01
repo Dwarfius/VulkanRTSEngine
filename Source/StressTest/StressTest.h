@@ -36,7 +36,10 @@ private:
 	float myShootCD = 2.f;
 	float myShotLife = 10.f;
 	float myShotSpeed = 10.f;
-	void DrawUI(Game& aGame);
+
+	constexpr static uint8_t kHistorySize = 100;
+	float myDeltaHistory[kHistorySize]{0};
+	void DrawUI(Game& aGame, float aDeltaTime);
 
 	std::default_random_engine myRandEngine;
 	friend class TriggersTracker;
