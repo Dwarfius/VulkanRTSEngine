@@ -31,6 +31,8 @@ namespace Utils
 	// between rays A and B
 	void GetClosestTBetweenRays(const Ray& aA, const Ray& aB, float& aAT, float& aBT);
 
+	bool Intersects(const Ray& aRay, glm::vec3 aA, glm::vec3 aB, glm::vec3 aC, float& aRayT);
+
 	struct Plane
 	{
 		glm::vec3 myPoint;

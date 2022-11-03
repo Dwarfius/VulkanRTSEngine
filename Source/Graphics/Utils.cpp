@@ -79,6 +79,37 @@ namespace Utils
 		}
 	}
 
+	// Taken from https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
+	bool Intersects(const Ray& aRay, glm::vec3 aA, glm::vec3 aB, glm::vec3 aC, float& aRayT)
+	{
+		const glm::vec3 AB = aB - aA;
+		const glm::vec3 AC = aC - aA;
+		const glm::vec3 perp = glm::cross(aRay.myDir, AC);
+		const float det = glm::dot(AB, perp);
+		if (det < glm::epsilon<float>())
+		{
+			return false;
+		}
+
+		const float invDet = 1 / det;
+		const glm::vec3 tVec = aRay.myOrigin - aA;
+		const float u = glm::dot(tVec, perp) * invDet;
+		if (u < 0 || u > 1)
+		{
+			return false;
+		}
+
+		const glm::vec3 qVec = glm::cross(tVec, AB);
+		const float v = glm::dot(aRay.myDir, qVec) * invDet;
+		if (v < 0 || u + v > 1)
+		{
+			return false;
+		}
+
+		aRayT = glm::dot(AC, qVec) * invDet;
+		return true;
+	}
+
 	// Taken from https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
 	bool Intersects(const Ray& aRay, const Plane& aPlane, float& aRayT)
 	{
