@@ -42,6 +42,24 @@ bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 
 bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 {
+	auto ActiveButton = []<class TEnum>(TEnum& aVar, const TEnum aVal, 
+		std::string_view aName, ImU32 anActiveColor) 
+	{
+		bool isHighlighted = aVar == aVal;
+		if (isHighlighted)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, anActiveColor);
+		}
+		if (ImGui::Button(aName.data()))
+		{
+			aVar = aVal;
+		}
+		if (isHighlighted)
+		{
+			ImGui::PopStyleColor();
+		}
+	};
+
 	{
 		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Gizmo Options"))
@@ -51,49 +69,13 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 			ImGui::Text("Mode:");
 			ImGui::SameLine();
 
-			bool isHighlighted = myMode == Mode::Translation;
-			if (isHighlighted)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-			}
-			if (ImGui::Button("Translate"))
-			{
-				myMode = Mode::Translation;
-			}
-			if (isHighlighted)
-			{
-				ImGui::PopStyleColor();
-			}
+			ActiveButton(myMode, Mode::Translation, "Translation", activeColor);
 			ImGui::SameLine();
 
-			isHighlighted = myMode == Mode::Rotation;
-			if (isHighlighted)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-			}
-			if (ImGui::Button("Rotate"))
-			{
-				myMode = Mode::Rotation;
-			}
-			if (isHighlighted)
-			{
-				ImGui::PopStyleColor();
-			}
+			ActiveButton(myMode, Mode::Rotation, "Rotation", activeColor);
 			ImGui::SameLine();
 
-			isHighlighted = myMode == Mode::Scale;
-			if (isHighlighted)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-			}
-			if (ImGui::Button("Scale"))
-			{
-				myMode = Mode::Scale;
-			}
-			if (isHighlighted)
-			{
-				ImGui::PopStyleColor();
-			}
+			ActiveButton(myMode, Mode::Scale, "Scale", activeColor);
 
 			if (myMode == Mode::Translation
 				|| myMode == Mode::Rotation)
@@ -101,34 +83,10 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 				ImGui::Text("Space:");
 				ImGui::SameLine();
 
-				isHighlighted = mySpace == Space::World;
-				if (isHighlighted)
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-				}
-				if (ImGui::Button("World"))
-				{
-					mySpace = Space::World;
-				}
-				if (isHighlighted)
-				{
-					ImGui::PopStyleColor();
-				}
+				ActiveButton(mySpace, Space::World, "World", activeColor);
 				ImGui::SameLine();
 
-				isHighlighted = mySpace == Space::Local;
-				if (isHighlighted)
-				{
-					ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-				}
-				if (ImGui::Button("Local"))
-				{
-					mySpace = Space::Local;
-				}
-				if (isHighlighted)
-				{
-					ImGui::PopStyleColor();
-				}
+				ActiveButton(mySpace, Space::Local, "Local", activeColor);
 			}
 		}
 		ImGui::End();
