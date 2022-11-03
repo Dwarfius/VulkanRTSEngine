@@ -48,7 +48,11 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 		{
 			const ImU32 activeColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
 
-			if (myMode == Mode::Translation)
+			ImGui::Text("Mode:");
+			ImGui::SameLine();
+
+			bool isHighlighted = myMode == Mode::Translation;
+			if (isHighlighted)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
 			}
@@ -56,13 +60,14 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 			{
 				myMode = Mode::Translation;
 			}
-			if (myMode == Mode::Translation)
+			if (isHighlighted)
 			{
 				ImGui::PopStyleColor();
 			}
 			ImGui::SameLine();
 
-			if (myMode == Mode::Rotation)
+			isHighlighted = myMode == Mode::Rotation;
+			if (isHighlighted)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
 			}
@@ -70,13 +75,14 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 			{
 				myMode = Mode::Rotation;
 			}
-			if (myMode == Mode::Rotation)
+			if (isHighlighted)
 			{
 				ImGui::PopStyleColor();
 			}
 			ImGui::SameLine();
 
-			if (myMode == Mode::Scale)
+			isHighlighted = myMode == Mode::Scale;
+			if (isHighlighted)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
 			}
@@ -84,14 +90,51 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 			{
 				myMode = Mode::Scale;
 			}
-			if (myMode == Mode::Scale)
+			if (isHighlighted)
 			{
 				ImGui::PopStyleColor();
+			}
+
+			if (myMode == Mode::Translation
+				|| myMode == Mode::Rotation)
+			{
+				ImGui::Text("Space:");
+				ImGui::SameLine();
+
+				isHighlighted = mySpace == Space::World;
+				if (isHighlighted)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+				}
+				if (ImGui::Button("World"))
+				{
+					mySpace = Space::World;
+				}
+				if (isHighlighted)
+				{
+					ImGui::PopStyleColor();
+				}
+				ImGui::SameLine();
+
+				isHighlighted = mySpace == Space::Local;
+				if (isHighlighted)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+				}
+				if (ImGui::Button("Local"))
+				{
+					mySpace = Space::Local;
+				}
+				if (isHighlighted)
+				{
+					ImGui::PopStyleColor();
+				}
 			}
 		}
 		ImGui::End();
 
-		if (!ImGui::GetIO().WantCaptureKeyboard)
+		if (!ImGui::GetIO().WantCaptureKeyboard
+			&& !Input::GetMouseBtn(1))
 		{
 			if (Input::GetKeyPressed(Input::Keys::T))
 			{
@@ -106,6 +149,11 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 				myMode = Mode::Scale;
 			}
 		}
+	}
+
+	if (!Input::GetMouseBtn(0))
+	{
+		myPickedAxis = Axis::None;
 	}
 
 	switch (myMode)
@@ -124,105 +172,42 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 
 bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 {
-	// TODO: simplify this func!
 	const glm::vec3 origin = aTransf.GetPos();
-	const glm::vec3 right = aTransf.GetRight() * kGizmoRange;
-	const glm::vec3 up = aTransf.GetUp() * kGizmoRange;
-	const glm::vec3 forward = aTransf.GetForward() * kGizmoRange;
-
-	const glm::vec3 ends[3]{
-		origin + right,
-		origin + up,
-		origin + forward
-	};
-	const glm::vec2 mousePos = Input::GetMousePos();
 	
-	if (!Input::GetMouseBtn(0))
-	{
-		myPickedAxis = Axis::None;
+	glm::vec3 ends[3];
+	if(mySpace == Space::Local)
+	{ 
+		ends[0] = origin + aTransf.GetRight() * kGizmoRange;
+		ends[1] = origin + aTransf.GetUp() * kGizmoRange;
+		ends[2] = origin + aTransf.GetForward() * kGizmoRange;
 	}
-
-	auto GenerateArrow = [](glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3]) {
-		const glm::vec3 dir = glm::normalize(anEnd - aStart);
-		glm::quat origRotation;
-		if (glm::abs(dir.y) >= 0.99f)
-		{
-			origRotation = glm::quatLookAtLH(dir, { 1, 0, 0 });
-		}
-		else
-		{
-			origRotation = glm::quatLookAtLH(dir, { 0, 1, 0 });
-		}
-
-		constexpr float kYawAngle = glm::radians(60.f);
-		constexpr float kRollAngle = glm::radians(120.f);
-		glm::quat rotation = glm::quat({ 0, kYawAngle, 0 });
-		for (uint8_t i = 0; i < 3; i++)
-		{
-			glm::vec3 arrowEdge = origRotation * rotation * glm::vec3{ 1, 0, 0 };
-			aVerts[i] = anEnd + arrowEdge * 0.1f;
-			rotation = glm::quat({ 0, 0, kRollAngle }) * rotation;
-		}
-	};
+	else
+	{
+		ends[0] = origin + kNormals[0] * kGizmoRange;
+		ends[1] = origin + kNormals[1] * kGizmoRange;
+		ends[2] = origin + kNormals[2] * kGizmoRange;
+	}
+	
+	const Utils::Ray cameraRay = GetCameraRay(aGame);
 
 	DebugDrawer& drawer = aGame.GetDebugDrawer();
-	auto DrawArrow = [&](glm::vec3 aStart, glm::vec3 anEnd, const glm::vec3(&aVerts)[3], glm::vec3 aColor) {
-		drawer.AddLine(aStart, anEnd, aColor);
-		for (uint8_t i = 0; i < 3; i++)
-		{
-			drawer.AddLine(anEnd, aVerts[i], aColor);
-		}
-		drawer.AddLine(aVerts[0], aVerts[1], aColor);
-		drawer.AddLine(aVerts[1], aVerts[2], aColor);
-		drawer.AddLine(aVerts[2], aVerts[0], aColor);
-	};
-
-	const glm::vec2 screenSize{
-		aGame.GetGraphics()->GetWidth(),
-		aGame.GetGraphics()->GetHeight()
-	};
-	const Camera& camera = *aGame.GetCamera();
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		glm::vec3 arrowVertices[3];
 		GenerateArrow(origin, ends[i], arrowVertices);
 
-		const glm::vec2 projectedEnd = Utils::WorldToScreen(
-			ends[i],
-			screenSize,
-			camera.Get()
-		);
-		const glm::vec2 projectedArrows[3]{
-			Utils::WorldToScreen(arrowVertices[0], screenSize, camera.Get()),
-			Utils::WorldToScreen(arrowVertices[1], screenSize, camera.Get()),
-			Utils::WorldToScreen(arrowVertices[2], screenSize, camera.Get())
-		};
+		float t;
 		const bool isHighlighted = !ImGui::GetIO().WantCaptureMouse
-			&& (Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[0],
-			projectedArrows[1]
-		) || Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[1],
-			projectedArrows[2]
-		) || Utils::IsInTriangle(
-			mousePos,
-			projectedEnd,
-			projectedArrows[2],
-			projectedArrows[0]
-		));
+			&& (Utils::Intersects(cameraRay, ends[i], arrowVertices[0], arrowVertices[1], t)
+				|| Utils::Intersects(cameraRay, ends[i], arrowVertices[1], arrowVertices[2], t)
+				|| Utils::Intersects(cameraRay, ends[i], arrowVertices[2], arrowVertices[0], t)
+				);
 		if (isHighlighted && myPickedAxis == Axis::None)
 		{
 			myPickedAxis = static_cast<Axis>(i);
 
-			const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-			const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-			const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
 			const Utils::Ray axisRay{ origin, glm::normalize(ends[i] - origin) };
-			float ignore, t;
+			float ignore;
 			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
 		}
@@ -230,14 +215,11 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		const glm::vec3 color = isHighlighted 
 			|| myPickedAxis == static_cast<Axis>(i)
 			? kHighlightColor : kColors[i];
-		DrawArrow(origin, ends[i], arrowVertices, color);
+		DrawArrow(drawer, origin, ends[i], arrowVertices, color);
 	}
 
 	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
 	{
-		const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-		const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-		const Utils::Ray cameraRay{ start, glm::normalize(end - start) };
 		const Utils::Ray axisRay{ 
 			origin, 
 			glm::normalize(ends[static_cast<uint8_t>(myPickedAxis)] - origin) 
@@ -257,41 +239,28 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 {
 	const glm::vec3& center = aTransf.GetPos();
+	const Utils::Ray cameraRay = GetCameraRay(aGame);
 
-	const glm::vec2 mousePos = Input::GetMousePos();
-	const glm::vec2 screenSize{
-		aGame.GetGraphics()->GetWidth(),
-		aGame.GetGraphics()->GetHeight()
-	};
-	const Camera& camera = *aGame.GetCamera();
-	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-	const Utils::Ray screenRay{ start, glm::normalize(end - start) };
-	auto CircleCheck = [](glm::vec3 aCenter, glm::vec3 aNormal, float aRadius, 
-		const Utils::Ray& aRay, glm::vec3& anIntersectPoint)
+	glm::vec3 ends[3];
+	if (mySpace == Space::Local)
 	{
-		const Utils::Plane circlePlane{ aCenter, aNormal };
-		float rayT;
-		if (Utils::Intersects(aRay, circlePlane, rayT))
-		{
-			anIntersectPoint = aRay.myOrigin + rayT * aRay.myDir;
-			const float distance = glm::distance(aCenter, anIntersectPoint);
-			return glm::abs(distance - aRadius) < 0.05f;
-		}
-		return false;
-	};
-
-	if (!Input::GetMouseBtn(0))
+		ends[0] = aTransf.GetRight();
+		ends[1] = aTransf.GetUp();
+		ends[2] = aTransf.GetForward();
+	}
+	else
 	{
-		myPickedAxis = Axis::None;
+		ends[0] = kNormals[0];
+		ends[1] = kNormals[1];
+		ends[2] = kNormals[2];
 	}
 
 	DebugDrawer& drawer = aGame.GetDebugDrawer();
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		glm::vec3 intersectionPoint;
-		const bool intersects = CircleCheck(center, kNormals[i],
-			kGizmoRange, screenRay, intersectionPoint);
+		const bool intersects = CheckCircle(center, ends[i],
+			kGizmoRange, cameraRay, intersectionPoint);
 		if (intersects && myPickedAxis == Axis::None)
 		{
 			myPickedAxis = static_cast<Axis>(i);
@@ -302,22 +271,22 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 		
 		const glm::vec3 color = static_cast<Axis>(i) == myPickedAxis ?
 			kHighlightColor : kColors[i];
-		drawer.AddCircle(center, kNormals[i], kGizmoRange, color);
+		drawer.AddCircle(center, ends[i], kGizmoRange, color);
 	}
 
 	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
 	{
-		// draw out a rotation indicator
-		drawer.AddLine(center, center + myRotationDirStart * kGizmoRange, { 1, 1, 1 });
-
 		// going to recheck the plane intersection to get new coordinates
-		const glm::vec3& circleNormal = kNormals[static_cast<uint8_t>(myPickedAxis)];
+		const glm::vec3 circleNormal = ends[static_cast<uint8_t>(myPickedAxis)];
 		float rayT;
-		Utils::Intersects(screenRay, Utils::Plane{ center, circleNormal }, rayT);
-		const glm::vec3 newIntersection = screenRay.myOrigin + rayT * screenRay.myDir;
+		Utils::Intersects(cameraRay, Utils::Plane{ center, circleNormal }, rayT);
+		const glm::vec3 newIntersection = cameraRay.myOrigin + rayT * cameraRay.myDir;
 		const glm::vec3 dirNormalized = glm::normalize(newIntersection - center);
 
+		// draw out a rotation indicator
+		drawer.AddLine(center, center + myRotationDirStart * kGizmoRange, { 1, 1, 1 });
 		drawer.AddLine(center, center + dirNormalized * kGizmoRange, { 1, 1, 1 });
+		drawer.AddLine(center, center + circleNormal * kGizmoRange, { 1, 0, 1 });
 
 		const float angleDelta = glm::orientedAngle(
 			myOldMousePosOrDir,
@@ -327,12 +296,21 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 
 		if (glm::abs(angleDelta) >= glm::radians(0.1f))
 		{
-			aTransf.Rotate({
-				myPickedAxis == Axis::Right ? -angleDelta : 0,
-				myPickedAxis == Axis::Up ? angleDelta : 0,
-				myPickedAxis == Axis::Forward ? angleDelta : 0,
-				}
-			);
+			if (mySpace == Space::Local)
+			{
+				const glm::quat rot = aTransf.GetRotation();
+				const glm::quat extra = glm::angleAxis(angleDelta, circleNormal);
+				aTransf.SetRotation(glm::normalize(extra * rot));
+			}
+			else
+			{
+				aTransf.Rotate({
+					myPickedAxis == Axis::Right ? -angleDelta : 0,
+					myPickedAxis == Axis::Up ? angleDelta : 0,
+					myPickedAxis == Axis::Forward ? angleDelta : 0
+				});
+			}
+
 			myOldMousePosOrDir = dirNormalized;
 		}
 	}
@@ -343,21 +321,7 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 {
 	const glm::vec3 center = aTransf.GetPos();
-
-	const glm::vec2 mousePos = Input::GetMousePos();
-	const glm::vec2 screenSize{
-		aGame.GetGraphics()->GetWidth(),
-		aGame.GetGraphics()->GetHeight()
-	};
-	const Camera& camera = *aGame.GetCamera();
-	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
-	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-	const Utils::Ray screenRay{ start, glm::normalize(end - start) };
-
-	if (!Input::GetMouseBtn(0))
-	{
-		myPickedAxis = Axis::None;
-	}
+	const Utils::Ray cameraRay = GetCameraRay(aGame);
 
 	constexpr glm::vec3 kBoxExtents{ 0.1f };
 	DebugDrawer& drawer = aGame.GetDebugDrawer();
@@ -371,7 +335,7 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 
 		float t;
 		const bool isHighlighted = !ImGui::GetIO().WantCaptureMouse
-			&& Utils::Intersects(screenRay, box, t);
+			&& Utils::Intersects(cameraRay, box, t);
 		if (isHighlighted && myPickedAxis == Axis::None)
 		{
 			myPickedAxis = static_cast<Axis>(i);
@@ -382,7 +346,7 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 			// we need to remap it onto the axis
 			const Utils::Ray axisRay{ center, kNormals[i] };
 			float ignore;
-			Utils::GetClosestTBetweenRays(screenRay, axisRay, ignore, t);
+			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
 		}
 
@@ -396,7 +360,7 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 		const Utils::Ray axisRay{ center, kNormals[static_cast<uint32_t>(myPickedAxis)] };
 
 		float ignore, t;
-		Utils::GetClosestTBetweenRays(screenRay, axisRay, ignore, t);
+		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 
 		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
 		const glm::vec3 delta = newMappedMouseWS - myOldMousePosOrDir;
@@ -409,4 +373,67 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 	}
 
 	return myPickedAxis != Axis::None;
+}
+
+void Gizmos::GenerateArrow(glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3])
+{
+	const glm::vec3 dir = glm::normalize(anEnd - aStart);
+	glm::quat origRotation;
+	if (glm::abs(dir.y) >= 0.99f)
+	{
+		origRotation = glm::quatLookAtLH(dir, { 1, 0, 0 });
+	}
+	else
+	{
+		origRotation = glm::quatLookAtLH(dir, { 0, 1, 0 });
+	}
+
+	constexpr float kYawAngle = glm::radians(60.f);
+	constexpr float kRollAngle = glm::radians(120.f);
+	glm::quat rotation = glm::quat({ 0, kYawAngle, 0 });
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		glm::vec3 arrowEdge = origRotation * rotation * glm::vec3{ 1, 0, 0 };
+		aVerts[i] = anEnd + arrowEdge * 0.1f;
+		rotation = glm::quat({ 0, 0, kRollAngle }) * rotation;
+	}
+}
+
+void Gizmos::DrawArrow(DebugDrawer& aDrawer, glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3], glm::vec3 aColor)
+{
+	aDrawer.AddLine(aStart, anEnd, aColor);
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		aDrawer.AddLine(anEnd, aVerts[i], aColor);
+	}
+	aDrawer.AddLine(aVerts[0], aVerts[1], aColor);
+	aDrawer.AddLine(aVerts[1], aVerts[2], aColor);
+	aDrawer.AddLine(aVerts[2], aVerts[0], aColor);
+}
+
+bool Gizmos::CheckCircle(glm::vec3 aCenter, glm::vec3 aNormal, float aRadius,
+	const Utils::Ray& aRay, glm::vec3& anIntersectPoint)
+{
+	const Utils::Plane circlePlane{ aCenter, aNormal };
+	float rayT;
+	if (Utils::Intersects(aRay, circlePlane, rayT))
+	{
+		anIntersectPoint = aRay.myOrigin + rayT * aRay.myDir;
+		const float distance = glm::distance(aCenter, anIntersectPoint);
+		return glm::abs(distance - aRadius) < 0.05f;
+	}
+	return false;
+}
+
+Utils::Ray Gizmos::GetCameraRay(const Game& aGame)
+{
+	const glm::vec2 mousePos = Input::GetMousePos();
+	const glm::vec2 screenSize{
+		aGame.GetGraphics()->GetWidth(),
+		aGame.GetGraphics()->GetHeight()
+	};
+	const Camera& camera = *aGame.GetCamera();
+	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
+	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
+	return Utils::Ray{ start, glm::normalize(end - start) };
 }
