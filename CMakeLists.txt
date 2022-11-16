@@ -16,6 +16,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_CURRENT_LIST_DIR}/bin)
 # as we now glob for files which can be slower than before
 set(CMAKE_SUPPRESS_REGENERATION ON)
 
+# Enable Multi-Process builds with MSVC
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
+
 # Whether to build with audio support or not.
 # Requires installed OpenAL sdk
 option(VENGINE_BUILD_WITH_AUDIO "Build with audio support" OFF)
