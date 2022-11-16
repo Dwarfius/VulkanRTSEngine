@@ -29,6 +29,10 @@ if(NOT bullet3_POPULATED)
 
 	set(CMAKE_FOLDER Extern/Bullet3)
 	add_subdirectory(${bullet3_SOURCE_DIR} ${bullet3_BINARY_DIR})
+
+	set_target_properties(BulletDynamics PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
+	set_target_properties(BulletCollision PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
+	set_target_properties(LinearMath PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
 endif()
 
 set(CMAKE_FOLDER "")
