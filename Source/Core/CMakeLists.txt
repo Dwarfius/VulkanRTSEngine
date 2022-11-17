@@ -31,6 +31,20 @@ if(NOT tbb_POPULATED)
 	if (MSVC)
 		target_compile_definitions(tbb PUBLIC __TBB_NO_IMPLICIT_LINKAGE=1)
 	endif()
+
+	set_target_properties(tbb PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
+
+	if(VENGINE_ENABLE_UNITYBUILDS)
+		# Sadly, these 2 files aren't friendly in unity builds, so gotta exclude them
+		set(TBB_UNITY_BADDIES 
+			${tbb_SOURCE_DIR}/src/tbb/parallel_pipeline.cpp
+			${tbb_SOURCE_DIR}/src/tbb/itt_notify.cpp
+		)
+		set_source_files_properties(${TBB_UNITY_BADDIES} 
+			TARGET_DIRECTORY tbb
+			PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
+		)
+	endif()
 endif()
 
 FetchContent_Declare(
