@@ -91,6 +91,8 @@ if(NOT glfw_POPULATED)
 	set_target_properties(update_mappings PROPERTIES
 		FOLDER "Extern/GLFW3"
 	)
+
+	set_target_properties(glfw PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
 endif()
 
 FetchContent_Declare(
