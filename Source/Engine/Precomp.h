@@ -32,7 +32,15 @@
 #include <vulkan/vulkan.hpp>
 #endif
 
-#include <tbb/tbb.h>
+#include <tbb/task_arena.h>
+#include <tbb/flow_graph.h>
+#include <tbb/enumerable_thread_specific.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/spin_mutex.h>
+#include <tbb/task_scheduler_observer.h>
+#include <tbb/queuing_mutex.h>
+#include <tbb/parallel_for.h>
+#include <tbb/concurrent_unordered_set.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

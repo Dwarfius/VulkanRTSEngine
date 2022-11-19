@@ -13,7 +13,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <tbb/tbb.h>
+#include <tbb/spin_mutex.h>
+#include <tbb/task_scheduler_observer.h>
+#include <tbb/queuing_mutex.h>
+#include <tbb/enumerable_thread_specific.h>
+#include <tbb/task_group.h>
 
 #include <Core/Debug/Assert.h>
 
