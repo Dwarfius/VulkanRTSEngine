@@ -2,9 +2,7 @@
 
 #include <Core/Transform.h>
 #include <Core/RefCounted.h>
-#include <Core/StaticVector.h>
 
-class UniformBuffer;
 class Model;
 class Texture;
 class Pipeline;
