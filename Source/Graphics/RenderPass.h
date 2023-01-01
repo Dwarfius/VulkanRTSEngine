@@ -24,13 +24,6 @@ class IRenderPass
 public:
 	using Id = uint32_t;
 
-	struct IParams
-	{
-		uint32_t myOffset = 0; // rendering param, offset into rendering buffer
-		uint32_t myCount = -1; // rendering param, how many elements to render from a buffer, all by default
-		// Distance from a camera
-		float myDistance = 0;
-	};
 public:
 	virtual ~IRenderPass() = default;
 
@@ -64,9 +57,6 @@ public:
 
 	void BeginPass(Graphics& anInterface) override;
 	void SubmitJobs(Graphics& anInterface) override {}
-
-	// updates the renderjob with the correct render settings
-	virtual void Process(RenderJob& aJob, const IParams& aParams) const = 0;
 
 protected:
 	void PreallocateUBOs(size_t aSize);

@@ -94,7 +94,7 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
 	block.SetUniform(0, 0, frame.myMatrix);
 
-	for (ImGUIRenderParams& params : frame.myParams)
+	for (Params& params : frame.myParams)
 	{
 		GPUTexture* texture = myFontAtlas.Get();
 		if (params.myTexture.IsValid())

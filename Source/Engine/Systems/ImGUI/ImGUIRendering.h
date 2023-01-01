@@ -59,12 +59,6 @@ namespace std
 	};
 }
 
-struct ImGUIRenderParams : public IRenderPass::IParams
-{
-	int myScissorRect[4];
-	Handle<GPUTexture> myTexture;
-};
-
 class ImGUIAdapter : RegisterUniformAdapter<ImGUIAdapter>
 {
 public:
@@ -81,11 +75,19 @@ public:
 class ImGUIRenderPass final : public IRenderPass
 {
 public:
+	struct Params
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
+		int myScissorRect[4];
+		Handle<GPUTexture> myTexture;
+	};
+
 	struct ImGUIFrame
 	{
 		Model::UploadDescriptor<ImGUIVertex> myDesc;
 		glm::mat4 myMatrix;
-		std::vector<ImGUIRenderParams> myParams;
+		std::vector<Params> myParams;
 	};
 
 	constexpr static uint32_t kId = Utils::CRC32("ImGUIRenderPass");

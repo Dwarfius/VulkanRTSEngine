@@ -117,7 +117,7 @@ void ImGUISystem::Render()
 	ImGUIVertex* vertBuffer = new ImGUIVertex[uploadDesc.myVertCount];
 	Model::IndexType* indBuffer = new Model::IndexType[uploadDesc.myIndCount];
 
-	std::vector<ImGUIRenderParams> renderParams;
+	std::vector<ImGUIRenderPass::Params> renderParams;
 	uint32_t vertOffset = 0;
 	uint32_t indOffset = 0;
 	// Will project scissor/clipping rectangles into framebuffer space
@@ -157,7 +157,7 @@ void ImGUISystem::Render()
 				&& clip_rect.z >= 0.0f
 				&& clip_rect.w >= 0.0f)
 			{
-				ImGUIRenderParams params;
+				ImGUIRenderPass::Params params;
 				params.myCount = cmd->ElemCount;
 				params.myOffset = indOffset + cmd->IdxOffset;
 				params.myScissorRect[0] = (int)clip_rect.x;

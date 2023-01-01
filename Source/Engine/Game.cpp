@@ -743,12 +743,10 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
 		renderJob.GetUniformSet() = uniformSet;
 
-		IRenderPass::IParams params;
-		params.myDistance = glm::distance(
-			myCamera->GetTransform().GetPos(),
-			gameObject->GetWorldTransform().GetPos()
-		);
-		renderPass->Process(renderJob, params);
+		RenderJob::IndexedDrawParams drawParams;
+		drawParams.myOffset = 0;
+		drawParams.myCount = renderJob.GetModel()->GetPrimitiveCount();
+		renderJob.SetDrawParams(drawParams);
 	});
 }
 
@@ -834,14 +832,10 @@ void Game::RenderTerrains(Graphics& aGraphics)
 		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
 		renderJob.GetUniformSet() = uniformSet;
 		
-		TerrainRenderParams params;
-		params.myDistance = glm::distance(
-			myCamera->GetTransform().GetPos(),
-			visObj->GetTransform().GetPos()
-		);
+		RenderJob::TesselationDrawParams drawParams;
 		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-		params.myTileCount = gridTiles.x * gridTiles.y;
-		renderPass->Process(renderJob, params);
+		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+		renderJob.SetDrawParams(drawParams);
 	}
 }
 

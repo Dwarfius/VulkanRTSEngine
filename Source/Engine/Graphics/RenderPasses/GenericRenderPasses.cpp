@@ -34,16 +34,6 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myEnableDepthTest = true;
 }
 
-void DefaultRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
-{
-	RenderJob::IndexedDrawParams drawParams;
-	drawParams.myOffset = aParams.myOffset;
-	const bool hasValidCount = aParams.myCount != uint32_t(-1);
-	drawParams.myCount = hasValidCount ? aParams.myCount 
-										: aJob.GetModel()->GetPrimitiveCount();
-	aJob.SetDrawParams(drawParams);
-}
-
 void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
@@ -62,12 +52,4 @@ void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 
 	aContext.myEnableCulling = true;
 	aContext.myEnableDepthTest = true;
-}
-
-void TerrainRenderPass::Process(RenderJob& aJob, const IParams& aParams) const
-{
-	const TerrainRenderParams& params = static_cast<const TerrainRenderParams&>(aParams);
-	RenderJob::TesselationDrawParams drawParams;
-	drawParams.myInstanceCount = params.myTileCount;
-	aJob.SetDrawParams(drawParams);
 }

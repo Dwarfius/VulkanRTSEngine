@@ -37,7 +37,6 @@ public:
 	void BeginPass(Graphics& aGraphics) override;
 	void ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera);
 	void ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera);
-	void Process(RenderJob& aJob, const IParams& aParams) const final {}
 
 	// The callback will be invoked at the end of next frame
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
