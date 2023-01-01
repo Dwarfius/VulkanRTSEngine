@@ -72,7 +72,7 @@ public:
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);
 };
 
-class ImGUIRenderPass final : public IRenderPass
+class ImGUIRenderPass final : public RenderPass
 {
 public:
 	struct Params
@@ -100,15 +100,10 @@ public:
 	void SetDestFrameBuffer(std::string_view aFrameBuffer) { myDestFrameBuffer = aFrameBuffer; }
 
 protected:
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
 	void BeginPass(Graphics& aGraphics) override;
-	void SubmitJobs(Graphics& anInterface) override
-	{
-		// Do nothing because we already scheduled everything 
-		// part of the BeginPass call
-	}
 
 	bool HasDynamicRenderContext() const override { return true; }
 

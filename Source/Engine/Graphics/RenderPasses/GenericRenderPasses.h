@@ -18,7 +18,7 @@ public:
 	Id GetId() const final { return kId; }
 
 protected:
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 };
 
@@ -35,6 +35,6 @@ public:
 	Id GetId() const final { return kId; }
 
 protected:
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 };

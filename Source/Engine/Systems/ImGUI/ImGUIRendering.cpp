@@ -21,7 +21,7 @@ void ImGUIAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
 	: myDestFrameBuffer(DefaultFrameBuffer::kName)
 {
-	myDependencies.push_back(DebugRenderPass::kId);
+	AddDependency(DebugRenderPass::kId);
 
 	aPipeline->ExecLambdaOnLoad([&](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
@@ -55,7 +55,7 @@ bool ImGUIRenderPass::IsReady() const
 		&& myUniformBuffer->GetState() == GPUResource::State::Valid;
 }
 
-void ImGUIRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void ImGUIRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = myDestFrameBuffer;
 
@@ -78,7 +78,7 @@ void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
 {
 	Profiler::ScopedMark mark("ImGUIRenderPass::BeginPass");
 
-	IRenderPass::BeginPass(aGraphics);
+	PrepareContext(aGraphics);
 
 	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();

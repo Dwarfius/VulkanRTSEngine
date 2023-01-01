@@ -14,10 +14,10 @@
 
 DefaultRenderPass::DefaultRenderPass()
 {
-	myDependencies.push_back(TerrainRenderPass::kId);
+	AddDependency(TerrainRenderPass::kId);
 }
 
-void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void DefaultRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
@@ -34,7 +34,7 @@ void DefaultRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myEnableDepthTest = true;
 }
 
-void TerrainRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void TerrainRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 

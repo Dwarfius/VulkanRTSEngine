@@ -18,52 +18,38 @@ class Handle;
 // used for building concurrently) as well as job creation
 // (objects get submitted concurrently to generate jobs from)
 
-// implementation interface
-class IRenderPass
+// RenderPass doesn't accumulate the renderables internally, 
+// it just immediatelly submits them to the render pass job
+class RenderPass
 {
 public:
 	using Id = uint32_t;
 
-public:
-	virtual ~IRenderPass() = default;
+	virtual ~RenderPass() = default;
 
-	virtual void BeginPass(Graphics& anInterface);
-	virtual void SubmitJobs(Graphics& anInterface) = 0;
+	RenderJob& AllocateJob();
+	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
+
+	virtual void BeginPass(Graphics& aGraphics);
+	virtual void SubmitJobs(Graphics& aGraphics) {}
+
 	virtual Id GetId() const = 0;
-
 	void AddDependency(Id aOtherPassId) { myDependencies.push_back(aOtherPassId); }
 	const std::vector<Id>& GetDependencies() const { return myDependencies; }
 
 protected:
+	void PrepareContext(Graphics& aGraphics);
+	void PreallocateUBOs(size_t aSize);
+
+	RenderContext myRenderContext;
+
+private:
 	// Controls whether every frame the context needs to be recreated
 	// or can it be cached at initialization time and reused
 	// By default is static render context
 	virtual bool HasDynamicRenderContext() const { return false; }
-	// default implementation returns full viewport context
-	virtual void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const = 0;
+	virtual void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const = 0;
 
-	RenderContext myRenderContext;
-	bool myHasValidContext = false;
-	std::vector<Id> myDependencies;
-};
-
-// RenderPass doesn't accumulate the renderables internally, 
-// it just immediatelly submits them to the render pass job
-class RenderPass : public IRenderPass
-{
-public:
-	RenderJob& AllocateJob();
-	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
-
-	void BeginPass(Graphics& anInterface) override;
-	void SubmitJobs(Graphics& anInterface) override {}
-
-protected:
-	void PreallocateUBOs(size_t aSize);
-
-private:
-	RenderPassJob* myCurrentJob = nullptr;
-	
 	struct UBOBucket
 	{
 		// Note: not using LazyVector as it's not thread safe
@@ -96,4 +82,8 @@ private:
 	};
 	std::vector<UBOBucket> myUBOBuckets;
 	tbb::concurrent_unordered_set<size_t> myNewBuckets;
+	std::vector<Id> myDependencies;
+
+	RenderPassJob* myCurrentJob = nullptr;
+	bool myHasValidContext = false;
 };

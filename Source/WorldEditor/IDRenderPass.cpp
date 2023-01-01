@@ -224,7 +224,7 @@ void IDRenderPass::GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback)
 	myState = State::Schedule;
 }
 
-void IDRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void IDRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = IDFrameBuffer::kName;
 

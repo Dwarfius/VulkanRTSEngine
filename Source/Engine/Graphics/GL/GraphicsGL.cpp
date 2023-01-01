@@ -247,7 +247,7 @@ void GraphicsGL::SortRenderPassJobs()
 
 	std::sort(jobs.begin(), jobs.end(),
 		[this](const IdPasJobPair& aLeft, const IdPasJobPair& aRight) {
-		const IRenderPass* rightPass = GetRenderPass(aRight.myId);
+		const RenderPass* rightPass = GetRenderPass(aRight.myId);
 		for (const uint32_t rightId : rightPass->GetDependencies())
 		{
 			if (aLeft.myId == rightId)
@@ -296,7 +296,7 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 	return iter->second;
 }
 
-RenderPassJob& GraphicsGL::GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext)
+RenderPassJob& GraphicsGL::GetRenderPassJob(RenderPass::Id anId, const RenderContext& renderContext)
 {
 	RenderPassJob* foundJob;
 	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();

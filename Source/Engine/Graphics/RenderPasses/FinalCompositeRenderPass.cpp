@@ -13,7 +13,7 @@ FinalCompositeRenderPass::FinalCompositeRenderPass(
 	Graphics& aGraphics, Handle<Pipeline> aPipeline
 )
 {
-	myDependencies.push_back(DebugRenderPass::kId);
+	AddDependency(DebugRenderPass::kId);
 
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 }
@@ -25,6 +25,8 @@ void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
 	{
 		return;
 	}
+
+	PrepareContext(aGraphics);
 
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
@@ -39,7 +41,7 @@ void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
 	job.SetDrawParams(params);
 }
 
-void FinalCompositeRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void FinalCompositeRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = "";
 	aContext.myFrameBufferReadTextures[0] = {

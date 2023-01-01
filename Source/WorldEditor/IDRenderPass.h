@@ -42,7 +42,7 @@ public:
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
 
 protected:
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 	bool HasDynamicRenderContext() const final { return true; }
 	void ResolveClick();
 

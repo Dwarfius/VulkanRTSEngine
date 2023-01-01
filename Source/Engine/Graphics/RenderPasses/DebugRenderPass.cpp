@@ -18,7 +18,7 @@ DebugRenderPass::DebugRenderPass(Graphics& aGraphics, Handle<Pipeline> aPipeline
 {
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 
-	myDependencies.push_back(DefaultRenderPass::kId);
+	AddDependency(DefaultRenderPass::kId);
 }
 
 DebugRenderPass::~DebugRenderPass()
@@ -99,7 +99,7 @@ void DebugRenderPass::AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDeb
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 }
 
-void DebugRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void DebugRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
@@ -108,9 +108,9 @@ void DebugRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphic
 	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 }
 
-void DebugRenderPass::BeginPass(Graphics& anInterface)
+void DebugRenderPass::BeginPass(Graphics& aGraphics)
 {
-	IRenderPass::BeginPass(anInterface);
+	RenderPass::BeginPass(aGraphics);
 
 	for (PerCameraModel& perCamModel : myCameraModels)
 	{
@@ -124,7 +124,7 @@ void DebugRenderPass::BeginPass(Graphics& anInterface)
 	}
 }
 
-void DebugRenderPass::SubmitJobs(Graphics& anInterface)
+void DebugRenderPass::SubmitJobs(Graphics& aGraphics)
 {
 	if (!IsReady())
 	{
@@ -134,7 +134,7 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 	ASSERT_STR(myPipeline->GetAdapterCount() == 1,
 		"DebugRenderPass needs a pipeline with Camera adapter only!");
 
-	RenderPassJob& passJob = anInterface.GetRenderPassJob(GetId(), myRenderContext);
+	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
 	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
@@ -163,7 +163,7 @@ void DebugRenderPass::SubmitJobs(Graphics& anInterface)
 		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
 		job.SetDrawParams(params);
 
-		AdapterSourceData source{ anInterface, perCamModel.myCamera };
+		AdapterSourceData source{ aGraphics, perCamModel.myCamera };
 
 		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
 		adapter.Fill(source, block);

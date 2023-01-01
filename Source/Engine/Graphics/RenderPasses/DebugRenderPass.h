@@ -12,7 +12,7 @@ class GPUModel;
 class GPUPipeline;
 class UniformBuffer;
 
-class DebugRenderPass : public IRenderPass
+class DebugRenderPass : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DebugRenderPass");
@@ -27,9 +27,9 @@ public:
 private:
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	void BeginPass(Graphics& anInterface) final;
-	void SubmitJobs(Graphics& anInterface) final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void BeginPass(Graphics& aGraphics) final;
+	void SubmitJobs(Graphics& aGraphics) final;
 
 	Handle<GPUPipeline> myPipeline;
 	struct PerCameraModel

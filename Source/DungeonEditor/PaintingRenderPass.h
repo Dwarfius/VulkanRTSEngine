@@ -65,7 +65,7 @@ struct PaintParams
 	float myPaintInverseScale;
 };
 
-class PaintingRenderPass : public IRenderPass
+class PaintingRenderPass : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("PaintingRenderPass");
@@ -82,7 +82,7 @@ private:
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
 	Handle<UniformBuffer> myBuffer;
@@ -94,7 +94,7 @@ private:
 #endif
 };
 
-class DisplayRenderPass : public IRenderPass
+class DisplayRenderPass : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
@@ -108,7 +108,7 @@ private:
 	void SubmitJobs(Graphics& aGraphics) final;
 	Id GetId() const final { return kId; };
 	bool HasDynamicRenderContext() const final { return true; }
-	void PrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
 
 	Handle<GPUPipeline> myPipeline;
 	Handle<UniformBuffer> myBuffer;

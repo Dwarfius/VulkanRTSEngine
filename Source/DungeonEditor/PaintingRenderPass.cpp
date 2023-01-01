@@ -64,6 +64,8 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		return;
 	}
 
+	PrepareContext(aGraphics);
+
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
@@ -107,7 +109,7 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 	myWriteToOther = !myWriteToOther;
 }
 
-void PaintingRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void PaintingRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = GetWriteBuffer();
 	aContext.myFrameBufferDrawSlots[0] = PaintingFrameBuffer::kFinalColor;
@@ -167,6 +169,8 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 		return;
 	}
 
+	PrepareContext(aGraphics);
+
 	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	passJob.Clear();
 
@@ -198,7 +202,7 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 	job.GetUniformSet().PushBack(myBuffer.Get());
 }
 
-void DisplayRenderPass::PrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+void DisplayRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = "";
 	aGraphics.GetRenderPass<ImGUIRenderPass>()->SetDestFrameBuffer("");

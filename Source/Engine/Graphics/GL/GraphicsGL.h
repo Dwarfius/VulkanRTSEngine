@@ -27,7 +27,7 @@ public:
 	FrameBufferGL& GetFrameBufferGL(std::string_view aName);
 
 	[[nodiscard]]
-	RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) override;
+	RenderPassJob& GetRenderPassJob(RenderPass::Id anId, const RenderContext& renderContext) override;
 
 	void CleanUpUBO(UniformBuffer* aUBO) override;
 

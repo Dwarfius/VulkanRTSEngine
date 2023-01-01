@@ -44,7 +44,7 @@ public:
 	// to GetRenderPassJob with same context.
 	// Threadsafe
 	[[nodiscard]] 
-	virtual RenderPassJob& GetRenderPassJob(IRenderPass::Id anId, const RenderContext& renderContext) = 0;
+	virtual RenderPassJob& GetRenderPassJob(RenderPass::Id anId, const RenderContext& renderContext) = 0;
 
 	virtual void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer);
 	const FrameBuffer& GetNamedFrameBuffer(std::string_view aName) const;
@@ -55,7 +55,7 @@ public:
 
 	// Adds a render pass to graphics
 	// takes ownership of the renderpass
-	void AddRenderPass(IRenderPass* aRenderPass);
+	void AddRenderPass(RenderPass* aRenderPass);
 	template<class T>
 	T* GetRenderPass()
 	{
@@ -92,7 +92,7 @@ protected:
 	AssetTracker& myAssetTracker;
 
 	GLFWwindow* myWindow = nullptr;
-	std::vector<IRenderPass*> myRenderPasses;
+	std::vector<RenderPass*> myRenderPasses;
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
 	bool myRenderPassJobsNeedsOrdering = true;
 
@@ -106,7 +106,7 @@ protected:
 
 	void UnregisterResource(GPUResource* aRes);
 
-	IRenderPass* GetRenderPass(uint32_t anId) const;
+	RenderPass* GetRenderPass(uint32_t anId) const;
 
 	virtual void OnResize(int aWidth, int aHeight);
 

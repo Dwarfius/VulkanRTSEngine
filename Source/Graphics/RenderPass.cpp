@@ -5,17 +5,6 @@
 #include "Graphics.h"
 #include "Resources/UniformBuffer.h"
 
-void IRenderPass::BeginPass(Graphics& anInterface)
-{
-	if (!myHasValidContext || HasDynamicRenderContext())
-	{
-		PrepareContext(myRenderContext, anInterface);
-		myHasValidContext = true;
-	}
-}
-
-// ===============================================================
-
 RenderJob& RenderPass::AllocateJob()
 {
 	return myCurrentJob->AllocateJob();
@@ -36,11 +25,11 @@ UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	return nullptr;
 }
 
-void RenderPass::BeginPass(Graphics& anInterface)
+void RenderPass::BeginPass(Graphics& aGraphics)
 {
-	IRenderPass::BeginPass(anInterface);
+	PrepareContext(aGraphics);
 
-	myCurrentJob = &anInterface.GetRenderPassJob(GetId(), myRenderContext);
+	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
 	myCurrentJob->Clear();
 	// Note: this is not thread safe if same pass is started concurrently
 	for (size_t newBucket : myNewBuckets)
@@ -51,9 +40,18 @@ void RenderPass::BeginPass(Graphics& anInterface)
 
 	for (UBOBucket& uboBucket : myUBOBuckets)
 	{
-		uboBucket.PrepForPass(anInterface);
+		uboBucket.PrepForPass(aGraphics);
 	}
 	std::sort(myUBOBuckets.begin(), myUBOBuckets.end());
+}
+
+void RenderPass::PrepareContext(Graphics& aGraphics)
+{
+	if (!myHasValidContext || HasDynamicRenderContext())
+	{
+		OnPrepareContext(myRenderContext, aGraphics);
+		myHasValidContext = true;
+	}
 }
 
 void RenderPass::PreallocateUBOs(size_t aSize)

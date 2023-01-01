@@ -80,7 +80,7 @@ void Graphics::BeginGather()
 		myRenderPassesNeedOrdering = false;
 	}
 
-	for (IRenderPass* pass : myRenderPasses)
+	for (RenderPass* pass : myRenderPasses)
 	{
 		pass->BeginPass(*this);
 	}
@@ -89,7 +89,7 @@ void Graphics::BeginGather()
 void Graphics::EndGather()
 {
 	Profiler::ScopedMark profile("Graphics::EndGather");
-	for (IRenderPass* pass : myRenderPasses)
+	for (RenderPass* pass : myRenderPasses)
 	{
 		pass->SubmitJobs(*this);
 	}
@@ -116,7 +116,7 @@ void Graphics::CleanUp()
 {
 	// we need to delete render passes early as they keep
 	// Handles to resources
-	for (IRenderPass* pass : myRenderPasses)
+	for (RenderPass* pass : myRenderPasses)
 	{
 		delete pass;
 	}
@@ -139,7 +139,7 @@ const FrameBuffer& Graphics::GetNamedFrameBuffer(std::string_view aName) const
 	return iter->second;
 }
 
-void Graphics::AddRenderPass(IRenderPass* aRenderPass)
+void Graphics::AddRenderPass(RenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
@@ -369,9 +369,9 @@ void Graphics::ProcessGPUQueues()
 	ProcessNextUnloadQueue();
 }
 
-IRenderPass* Graphics::GetRenderPass(uint32_t anId) const
+RenderPass* Graphics::GetRenderPass(uint32_t anId) const
 {
-	for (IRenderPass* pass : myRenderPasses)
+	for (RenderPass* pass : myRenderPasses)
 	{
 		if (pass->GetId() == anId)
 		{
@@ -391,7 +391,7 @@ void Graphics::OnResize(int aWidth, int aHeight)
 void Graphics::SortRenderPasses()
 {
 	std::sort(myRenderPasses.begin(), myRenderPasses.end(),
-		[](const IRenderPass* aLeft, const IRenderPass* aRight) {
+		[](const RenderPass* aLeft, const RenderPass* aRight) {
 		for (const uint32_t rightId : aRight->GetDependencies())
 		{
 			if (aLeft->GetId() == rightId)
