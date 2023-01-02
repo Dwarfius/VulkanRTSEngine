@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "DebugRenderPass.h"
 
+#include "Game.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/NamedFrameBuffers.h"
 
@@ -42,6 +43,78 @@ DebugRenderPass::~DebugRenderPass()
 	}
 }
 
+void DebugRenderPass::BeginPass(Graphics& aGraphics)
+{
+	RenderPass::BeginPass(aGraphics);
+
+	// TODO: see if this can be improved, as it's dangerous and confusing,
+	// should be able to fix this further down the refactor
+	// Note: Don't early out before BeginPass - it'll break sorting of jobs
+	if (!IsReady())
+	{
+		return;
+	}
+
+	// clean up the upload descriptors from the previous frame
+	for (PerCameraModel& perCamModel : myCameraModels)
+	{
+		for (PerCameraModel::UploadDesc* currDesc = &perCamModel.myDesc;
+			currDesc != nullptr;
+			currDesc = currDesc->myNextDesc)
+		{
+			currDesc->myVertCount = 0;
+		}
+	}
+
+	Game& game = *Game::GetInstance();
+	const Camera& camera = *game.GetCamera();
+
+	// schedule all the new ones
+	SetCamera(0, camera, aGraphics);
+	game.ForEachDebugDrawer([&](const DebugDrawer& aDrawer) {
+		if (aDrawer.GetCurrentVertexCount())
+		{
+			AddDebugDrawer(0, aDrawer);
+		}
+	});
+
+	ASSERT_STR(myPipeline->GetAdapterCount() == 1,
+		"DebugRenderPass needs a pipeline with Camera adapter only!");
+
+	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
+	for (PerCameraModel& perCamModel : myCameraModels)
+	{
+		const bool hasDebugData = perCamModel.myDesc.myVertCount > 0;
+		if (!hasDebugData || perCamModel.myBuffer->GetState() != GPUResource::State::Valid)
+		{
+			continue;
+		}
+
+		// upload the entire chain
+		Model* model = perCamModel.myModel->GetResource().Get<Model>();
+		model->Update(perCamModel.myDesc);
+
+		// schedule an update on the GPU
+		perCamModel.myModel->UpdateRegion({ 0, 0 });
+
+		// Generate job
+		RenderJob& job = AllocateJob();
+		job.SetPipeline(myPipeline.Get());
+		job.SetModel(perCamModel.myModel.Get());
+
+		RenderJob::ArrayDrawParams params;
+		params.myOffset = 0;
+		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
+		job.SetDrawParams(params);
+
+		AdapterSourceData source{ aGraphics, perCamModel.myCamera };
+
+		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
+		adapter.Fill(source, block);
+		job.GetUniformSet().PushBack(perCamModel.myBuffer.Get());
+	}
+}
+
 bool DebugRenderPass::IsReady() const
 {
 	return myPipeline->GetState() == GPUResource::State::Valid;
@@ -52,18 +125,18 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 	if (aCamIndex >= myCameraModels.size())
 	{
 		Handle<Model> model = new Model(
-			Model::PrimitiveType::Lines, 
-			std::span<PosColorVertex, 0>{}, 
+			Model::PrimitiveType::Lines,
+			std::span<PosColorVertex, 0>{},
 			false
 		);
-		Handle<GPUModel> gpuModel = aGraphics.GetOrCreate(model, 
-			true, 
+		Handle<GPUModel> gpuModel = aGraphics.GetOrCreate(model,
+			true,
 			GPUResource::UsageType::Dynamic
 		).Get<GPUModel>();
-		
+
 		ASSERT_STR(myPipeline->GetState() == GPUResource::State::Valid,
 			"Not ready to add cameras, pipeline hasn't loaded yet!");
-		ASSERT_STR(myPipeline->GetAdapterCount() == 1, 
+		ASSERT_STR(myPipeline->GetAdapterCount() == 1,
 			"DebugRenderPass needs a pipeline with Camera adapter only!");
 		const size_t bufferSize = myPipeline->GetAdapter(0).GetDescriptor().GetBlockSize();
 		Handle<UniformBuffer> buffer = aGraphics.CreateUniformBuffer(bufferSize);
@@ -106,67 +179,4 @@ void DebugRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myScissorMode = RenderContext::ScissorMode::None;
 	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-}
-
-void DebugRenderPass::BeginPass(Graphics& aGraphics)
-{
-	RenderPass::BeginPass(aGraphics);
-
-	for (PerCameraModel& perCamModel : myCameraModels)
-	{
-		// clean up the upload descriptors from the previous frame
-		for (PerCameraModel::UploadDesc* currDesc = &perCamModel.myDesc;
-			currDesc != nullptr;
-			currDesc = currDesc->myNextDesc)
-		{
-			currDesc->myVertCount = 0;
-		}
-	}
-}
-
-void DebugRenderPass::SubmitJobs(Graphics& aGraphics)
-{
-	if (!IsReady())
-	{
-		return;
-	}
-
-	ASSERT_STR(myPipeline->GetAdapterCount() == 1,
-		"DebugRenderPass needs a pipeline with Camera adapter only!");
-
-	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
-	passJob.Clear();
-
-	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
-	for (PerCameraModel& perCamModel : myCameraModels)
-	{
-		const bool hasDebugData = perCamModel.myDesc.myVertCount > 0;
-		if (!hasDebugData || perCamModel.myBuffer->GetState() != GPUResource::State::Valid)
-		{
-			continue;
-		}
-
-		// upload the entire chain
-		Model* model = perCamModel.myModel->GetResource().Get<Model>();
-		model->Update(perCamModel.myDesc);
-
-		// schedule an update on the GPU
-		perCamModel.myModel->UpdateRegion({ 0, 0 });
-
-		// Generate job
-		RenderJob& job = passJob.AllocateJob();
-		job.SetPipeline(myPipeline.Get());
-		job.SetModel(perCamModel.myModel.Get());
-
-		RenderJob::ArrayDrawParams params;
-		params.myOffset = 0;
-		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
-		job.SetDrawParams(params);
-
-		AdapterSourceData source{ aGraphics, perCamModel.myCamera };
-
-		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
-		adapter.Fill(source, block);
-		job.GetUniformSet().PushBack(perCamModel.myBuffer.Get());
-	}
 }

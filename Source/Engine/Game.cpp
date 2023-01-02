@@ -351,6 +351,12 @@ GLFWwindow* Game::GetWindow() const
 	return myRenderThread->GetWindow();
 }
 
+void Game::ForEachDebugDrawer(const DebugDrawerCallback& aFunc)
+{
+	aFunc(myDebugDrawer);
+	aFunc(myPhysWorld->GetDebugDrawer());
+}
+
 float Game::GetTime() const
 {
 	return static_cast<float>(glfwGetTime());
@@ -645,28 +651,4 @@ void Game::ScheduleRenderables(Graphics& aGraphics)
 {
 	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
 	myCamera->Recalculate(aGraphics.GetWidth(), aGraphics.GetHeight());
-
-	RenderDebugDrawers(aGraphics);
-}
-
-void Game::RenderDebugDrawers(Graphics& aGraphics)
-{
-	Profiler::ScopedMark debugProfile("Game::RenderDebugDrawers");
-
-	DebugRenderPass* renderPass = aGraphics.GetRenderPass<DebugRenderPass>();
-	if (!renderPass->IsReady())
-	{
-		return;
-	}
-
-	renderPass->SetCamera(0, *myCamera, aGraphics);
-	if (myDebugDrawer.GetCurrentVertexCount())
-	{
-		renderPass->AddDebugDrawer(0, myDebugDrawer);
-	}
-
-	if (myPhysWorld->GetDebugDrawer().GetCurrentVertexCount())
-	{
-		renderPass->AddDebugDrawer(0, myPhysWorld->GetDebugDrawer());
-	}
 }

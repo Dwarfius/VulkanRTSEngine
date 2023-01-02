@@ -12,7 +12,7 @@ class GPUModel;
 class GPUPipeline;
 class UniformBuffer;
 
-class DebugRenderPass : public RenderPass
+class DebugRenderPass final : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DebugRenderPass");
@@ -20,16 +20,16 @@ public:
 	DebugRenderPass(Graphics& aGraphics, Handle<Pipeline> aPipeline);
 	~DebugRenderPass();
 
+private:
+	Id GetId() const override { return kId; };
+	void BeginPass(Graphics& aGraphics) override;
+
 	bool IsReady() const;
 	void SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graphics& aGraphics);
 	void AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDebugRawer);
-
-private:
-	Id GetId() const final { return kId; };
-	bool HasDynamicRenderContext() const final { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	void BeginPass(Graphics& aGraphics) final;
-	void SubmitJobs(Graphics& aGraphics) final;
+	
+	bool HasDynamicRenderContext() const override { return true; }
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	Handle<GPUPipeline> myPipeline;
 	struct PerCameraModel

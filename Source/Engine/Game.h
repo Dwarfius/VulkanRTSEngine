@@ -47,6 +47,7 @@ public:
 	typedef void (*ReportError)(int, const char*);
 
 	using OnRenderCallback = std::function<void(Graphics&)>;
+	using DebugDrawerCallback = std::function<void(const DebugDrawer&)>;
 
 	struct TerrainEntity
 	{
@@ -90,6 +91,7 @@ public:
 	void ForEachRenderable(const TFunc& aFunc);
 	template<class TFunc>
 	void ForEachTerrain(const TFunc& aFunc);
+	void ForEachDebugDrawer(const DebugDrawerCallback& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
 	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
@@ -136,7 +138,6 @@ private:
 	void RemoveGameObjects();
 
 	void ScheduleRenderables(Graphics& aGraphics);
-	void RenderDebugDrawers(Graphics& aGraphics);
 
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
