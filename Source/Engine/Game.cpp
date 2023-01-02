@@ -371,11 +371,6 @@ void Game::AddRenderContributor(OnRenderCallback aCallback)
 	myRenderThread->AddRenderContributor(aCallback);
 }
 
-void Game::AddRenderTerrainCallback(OnRenderTerrainCallback aCallback)
-{
-	myRenderTerrainCallbacks.push_back(aCallback);
-}
-
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
@@ -651,31 +646,7 @@ void Game::ScheduleRenderables(Graphics& aGraphics)
 	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
 	myCamera->Recalculate(aGraphics.GetWidth(), aGraphics.GetHeight());
 
-	RenderTerrains(aGraphics);
 	RenderDebugDrawers(aGraphics);
-}
-
-void Game::RenderTerrains(Graphics& aGraphics)
-{
-	Profiler::ScopedMark debugProfile("Game::RenderTerrains");
-
-#ifdef ASSERT_MUTEX
-	AssertLock assertLock(myTerrainsMutex);
-#endif
-	for (TerrainEntity& entity : myTerrains)
-	{
-		VisualObject* visObj = entity.myVisualObject;
-		if (!visObj)
-		{
-			continue;
-		}
-
-		// Custom passes - let them do what-ever they want to
-		for (OnRenderTerrainCallback& callback : myRenderTerrainCallbacks)
-		{
-			callback(aGraphics, *entity.myTerrain, *visObj, *myCamera);
-		}
-	}
 }
 
 void Game::RenderDebugDrawers(Graphics& aGraphics)
