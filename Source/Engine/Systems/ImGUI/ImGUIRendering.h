@@ -95,26 +95,23 @@ public:
 
 	Id GetId() const final { return kId; }
 
-	void ScheduleFrame(ImGUIFrame&& aFrame);
 	bool IsReady() const;
 	void SetDestFrameBuffer(std::string_view aFrameBuffer) { myDestFrameBuffer = aFrameBuffer; }
 
-protected:
+private:
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	// We're using BeginPass to generate all work and schedule updates of assets (model)
 	void BeginPass(Graphics& aGraphics) override;
+	ImGUIFrame PrepareFrame();
 
 	bool HasDynamicRenderContext() const override { return true; }
 
 	std::string_view myDestFrameBuffer;
 
-private:
 	Handle<GPUPipeline> myPipeline;
 	Handle<GPUModel> myModel;
 	Handle<GPUTexture> myFontAtlas;
 	RenderPassJob* myCurrentJob;
 	Handle<UniformBuffer> myUniformBuffer;
-	constexpr static uint8_t kFrames = GraphicsConfig::kMaxFramesScheduled + 1;
-	RWBuffer<ImGUIFrame, kFrames> myFrames;
 };
