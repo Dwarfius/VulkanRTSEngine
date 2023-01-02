@@ -669,17 +669,6 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 {
 	Profiler::ScopedMark debugProfile("Game::RenderGameObjects");
 
-	DefaultRenderPass* renderPass = aGraphics.GetRenderPass<DefaultRenderPass>();
-	
-	constexpr auto IsUsable = [](const VisualObject& aVO) {
-		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
-			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
-		};
-		return CheckResource(aVO.GetModel())
-			&& CheckResource(aVO.GetPipeline())
-			&& CheckResource(aVO.GetTexture());
-	};
-
 	std::lock_guard lock(myRenderablesMutex);
 	myRenderables.ParallelForEach([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
@@ -694,59 +683,6 @@ void Game::RenderGameObjects(Graphics& aGraphics)
 		{
 			callback(aGraphics, aRenderable, *myCamera);
 		}
-
-		// Default Pass handling
-		if (!IsUsable(visObj))
-		{
-			return;
-		}
-
-		const GameObject* gameObject = aRenderable.myGO;
-
-		// Before building a render-job, we need to try to 
-		// pre-allocate all the the UBOs - since if we can't, 
-		// we need to early out without spawning a job
-		const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount < 4,
-			"Tried to push %llu UBOs into a render job that supports only 4!",
-			uboCount);
-
-		// updating the uniforms - grabbing game state!
-		UniformAdapterSource source{
-			aGraphics,
-			*myCamera,
-			gameObject,
-			visObj
-		};
-		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
-		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* uniformBuffer = renderPass->AllocateUBO(
-				aGraphics, 
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!uniformBuffer)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(uniformBuffer);
-		}
-		// Building a render job
-		RenderJob& renderJob = renderPass->AllocateJob();
-		renderJob.SetModel(visObj.GetModel().Get());
-		renderJob.SetPipeline(visObj.GetPipeline().Get());
-		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
-		renderJob.GetUniformSet() = uniformSet;
-
-		RenderJob::IndexedDrawParams drawParams;
-		drawParams.myOffset = 0;
-		drawParams.myCount = renderJob.GetModel()->GetPrimitiveCount();
-		renderJob.SetDrawParams(drawParams);
 	});
 }
 

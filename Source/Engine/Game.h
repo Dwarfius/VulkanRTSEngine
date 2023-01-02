@@ -81,6 +81,8 @@ public:
 	size_t GetGameObjectCount() const { return myGameObjects.size(); }
 	template<class TFunc>
 	void ForEach(TFunc aFunc);
+	template<class TFunc>
+	void ForEachRenderable(const TFunc& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
 	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
@@ -188,4 +190,12 @@ void Game::ForEach(TFunc aFunc)
 	{
 		aFunc(*go.Get());
 	}
+}
+
+template<class TFunc>
+void Game::ForEachRenderable(const TFunc& aFunc)
+{
+	// TODO: replace with a read-only lock
+	std::lock_guard lock(myRenderablesMutex);
+	myRenderables.ParallelForEach(aFunc);
 }
