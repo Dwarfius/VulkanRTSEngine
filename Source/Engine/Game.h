@@ -47,7 +47,6 @@ public:
 	typedef void (*ReportError)(int, const char*);
 
 	using OnRenderCallback = std::function<void(Graphics&)>;
-	using OnRenderGOCallback = std::function<void(Graphics&, Renderable&, Camera&)>;
 	using OnRenderTerrainCallback = std::function<void(Graphics&, Terrain&, VisualObject&, Camera&)>;
 
 public:
@@ -97,7 +96,6 @@ public:
 	const EngineSettings& GetEngineSettings() const { return mySettings; }
 
 	void AddRenderContributor(OnRenderCallback aCallback);
-	void AddRenderGameObjectCallback(OnRenderGOCallback aCallback);
 	void AddRenderTerrainCallback(OnRenderTerrainCallback aCallback);
 
 	// Adds GameObject and it's children to the world
@@ -131,7 +129,6 @@ private:
 	void RemoveGameObjects();
 
 	void ScheduleRenderables(Graphics& aGraphics);
-	void RenderGameObjects(Graphics& aGraphics);
 	void RenderTerrains(Graphics& aGraphics);
 	void RenderDebugDrawers(Graphics& aGraphics);
 
@@ -152,7 +149,6 @@ private:
 	
 	StableVector<Renderable> myRenderables;
 	std::mutex myRenderablesMutex;
-	std::vector<OnRenderGOCallback> myRenderGOCallbacks;
 	std::vector<OnRenderTerrainCallback> myRenderTerrainCallbacks;
 
 	struct TerrainEntity

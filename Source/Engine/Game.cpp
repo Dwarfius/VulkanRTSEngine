@@ -375,11 +375,6 @@ void Game::AddRenderContributor(OnRenderCallback aCallback)
 	myRenderThread->AddRenderContributor(aCallback);
 }
 
-void Game::AddRenderGameObjectCallback(OnRenderGOCallback aCallback)
-{
-	myRenderGOCallbacks.push_back(aCallback);
-}
-
 void Game::AddRenderTerrainCallback(OnRenderTerrainCallback aCallback)
 {
 	myRenderTerrainCallbacks.push_back(aCallback);
@@ -660,30 +655,8 @@ void Game::ScheduleRenderables(Graphics& aGraphics)
 	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
 	myCamera->Recalculate(aGraphics.GetWidth(), aGraphics.GetHeight());
 
-	RenderGameObjects(aGraphics);
 	RenderTerrains(aGraphics);
 	RenderDebugDrawers(aGraphics);
-}
-
-void Game::RenderGameObjects(Graphics& aGraphics)
-{
-	Profiler::ScopedMark debugProfile("Game::RenderGameObjects");
-
-	std::lock_guard lock(myRenderablesMutex);
-	myRenderables.ParallelForEach([&](Renderable& aRenderable) {
-		VisualObject& visObj = aRenderable.myVO;
-
-		if (!myCamera->CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
-		{
-			return;
-		}
-
-		// Custom passes - let them do what-ever they want to
-		for (OnRenderGOCallback& callback : myRenderGOCallbacks)
-		{
-			callback(aGraphics, aRenderable, *myCamera);
-		}
-	});
 }
 
 void Game::RenderTerrains(Graphics& aGraphics)
