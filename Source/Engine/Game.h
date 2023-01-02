@@ -49,6 +49,13 @@ public:
 	using OnRenderCallback = std::function<void(Graphics&)>;
 	using OnRenderTerrainCallback = std::function<void(Graphics&, Terrain&, VisualObject&, Camera&)>;
 
+	struct TerrainEntity
+	{
+		Terrain* myTerrain; // owning
+		VisualObject* myVisualObject; // owning
+		PhysicsComponent* myPhysComponent; // owning
+	};
+
 public:
 	Game(ReportError aReporterFunc);
 	~Game();
@@ -82,6 +89,8 @@ public:
 	void ForEach(TFunc aFunc);
 	template<class TFunc>
 	void ForEachRenderable(const TFunc& aFunc);
+	template<class TFunc>
+	void ForEachTerrain(const TFunc& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
 	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
@@ -151,12 +160,7 @@ private:
 	std::mutex myRenderablesMutex;
 	std::vector<OnRenderTerrainCallback> myRenderTerrainCallbacks;
 
-	struct TerrainEntity
-	{
-		Terrain* myTerrain; // owning
-		VisualObject* myVisualObject; // owning
-		PhysicsComponent* myPhysComponent; // owning
-	};
+	
 	std::vector<TerrainEntity> myTerrains;
 	PhysicsWorld* myPhysWorld;
 	AssetTracker* myAssetTracker;
@@ -194,4 +198,16 @@ void Game::ForEachRenderable(const TFunc& aFunc)
 	// TODO: replace with a read-only lock
 	std::lock_guard lock(myRenderablesMutex);
 	myRenderables.ParallelForEach(aFunc);
+}
+
+template<class TFunc>
+void Game::ForEachTerrain(const TFunc& aFunc)
+{
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myTerrainsMutex);
+#endif
+	for (TerrainEntity& entity : myTerrains)
+	{
+		aFunc(entity);
+	}
 }

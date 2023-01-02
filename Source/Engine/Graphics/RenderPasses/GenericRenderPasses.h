@@ -22,7 +22,7 @@ protected:
 	bool HasDynamicRenderContext() const override { return true; }
 };
 
-class TerrainRenderPass : public RenderPass
+class TerrainRenderPass final : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("TerrainRenderPass");
@@ -34,9 +34,11 @@ public:
 
 	TerrainRenderPass();
 
-	Id GetId() const final { return kId; }
+	Id GetId() const override { return kId; }
+
+	void BeginPass(Graphics& aGraphics) override;
 
 protected:
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	bool HasDynamicRenderContext() const final { return true; }
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
+	bool HasDynamicRenderContext() const override { return true; }
 };

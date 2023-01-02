@@ -10,6 +10,7 @@
 #include <Graphics/Resources/UniformBuffer.h>
 
 #include "Graphics/Adapters/AdapterSourceData.h"
+#include "Graphics/Adapters/TerrainAdapter.h"
 #include "Graphics/NamedFrameBuffers.h"
 #include "Terrain.h"
 #include "Game.h"
@@ -117,6 +118,89 @@ void DefaultRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGra
 TerrainRenderPass::TerrainRenderPass()
 {
 	AddDependency(DefaultRenderPass::kId);
+}
+
+void TerrainRenderPass::BeginPass(Graphics& aGraphics)
+{
+	RenderPass::BeginPass(aGraphics);
+
+	// TODO: get rid of singleton access here - pass from Game/Graphics
+	Game& game = *Game::GetInstance();
+	const Camera& camera = *game.GetCamera();
+
+	constexpr auto IsUsable = [](const VisualObject& aVO) {
+		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
+		};
+		return CheckResource(aVO.GetPipeline())
+			&& CheckResource(aVO.GetTexture());
+	};
+
+	game.ForEachTerrain([&](Game::TerrainEntity& anEntity) {
+		VisualObject* visObj = anEntity.myVisualObject;
+		if (!visObj)
+		{
+			return;
+		}
+
+		if (!IsUsable(*visObj))
+		{
+			return;
+		}
+
+		if (visObj->GetModel().IsValid()
+			&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
+		{
+			return;
+		}
+
+		// building a render job
+		const Terrain& terrain = *anEntity.myTerrain;
+
+		const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		ASSERT_STR(uboCount < 4,
+			"Tried to push %llu UBOs into a render job that supports only 4!",
+			uboCount);
+
+		// updating the uniforms - grabbing game state!
+		TerrainAdapter::Source source{
+			aGraphics,
+			camera,
+			nullptr,
+			*visObj,
+			terrain
+		};
+
+		RenderJob::UniformSet uniformSet;
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+			UniformBuffer* uniformBuffer = AllocateUBO(
+				aGraphics,
+				uniformAdapter.GetDescriptor().GetBlockSize()
+			);
+			if (!uniformBuffer)
+			{
+				return;
+			}
+
+			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
+			uniformAdapter.Fill(source, uniformBlock);
+			uniformSet.PushBack(uniformBuffer);
+		}
+
+		RenderJob& renderJob = AllocateJob();
+		renderJob.SetModel(visObj->GetModel().Get());
+		renderJob.SetPipeline(visObj->GetPipeline().Get());
+		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
+		renderJob.GetUniformSet() = uniformSet;
+
+		RenderJob::TesselationDrawParams drawParams;
+		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+		renderJob.SetDrawParams(drawParams);
+	});
 }
 
 void TerrainRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const

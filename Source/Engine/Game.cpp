@@ -9,11 +9,9 @@
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
-#include "Graphics/Adapters/TerrainAdapter.h"
-#include "Graphics/Adapters/SkeletonAdapter.h"
+
 #include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
-#include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Systems/ImGUI/ImGUIRendering.h"
 #include "Animation/AnimationSystem.h"
@@ -666,14 +664,6 @@ void Game::RenderTerrains(Graphics& aGraphics)
 #ifdef ASSERT_MUTEX
 	AssertLock assertLock(myTerrainsMutex);
 #endif
-	TerrainRenderPass* renderPass = aGraphics.GetRenderPass<TerrainRenderPass>();
-	constexpr auto IsUsable = [](const VisualObject& aVO) {
-		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
-			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
-		};
-		return CheckResource(aVO.GetPipeline())
-			&& CheckResource(aVO.GetTexture());
-	};
 	for (TerrainEntity& entity : myTerrains)
 	{
 		VisualObject* visObj = entity.myVisualObject;
@@ -687,64 +677,6 @@ void Game::RenderTerrains(Graphics& aGraphics)
 		{
 			callback(aGraphics, *entity.myTerrain, *visObj, *myCamera);
 		}
-
-		if (!IsUsable(*visObj))
-		{
-			continue;
-		}
-
-		if (visObj->GetModel().IsValid()
-			&& !myCamera->CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
-		{
-			continue;
-		}
-
-		// building a render job
-		const Terrain& terrain = *entity.myTerrain;
-
-		const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount < 4,
-			"Tried to push %llu UBOs into a render job that supports only 4!",
-			uboCount);
-
-		// updating the uniforms - grabbing game state!
-		TerrainAdapter::Source source{
-			aGraphics,
-			*myCamera,
-			nullptr,
-			*visObj,
-			terrain
-		};
-
-		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
-		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* uniformBuffer = renderPass->AllocateUBO(
-				aGraphics,
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!uniformBuffer)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(uniformBuffer);
-		}
-
-		RenderJob& renderJob = renderPass->AllocateJob();
-		renderJob.SetModel(visObj->GetModel().Get());
-		renderJob.SetPipeline(visObj->GetPipeline().Get());
-		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
-		renderJob.GetUniformSet() = uniformSet;
-		
-		RenderJob::TesselationDrawParams drawParams;
-		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-		renderJob.SetDrawParams(drawParams);
 	}
 }
 
