@@ -25,7 +25,6 @@
 #include "UIWidgets/PipelineCreateDialog.h"
 #include "Systems/ProfilerUI.h"
 
-#include <Core/StaticString.h>
 #include <Core/Profiler.h>
 #include <Core/Resources/AssetTracker.h>
 
@@ -53,7 +52,6 @@ Game* Game::ourInstance = nullptr;
 bool Game::ourGODeleteEnabled = false;
 
 constexpr bool BootWithVK = false;
-constexpr StaticString kHeightmapName("Tynemouth-tangrams.img");
 
 namespace UIWidgets
 {
