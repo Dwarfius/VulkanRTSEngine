@@ -2,6 +2,7 @@
 #include "IDRenderPass.h"
 
 #include <Engine/VisualObject.h>
+#include <Engine/Game.h>
 #include <Engine/GameObject.h>
 #include <Engine/Graphics/Adapters/AdapterSourceData.h>
 #include <Engine/Graphics/Adapters/TerrainAdapter.h>
@@ -9,6 +10,7 @@
 #include <Engine/Graphics/Adapters/SkeletonAdapter.h>
 #include <Engine/Graphics/RenderPasses/GenericRenderPasses.h>
 
+#include <Graphics/Camera.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
@@ -68,11 +70,9 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 		myState = State::None;
 		break;
 	}
-	RenderPass::BeginPass(aGraphics);
-}
 
-void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
-{
+	RenderPass::BeginPass(aGraphics);
+
 	if (myState == State::None) [[likely]]
 	{
 		return;
@@ -85,64 +85,76 @@ void IDRenderPass::ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderab
 		return;
 	}
 
-	VisualObject& vo = aRenderable.myVO;
-	Handle<GPUModel>& model = vo.GetModel();
-	if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
-		[[unlikely]]
-	{
-		return;
-	}
+	// TODO: get rid of singleton access here - pass from Game/Graphics
+	Game& game = *Game::GetInstance();
+	const Camera& camera = *game.GetCamera();
 
-	// assuming we'll be able to render the GO
-	// save it for tracking
-	ObjID newID = myFrameGOs.myGOCounter++;
-	if (newID >= kMaxObjects)
-	{
-		return;
-	}
-	myFrameGOs.myGOs[newID] = aRenderable.myGO;
-
-	// updating the uniforms - grabbing game state!
-	IDGOAdapterSourceData source{
-		aGraphics,
-		aCamera,
-		aRenderable.myGO,
-		vo,
-		newID + 1
-	};
-
-	const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
-	const GPUPipeline* gpuPipeline = isSkinned ?
-		mySkinningPipeline.Get<const GPUPipeline>() :
-		myDefaultPipeline.Get<const GPUPipeline>();
-	const size_t uboCount = gpuPipeline->GetAdapterCount();
-	RenderJob::UniformSet uniformSet;
-	for (size_t i = 0; i < uboCount; i++)
-	{
-		const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-		UniformBuffer* ubo = AllocateUBO(
-			aGraphics, 
-			uniformAdapter.GetDescriptor().GetBlockSize()
-		);
-		if (!ubo)
+	game.ForEachRenderable([&](Renderable& aRenderable) {
+		VisualObject& vo = aRenderable.myVO;
+		
+		if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
 		{
 			return;
 		}
 
-		UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
-		uniformAdapter.Fill(source, uniformBlock);
-		uniformSet.PushBack(ubo);
-	}
+		Handle<GPUModel>& model = vo.GetModel();
+		if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
+			[[unlikely]]
+		{
+			return;
+		}
 
-	RenderJob& job = AllocateJob();
-	job.SetPipeline(isSkinned ? mySkinningPipeline.Get() : myDefaultPipeline.Get());
-	job.SetModel(model.Get());
-	job.GetUniformSet() = uniformSet;
+		// assuming we'll be able to render the GO
+		// save it for tracking
+		ObjID newID = myFrameGOs.myGOCounter++;
+		if (newID >= kMaxObjects)
+		{
+			return;
+		}
+		myFrameGOs.myGOs[newID] = aRenderable.myGO;
 
-	RenderJob::IndexedDrawParams drawParams;
-	drawParams.myOffset = 0;
-	drawParams.myCount = model->GetPrimitiveCount();
-	job.SetDrawParams(drawParams);
+		// updating the uniforms - grabbing game state!
+		IDGOAdapterSourceData source{
+			aGraphics,
+			camera,
+			aRenderable.myGO,
+			vo,
+			newID + 1
+		};
+
+		const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
+		const GPUPipeline* gpuPipeline = isSkinned ?
+			mySkinningPipeline.Get<const GPUPipeline>() :
+			myDefaultPipeline.Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		RenderJob::UniformSet uniformSet;
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+			UniformBuffer* ubo = AllocateUBO(
+				aGraphics,
+				uniformAdapter.GetDescriptor().GetBlockSize()
+			);
+			if (!ubo)
+			{
+				return;
+			}
+
+			UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
+			uniformAdapter.Fill(source, uniformBlock);
+			uniformSet.PushBack(ubo);
+		}
+
+		RenderJob& job = AllocateJob();
+		job.SetPipeline(isSkinned ? mySkinningPipeline.Get() : myDefaultPipeline.Get());
+		job.SetModel(model.Get());
+		job.GetUniformSet() = uniformSet;
+
+		RenderJob::IndexedDrawParams drawParams;
+		drawParams.myOffset = 0;
+		drawParams.myCount = model->GetPrimitiveCount();
+		job.SetDrawParams(drawParams);
+	});
 }
 
 void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera)

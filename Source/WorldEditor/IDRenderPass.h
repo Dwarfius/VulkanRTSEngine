@@ -35,7 +35,6 @@ public:
 	Id GetId() const final { return kId; }
 
 	void BeginPass(Graphics& aGraphics) override;
-	void ScheduleRenderable(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera);
 	void ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera);
 
 	// The callback will be invoked at the end of next frame

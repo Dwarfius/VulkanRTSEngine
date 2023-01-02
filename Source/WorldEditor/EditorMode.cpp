@@ -96,12 +96,6 @@ EditorMode::EditorMode(Game& aGame)
 		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
-	aGame.AddRenderGameObjectCallback(
-		[idRenderPass = myIDRenderPass]
-		(Graphics& aGraphics, Renderable& aRenderable, Camera& aCamera)
-	{
-		idRenderPass->ScheduleRenderable(aGraphics, aRenderable, aCamera);
-	});
 	aGame.AddRenderTerrainCallback(
 		[idRenderPass = myIDRenderPass](Graphics& aGraphics, Terrain& aTerrain,
 			VisualObject& aVisObject, Camera& aCamera)
