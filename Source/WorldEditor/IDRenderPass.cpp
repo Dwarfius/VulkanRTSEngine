@@ -78,6 +78,14 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 		return;
 	}
 
+	// TODO: get rid of singleton access here - pass from Game/Graphics
+	Game& game = *Game::GetInstance();
+	ScheduleGameObjects(aGraphics, game);
+	ScheduleTerrain(aGraphics, game);
+}
+
+void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame)
+{
 	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
 		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
@@ -85,13 +93,10 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 		return;
 	}
 
-	// TODO: get rid of singleton access here - pass from Game/Graphics
-	Game& game = *Game::GetInstance();
-	const Camera& camera = *game.GetCamera();
-
-	game.ForEachRenderable([&](Renderable& aRenderable) {
+	const Camera& camera = *aGame.GetCamera();
+	aGame.ForEachRenderable([&](Renderable& aRenderable) {
 		VisualObject& vo = aRenderable.myVO;
-		
+
 		if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
 		{
 			return;
@@ -157,74 +162,79 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 	});
 }
 
-void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera)
+void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame)
 {
-	if (myState == State::None) [[likely]]
-	{
-		return;
-	}
-
 	if (myTerrainPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
 	{
 		return;
 	}
 
-	Handle<GPUTexture>& texture = aVisObject.GetTexture();
-	if (!texture.IsValid() || texture->GetState() != GPUResource::State::Valid)
-		[[unlikely]]
-	{
-		return;
-	}
-
-	// assuming we'll be able to render the terrain
-	// save it for tracking
-	ObjID newID = myFrameGOs.myTerrainCounter++;
-	if (newID >= kMaxObjects)
-	{
-		return;
-	}
-	myFrameGOs.myTerrains[newID] = &aTerrain;
-
-	// updating the uniforms - grabbing game state!
-	IDTerrainAdapterSourceData source{
-		aGraphics,
-		aCamera,
-		nullptr,
-		aVisObject,
-		aTerrain,
-		newID | kTerrainBit
-	};
-
-	const GPUPipeline* gpuPipeline = myTerrainPipeline.Get<const GPUPipeline>();
-	const size_t uboCount = gpuPipeline->GetAdapterCount();
-	RenderJob::UniformSet uniformSet;
-	for (size_t i = 0; i < uboCount; i++)
-	{
-		const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-		UniformBuffer* ubo = AllocateUBO(
-			aGraphics,
-			uniformAdapter.GetDescriptor().GetBlockSize()
-		);
-		if (!ubo)
+	const Camera& camera = *aGame.GetCamera();
+	aGame.ForEachTerrain([&](const Game::TerrainEntity& anEntity) {
+		VisualObject* visObj = anEntity.myVisualObject;
+		if (!visObj)
 		{
 			return;
 		}
 
-		UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
-		uniformAdapter.Fill(source, uniformBlock);
-		uniformSet.PushBack(ubo);
-	}
+		Handle<GPUTexture>& texture = visObj->GetTexture();
+		if (!texture.IsValid() || texture->GetState() != GPUResource::State::Valid)
+			[[unlikely]]
+		{
+			return;
+		}
 
-	RenderJob& job = AllocateJob();
-	job.SetPipeline(myTerrainPipeline.Get());
-	job.GetTextures().PushBack(texture.Get());
-	job.GetUniformSet() = uniformSet;
+		// assuming we'll be able to render the terrain
+		// save it for tracking
+		ObjID newID = myFrameGOs.myTerrainCounter++;
+		if (newID >= kMaxObjects)
+		{
+			return;
+		}
+		Terrain& terrain = *anEntity.myTerrain;
+		myFrameGOs.myTerrains[newID] = &terrain;
 
-	RenderJob::TesselationDrawParams drawParams;
-	const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(aTerrain);
-	drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-	job.SetDrawParams(drawParams);
+		// updating the uniforms - grabbing game state!
+		IDTerrainAdapterSourceData source{
+			aGraphics,
+			camera,
+			nullptr,
+			*visObj,
+			terrain,
+			newID | kTerrainBit
+		};
+
+		const GPUPipeline* gpuPipeline = myTerrainPipeline.Get<const GPUPipeline>();
+		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		RenderJob::UniformSet uniformSet;
+		for (size_t i = 0; i < uboCount; i++)
+		{
+			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
+			UniformBuffer* ubo = AllocateUBO(
+				aGraphics,
+				uniformAdapter.GetDescriptor().GetBlockSize()
+			);
+			if (!ubo)
+			{
+				return;
+			}
+
+			UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
+			uniformAdapter.Fill(source, uniformBlock);
+			uniformSet.PushBack(ubo);
+		}
+
+		RenderJob& job = AllocateJob();
+		job.SetPipeline(myTerrainPipeline.Get());
+		job.GetTextures().PushBack(texture.Get());
+		job.GetUniformSet() = uniformSet;
+
+		RenderJob::TesselationDrawParams drawParams;
+		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+		job.SetDrawParams(drawParams);
+	});
 }
 
 void IDRenderPass::GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback)

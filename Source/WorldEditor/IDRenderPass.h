@@ -12,6 +12,7 @@ struct Renderable;
 class GameObject;
 class Terrain;
 class VisualObject;
+class Game;
 
 class IDRenderPass : public RenderPass
 {
@@ -35,7 +36,8 @@ public:
 	Id GetId() const final { return kId; }
 
 	void BeginPass(Graphics& aGraphics) override;
-	void ScheduleTerrain(Graphics& aGraphics, Terrain& aTerrain, VisualObject& aVisObject, Camera& aCamera);
+	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame);
+	void ScheduleTerrain(Graphics& aGraphics, Game& aGame);
 
 	// The callback will be invoked at the end of next frame
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
