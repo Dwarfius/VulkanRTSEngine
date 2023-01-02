@@ -137,8 +137,6 @@ private:
 	void UpdateEnd();
 	void RemoveGameObjects();
 
-	void ScheduleRenderables(Graphics& aGraphics);
-
 	static Game* ourInstance;
 	RenderThread* myRenderThread;
 	std::unique_ptr<GameTaskManager> myTaskManager;

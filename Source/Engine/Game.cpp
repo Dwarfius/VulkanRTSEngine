@@ -182,9 +182,6 @@ void Game::Init(bool aUseDefaultCompositePass)
 		myCamera->GetTransform().LookAt(glm::vec3(0, 0, 0));
 	}
 
-	myRenderThread->AddRenderContributor([this](Graphics& aGraphics) {
-		ScheduleRenderables(aGraphics);
-	});
 	myImGUISystem->Init(*GetWindow());
 
 	// setting up a task tree
@@ -598,6 +595,8 @@ void Game::AnimationUpdate()
 void Game::Render()
 {
 	Profiler::ScopedMark profile("Game::Render");
+	Graphics& graphics = *myRenderThread->GetGraphics();
+	myCamera->Recalculate(graphics.GetWidth(), graphics.GetHeight());
 	myRenderThread->Gather();
 }
 
@@ -645,10 +644,4 @@ void Game::RemoveGameObjects()
 		myRemoveQueue.pop();
 	}
 	ourGODeleteEnabled = false;
-}
-
-void Game::ScheduleRenderables(Graphics& aGraphics)
-{
-	Profiler::ScopedMark debugProfile("Game::ScheduleRenderables");
-	myCamera->Recalculate(aGraphics.GetWidth(), aGraphics.GetHeight());
 }
