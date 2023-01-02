@@ -12,17 +12,15 @@
 #include "Terrain.h"
 #include "Game.h"
 
-DefaultRenderPass::DefaultRenderPass()
-{
-	AddDependency(TerrainRenderPass::kId);
-}
-
 void DefaultRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
+
+	aContext.myShouldClearColor = true;
+	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0;
 
@@ -34,15 +32,17 @@ void DefaultRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGra
 	aContext.myEnableDepthTest = true;
 }
 
+TerrainRenderPass::TerrainRenderPass()
+{
+	AddDependency(DefaultRenderPass::kId);
+}
+
 void TerrainRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
 {
 	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
 
 	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
 	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-
-	aContext.myShouldClearColor = true;
-	aContext.myShouldClearDepth = true;
 
 	aContext.myTexturesToActivate[0] = 0;
 

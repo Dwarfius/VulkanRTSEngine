@@ -13,8 +13,6 @@ public:
 		uint32_t myCount = -1; // rendering param, how many elements to render from a buffer, all by default
 	};
 
-	DefaultRenderPass();
-
 	Id GetId() const final { return kId; }
 
 protected:
@@ -31,6 +29,8 @@ public:
 	{
 		int myTileCount = 0;
 	};
+
+	TerrainRenderPass();
 
 	Id GetId() const final { return kId; }
 
