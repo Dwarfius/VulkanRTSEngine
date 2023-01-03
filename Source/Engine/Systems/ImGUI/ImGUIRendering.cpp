@@ -49,22 +49,22 @@ bool ImGUIRenderPass::IsReady() const
 		&& myUniformBuffer->GetState() == GPUResource::State::Valid;
 }
 
-void ImGUIRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext ImGUIRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = myDestFrameBuffer;
-
-	aContext.myEnableBlending = true;
-	aContext.myBlendingEq = RenderContext::BlendingEq::Add;
-	aContext.mySourceBlending = RenderContext::Blending::SourceAlpha;
-	aContext.myDestinationBlending = RenderContext::Blending::OneMinusSourceAlpha;
-	aContext.myScissorMode = RenderContext::ScissorMode::PerObject;
-	aContext.myEnableCulling = false;
-	aContext.myEnableDepthTest = false;
-	aContext.myShouldClearColor = false;
-	aContext.myShouldClearDepth = false;
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-	aContext.myTexturesToActivate[0] = 0;
+	return {
+		.myFrameBuffer = myDestFrameBuffer,
+		.myTextureCount = 1u,
+		.myTexturesToActivate = { 0 },
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myBlendingEq = RenderContext::BlendingEq::Add,
+		.mySourceBlending = RenderContext::Blending::SourceAlpha,
+		.myDestinationBlending = RenderContext::Blending::OneMinusSourceAlpha,
+		.myScissorMode = RenderContext::ScissorMode::PerObject,
+		.myEnableBlending = true
+	};
 }
 
 // We're using Execute to generate all work and schedule updates of assets (model)
@@ -90,6 +90,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
 	block.SetUniform(0, 0, frame.myMatrix);
 
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	for (Params& params : frame.myParams)
 	{
 		GPUTexture* texture = myFontAtlas.Get();
@@ -98,7 +99,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 			texture = params.myTexture.Get();
 		}
 
-		RenderJob& job = AllocateJob();
+		RenderJob& job = passJob.AllocateJob();
 		job.SetPipeline(myPipeline.Get());
 		job.SetModel(myModel.Get());
 		job.GetTextures().PushBack(texture);

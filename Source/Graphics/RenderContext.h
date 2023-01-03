@@ -101,6 +101,7 @@ public:
 	// every pass is allowed an arbitrary limit of
 	// active texture inputs
 	constexpr static uint8_t kMaxObjectTextureSlots = 8;
+	uint32_t myTextureCount = 0;
 	// -1 means no texture
 	int myTexturesToActivate[kMaxObjectTextureSlots] = {
 		-1, -1, -1, -1, 
@@ -109,6 +110,7 @@ public:
 	static_assert(kMaxObjectTextureSlots == 8, "Fix above array if const changed!");
 
 	constexpr static uint8_t kMaxFrameBufferDrawSlots = 8;
+	uint32_t myFrameBufferDrawSlotsCount = 1;
 	int myFrameBufferDrawSlots[kMaxFrameBufferDrawSlots] = { 
 		0, -1, -1, -1,
 		-1, -1, -1, -1

@@ -144,7 +144,8 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 		}
 	}
 
-	for (uint8_t i = 0; i < RenderContext::kMaxObjectTextureSlots; i++)
+	ASSERT(aContext.myTextureCount <= RenderContext::kMaxObjectTextureSlots);
+	for (uint8_t i = 0; i < aContext.myTextureCount; i++)
 	{
 		myTextureSlotsToUse[i] = aContext.myTexturesToActivate[i];
 	}
@@ -199,13 +200,14 @@ void RenderPassJobGL::SetupContext(Graphics& aGraphics, const RenderContext& aCo
 
 	if (!aContext.myFrameBuffer.empty())
 	{
+		ASSERT(aContext.myFrameBufferDrawSlotsCount <= RenderContext::kMaxFrameBufferDrawSlots);
 		uint32_t buffers[RenderContext::kMaxFrameBufferDrawSlots];
-		for (uint8_t i = 0; i < RenderContext::kMaxFrameBufferDrawSlots; i++)
+		for (uint8_t i = 0; i < aContext.myFrameBufferDrawSlotsCount; i++)
 		{
 			buffers[i] = aContext.myFrameBufferDrawSlots[i] == -1 ?
 				GL_NONE : GL_COLOR_ATTACHMENT0 + aContext.myFrameBufferDrawSlots[i];
 		}
-		glDrawBuffers(RenderContext::kMaxFrameBufferDrawSlots, buffers);
+		glDrawBuffers(aContext.myFrameBufferDrawSlotsCount, buffers);
 	}
 }
 

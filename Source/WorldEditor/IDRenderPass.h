@@ -36,15 +36,14 @@ public:
 	Id GetId() const final { return kId; }
 
 	void Execute(Graphics& aGraphics) override;
-	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame);
-	void ScheduleTerrain(Graphics& aGraphics, Game& aGame);
+	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob);
+	void ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob);
 
 	// The callback will be invoked at the end of next frame
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
 
-protected:
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
-	bool HasDynamicRenderContext() const final { return true; }
+private:
+	RenderContext CreateContext(Graphics& aGraphics) const;
 	void ResolveClick();
 
 	constexpr static ObjID kTerrainBit = 1 << 31;

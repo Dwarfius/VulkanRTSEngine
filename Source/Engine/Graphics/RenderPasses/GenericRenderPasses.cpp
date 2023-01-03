@@ -32,6 +32,8 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 			&& CheckResource(aVO.GetTexture());
 	};
 
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+
 	game.ForEachRenderable([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
 
@@ -82,7 +84,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 			uniformSet.PushBack(uniformBuffer);
 		}
 		// Building a render job
-		RenderJob& renderJob = AllocateJob();
+		RenderJob& renderJob = passJob.AllocateJob();
 		renderJob.SetModel(visObj.GetModel().Get());
 		renderJob.SetPipeline(visObj.GetPipeline().Get());
 		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
@@ -95,24 +97,24 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 	});
 }
 
-void DefaultRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext DefaultRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
-
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-
-	aContext.myShouldClearColor = true;
-	aContext.myShouldClearDepth = true;
-
-	aContext.myTexturesToActivate[0] = 0;
-
 	const EngineSettings& settings = Game::GetInstance()->GetEngineSettings();
-	aContext.myPolygonMode = settings.myUseWireframe ?
-		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;
-
-	aContext.myEnableCulling = true;
-	aContext.myEnableDepthTest = true;
+	return {
+		.myFrameBuffer = DefaultFrameBuffer::kName,
+		.myTextureCount = 1u,
+		.myTexturesToActivate = { 0 },
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myPolygonMode = settings.myUseWireframe ?
+			RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill,
+		.myEnableDepthTest = true,
+		.myEnableCulling = true,
+		.myShouldClearColor = true,
+		.myShouldClearDepth = true,
+	};
 }
 
 TerrainRenderPass::TerrainRenderPass()
@@ -136,6 +138,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 			&& CheckResource(aVO.GetTexture());
 	};
 
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	game.ForEachTerrain([&](Game::TerrainEntity& anEntity) {
 		VisualObject* visObj = anEntity.myVisualObject;
 		if (!visObj)
@@ -190,7 +193,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 			uniformSet.PushBack(uniformBuffer);
 		}
 
-		RenderJob& renderJob = AllocateJob();
+		RenderJob& renderJob = passJob.AllocateJob();
 		renderJob.SetModel(visObj->GetModel().Get());
 		renderJob.SetPipeline(visObj->GetPipeline().Get());
 		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
@@ -203,19 +206,20 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 	});
 }
 
-void TerrainRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext TerrainRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
-
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-
-	aContext.myTexturesToActivate[0] = 0;
-
 	const EngineSettings& settings = Game::GetInstance()->GetEngineSettings();
-	aContext.myPolygonMode = settings.myUseWireframe ?
-		RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill;
-
-	aContext.myEnableCulling = true;
-	aContext.myEnableDepthTest = true;
+	return {
+		.myFrameBuffer = DefaultFrameBuffer::kName,
+		.myTextureCount = 1u,
+		.myTexturesToActivate = { 0 },
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myPolygonMode = settings.myUseWireframe ?
+			RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill,
+		.myEnableDepthTest = true,
+		.myEnableCulling = true,
+	};
 }

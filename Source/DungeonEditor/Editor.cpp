@@ -6,6 +6,7 @@
 #include <Engine/Game.h>
 #include <Engine/Input.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
+#include <Engine/Systems/ImGUI/ImGUIRendering.h>
 
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/GPUTexture.h>
@@ -74,6 +75,8 @@ void Editor::Run()
 	};
 	graphics.GetRenderPass<PaintingRenderPass>()->SetParams(params);
 	graphics.GetRenderPass<DisplayRenderPass>()->SetParams(params);
+
+	graphics.GetRenderPass<ImGUIRenderPass>()->SetDestFrameBuffer("");
 }
 
 void Editor::ProcessInput()

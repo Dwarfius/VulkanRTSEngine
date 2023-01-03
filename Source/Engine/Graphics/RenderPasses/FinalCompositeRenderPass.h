@@ -16,8 +16,7 @@ public:
 private:
 	void Execute(Graphics& aGraphics) override;
 	Id GetId() const override { return kId; }
-	bool HasDynamicRenderContext() const override { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
+	RenderContext CreateContext(Graphics& aGraphics) const;
 
 	Handle<GPUPipeline> myPipeline;
 };

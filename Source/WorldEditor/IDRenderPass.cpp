@@ -80,11 +80,12 @@ void IDRenderPass::Execute(Graphics& aGraphics)
 
 	// TODO: get rid of singleton access here - pass from Game/Graphics
 	Game& game = *Game::GetInstance();
-	ScheduleGameObjects(aGraphics, game);
-	ScheduleTerrain(aGraphics, game);
+	RenderPassJob& job = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	ScheduleGameObjects(aGraphics, game, job);
+	ScheduleTerrain(aGraphics, game, job);
 }
 
-void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame)
+void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob)
 {
 	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
 		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
@@ -150,7 +151,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame)
 			uniformSet.PushBack(ubo);
 		}
 
-		RenderJob& job = AllocateJob();
+		RenderJob& job = aJob.AllocateJob();
 		job.SetPipeline(isSkinned ? mySkinningPipeline.Get() : myDefaultPipeline.Get());
 		job.SetModel(model.Get());
 		job.GetUniformSet() = uniformSet;
@@ -162,7 +163,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame)
 	});
 }
 
-void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame)
+void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob)
 {
 	if (myTerrainPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
@@ -225,7 +226,7 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame)
 			uniformSet.PushBack(ubo);
 		}
 
-		RenderJob& job = AllocateJob();
+		RenderJob& job = aJob.AllocateJob();
 		job.SetPipeline(myTerrainPipeline.Get());
 		job.GetTextures().PushBack(texture.Get());
 		job.GetUniformSet() = uniformSet;
@@ -246,23 +247,23 @@ void IDRenderPass::GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback)
 	myState = State::Schedule;
 }
 
-void IDRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext IDRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = IDFrameBuffer::kName;
-
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-
-	aContext.myEnableDepthTest = true;
-	aContext.myEnableCulling = true;
-
-	aContext.myShouldClearColor = true;
-	aContext.myShouldClearDepth = true;
-
-	aContext.myTexturesToActivate[0] = 0; // for Terrain
-
-	aContext.myDownloadTexture = myState == State::Render ? 
-		myDownloadTexture : nullptr;
+	return {
+		.myFrameBuffer = IDFrameBuffer::kName,
+		.myDownloadTexture =
+			myState == State::Render ? myDownloadTexture : nullptr,
+		.myTextureCount = 1u,
+		.myTexturesToActivate = { 0 }, // for Terrain
+		.myViewportSize = { 
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myEnableDepthTest = true,
+		.myEnableCulling = true,
+		.myShouldClearColor = true,
+		.myShouldClearDepth = true,
+	};
 }
 
 void IDAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)

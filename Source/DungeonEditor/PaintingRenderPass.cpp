@@ -2,7 +2,7 @@
 #include "PaintingRenderPass.h"
 
 #include <Engine/Input.h>
-#include <Engine/Systems/ImGUI/ImGUIRendering.h>
+
 #include <Engine/Graphics/Adapters/ObjectMatricesAdapter.h>
 #include <Engine/Graphics/Adapters/AdapterSourceData.h>
 
@@ -66,8 +66,11 @@ void PaintingRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
+	aGraphics.GetRenderPass<DisplayRenderPass>()->SetReadBuffer(GetWriteBuffer());
+
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	PaintParams paintParams = GetParams();
-	RenderJob& job = AllocateJob();
+	RenderJob& job = passJob.AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	if (paintParams.myPaintTexture.IsValid())
@@ -106,28 +109,34 @@ void PaintingRenderPass::Execute(Graphics& aGraphics)
 	myWriteToOther = !myWriteToOther;
 }
 
-void PaintingRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext PaintingRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = GetWriteBuffer();
-	aContext.myFrameBufferDrawSlots[0] = PaintingFrameBuffer::kFinalColor;
-	aContext.myFrameBufferDrawSlots[1] = PaintingFrameBuffer::kPaintingColor;
-	aGraphics.GetRenderPass<DisplayRenderPass>()->SetReadBuffer(GetWriteBuffer());
-
-	aContext.myFrameBufferReadTextures[0] = {
-		GetReadBuffer(),
-		PaintingFrameBuffer::kPaintingColor,
-		RenderContext::FrameBufferTexture::Type::Color
-	};
-
 	const PaintParams paintParams = GetParams();
 	const int width = static_cast<int>(paintParams.myTexSize.x);
 	const int height = static_cast<int>(paintParams.myTexSize.y);
 	aGraphics.ResizeNamedFrameBuffer(GetWriteBuffer(), glm::ivec2(width, height));
-	aContext.myViewportSize[0] = width;
-	aContext.myViewportSize[1] = height;
-	aContext.myEnableDepthTest = false;
-
-	aContext.myTexturesToActivate[0] = paintParams.myPaintTexture.IsValid() ? 0 : -1;
+	
+	return {
+		.myFrameBufferReadTextures = {
+			{
+				GetReadBuffer(),
+				PaintingFrameBuffer::kPaintingColor,
+				RenderContext::FrameBufferTexture::Type::Color
+			}
+		},
+		.myFrameBuffer = GetWriteBuffer(),
+		.myTextureCount = paintParams.myPaintTexture.IsValid() ? 1u : 0u,
+		.myTexturesToActivate = {
+			paintParams.myPaintTexture.IsValid() ? 0 : -1
+		},
+		.myFrameBufferDrawSlotsCount = 2u,
+		.myFrameBufferDrawSlots = { 
+			PaintingFrameBuffer::kFinalColor, 
+			PaintingFrameBuffer::kPaintingColor
+		},
+		.myViewportSize = {width, height},
+		.myEnableDepthTest = false
+	};
 }
 
 void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
@@ -168,7 +177,9 @@ void DisplayRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
-	RenderJob& job = AllocateJob();
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+
+	RenderJob& job = passJob.AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 
@@ -196,26 +207,24 @@ void DisplayRenderPass::Execute(Graphics& aGraphics)
 	job.GetUniformSet().PushBack(myBuffer.Get());
 }
 
-void DisplayRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext DisplayRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = "";
-	aGraphics.GetRenderPass<ImGUIRenderPass>()->SetDestFrameBuffer("");
-
-	aContext.myFrameBufferReadTextures[0] = {
-		myReadFrameBuffer,
-		PaintingFrameBuffer::kFinalColor,
-		RenderContext::FrameBufferTexture::Type::Color
+	return {
+		.myFrameBufferReadTextures = {
+			{
+				myReadFrameBuffer,
+				PaintingFrameBuffer::kFinalColor,
+				RenderContext::FrameBufferTexture::Type::Color
+			}
+		},
+		.myFrameBuffer = "",
+		.myClearColor = { 0, 0, 1, 1 },
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()), 
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myShouldClearColor = true,
 	};
-
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
-	aContext.myEnableDepthTest = false;
-
-	aContext.myShouldClearColor = true;
-	aContext.myClearColor[0] = 0;
-	aContext.myClearColor[1] = 0;
-	aContext.myClearColor[2] = 1;
-	aContext.myClearColor[3] = 1;
 }
 
 void PainterAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)

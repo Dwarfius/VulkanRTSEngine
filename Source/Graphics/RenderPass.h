@@ -24,7 +24,6 @@ public:
 
 	virtual ~RenderPass() = default;
 
-	RenderJob& AllocateJob();
 	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
 	virtual void Execute(Graphics& aGraphics);
@@ -34,18 +33,9 @@ public:
 	const std::vector<Id>& GetDependencies() const { return myDependencies; }
 
 protected:
-	void PrepareContext(Graphics& aGraphics);
 	void PreallocateUBOs(size_t aSize);
 
-	RenderContext myRenderContext;
-
 private:
-	// Controls whether every frame the context needs to be recreated
-	// or can it be cached at initialization time and reused
-	// By default is static render context
-	virtual bool HasDynamicRenderContext() const { return false; }
-	virtual void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const = 0;
-
 	struct UBOBucket
 	{
 		// Note: not using LazyVector as it's not thread safe
@@ -79,7 +69,4 @@ private:
 	std::vector<UBOBucket> myUBOBuckets;
 	tbb::concurrent_unordered_set<size_t> myNewBuckets;
 	std::vector<Id> myDependencies;
-
-	RenderPassJob* myCurrentJob = nullptr;
-	bool myHasValidContext = false;
 };

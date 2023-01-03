@@ -28,7 +28,8 @@ void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
-	RenderJob& job = AllocateJob();
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	RenderJob& job = passJob.AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	
@@ -38,15 +39,18 @@ void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 	job.SetDrawParams(params);
 }
 
-void FinalCompositeRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext FinalCompositeRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = "";
-	aContext.myFrameBufferReadTextures[0] = {
-		DefaultFrameBuffer::kName,
-		DefaultFrameBuffer::kColorInd,
-		RenderContext::FrameBufferTexture::Type::Color
+	return {
+		.myFrameBufferReadTextures = {
+			DefaultFrameBuffer::kName,
+			DefaultFrameBuffer::kColorInd,
+			RenderContext::FrameBufferTexture::Type::Color
+		},
+		.myFrameBuffer = "",
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		}
 	};
-
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
 }

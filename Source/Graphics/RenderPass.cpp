@@ -1,14 +1,8 @@
 #include "Precomp.h"
 #include "RenderPass.h"
 
-#include "RenderContext.h"
 #include "Graphics.h"
 #include "Resources/UniformBuffer.h"
-
-RenderJob& RenderPass::AllocateJob()
-{
-	return myCurrentJob->AllocateJob();
-}
 
 UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
@@ -27,9 +21,6 @@ UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 
 void RenderPass::Execute(Graphics& aGraphics)
 {
-	PrepareContext(aGraphics);
-
-	myCurrentJob = &aGraphics.CreateRenderPassJob(myRenderContext);
 	// Note: this is not thread safe if same pass is started concurrently
 	for (size_t newBucket : myNewBuckets)
 	{
@@ -42,15 +33,6 @@ void RenderPass::Execute(Graphics& aGraphics)
 		uboBucket.PrepForPass(aGraphics);
 	}
 	std::sort(myUBOBuckets.begin(), myUBOBuckets.end());
-}
-
-void RenderPass::PrepareContext(Graphics& aGraphics)
-{
-	if (!myHasValidContext || HasDynamicRenderContext())
-	{
-		OnPrepareContext(myRenderContext, aGraphics);
-		myHasValidContext = true;
-	}
 }
 
 void RenderPass::PreallocateUBOs(size_t aSize)

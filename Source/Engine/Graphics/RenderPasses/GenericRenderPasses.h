@@ -17,9 +17,8 @@ public:
 
 	void Execute(Graphics& aGraphics) override;
 
-protected:
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
-	bool HasDynamicRenderContext() const override { return true; }
+private:
+	RenderContext CreateContext(Graphics& aGraphics) const;
 };
 
 class TerrainRenderPass final : public RenderPass
@@ -38,7 +37,6 @@ public:
 
 	void Execute(Graphics& aGraphics) override;
 
-protected:
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
-	bool HasDynamicRenderContext() const override { return true; }
+private:
+	RenderContext CreateContext(Graphics& aGraphics) const;
 };

@@ -47,9 +47,6 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 {
 	RenderPass::Execute(aGraphics);
 
-	// TODO: see if this can be improved, as it's dangerous and confusing,
-	// should be able to fix this further down the refactor
-	// Note: Don't early out before Execute - it'll break sorting of jobs
 	if (!IsReady())
 	{
 		return;
@@ -81,6 +78,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 	ASSERT_STR(myPipeline->GetAdapterCount() == 1,
 		"DebugRenderPass needs a pipeline with Camera adapter only!");
 
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
 	for (PerCameraModel& perCamModel : myCameraModels)
 	{
@@ -98,7 +96,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		perCamModel.myModel->UpdateRegion({ 0, 0 });
 
 		// Generate job
-		RenderJob& job = AllocateJob();
+		RenderJob& job = passJob.AllocateJob();
 		job.SetPipeline(myPipeline.Get());
 		job.SetModel(perCamModel.myModel.Get());
 
@@ -172,11 +170,13 @@ void DebugRenderPass::AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDeb
 	currDesc->myVertCount = aDebugDrawer.GetCurrentVertexCount();
 }
 
-void DebugRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const
+RenderContext DebugRenderPass::CreateContext(Graphics& aGraphics) const
 {
-	aContext.myFrameBuffer = DefaultFrameBuffer::kName;
-
-	aContext.myScissorMode = RenderContext::ScissorMode::None;
-	aContext.myViewportSize[0] = static_cast<int>(aGraphics.GetWidth());
-	aContext.myViewportSize[1] = static_cast<int>(aGraphics.GetHeight());
+	return {
+		.myFrameBuffer = DefaultFrameBuffer::kName,
+		.myViewportSize = { 
+			static_cast<int>(aGraphics.GetWidth()), 
+			static_cast<int>(aGraphics.GetHeight()) 
+		},
+	};
 }

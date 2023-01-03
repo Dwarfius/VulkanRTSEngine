@@ -28,8 +28,7 @@ private:
 	void SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graphics& aGraphics);
 	void AddDebugDrawer(uint32_t aCamIndex, const DebugDrawer& aDebugRawer);
 	
-	bool HasDynamicRenderContext() const override { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
+	RenderContext CreateContext(Graphics& aGraphics) const;
 
 	Handle<GPUPipeline> myPipeline;
 	struct PerCameraModel
