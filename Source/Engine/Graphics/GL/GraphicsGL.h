@@ -37,13 +37,16 @@ private:
 	void OnResize(int aWidth, int aHeight) override;
 
 	constexpr static uint32_t kMaxRenderPassJobs = 128;
-	using RenderPassJobs = std::array<RenderPassJobGL, kMaxRenderPassJobs>;
+	struct RenderPassJobs
+	{
+		std::array<RenderPassJobGL, kMaxRenderPassJobs> myJobs;
+		std::atomic<uint32_t> myJobCounter = 0;
+	};
 	// +1 because(assuming we have 2 frames in flight)
 	// while we have 1st mapped, we'll need to preserve 
 	// 2nd and fill 3rd
 	constexpr static uint8_t kFrames = GraphicsConfig::kMaxFramesScheduled + 1;
 	RWBuffer<RenderPassJobs, kFrames> myRenderPassJobs;
-	std::atomic<uint32_t> myNextFreeJob = 0;
 
 	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const override;
 	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const override;

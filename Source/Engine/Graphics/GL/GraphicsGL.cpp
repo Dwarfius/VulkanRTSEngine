@@ -149,9 +149,10 @@ void GraphicsGL::Display()
 	{
 		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
 		RenderPassJobs& jobs = myRenderPassJobs.GetRead();
-		for (RenderPassJobGL& job : jobs)
+		const uint32_t maxJobInd = jobs.myJobCounter;
+		for (uint32_t i=0; i<maxJobInd; i++)
 		{
-			job.Execute(*this);
+			jobs.myJobs[i].Execute(*this);
 		}
 	}
 
@@ -175,7 +176,7 @@ void GraphicsGL::Gather()
 	Graphics::Gather();
 
 	myRenderPassJobs.AdvanceWrite();
-	myNextFreeJob = 0;
+	myRenderPassJobs.GetWrite().myJobCounter = 0;
 }
 
 void GraphicsGL::CleanUp()
@@ -267,12 +268,13 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 
 RenderPassJob& GraphicsGL::CreateRenderPassJob(const RenderContext& renderContext)
 {
-	ASSERT_STR(myNextFreeJob != kMaxRenderPassJobs,
+	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
+
+	ASSERT_STR(jobs.myJobCounter != kMaxRenderPassJobs,
 		"Exhausted capacity render pass jobs(%u), please increase "
 		"GraphicsGL::kMaxRenderPassJobs!", kMaxRenderPassJobs);
 
-	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
-	RenderPassJobGL& job = jobs[myNextFreeJob++];
+	RenderPassJobGL& job = jobs.myJobs[jobs.myJobCounter++];
 	job.Initialize(renderContext);
 	return job;
 }
