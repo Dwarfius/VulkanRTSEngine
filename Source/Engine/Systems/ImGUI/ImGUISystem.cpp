@@ -44,10 +44,6 @@ void ImGUISystem::Init(GLFWwindow& aWindow)
 
 	myRenderPass = new ImGUIRenderPass(imGUIPipeline, fontAtlas, *myGame.GetGraphics());
 	myGame.GetGraphics()->AddRenderPass(myRenderPass);
-
-	myGame.AddRenderContributor([this](Graphics& aGraphics) {
-		Render();
-	});
 }
 
 void ImGUISystem::Shutdown()
@@ -66,7 +62,6 @@ void ImGUISystem::Image(Handle<GPUTexture> aTexture, glm::vec2 aSize, glm::vec2 
 {
 	// we're not locking because all calls to imgui should be
 	// happening under a lock
-	myKeepAliveTextures.push_back(aTexture);
 	ImGui::Image(aTexture.Get(),
 		ImVec2(aSize.x, aSize.y),
 		ImVec2(aUV0.x, aUV0.y),
@@ -74,10 +69,4 @@ void ImGUISystem::Image(Handle<GPUTexture> aTexture, glm::vec2 aSize, glm::vec2 
 		ImVec4(aTintColor.x, aTintColor.y, aTintColor.z, aTintColor.w),
 		ImVec4(aBorderColor.x, aBorderColor.y, aBorderColor.z, aBorderColor.w)
 	);
-}
-
-void ImGUISystem::Render()
-{
-	Profiler::ScopedMark imguiProfile("ImGui::Render");
-	myKeepAliveTextures.clear();
 }

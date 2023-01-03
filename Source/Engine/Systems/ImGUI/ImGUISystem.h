@@ -28,11 +28,8 @@ public:
 	);
 
 private:
-	void Render();
-
 	Game& myGame;
 	std::mutex myMutex;
 	ImGUIGLFWImpl myGLFWImpl;
 	ImGUIRenderPass* myRenderPass;
-	std::vector<Handle<GPUTexture>> myKeepAliveTextures;
 };
