@@ -18,20 +18,17 @@ FinalCompositeRenderPass::FinalCompositeRenderPass(
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 }
 
-void FinalCompositeRenderPass::SubmitJobs(Graphics& aGraphics)
+void FinalCompositeRenderPass::BeginPass(Graphics& aGraphics)
 {
+	RenderPass::BeginPass(aGraphics);
+
 	if (myPipeline->GetState() != GPUResource::State::Valid
 		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
 
-	PrepareContext(aGraphics);
-
-	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
-	passJob.Clear();
-
-	RenderJob& job = passJob.AllocateJob();
+	RenderJob& job = AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	

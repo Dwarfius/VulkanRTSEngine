@@ -65,7 +65,7 @@ struct PaintParams
 	float myPaintInverseScale;
 };
 
-class PaintingRenderPass : public RenderPass
+class PaintingRenderPass final : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("PaintingRenderPass");
@@ -79,10 +79,10 @@ private:
 	std::string_view GetReadBuffer() const;
 	PaintParams GetParams() const;
 
-	void SubmitJobs(Graphics& aGraphics) final;
-	Id GetId() const final { return kId; };
-	bool HasDynamicRenderContext() const final { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void BeginPass(Graphics& aGraphics) override;
+	Id GetId() const override { return kId; };
+	bool HasDynamicRenderContext() const override { return true; }
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	Handle<GPUPipeline> myPipeline;
 	Handle<UniformBuffer> myBuffer;
@@ -94,7 +94,7 @@ private:
 #endif
 };
 
-class DisplayRenderPass : public RenderPass
+class DisplayRenderPass final : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
@@ -105,10 +105,10 @@ public:
 private:
 	PaintParams GetParams() const;
 
-	void SubmitJobs(Graphics& aGraphics) final;
-	Id GetId() const final { return kId; };
-	bool HasDynamicRenderContext() const final { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void BeginPass(Graphics& aGraphics) override;
+	Id GetId() const override { return kId; };
+	bool HasDynamicRenderContext() const override { return true; }
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	Handle<GPUPipeline> myPipeline;
 	Handle<UniformBuffer> myBuffer;

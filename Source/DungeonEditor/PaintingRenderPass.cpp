@@ -54,8 +54,10 @@ PaintParams PaintingRenderPass::GetParams() const
 	return myParams;
 }
 
-void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
+void PaintingRenderPass::BeginPass(Graphics& aGraphics)
 {
+	RenderPass::BeginPass(aGraphics);
+
 	if (!myPipeline.IsValid() 
 		|| myPipeline->GetState() != GPUResource::State::Valid 
 		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid 
@@ -64,13 +66,8 @@ void PaintingRenderPass::SubmitJobs(Graphics& aGraphics)
 		return;
 	}
 
-	PrepareContext(aGraphics);
-
-	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
-	passJob.Clear();
-
 	PaintParams paintParams = GetParams();
-	RenderJob& job = passJob.AllocateJob();
+	RenderJob& job = AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	if (paintParams.myPaintTexture.IsValid())
@@ -159,8 +156,10 @@ PaintParams DisplayRenderPass::GetParams() const
 	return myParams;
 }
 
-void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
+void DisplayRenderPass::BeginPass(Graphics& aGraphics)
 {
+	RenderPass::BeginPass(aGraphics);
+
 	if (!myPipeline.IsValid()
 		|| myPipeline->GetState() != GPUResource::State::Valid
 		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid
@@ -169,12 +168,7 @@ void DisplayRenderPass::SubmitJobs(Graphics& aGraphics)
 		return;
 	}
 
-	PrepareContext(aGraphics);
-
-	RenderPassJob& passJob = aGraphics.GetRenderPassJob(GetId(), myRenderContext);
-	passJob.Clear();
-
-	RenderJob& job = passJob.AllocateJob();
+	RenderJob& job = AllocateJob();
 	job.SetPipeline(myPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 

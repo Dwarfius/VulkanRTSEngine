@@ -6,7 +6,7 @@
 class Pipeline;
 class GPUPipeline;
 
-class FinalCompositeRenderPass : public RenderPass
+class FinalCompositeRenderPass final : public RenderPass
 {
 public:
 	constexpr static Id kId = Utils::CRC32("FinalCompositeRenderPass");
@@ -14,10 +14,10 @@ public:
 	FinalCompositeRenderPass(Graphics& aGraphics, Handle<Pipeline> aPipeline);
 
 private:
-	void SubmitJobs(Graphics& aGraphics) final;
-	Id GetId() const final { return kId; }
-	bool HasDynamicRenderContext() const final { return true; }
-	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const final;
+	void BeginPass(Graphics& aGraphics) override;
+	Id GetId() const override { return kId; }
+	bool HasDynamicRenderContext() const override { return true; }
+	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
 	Handle<GPUPipeline> myPipeline;
 };
