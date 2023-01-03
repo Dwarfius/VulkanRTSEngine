@@ -22,7 +22,7 @@ public:
 
 private:
 	Id GetId() const override { return kId; };
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 
 	bool IsReady() const;
 	void SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graphics& aGraphics);

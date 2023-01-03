@@ -25,7 +25,7 @@ UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	return nullptr;
 }
 
-void RenderPass::BeginPass(Graphics& aGraphics)
+void RenderPass::Execute(Graphics& aGraphics)
 {
 	PrepareContext(aGraphics);
 

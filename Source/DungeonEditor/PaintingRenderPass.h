@@ -79,7 +79,7 @@ private:
 	std::string_view GetReadBuffer() const;
 	PaintParams GetParams() const;
 
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 	Id GetId() const override { return kId; };
 	bool HasDynamicRenderContext() const override { return true; }
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
@@ -105,7 +105,7 @@ public:
 private:
 	PaintParams GetParams() const;
 
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 	Id GetId() const override { return kId; };
 	bool HasDynamicRenderContext() const override { return true; }
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;

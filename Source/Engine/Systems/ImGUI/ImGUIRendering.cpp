@@ -67,12 +67,12 @@ void ImGUIRenderPass::OnPrepareContext(RenderContext& aContext, Graphics& aGraph
 	aContext.myTexturesToActivate[0] = 0;
 }
 
-// We're using BeginPass to generate all work and schedule updates of assets (model)
-void ImGUIRenderPass::BeginPass(Graphics& aGraphics)
+// We're using Execute to generate all work and schedule updates of assets (model)
+void ImGUIRenderPass::Execute(Graphics& aGraphics)
 {
-	Profiler::ScopedMark mark("ImGUIRenderPass::BeginPass");
+	Profiler::ScopedMark mark("ImGUIRenderPass::Execute");
 
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 	ImGui::Render();
 
 	if (!IsReady())

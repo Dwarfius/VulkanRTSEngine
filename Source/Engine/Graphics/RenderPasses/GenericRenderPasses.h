@@ -15,7 +15,7 @@ public:
 
 	Id GetId() const override { return kId; }
 
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 
 protected:
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
@@ -36,7 +36,7 @@ public:
 
 	Id GetId() const override { return kId; }
 
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 
 protected:
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;

@@ -43,13 +43,13 @@ DebugRenderPass::~DebugRenderPass()
 	}
 }
 
-void DebugRenderPass::BeginPass(Graphics& aGraphics)
+void DebugRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	// TODO: see if this can be improved, as it's dangerous and confusing,
 	// should be able to fix this further down the refactor
-	// Note: Don't early out before BeginPass - it'll break sorting of jobs
+	// Note: Don't early out before Execute - it'll break sorting of jobs
 	if (!IsReady())
 	{
 		return;

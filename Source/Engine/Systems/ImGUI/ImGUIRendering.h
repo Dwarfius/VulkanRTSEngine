@@ -101,8 +101,8 @@ public:
 private:
 	void OnPrepareContext(RenderContext& aContext, Graphics& aGraphics) const override;
 
-	// We're using BeginPass to generate all work and schedule updates of assets (model)
-	void BeginPass(Graphics& aGraphics) override;
+	// We're using Execute to generate all work and schedule updates of assets (model)
+	void Execute(Graphics& aGraphics) override;
 	ImGUIFrame PrepareFrame();
 
 	bool HasDynamicRenderContext() const override { return true; }

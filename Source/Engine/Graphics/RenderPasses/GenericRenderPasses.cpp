@@ -15,9 +15,9 @@
 #include "Terrain.h"
 #include "Game.h"
 
-void DefaultRenderPass::BeginPass(Graphics& aGraphics)
+void DefaultRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	// TODO: get rid of singleton access here - pass from Game/Graphics
 	Game& game = *Game::GetInstance();
@@ -120,9 +120,9 @@ TerrainRenderPass::TerrainRenderPass()
 	AddDependency(DefaultRenderPass::kId);
 }
 
-void TerrainRenderPass::BeginPass(Graphics& aGraphics)
+void TerrainRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	// TODO: get rid of singleton access here - pass from Game/Graphics
 	Game& game = *Game::GetInstance();

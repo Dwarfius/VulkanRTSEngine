@@ -18,9 +18,9 @@ FinalCompositeRenderPass::FinalCompositeRenderPass(
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 }
 
-void FinalCompositeRenderPass::BeginPass(Graphics& aGraphics)
+void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	if (myPipeline->GetState() != GPUResource::State::Valid
 		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid)

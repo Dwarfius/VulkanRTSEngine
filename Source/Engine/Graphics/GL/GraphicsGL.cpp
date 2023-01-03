@@ -168,16 +168,11 @@ void GraphicsGL::Display()
 	}
 }
 
-void GraphicsGL::BeginGather()
+void GraphicsGL::Gather()
 {
 	myUBOCleanUpQueues.AdvanceWrite();
 	
-	Graphics::BeginGather();
-}
-
-void GraphicsGL::EndGather()
-{
-	Graphics::EndGather();
+	Graphics::Gather();
 
 	myRenderPassJobs.AdvanceWrite();
 }

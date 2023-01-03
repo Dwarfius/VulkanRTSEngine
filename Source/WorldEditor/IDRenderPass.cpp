@@ -50,7 +50,7 @@ IDRenderPass::IDRenderPass(Graphics& aGraphics,
 	PreallocateUBOs(TerrainAdapter::ourDescriptor.GetBlockSize());
 }
 
-void IDRenderPass::BeginPass(Graphics& aGraphics)
+void IDRenderPass::Execute(Graphics& aGraphics)
 {
 	switch (myState)
 	{
@@ -71,7 +71,7 @@ void IDRenderPass::BeginPass(Graphics& aGraphics)
 		break;
 	}
 
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	if (myState == State::None) [[likely]]
 	{

@@ -57,8 +57,7 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 
 void RenderThread::Gather()
 {
-	myGraphics->BeginGather();
-	myGraphics->EndGather();
+	myGraphics->Gather();
 	
 	myHasWorkPending = true;
 }

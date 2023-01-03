@@ -35,7 +35,7 @@ public:
 
 	Id GetId() const final { return kId; }
 
-	void BeginPass(Graphics& aGraphics) override;
+	void Execute(Graphics& aGraphics) override;
 	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame);
 	void ScheduleTerrain(Graphics& aGraphics, Game& aGame);
 

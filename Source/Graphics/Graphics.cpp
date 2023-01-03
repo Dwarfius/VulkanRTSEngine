@@ -68,9 +68,9 @@ void Graphics::Init()
 	myFullScrenQuad = GetOrCreate(cpuModel).Get<GPUModel>();
 }
 
-void Graphics::BeginGather()
+void Graphics::Gather()
 {
-	Profiler::ScopedMark profile("Graphics::BeginGather");
+	Profiler::ScopedMark profile("Graphics::Gather");
 
 	myUnloadQueues.AdvanceWrite();
 
@@ -82,16 +82,7 @@ void Graphics::BeginGather()
 
 	for (RenderPass* pass : myRenderPasses)
 	{
-		pass->BeginPass(*this);
-	}
-}
-
-void Graphics::EndGather()
-{
-	Profiler::ScopedMark profile("Graphics::EndGather");
-	for (RenderPass* pass : myRenderPasses)
-	{
-		pass->SubmitJobs(*this);
+		pass->Execute(*this);
 	}
 
 	// doing it after the submit jobs, because by this time

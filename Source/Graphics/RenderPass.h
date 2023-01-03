@@ -17,9 +17,6 @@ class Handle;
 // of parallelism, both of the render-pass use(both can be 
 // used for building concurrently) as well as job creation
 // (objects get submitted concurrently to generate jobs from)
-
-// RenderPass doesn't accumulate the renderables internally, 
-// it just immediatelly submits them to the render pass job
 class RenderPass
 {
 public:
@@ -30,8 +27,7 @@ public:
 	RenderJob& AllocateJob();
 	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
-	virtual void BeginPass(Graphics& aGraphics);
-	virtual void SubmitJobs(Graphics& aGraphics) {}
+	virtual void Execute(Graphics& aGraphics);
 
 	virtual Id GetId() const = 0;
 	void AddDependency(Id aOtherPassId) { myDependencies.push_back(aOtherPassId); }

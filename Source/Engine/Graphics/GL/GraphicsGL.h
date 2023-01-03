@@ -17,8 +17,7 @@ public:
 
 	void Init() override;
 	void Display() override;
-	void BeginGather() override;
-	void EndGather() override;
+	void Gather() override;
 	void CleanUp() override;
 
 	void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer) override;

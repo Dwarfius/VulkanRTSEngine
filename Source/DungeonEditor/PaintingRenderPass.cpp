@@ -54,9 +54,9 @@ PaintParams PaintingRenderPass::GetParams() const
 	return myParams;
 }
 
-void PaintingRenderPass::BeginPass(Graphics& aGraphics)
+void PaintingRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	if (!myPipeline.IsValid() 
 		|| myPipeline->GetState() != GPUResource::State::Valid 
@@ -156,9 +156,9 @@ PaintParams DisplayRenderPass::GetParams() const
 	return myParams;
 }
 
-void DisplayRenderPass::BeginPass(Graphics& aGraphics)
+void DisplayRenderPass::Execute(Graphics& aGraphics)
 {
-	RenderPass::BeginPass(aGraphics);
+	RenderPass::Execute(aGraphics);
 
 	if (!myPipeline.IsValid()
 		|| myPipeline->GetState() != GPUResource::State::Valid
