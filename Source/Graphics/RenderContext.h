@@ -93,6 +93,7 @@ public:
 	float myBlendColor[4] = { 0, 0, 0, 0 };
 	// Constant clear color, RGBA
 	float myClearColor[4] = { 0, 0, 0, 0 };
+
 	// Scissor rectangle, in window coords with origin of bottom left
 	// in X, Y, Width, Height
 	int myScissorRect[4] = { 0, 0, 0, 0 };
