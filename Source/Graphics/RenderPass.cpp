@@ -29,8 +29,7 @@ void RenderPass::Execute(Graphics& aGraphics)
 {
 	PrepareContext(aGraphics);
 
-	myCurrentJob = &aGraphics.GetRenderPassJob(GetId(), myRenderContext);
-	myCurrentJob->Clear();
+	myCurrentJob = &aGraphics.CreateRenderPassJob(myRenderContext);
 	// Note: this is not thread safe if same pass is started concurrently
 	for (size_t newBucket : myNewBuckets)
 	{

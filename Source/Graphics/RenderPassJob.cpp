@@ -51,6 +51,7 @@ void RenderPassJob::Execute(Graphics& aGraphics)
 
 void RenderPassJob::Initialize(const RenderContext& aContext)
 {
+	myJobs.Clear();
 	myContext = aContext;
 	OnInitialize(myContext);
 }

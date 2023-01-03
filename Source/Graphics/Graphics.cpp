@@ -84,14 +84,6 @@ void Graphics::Gather()
 	{
 		pass->Execute(*this);
 	}
-
-	// doing it after the submit jobs, because by this time
-	// all RenderPassJobs will be created
-	if (myRenderPassJobsNeedsOrdering)
-	{
-		SortRenderPassJobs();
-		myRenderPassJobsNeedsOrdering = false;
-	}
 }
 
 void Graphics::Display()
@@ -134,14 +126,12 @@ void Graphics::AddRenderPass(RenderPass* aRenderPass)
 {
 	// TODO: this is unsafe if done mid frames
 	myRenderPasses.push_back(aRenderPass);
-	myRenderPassJobsNeedsOrdering = true;
 	myRenderPassesNeedOrdering = true;
 }
 
 void Graphics::AddRenderPassDependency(RenderPass::Id aPassId, RenderPass::Id aNewDependency)
 {
 	GetRenderPass(aPassId)->AddDependency(aNewDependency);
-	myRenderPassJobsNeedsOrdering = true;
 	myRenderPassesNeedOrdering = true;
 }
 

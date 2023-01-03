@@ -148,10 +148,10 @@ void GraphicsGL::Display()
 	myRenderPassJobs.AdvanceRead();
 	{
 		Profiler::ScopedMark profile("GraphicsGL::ExecuteJobs");
-		const RenderPassJobs& jobs = myRenderPassJobs.GetRead();
-		for (const auto& [id, job] : jobs)
+		RenderPassJobs& jobs = myRenderPassJobs.GetRead();
+		for (RenderPassJobGL& job : jobs)
 		{
-			job->Execute(*this);
+			job.Execute(*this);
 		}
 	}
 
@@ -175,20 +175,12 @@ void GraphicsGL::Gather()
 	Graphics::Gather();
 
 	myRenderPassJobs.AdvanceWrite();
+	myNextFreeJob = 0;
 }
 
 void GraphicsGL::CleanUp()
 {
 	Graphics::CleanUp();
-
-	// clean up all render pass jobs
-	for (RenderPassJobs& map : myRenderPassJobs)
-	{
-		for (auto [key, job] : map)
-		{
-			delete job;
-		}
-	}
 
 	for(tbb::concurrent_queue<UniformBufferGL*>& queue : myUBOCleanUpQueues)
 	{
@@ -236,24 +228,6 @@ UniformBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize)
 	return &myUBOs.Allocate(alignedSize);
 }
 
-void GraphicsGL::SortRenderPassJobs()
-{
-	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
-
-	std::sort(jobs.begin(), jobs.end(),
-		[this](const IdPasJobPair& aLeft, const IdPasJobPair& aRight) {
-		const RenderPass* rightPass = GetRenderPass(aRight.myId);
-		for (const uint32_t rightId : rightPass->GetDependencies())
-		{
-			if (aLeft.myId == rightId)
-			{
-				return true;
-			}
-		}
-		return false;
-	});
-}
-
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 {
 	if (aWidth == 0 && aHeight == 0)
@@ -291,27 +265,16 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 	return iter->second;
 }
 
-RenderPassJob& GraphicsGL::GetRenderPassJob(RenderPass::Id anId, const RenderContext& renderContext)
+RenderPassJob& GraphicsGL::CreateRenderPassJob(const RenderContext& renderContext)
 {
-	RenderPassJob* foundJob;
-	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
-	auto contextIter = std::find_if(jobs.begin(), jobs.end(), [anId](IdPasJobPair aPair) {
-		return aPair.myId == anId;
-	});
+	ASSERT_STR(myNextFreeJob != kMaxRenderPassJobs,
+		"Exhausted capacity render pass jobs(%u), please increase "
+		"GraphicsGL::kMaxRenderPassJobs!", kMaxRenderPassJobs);
 
-	if (contextIter != jobs.end())
-	{
-		foundJob = contextIter->myJob;
-	}
-	else
-	{
-		RenderPassJob* job = new RenderPassJobGL();
-		jobs.emplace_back(anId, job);
-		foundJob = job;
-		myRenderPassJobsNeedsOrdering = true;
-	}
-	foundJob->Initialize(renderContext);
-	return *foundJob;
+	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
+	RenderPassJobGL& job = jobs[myNextFreeJob++];
+	job.Initialize(renderContext);
+	return job;
 }
 
 void GraphicsGL::CleanUpUBO(UniformBuffer* aUBO)

@@ -96,9 +96,6 @@ public:
 	// Threadsafe
 	RenderJob& AllocateJob();
 
-	// clear the accumulated jobs
-	void Clear() { myJobs.Clear(); }
-
 	void Execute(Graphics& aGraphics);
 
 	void Initialize(const RenderContext& aContext);

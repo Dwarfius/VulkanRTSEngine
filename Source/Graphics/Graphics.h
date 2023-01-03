@@ -38,12 +38,9 @@ public:
 	float GetWidth() const { return static_cast<float>(myWidth); }
 	float GetHeight() const { return static_cast<float>(myHeight); }
 
-	// Graphics will manage the lifetime of the render pass job,
-	// but it guarantees that it will stay valid until the next call
-	// to GetRenderPassJob with same context.
 	// Threadsafe
 	[[nodiscard]] 
-	virtual RenderPassJob& GetRenderPassJob(RenderPass::Id anId, const RenderContext& renderContext) = 0;
+	virtual RenderPassJob& CreateRenderPassJob(const RenderContext& renderContext) = 0;
 
 	virtual void AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBvuffer);
 	const FrameBuffer& GetNamedFrameBuffer(std::string_view aName) const;
@@ -93,7 +90,6 @@ protected:
 	GLFWwindow* myWindow = nullptr;
 	std::vector<RenderPass*> myRenderPasses;
 	std::unordered_map<std::string_view, FrameBuffer> myNamedFrameBuffers;
-	bool myRenderPassJobsNeedsOrdering = true;
 
 	void ProcessCreateQueue();
 	void ProcessUploadQueue();
@@ -133,7 +129,6 @@ private:
 	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
 
 	void SortRenderPasses();
-	virtual void SortRenderPassJobs() = 0;
 
 	int myWidth = 800;
 	int myHeight = 600;
