@@ -58,16 +58,6 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 void RenderThread::Gather()
 {
 	myGraphics->BeginGather();
-	{
-#ifdef ASSERT_MUTEX
-		AssertLock lock(myRenderCallbackMutex);
-#endif
-
-		for (OnRenderCallback callback : myRenderCallbacks)
-		{
-			callback(*myGraphics);
-		}
-	}
 	myGraphics->EndGather();
 	
 	myHasWorkPending = true;
@@ -76,14 +66,6 @@ void RenderThread::Gather()
 GLFWwindow* RenderThread::GetWindow() const
 {
 	return myGraphics->GetWindow();
-}
-
-void RenderThread::AddRenderContributor(OnRenderCallback aCallback)
-{
-#ifdef ASSERT_MUTEX
-	AssertLock lock(myRenderCallbackMutex);
-#endif
-	myRenderCallbacks.push_back(aCallback);
 }
 
 void RenderThread::SubmitRenderables()

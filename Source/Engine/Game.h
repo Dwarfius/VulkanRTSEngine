@@ -46,7 +46,6 @@ public:
 
 	typedef void (*ReportError)(int, const char*);
 
-	using OnRenderCallback = std::function<void(Graphics&)>;
 	using DebugDrawerCallback = std::function<void(const DebugDrawer&)>;
 
 	struct TerrainEntity
@@ -104,8 +103,6 @@ public:
 
 	EngineSettings& GetEngineSettings() { return mySettings; }
 	const EngineSettings& GetEngineSettings() const { return mySettings; }
-
-	void AddRenderContributor(OnRenderCallback aCallback);
 
 	// Adds GameObject and it's children to the world
 	// Does not add the parent of the GameObject to the world -

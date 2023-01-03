@@ -369,11 +369,6 @@ const Graphics* Game::GetGraphics() const
 	return myRenderThread->GetGraphics();
 }
 
-void Game::AddRenderContributor(OnRenderCallback aCallback)
-{
-	myRenderThread->AddRenderContributor(aCallback);
-}
-
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
 {
 	ASSERT_STR(aGOHandle.IsValid(), "Invalid object passed in!");
