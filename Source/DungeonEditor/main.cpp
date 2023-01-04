@@ -28,22 +28,13 @@ int main()
 		graphics.AddRenderPass(pass);
 		graphics.AddRenderPassDependency(ImGUIRenderPass::kId, PaintingRenderPass::kId);
 
-		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
+		Handle<Pipeline> paintPipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
 			"TerrainPaint/TerrainPaint.ppl"
 		);
-		pass->SetPipeline(pipeline, graphics);
-	}
-
-	{
-		DisplayRenderPass* pass = new DisplayRenderPass();
-		graphics.AddRenderPass(pass);
-		graphics.AddRenderPassDependency(ImGUIRenderPass::kId, DisplayRenderPass::kId);
-		graphics.AddRenderPassDependency(DisplayRenderPass::kId, PaintingRenderPass::kId);
-
-		Handle<Pipeline> pipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
+		Handle<Pipeline> displayPipeline = game->GetAssetTracker().GetOrCreate<Pipeline>(
 			"TerrainPaint/Display.ppl"
 		);
-		pass->SetPipeline(pipeline, graphics);
+		pass->SetPipelines(paintPipeline, displayPipeline, graphics);
 	}
 
 	graphics.AddNamedFrameBuffer(

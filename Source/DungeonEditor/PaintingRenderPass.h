@@ -71,7 +71,8 @@ public:
 	constexpr static uint32_t kId = Utils::CRC32("PaintingRenderPass");
 	
 public:
-	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
+	void SetPipelines(Handle<Pipeline> aPaintPipeline, 
+		Handle<Pipeline> aDisplayPipeline, Graphics& aGraphics);
 	void SetParams(const PaintParams& aParams);
 
 private:
@@ -80,38 +81,18 @@ private:
 	PaintParams GetParams() const;
 
 	void Execute(Graphics& aGraphics) override;
+	void ExecutePainting(Graphics& aGraphics);
+	void ExecuteDisplay(Graphics& aGraphics);
 	Id GetId() const override { return kId; };
-	RenderContext CreateContext(Graphics& aGraphics) const;
+	RenderContext CreatePaintContext(Graphics& aGraphics) const;
+	RenderContext CreateDisplayContext(Graphics& aGraphics) const;
 
-	Handle<GPUPipeline> myPipeline;
-	Handle<UniformBuffer> myBuffer;
+	Handle<GPUPipeline> myPaintPipeline;
+	Handle<GPUPipeline> myDisplayPipeline;
+	Handle<UniformBuffer> myPaintBuffer;
+	Handle<UniformBuffer> myDisplayBuffer;
 	PaintParams myParams;
 	bool myWriteToOther = false;
-
-#ifdef ASSERT_MUTEX
-	mutable AssertMutex myParamsMutex;
-#endif
-};
-
-class DisplayRenderPass final : public RenderPass
-{
-public:
-	constexpr static uint32_t kId = Utils::CRC32("DisplayRenderPass");
-	void SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics);
-	void SetReadBuffer(std::string_view aFrameBuffer) { myReadFrameBuffer = aFrameBuffer; }
-	void SetParams(const PaintParams& aParams);
-
-private:
-	PaintParams GetParams() const;
-
-	void Execute(Graphics& aGraphics) override;
-	Id GetId() const override { return kId; };
-	RenderContext CreateContext(Graphics& aGraphics) const;
-
-	Handle<GPUPipeline> myPipeline;
-	Handle<UniformBuffer> myBuffer;
-	PaintParams myParams;
-	std::string_view myReadFrameBuffer;
 
 #ifdef ASSERT_MUTEX
 	mutable AssertMutex myParamsMutex;

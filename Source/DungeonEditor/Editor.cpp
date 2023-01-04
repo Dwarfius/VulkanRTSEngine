@@ -74,7 +74,6 @@ void Editor::Run()
 		myInverseScale
 	};
 	graphics.GetRenderPass<PaintingRenderPass>()->SetParams(params);
-	graphics.GetRenderPass<DisplayRenderPass>()->SetParams(params);
 
 	graphics.GetRenderPass<ImGUIRenderPass>()->SetDestFrameBuffer("");
 }

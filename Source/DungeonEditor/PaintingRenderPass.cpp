@@ -14,13 +14,21 @@
 #include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/Camera.h>
 
-void PaintingRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
+void PaintingRenderPass::SetPipelines(Handle<Pipeline> aPaintPipeline,
+	Handle<Pipeline> aDisplayPipeline, Graphics& aGraphics)
 {
-	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
-	aPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
+	myPaintPipeline = aGraphics.GetOrCreate(aPaintPipeline).Get<GPUPipeline>();
+	aPaintPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+		myPaintBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+	});
+
+	myDisplayPipeline = aGraphics.GetOrCreate(aDisplayPipeline).Get<GPUPipeline>();
+	aDisplayPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
+		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
+		const UniformAdapter& adapter = pipeline->GetAdapter(0);
+		myDisplayBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 }
 
@@ -58,20 +66,29 @@ void PaintingRenderPass::Execute(Graphics& aGraphics)
 {
 	RenderPass::Execute(aGraphics);
 
-	if (!myPipeline.IsValid() 
-		|| myPipeline->GetState() != GPUResource::State::Valid 
+	if (!myPaintPipeline.IsValid() 
+		|| !myDisplayPipeline.IsValid()
+		|| myPaintPipeline->GetState() != GPUResource::State::Valid
+		|| myDisplayPipeline->GetState() != GPUResource::State::Valid
 		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid 
-		|| myBuffer->GetState() != GPUResource::State::Valid)
+		|| myPaintBuffer->GetState() != GPUResource::State::Valid
+		|| myDisplayBuffer->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
 
-	aGraphics.GetRenderPass<DisplayRenderPass>()->SetReadBuffer(GetWriteBuffer());
+	ExecutePainting(aGraphics);
+	ExecuteDisplay(aGraphics);
 
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	myWriteToOther = !myWriteToOther;
+}
+
+void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
+{
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreatePaintContext(aGraphics));
 	PaintParams paintParams = GetParams();
 	RenderJob& job = passJob.AllocateJob();
-	job.SetPipeline(myPipeline.Get());
+	job.SetPipeline(myPaintPipeline.Get());
 	job.SetModel(aGraphics.GetFullScreenQuad().Get());
 	if (paintParams.myPaintTexture.IsValid())
 	{
@@ -102,14 +119,44 @@ void PaintingRenderPass::Execute(Graphics& aGraphics)
 		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
-	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
+	UniformBlock block(*myPaintBuffer.Get(), adapter.ourDescriptor);
 	adapter.FillUniformBlock(source, block);
-	job.GetUniformSet().PushBack(myBuffer.Get());
-
-	myWriteToOther = !myWriteToOther;
+	job.GetUniformSet().PushBack(myPaintBuffer.Get());
 }
 
-RenderContext PaintingRenderPass::CreateContext(Graphics& aGraphics) const
+void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
+{
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateDisplayContext(aGraphics));
+
+	RenderJob& job = passJob.AllocateJob();
+	job.SetPipeline(myDisplayPipeline.Get());
+	job.SetModel(aGraphics.GetFullScreenQuad().Get());
+
+	RenderJob::ArrayDrawParams params;
+	params.myOffset = 0;
+	params.myCount = 6;
+	job.SetDrawParams(params);
+
+	const PaintParams paintParams = GetParams();
+	PainterAdapter::Source source{
+		aGraphics,
+		paintParams.myCamera,
+		paintParams.myColor,
+		paintParams.myTexSize,
+		paintParams.myPrevMousePos,
+		paintParams.myMousePos,
+		paintParams.myGridDims,
+		glm::vec2(),
+		paintParams.myPaintMode,
+		paintParams.myBrushSize
+	};
+	PainterAdapter adapter;
+	UniformBlock block(*myDisplayBuffer.Get(), adapter.ourDescriptor);
+	adapter.FillUniformBlock(source, block);
+	job.GetUniformSet().PushBack(myDisplayBuffer.Get());
+}
+
+RenderContext PaintingRenderPass::CreatePaintContext(Graphics& aGraphics) const
 {
 	const PaintParams paintParams = GetParams();
 	const int width = static_cast<int>(paintParams.myTexSize.x);
@@ -139,80 +186,12 @@ RenderContext PaintingRenderPass::CreateContext(Graphics& aGraphics) const
 	};
 }
 
-void DisplayRenderPass::SetPipeline(Handle<Pipeline> aPipeline, Graphics& aGraphics)
-{
-	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
-	aPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
-		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
-		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
-	});
-}
-
-void DisplayRenderPass::SetParams(const PaintParams& aParams)
-{
-#ifdef ASSERT_MUTEX
-	AssertLock lock(myParamsMutex);
-#endif
-	myParams = aParams;
-}
-
-PaintParams DisplayRenderPass::GetParams() const
-{
-#ifdef ASSERT_MUTEX
-	AssertLock lock(myParamsMutex);
-#endif
-	return myParams;
-}
-
-void DisplayRenderPass::Execute(Graphics& aGraphics)
-{
-	RenderPass::Execute(aGraphics);
-
-	if (!myPipeline.IsValid()
-		|| myPipeline->GetState() != GPUResource::State::Valid
-		|| aGraphics.GetFullScreenQuad()->GetState() != GPUResource::State::Valid
-		|| myBuffer->GetState() != GPUResource::State::Valid)
-	{
-		return;
-	}
-
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-
-	RenderJob& job = passJob.AllocateJob();
-	job.SetPipeline(myPipeline.Get());
-	job.SetModel(aGraphics.GetFullScreenQuad().Get());
-
-	RenderJob::ArrayDrawParams params;
-	params.myOffset = 0;
-	params.myCount = 6;
-	job.SetDrawParams(params);
-
-	const PaintParams paintParams = GetParams();
-	PainterAdapter::Source source{
-		aGraphics,
-		paintParams.myCamera,
-		paintParams.myColor,
-		paintParams.myTexSize,
-		paintParams.myPrevMousePos,
-		paintParams.myMousePos,
-		paintParams.myGridDims,
-		glm::vec2(),
-		paintParams.myPaintMode,
-		paintParams.myBrushSize
-	};
-	PainterAdapter adapter;
-	UniformBlock block(*myBuffer.Get(), adapter.ourDescriptor);
-	adapter.FillUniformBlock(source, block);
-	job.GetUniformSet().PushBack(myBuffer.Get());
-}
-
-RenderContext DisplayRenderPass::CreateContext(Graphics& aGraphics) const
+RenderContext PaintingRenderPass::CreateDisplayContext(Graphics& aGraphics) const
 {
 	return {
 		.myFrameBufferReadTextures = {
 			{
-				myReadFrameBuffer,
+				GetWriteBuffer(),
 				PaintingFrameBuffer::kFinalColor,
 				RenderContext::FrameBufferTexture::Type::Color
 			}
@@ -220,7 +199,7 @@ RenderContext DisplayRenderPass::CreateContext(Graphics& aGraphics) const
 		.myFrameBuffer = "",
 		.myClearColor = { 0, 0, 1, 1 },
 		.myViewportSize = {
-			static_cast<int>(aGraphics.GetWidth()), 
+			static_cast<int>(aGraphics.GetWidth()),
 			static_cast<int>(aGraphics.GetHeight())
 		},
 		.myShouldClearColor = true,
