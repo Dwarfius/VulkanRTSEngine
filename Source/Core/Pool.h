@@ -121,7 +121,8 @@ private:
 	size_t myFirstFreeSlot = 0;
 	size_t mySize = 0;
 #ifdef ASSERT_MUTEX
-	AssertRWMutex myIterationMutex;
+	mutable AssertRWMutex myAllocationMutex;
+	mutable AssertRWMutex myIterationMutex;
 #endif
 };
 
@@ -175,8 +176,8 @@ template<class... TArgs>
 typename Pool<T>::Ptr Pool<T>::Allocate(TArgs&&... aConstrArgs)
 {
 #ifdef ASSERT_MUTEX
-	// Can't allocate while iterating!
-	AssertReadLock lock(myIterationMutex);
+	// Prohibit iterating during allocation!
+	AssertWriteLock allocLock(myAllocationMutex);
 #endif
 
 	if (mySize == myElements.capacity())
@@ -205,9 +206,11 @@ template<class T>
 template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
 void Pool<T>::ForEach(TUnaryFunc aFunc) 
 {
+	Profiler::ScopedMark mark("Pool::ForEach");
 #ifdef ASSERT_MUTEX
-	// iterating prohibits allocating/freeing!
-	AssertWriteLock lock(myIterationMutex);
+	// Prohibit other iteration if we can modify the data
+	AssertWriteLock iterLock(myIterationMutex);
+	AssertReadLock allocLock(myAllocationMutex);
 #endif
 	DEBUG_ONLY(size_t foundCount = 0;);
 	for (Element& element : myElements)
@@ -225,13 +228,12 @@ template<class T>
 template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
 void Pool<T>::ForEach(TUnaryFunc aFunc) const 
 {
-#ifdef ASSERT_MUTEX
-	// iterating prohibits allocating/freeing!
-	AssertWriteLock lock(myIterationMutex);
-#endif
-
 	Profiler::ScopedMark mark("Pool::ForEach");
-
+#ifdef ASSERT_MUTEX
+	// only reading data - allow many concurrent iterations
+	AssertReadLock iterLock(myIterationMutex);
+	AssertReadLock allocLock(myAllocationMutex);
+#endif
 	DEBUG_ONLY(size_t foundCount = 0;);
 	for (const Element& element : myElements)
 	{
@@ -248,9 +250,11 @@ template<class T>
 template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, T&>
 void Pool<T>::ParallelForEach(TUnaryFunc aFunc) 
 {
+	Profiler::ScopedMark mark("Pool::ParallelForEach");
 #ifdef ASSERT_MUTEX
-	// iterating prohibits allocating/freeing!
-	AssertWriteLock lock(myIterationMutex);
+	// Prohibit other iteration if we can modify the data
+	AssertWriteLock iterLock(myIterationMutex);
+	AssertReadLock allocLock(myAllocationMutex);
 #endif
 
 	DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
@@ -278,9 +282,11 @@ template<class T>
 template<class TUnaryFunc> requires std::is_invocable_v<TUnaryFunc, const T&>
 void Pool<T>::ParallelForEach(TUnaryFunc aFunc) const 
 {
+	Profiler::ScopedMark mark("Pool::ParallelForEach");
 #ifdef ASSERT_MUTEX
-	// iterating prohibits allocating/freeing!
-	AssertWriteLock lock(myIterationMutex);
+	// only reading data - allow many concurrent iterations
+	AssertReadLock iterLock(myIterationMutex);
+	AssertReadLock allockLock(myAllocationMutex);
 #endif
 
 	DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
@@ -320,7 +326,8 @@ void Pool<T>::Free(size_t anIndex)
 {
 #ifdef ASSERT_MUTEX
 	// Can't free while iterating!
-	AssertReadLock lock(myIterationMutex);
+	AssertReadLock iterLock(myIterationMutex);
+	AssertReadLock allocLoc(myAllocationMutex);
 #endif
 
 	ASSERT_STR(myElements[anIndex].myDataVariant.index() == 1, "Tried to double free!");
