@@ -1,5 +1,6 @@
 #version 420
 
+in vec3 fragPosOut;
 in vec3 normalOut;
 in vec2 uvsOut;
 
@@ -7,8 +8,79 @@ uniform sampler2D tex;
 
 layout(location = 0) out vec4 outColor;
 
+layout (std140, binding = 1) uniform CameraAdapter
+{
+    mat4 CamViewProj;
+    mat4 CamView;
+    mat4 CamProj;
+    vec4 FrustumPlane[6]; // left, right, down, up, far, near
+    vec3 CamPos;
+    vec2 Viewport;
+};
+
+#define MAX_LIGHTS 64
+layout (std140, binding = 2) uniform LightAdapter
+{
+    vec4 PosAndAmbientIntensity[MAX_LIGHTS];
+    vec4 RotQuat[MAX_LIGHTS];
+    vec4 ColorType[MAX_LIGHTS];
+    vec4 Attenuation[MAX_LIGHTS];
+    int Count;
+};
+
+vec3 CalcPointLight(int aLightInd, vec3 aFragPos, vec3 aNormal, vec3 aViewDir, vec2 aUVs)
+{
+    const vec3 lightPos = PosAndAmbientIntensity[aLightInd].xyz;
+    const float distance = length(lightPos - aFragPos);
+    const float fConstant = Attenuation[aLightInd].x;
+    const float fLinear = Attenuation[aLightInd].y;
+    const float fQuadratic = Attenuation[aLightInd].z;
+    const float attenuation = 1.0 / (
+        fConstant 
+        + fLinear * distance 
+        + fQuadratic * distance * distance
+    );
+
+    const float ambientIntensity = PosAndAmbientIntensity[aLightInd].w;
+    const vec3 objDiffuseColor = texture(tex, aUVs).xyz;
+    const vec3 ambientColor = objDiffuseColor * ambientIntensity;
+    //return ambientColor;
+    //return ambientColor * attenuation;
+
+    const vec3 lightDir = normalize(lightPos - aFragPos);
+    //return lightDir; 
+
+    const float diffuse = max(dot(aNormal, lightDir), 0.0);
+    //return vec3(diffuse, 0, 0);
+    const vec3 lightColor = ColorType[aLightInd].xyz;
+    const vec3 diffuseColor = lightColor * diffuse * objDiffuseColor;
+    //return diffuseColor;
+    //return diffuseColor * attenuation;
+    //return ambientColor * attenuation + diffuseColor * attenuation;
+
+    const vec3 reflectionDir = reflect(-lightDir, aNormal);
+    const float shininess = 32; // should come from material
+    const float specular = pow(max(dot(aViewDir, reflectionDir), 0.0), shininess);
+    //  needs spec map instead, but don't have one for now
+    const vec3 specularColor = lightColor * specular * objDiffuseColor; 
+    //return specularColor;
+    //return specularColor * attenuation;
+
+    return ambientColor * attenuation
+        + diffuseColor * attenuation
+        + specularColor * attenuation;
+}
+
 void main() 
 {
-    vec4 sampled = texture(tex, uvsOut);
-    outColor = vec4(sampled.rgb, 1.0);
+    const vec3 normal = normalize(normalOut);
+    const vec3 viewDir = normalize(CamPos - fragPosOut);
+
+    vec3 resColor = vec3(0);
+    for(int i=0; i<Count; i++)
+    {
+        // TODO: support other types
+        resColor += CalcPointLight(i, fragPosOut, normal, viewDir, uvsOut);
+    }
+    outColor = vec4(resColor, 1.0);
 }

@@ -6,6 +6,8 @@
 	],
 	"myAdapters":[
 		"ObjectMatricesAdapter",
+		"CameraAdapter",
+		"LightAdapter",
 		"SkeletonAdapter"
 	]
 }

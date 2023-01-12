@@ -23,6 +23,7 @@ class RenderThread;
 class AssetTracker;
 struct GLFWwindow;
 class Transform;
+class LightSystem;
 
 class Game
 {
@@ -66,6 +67,7 @@ public:
 	DebugDrawer& GetDebugDrawer() { return myDebugDrawer; }
 	ImGUISystem& GetImGUISystem();
 	AnimationSystem& GetAnimationSystem();
+	LightSystem& GetLightSystem();
 	GameTaskManager& GetTaskManager() { return *myTaskManager.get(); }
 
 	void Init(bool aUseDefaultFinalCompositePass);
@@ -159,6 +161,7 @@ private:
 	DebugDrawer myDebugDrawer;
 	ImGUISystem* myImGUISystem;
 	AnimationSystem* myAnimationSystem;
+	LightSystem* myLightSystem;
 	EngineSettings mySettings;
 	TopBar myTopBar;
 

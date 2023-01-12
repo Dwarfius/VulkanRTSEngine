@@ -9,12 +9,12 @@
 #include "Components/PhysicsComponent.h"
 #include "Graphics/Adapters/CameraAdapter.h"
 #include "Graphics/Adapters/ObjectMatricesAdapter.h"
-
 #include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
 #include "Systems/ImGUI/ImGUISystem.h"
 #include "Systems/ImGUI/ImGUIRendering.h"
 #include "Animation/AnimationSystem.h"
+#include "Light.h"
 #include "RenderThread.h"
 #include "UIWidgets/EntitiesWidget.h"
 #include "UIWidgets/ObjImportDialog.h"
@@ -125,6 +125,7 @@ Game::Game(ReportError aReporterFunc)
 	myAssetTracker = new AssetTracker();
 	myImGUISystem = new ImGUISystem(*this);
 	myAnimationSystem = new AnimationSystem();
+	myLightSystem = new LightSystem();
 
 	myRenderThread = new RenderThread();
 
@@ -138,6 +139,7 @@ Game::~Game()
 	delete myAssetTracker;
 	delete myAnimationSystem;
 	delete myImGUISystem;
+	delete myLightSystem;
 
 	// render thread has to go first, since it relies on glfw to be there
 	delete myRenderThread;
@@ -157,6 +159,11 @@ ImGUISystem& Game::GetImGUISystem()
 AnimationSystem& Game::GetAnimationSystem() 
 { 
 	return *myAnimationSystem; 
+}
+
+LightSystem& Game::GetLightSystem()
+{
+	return *myLightSystem;
 }
 
 void Game::Init(bool aUseDefaultCompositePass)

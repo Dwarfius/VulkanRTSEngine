@@ -5,6 +5,8 @@
 		"Engine/baseFrag.shd"
 	],
 	"myAdapters":[  
-		"ObjectMatricesAdapter"
+		"ObjectMatricesAdapter",
+		"CameraAdapter",
+		"LightAdapter"
 	]
 }

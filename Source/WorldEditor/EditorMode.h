@@ -20,6 +20,7 @@ class AnimationSystem;
 class AnimationTest;
 class IDRenderPass;
 class Terrain;
+struct Light;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -54,6 +55,12 @@ private:
 	IDRenderPass* myIDRenderPass; // non-owning
 	GameObject* myPickedGO = nullptr;
 	Terrain* myPickedTerrain = nullptr;
+
+	// Lights
+	void ManageLights(Game& aGame);
+	
+	std::vector<PoolPtr<Light>> myLights;
+	size_t mySelectedLight = static_cast<size_t>(-1);
 
 	// Other
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;

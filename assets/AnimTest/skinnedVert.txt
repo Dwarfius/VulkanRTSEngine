@@ -8,7 +8,8 @@ layout(location = 2) in vec2 uvs;
 layout(location = 3) in ivec4 boneIndices;
 layout(location = 4) in vec4 boneWeights;
 
-out vec4 normalOut;
+out vec3 fragPosOut;
+out vec3 normalOut;
 out vec2 uvsOut;
 
 layout (std140, binding = 0) uniform ObjectMatricesAdapter
@@ -18,7 +19,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 	mat4 MVP;
 };
 
-layout (std140, binding = 1) uniform SkeletonAdapter
+layout (std140, binding = 3) uniform SkeletonAdapter
 {
 	mat4 SkinningMatrix[MAX_BONES];
 };
@@ -36,6 +37,7 @@ void main()
 {
 	mat4 skinningMat = GetBoneSkinningMat(boneIndices, boneWeights);
     gl_Position = MVP * skinningMat * vec4(position, 1);
-	normalOut = Model * skinningMat * vec4(normal, 0);
+    fragPosOut = (Model * skinningMat * vec4(position, 1)).xyz;
+	normalOut = (Model * skinningMat * vec4(normal, 0)).xyz;
     uvsOut = uvs;
 }

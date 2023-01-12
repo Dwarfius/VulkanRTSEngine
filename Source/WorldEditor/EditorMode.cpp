@@ -7,6 +7,7 @@
 #include <Engine/Game.h>
 #include <Engine/Input.h>
 #include <Engine/Terrain.h>
+#include <Engine/Light.h>
 #include <Engine/Components/PhysicsComponent.h>
 #include <Engine/Components/VisualComponent.h>
 #include <Engine/GameObject.h>
@@ -37,21 +38,24 @@ EditorMode::EditorMode(Game& aGame)
 
 	/*StaticString resPath = Resource::kAssetsFolder + "AnimTest/whale.gltf";
 	StaticString resPath = Resource::kAssetsFolder + "AnimTest/riggedFigure.gltf";
-	StaticString resPath = Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf";
-	StaticString resPath = Resource::kAssetsFolder + "Boombox/BoomBox.gltf";*/
-	StaticString resPath = Resource::kAssetsFolder + "sparse.gltf";
+	StaticString resPath = Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf";*/
+	StaticString resPath = Resource::kAssetsFolder + "Boombox/BoomBox.gltf";
+	//StaticString resPath = Resource::kAssetsFolder + "sparse.gltf";
 	bool res = myGLTFImporter.Load(resPath.CStr());
 	ASSERT(res);
 	Handle<Model> model = myGLTFImporter.GetModel(0);
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
-	assetTracker.SaveAndTrack("TestGameObject/modelTestSave.model", model);
 
 	myGO = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
-	myGO->ExecLambdaOnLoad([&](Resource* aRes){
+	myGO->ExecLambdaOnLoad([&](Resource* aRes) {
+		myGO->GetComponent<VisualComponent>()->SetModel(model);
+		myGO->GetComponent<VisualComponent>()->SetTexture(0, myGLTFImporter.GetTexture(0));
+		Transform transf = myGO->GetWorldTransform();
+		transf.SetScale({ 100, 100, 100 });
+		myGO->SetWorldTransform(transf);
+
 		GameObject* go = static_cast<GameObject*>(aRes);
 		aGame.AddGameObject(go);
-
-		aGame.GetAssetTracker().SaveAndTrack("TestGameObject/goSaveTest.go", go);
 	});
 
 	{
@@ -96,6 +100,10 @@ EditorMode::EditorMode(Game& aGame)
 		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
+
+	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
+	light.Get()->myColor = glm::vec3(1, 0, 0);
+	myLights.push_back(std::move(light));
 }
 
 EditorMode::~EditorMode()
@@ -282,6 +290,13 @@ void EditorMode::DrawMenu(Game& aGame)
 		{
 			CreateMesh(aGame);
 		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Manage Lights"))
+		{
+			ManageLights(aGame);
+		}
 	}
 	ImGui::End();
 
@@ -319,6 +334,62 @@ void EditorMode::CreateMesh(Game& aGame)
 
 			CreateGOWithMesh(aGame, newModel);
 
+			myMenuFunction = nullptr;
+		}
+	};
+}
+
+void EditorMode::ManageLights(Game& aGame)
+{
+	myMenuFunction = [this](Game& aGame) {
+		bool isOpen = true;
+		if (ImGui::Begin("Lights", &isOpen))
+		{
+			if (ImGui::Button("Add"))
+			{
+				myLights.emplace_back(aGame.GetLightSystem().AllocateLight());
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				myLights.clear();
+			}
+
+			if (ImGui::BeginListBox("Active"))
+			{
+				for (size_t i=0; i<myLights.size(); i++)
+				{
+					const PoolPtr<Light>& light = myLights[i];
+					char buffer[8];
+					Utils::StringFormat(buffer, "%u", i);
+					if (ImGui::Selectable(buffer))
+					{
+						mySelectedLight = i;
+					}
+				}
+				ImGui::EndListBox();
+			}
+
+			if (mySelectedLight != static_cast<size_t>(-1))
+			{
+				Light& light = *myLights[mySelectedLight].Get();
+
+				glm::vec3 pos = light.myTransform.GetPos();
+				if (ImGui::InputFloat3("Pos", glm::value_ptr(pos)))
+				{
+					light.myTransform.SetPos(pos);
+				}
+
+				ImGui::ColorPicker3("Color", glm::value_ptr(light.myColor));
+				ImGui::DragFloat3("Attenuation", glm::value_ptr(light.myAttenuation), 0.01f, 0, 2);
+				ImGui::DragFloat("Ambient Intensity", &light.myAmbientIntensity, 0.001f, 0, 1);
+			}
+		}
+		ImGui::End();
+
+		if (!isOpen)
+		{
+			mySelectedLight = static_cast<size_t>(-1);
 			myMenuFunction = nullptr;
 		}
 	};

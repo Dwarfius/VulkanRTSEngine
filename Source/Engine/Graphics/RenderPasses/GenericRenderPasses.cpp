@@ -12,6 +12,7 @@
 #include "Graphics/Adapters/AdapterSourceData.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
 #include "Graphics/NamedFrameBuffers.h"
+#include "Light.h"
 #include "Terrain.h"
 #include "Game.h"
 
@@ -55,7 +56,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		// we need to early out without spawning a job
 		const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
 		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount < 4,
+		ASSERT_STR(uboCount <= 4,
 			"Tried to push %llu UBOs into a render job that supports only 4!",
 			uboCount);
 
@@ -162,7 +163,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 
 		const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
 		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount < 4,
+		ASSERT_STR(uboCount <= 4,
 			"Tried to push %llu UBOs into a render job that supports only 4!",
 			uboCount);
 
