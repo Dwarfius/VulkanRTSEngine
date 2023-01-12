@@ -20,9 +20,7 @@ void LightAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock
 			aLight.myAmbientIntensity 
 		};
 		aUB.SetUniform(0, accumulated, posRange);
-		const glm::quat rot = aLight.myTransform.GetRotation();
-		const glm::vec4 rotAsVec{ rot.x, rot.y, rot.z, rot.w };
-		aUB.SetUniform(1, accumulated, rot);
+		aUB.SetUniform(1, accumulated, aLight.myTransform.GetForward());
 		const glm::vec4 colorPower{ aLight.myColor, aLight.myType };
 		aUB.SetUniform(2, accumulated, colorPower);
 		aUB.SetUniform(3, accumulated, aLight.myAttenuation);

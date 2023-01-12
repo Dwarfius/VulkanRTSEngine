@@ -103,6 +103,7 @@ EditorMode::EditorMode(Game& aGame)
 
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
 	light.Get()->myColor = glm::vec3(1, 0, 0);
+	light.Get()->myType = Light::Type::Directional;
 	myLights.push_back(std::move(light));
 }
 
@@ -374,10 +375,42 @@ void EditorMode::ManageLights(Game& aGame)
 			{
 				Light& light = *myLights[mySelectedLight].Get();
 
+				using IndType = Light::Type::UnderlyingType;
+				IndType selectedInd = static_cast<IndType>(light.myType);
+				if (ImGui::BeginCombo("Light Type", Light::Type::kNames[selectedInd]))
+				{
+					for (IndType i = 0; i < Light::Type::GetSize(); i++)
+					{
+						bool selected = selectedInd == i;
+						if (ImGui::Selectable(Light::Type::kNames[i], &selected))
+						{
+							selectedInd = i;
+							light.myType = static_cast<Light::Type>(selectedInd);
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+				
+				// TODO: Use Gizmos for Translation and Rotation
+				// Need to be able to filter what gizmos to use before that
 				glm::vec3 pos = light.myTransform.GetPos();
 				if (ImGui::InputFloat3("Pos", glm::value_ptr(pos)))
 				{
 					light.myTransform.SetPos(pos);
+				}
+				aGame.GetDebugDrawer().AddSphere(pos, 0.1f, light.myColor);
+
+				glm::vec3 eulerRot = light.myTransform.GetEuler();
+				eulerRot = glm::degrees(eulerRot);
+				if (ImGui::InputFloat3("Rot", glm::value_ptr(eulerRot)))
+				{
+					eulerRot = glm::radians(eulerRot);
+					light.myTransform.SetRotation(eulerRot);
+				}
+				if (light.myType != Light::Type::Point)
+				{
+					aGame.GetDebugDrawer().AddLine(pos, pos + light.myTransform.GetForward(), light.myColor);
 				}
 
 				ImGui::ColorPicker3("Color", glm::value_ptr(light.myColor));

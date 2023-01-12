@@ -47,7 +47,7 @@ public:
 	constexpr static uint32_t kMaxLights = 64;
 	inline static const Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // pos + ambient intensity
-		{ Descriptor::UniformType::Vec4, kMaxLights }, // rot
+		{ Descriptor::UniformType::Vec4, kMaxLights }, // light dir, 1 free
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // color + type
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // attenuation, 1 free
 		{ Descriptor::UniformType::Int } // count
