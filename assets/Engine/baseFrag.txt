@@ -14,7 +14,7 @@ layout (std140, binding = 1) uniform CameraAdapter
     mat4 CamView;
     mat4 CamProj;
     vec4 FrustumPlane[6]; // left, right, down, up, far, near
-    vec3 CamPos;
+    vec4 CamPos;
     vec2 Viewport;
 };
 
@@ -74,7 +74,7 @@ vec3 CalcPointLight(int aLightInd, vec3 aFragPos, vec3 aNormal, vec3 aViewDir, v
 void main() 
 {
     const vec3 normal = normalize(normalOut);
-    const vec3 viewDir = normalize(CamPos - fragPosOut);
+    const vec3 viewDir = normalize(CamPos.xyz - fragPosOut);
 
     vec3 resColor = vec3(0);
     for(int i=0; i<Count; i++)

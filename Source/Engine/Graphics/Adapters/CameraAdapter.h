@@ -11,7 +11,7 @@ public:
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Vec4, 6 },
-		{ Descriptor::UniformType::Vec3 },
+		{ Descriptor::UniformType::Vec4 },
 		{ Descriptor::UniformType::Vec2 }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);

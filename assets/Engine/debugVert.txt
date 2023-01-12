@@ -9,7 +9,7 @@ layout (std140, binding = 0) uniform CameraAdapter
 	mat4 CamView;
 	mat4 CamProj;
 	vec4 FrustumPlane[6]; // left, right, down, up, far, near
-	vec3 CamPos;
+	vec4 CamPos;
 	vec2 Viewport;
 };
 
