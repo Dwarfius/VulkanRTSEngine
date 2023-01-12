@@ -99,31 +99,6 @@ void Descriptor::GetSizeAndAlignment(uint32_t aSlot, size_t& aSize, size_t& anAl
 		anAlignment = entry.myArraySize == 1 ? sizeof(glm::vec2) : sizeof(glm::vec4);
 		aSize = entry.myArraySize == 1 ? sizeof(glm::vec2) : sizeof(glm::vec4);
 		break;
-		// TODO: remove Vec3 support
-	case UniformType::Vec3:
-	{
-		// std140 - https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
-		// If the member is a three-component vector with components consuming N
-		// basic machine units, the base alignment is 4N
-		// Despite that, on my nvidia 1060 compiler can merge the next single unit
-		// to this 3, to avoid wasting MUs.
-		bool canMerge = entry.myArraySize == 1
-			&& aSlot + 1llu < myEntries.size()
-			&& (myEntries[aSlot + 1llu].myUniformType == UniformType::Float
-				|| myEntries[aSlot + 1llu].myUniformType == UniformType::Int)
-			&& myEntries[aSlot + 1llu].myArraySize == 1;
-		if (canMerge)
-		{
-			anAlignment = sizeof(glm::vec4);
-			aSize = sizeof(glm::vec3);
-		}
-		else
-		{
-			anAlignment = sizeof(glm::vec4);
-			aSize = sizeof(glm::vec4);
-		}
-		break;
-	}
 	case UniformType::Vec4:
 		anAlignment = sizeof(glm::vec4);
 		aSize = sizeof(glm::vec4);

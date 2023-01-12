@@ -289,11 +289,7 @@ bool PipelineGL::AreUBOsValid()
 				}
 				break;
 			case GL_FLOAT_VEC3:
-				if (declaredType != Descriptor::UniformType::Vec3)
-				{
-					missmatch = true;
-					typeName = "Vec3";
-				}
+				ASSERT_STR(false, "Vec3's are not supported by design - use vec4s!");
 				break;
 			case GL_FLOAT_VEC4:
 				if (declaredType != Descriptor::UniformType::Vec4)
