@@ -14,7 +14,7 @@ layout(location = 1) out vec4 outColor;
 layout (std140, binding = 0) uniform PainterAdapter
 {
     mat4 MVP;
-    vec3 Color;
+    vec4 Color;
     vec2 CanvasSize;
     vec2 TexSize;
     vec2 MousePosStart;
@@ -63,7 +63,7 @@ vec4 ApplyPaintColor(bool aIsInside, vec4 aBaseColor)
 {
     if(DrawingMode == 1)
     {
-        return aIsInside ? vec4(Color, 1) : aBaseColor;
+        return aIsInside ? vec4(Color.xyz, 1) : aBaseColor;
     }
     else if(DrawingMode == 2)
     {
@@ -86,7 +86,7 @@ vec4 ApplyPaintColor(bool aIsInside, vec4 aBaseColor)
 
 vec4 GetMousePointerColor(bool aIsInside, vec4 aBaseColor)
 {
-    return aIsInside ? vec4(Color, 1) : aBaseColor;
+    return aIsInside ? vec4(Color.xyz, 1) : aBaseColor;
 }
 
 void main() 

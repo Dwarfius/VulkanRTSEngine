@@ -116,7 +116,7 @@ public:
 
 	inline static const Descriptor ourDescriptor {
 		{ Descriptor::UniformType::Mat4 },
-		{ Descriptor::UniformType::Vec3 },
+		{ Descriptor::UniformType::Vec4 },
 		{ Descriptor::UniformType::Vec2 },
 		{ Descriptor::UniformType::Vec2 },
 		{ Descriptor::UniformType::Vec2 },
