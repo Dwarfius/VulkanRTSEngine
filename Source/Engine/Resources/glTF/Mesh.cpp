@@ -175,6 +175,9 @@ namespace glTF
 		case Attribute::Type::Weights:
 			ASSERT_STR(false, "Unsupported, to construct skinned model call ConstructSkinnedModel!");
 			break;
+		case Attribute::Type::Tangent:
+			// Not yet implemented
+			break;
 		default:
 			ASSERT_STR(false, "Semantic attribute NYI!");
 		}
