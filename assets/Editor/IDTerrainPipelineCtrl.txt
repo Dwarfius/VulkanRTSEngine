@@ -12,7 +12,7 @@ layout (std140, binding = 0) uniform ObjectMatricesAdapter
 
 layout (std140, binding = 1) uniform TerrainAdapter
 {
-	vec3 GridOrigin;
+	vec4 GridOrigin;
 	float TileSize;
 	int GridWidth;
 	int GridHeight;

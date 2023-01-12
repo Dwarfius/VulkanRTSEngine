@@ -23,7 +23,7 @@ public:
 
 	constexpr static uint8_t kHeightLayers = 5;
 	inline static const Descriptor ourDescriptor{
-		{ Descriptor::UniformType::Vec3 },
+		{ Descriptor::UniformType::Vec4 },
 		{ Descriptor::UniformType::Float },
 		{ Descriptor::UniformType::Int },
 		{ Descriptor::UniformType::Int },
