@@ -60,7 +60,8 @@ private:
 	void ManageLights(Game& aGame);
 	
 	std::vector<PoolPtr<Light>> myLights;
-	size_t mySelectedLight = static_cast<size_t>(-1);
+	constexpr static size_t kInvalidInd = static_cast<size_t>(-1);
+	size_t mySelectedLight = kInvalidInd;
 
 	// Other
 	std::shared_ptr<PhysicsShapeBase> myPhysShape;

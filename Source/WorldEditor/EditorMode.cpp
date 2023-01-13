@@ -365,13 +365,15 @@ void EditorMode::ManageLights(Game& aGame)
 					Utils::StringFormat(buffer, "%u", i);
 					if (ImGui::Selectable(buffer))
 					{
+						myPickedGO = nullptr;
+						myPickedTerrain = nullptr;
 						mySelectedLight = i;
 					}
 				}
 				ImGui::EndListBox();
 			}
 
-			if (mySelectedLight != static_cast<size_t>(-1))
+			if (mySelectedLight != kInvalidInd)
 			{
 				Light& light = *myLights[mySelectedLight].Get();
 
@@ -392,8 +394,6 @@ void EditorMode::ManageLights(Game& aGame)
 					ImGui::EndCombo();
 				}
 				
-				// TODO: Use Gizmos for Translation and Rotation
-				// Need to be able to filter what gizmos to use before that
 				glm::vec3 pos = light.myTransform.GetPos();
 				if (ImGui::InputFloat3("Pos", glm::value_ptr(pos)))
 				{
@@ -422,7 +422,7 @@ void EditorMode::ManageLights(Game& aGame)
 
 		if (!isOpen)
 		{
-			mySelectedLight = static_cast<size_t>(-1);
+			mySelectedLight = kInvalidInd;
 			myMenuFunction = nullptr;
 		}
 	};
@@ -453,6 +453,14 @@ void EditorMode::UpdatePickedObject(Game& aGame)
 	}
 
 	bool canUseInput = !ImGui::GetIO().WantCaptureMouse;
+
+	if (mySelectedLight != kInvalidInd)
+	{
+		Light& ligth = *myLights[mySelectedLight].Get();
+		canUseInput &= !myGizmos.Draw(ligth.myTransform, aGame,
+			Gizmos::Mode::Translation | Gizmos::Mode::Rotation);
+	}
+
 	if (myPickedGO)
 	{
 		const Renderable* renderable = myPickedGO->GetRenderable();
@@ -478,6 +486,7 @@ void EditorMode::UpdatePickedObject(Game& aGame)
 		{
 			myPickedGO = nullptr;
 			myPickedTerrain = nullptr;
+			mySelectedLight = kInvalidInd;
 			std::visit([&](auto&& aValue) {
 				using T = std::decay_t<decltype(aValue)>;
 				if constexpr (std::is_same_v<T, GameObject*>)
