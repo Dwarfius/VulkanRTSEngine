@@ -19,13 +19,6 @@ class Gizmos
 		None
 	};
 
-	enum class Mode : uint8_t
-	{
-		Translation,
-		Rotation,
-		Scale
-	};
-
 	enum class Space : uint8_t
 	{
 		World,
@@ -35,10 +28,18 @@ class Gizmos
 	constexpr static glm::vec3 kHighlightColor{ 1, 1, 0 };
 
 public:
+	enum class Mode : uint8_t
+	{
+		Translation = 1,
+		Rotation = 2,
+		Scale = 4,
+		All = Translation | Rotation | Scale
+	};
+
 	// Returns true if currently handling input
-	bool Draw(GameObject& aGameObj, Game& aGame);
+	bool Draw(GameObject& aGameObj, Game& aGame, Mode aAllowedModes = Mode::All);
 	// Returns true if currently handling input
-	bool Draw(Transform& aTransf, Game& aGame);
+	bool Draw(Transform& aTransf, Game& aGame, Mode aAllowedModes = Mode::All);
 
 private:
 	bool DrawTranslation(Transform& aTransf, Game& aGame);
@@ -57,3 +58,15 @@ private:
 	Mode myMode = Mode::Translation;
 	Space mySpace = Space::World;
 };
+
+Gizmos::Mode operator|(Gizmos::Mode aLeft, Gizmos::Mode aRight)
+{
+	using UnderlyingT = std::underlying_type_t<Gizmos::Mode>;
+	return static_cast<Gizmos::Mode>(UnderlyingT(aLeft) | UnderlyingT(aRight));
+}
+
+Gizmos::Mode operator&(Gizmos::Mode aLeft, Gizmos::Mode aRight)
+{
+	using UnderlyingT = std::underlying_type_t<Gizmos::Mode>;
+	return static_cast<Gizmos::Mode>(UnderlyingT(aLeft) & UnderlyingT(aRight));
+}

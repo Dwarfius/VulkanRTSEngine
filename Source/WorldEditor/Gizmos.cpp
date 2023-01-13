@@ -29,10 +29,10 @@ namespace
 	constexpr float kTolerance = 0.1f;
 }
 
-bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
+bool Gizmos::Draw(GameObject& aGameObj, Game& aGame, Mode aAllowedModes)
 {
 	Transform transf = aGameObj.GetWorldTransform();
-	if (Draw(transf, aGame))
+	if (Draw(transf, aGame, aAllowedModes))
 	{
 		aGameObj.SetWorldTransform(transf);
 		return true;
@@ -40,7 +40,7 @@ bool Gizmos::Draw(GameObject& aGameObj, Game& aGame)
 	return false;
 }
 
-bool Gizmos::Draw(Transform& aTransf, Game& aGame)
+bool Gizmos::Draw(Transform& aTransf, Game& aGame, Mode aAllowedModes)
 {
 	auto ActiveButton = []<class TEnum>(TEnum& aVar, const TEnum aVal, 
 		std::string_view aName, ImU32 anActiveColor) 
@@ -60,6 +60,9 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 		}
 	};
 
+	const bool translateAllowed = (aAllowedModes & Mode::Translation) == Mode::Translation;
+	const bool rotateAllowed = (aAllowedModes & Mode::Rotation) == Mode::Rotation;
+	const bool scaleAllowed = (aAllowedModes & Mode::Scale) == Mode::Scale;
 	{
 		std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
 		if (ImGui::Begin("Gizmo Options"))
@@ -67,15 +70,23 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 			const ImU32 activeColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
 
 			ImGui::Text("Mode:");
-			ImGui::SameLine();
+			if (translateAllowed)
+			{
+				ImGui::SameLine();
+				ActiveButton(myMode, Mode::Translation, "Translation", activeColor);
+			}
 
-			ActiveButton(myMode, Mode::Translation, "Translation", activeColor);
-			ImGui::SameLine();
+			if (rotateAllowed)
+			{
+				ImGui::SameLine();
+				ActiveButton(myMode, Mode::Rotation, "Rotation", activeColor);
+			}
 
-			ActiveButton(myMode, Mode::Rotation, "Rotation", activeColor);
-			ImGui::SameLine();
-
-			ActiveButton(myMode, Mode::Scale, "Scale", activeColor);
+			if (scaleAllowed)
+			{
+				ImGui::SameLine();
+				ActiveButton(myMode, Mode::Scale, "Scale", activeColor);
+			}
 
 			if (myMode == Mode::Translation
 				|| myMode == Mode::Rotation)
@@ -94,15 +105,15 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 		if (!ImGui::GetIO().WantCaptureKeyboard
 			&& !Input::GetMouseBtn(1))
 		{
-			if (Input::GetKeyPressed(Input::Keys::T))
+			if (translateAllowed && Input::GetKeyPressed(Input::Keys::T))
 			{
 				myMode = Mode::Translation;
 			}
-			if (Input::GetKeyPressed(Input::Keys::R))
+			if (rotateAllowed && Input::GetKeyPressed(Input::Keys::R))
 			{
 				myMode = Mode::Rotation;
 			}
-			if (Input::GetKeyPressed(Input::Keys::S))
+			if (scaleAllowed && Input::GetKeyPressed(Input::Keys::S))
 			{
 				myMode = Mode::Scale;
 			}
@@ -117,10 +128,26 @@ bool Gizmos::Draw(Transform& aTransf, Game& aGame)
 	switch (myMode)
 	{
 	case Mode::Translation:
+		if (!translateAllowed)
+		{
+			// Keep looing modes until we hit enabled one
+			myMode = Mode::Rotation;
+			return false;
+		}
 		return DrawTranslation(aTransf, aGame);
 	case Mode::Rotation:
+		if (!rotateAllowed)
+		{
+			myMode = Mode::Scale;
+			return false;
+		}
 		return DrawRotation(aTransf, aGame);
 	case Mode::Scale:
+		if (!scaleAllowed)
+		{
+			myMode = Mode::Translation;
+			return false;
+		}
 		return DrawScale(aTransf, aGame);
 	default:
 		ASSERT(false);
