@@ -102,8 +102,9 @@ EditorMode::EditorMode(Game& aGame)
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
 
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
+	light.Get()->myTransform.SetPos({ 0, 0, -1 });
 	light.Get()->myColor = glm::vec3(1, 0, 0);
-	light.Get()->myType = Light::Type::Directional;
+	light.Get()->myType = Light::Type::Spot;
 	myLights.push_back(std::move(light));
 }
 
@@ -416,6 +417,17 @@ void EditorMode::ManageLights(Game& aGame)
 				ImGui::ColorPicker3("Color", glm::value_ptr(light.myColor));
 				ImGui::DragFloat3("Attenuation", glm::value_ptr(light.myAttenuation), 0.01f, 0, 2);
 				ImGui::DragFloat("Ambient Intensity", &light.myAmbientIntensity, 0.001f, 0, 1);
+
+				if (light.myType == Light::Type::Spot)
+				{
+					float innerLimit = glm::degrees(glm::acos(light.mySpotlightLimits[0]));
+					ImGui::DragFloat("Inner Limit", &innerLimit, 0.1f, 0, 90);
+					light.mySpotlightLimits[0] = glm::cos(glm::radians(innerLimit));
+					float outerLimit = glm::degrees(glm::acos(light.mySpotlightLimits[1]));
+					ImGui::DragFloat("Outer Limit", &outerLimit, 0.1f, 0, 90);
+					outerLimit = glm::max(innerLimit, outerLimit);
+					light.mySpotlightLimits[1] = glm::cos(glm::radians(outerLimit));
+				}
 			}
 		}
 		ImGui::End();
