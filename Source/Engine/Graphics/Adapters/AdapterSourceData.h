@@ -6,7 +6,7 @@ class GameObject;
 class VisualObject;
 class Terrain;
 
-struct UniformAdapterSource : AdapterSourceData
+struct UniformAdapterSource : CameraAdapterSourceData
 {
 	const GameObject* myGO; // should not be nullptr if Adapter relies on it
 	const VisualObject& myVO;

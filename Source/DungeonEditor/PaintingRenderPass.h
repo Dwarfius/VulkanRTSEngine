@@ -102,7 +102,7 @@ private:
 class PainterAdapter : RegisterUniformAdapter<PainterAdapter>
 {
 public:
-	struct Source : AdapterSourceData
+	struct Source : CameraAdapterSourceData
 	{
 		const glm::vec3 myColor;
 		const glm::vec2 myTexSize;

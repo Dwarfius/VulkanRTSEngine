@@ -13,9 +13,15 @@ class Camera;
 class Graphics;
 class Descriptor;
 
+// For Global adapters
 struct AdapterSourceData
 {
 	const Graphics& myGraphics;
+};
+
+// For per-camera adapters
+struct CameraAdapterSourceData : AdapterSourceData
+{
 	const Camera& myCam;
 };
 

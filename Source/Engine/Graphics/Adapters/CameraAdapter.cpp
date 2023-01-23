@@ -9,13 +9,14 @@ void CameraAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBloc
 {
 	// Note: prefer to grab from VisualObject if possible, since the call will come from
 	// VisualObject, thus memory will be in cache already
-	const Camera& camera = aData.myCam;
+	const CameraAdapterSourceData& data = static_cast<const CameraAdapterSourceData&>(aData);
+	const Camera& camera = data.myCam;
 	const glm::vec3 pos = camera.GetTransform().GetPos();
 	const glm::mat4 viewProj = camera.Get();
 	const glm::mat4 viewMatrix = camera.GetView();
 	const glm::mat4 projMatrix = camera.GetProj();
 	const Frustum& frustum = camera.GetFrustum();
-	const glm::vec2 viewport(aData.myGraphics.GetWidth(), aData.myGraphics.GetHeight());
+	const glm::vec2 viewport(data.myGraphics.GetWidth(), data.myGraphics.GetHeight());
 
 	aUB.SetUniform(0, 0, viewProj);
 	aUB.SetUniform(1, 0, viewMatrix);

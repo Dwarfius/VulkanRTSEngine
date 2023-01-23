@@ -105,7 +105,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
 		job.SetDrawParams(params);
 
-		AdapterSourceData source{ aGraphics, perCamModel.myCamera };
+		CameraAdapterSourceData source{ aGraphics, perCamModel.myCamera };
 
 		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
 		adapter.Fill(source, block);
