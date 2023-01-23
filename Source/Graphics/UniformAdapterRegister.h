@@ -5,8 +5,10 @@
 #endif
 
 #include <Core/Utils.h>
+#include <Core/RefCounted.h>
 
 class UniformBlock;
+class UniformBuffer;
 class Camera;
 class Graphics;
 class Descriptor;
@@ -22,10 +24,11 @@ class UniformAdapter
 public:
 	using FillUBCallback = void(*)(const AdapterSourceData& aData, UniformBlock& aUB);
 	
-	UniformAdapter(std::string_view aName, FillUBCallback aUBCallback, const Descriptor& aDesc)
+	UniformAdapter(std::string_view aName, FillUBCallback aUBCallback, const Descriptor& aDesc, bool aIsGlobal)
 		: myName(aName)
 		, myUBFiller(aUBCallback)
 		, myDescriptor(aDesc)
+		, myIsGlobal(aIsGlobal)
 	{
 	}
 
@@ -36,11 +39,17 @@ public:
 
 	const Descriptor& GetDescriptor() const { return myDescriptor; }
 	std::string_view GetName() const { return myName; }
+	bool IsGlobal() const { return myIsGlobal; }
+
+	void CreateGlobalUBO(Graphics& aGraphics);
+	Handle<UniformBuffer> GetGlobalUBO() const { return myGlobalUBO; }
 
 private:
 	const FillUBCallback myUBFiller;
 	const Descriptor& myDescriptor;
 	const std::string_view myName;
+	const bool myIsGlobal;
+	Handle<UniformBuffer> myGlobalUBO;
 };
 
 // A Singleton class used for tracking all the uniform adapters
@@ -58,14 +67,28 @@ public:
 
 	// Before adapters can be fetched, they must be registered
 	template<class Type>
-	void Register(std::string_view aName)
+	void Register(std::string_view aName, bool aIsGlobal)
 	{
 #ifdef _DEBUG
 		AssertWriteLock lock(myRegisterMutex);
 #endif
 		UniformAdapter::FillUBCallback adapterCallback = &Type::FillUniformBlock;
 		const Descriptor& desc = Type::ourDescriptor;
-		myAdapters.insert({ aName, { aName, adapterCallback, desc } });
+		myAdapters.insert({ aName, { aName, adapterCallback, desc, aIsGlobal } });
+	}
+
+	template<class TFunc>
+	void ForEach(const TFunc& aFunc)
+	{
+#ifdef _DEBUG
+		AssertReadLock lock(myRegisterMutex);
+#endif
+		// Not the most efficient, but due to low count
+		// it's negligible 
+		for (auto& [name, adapter] : myAdapters)
+		{
+			aFunc(adapter);
+		}
 	}
 	
 private:
@@ -75,13 +98,13 @@ private:
 #endif
 };
 
-template<class CRTP>
+template<class CRTP, bool kIsGlobal = false>
 class RegisterUniformAdapter
 {
 private:
 	static bool Register()
 	{
-		UniformAdapterRegister::GetInstance().Register<CRTP>(Utils::NameOf<CRTP>);
+		UniformAdapterRegister::GetInstance().Register<CRTP>(Utils::NameOf<CRTP>, kIsGlobal);
 		return true;
 	}
 
@@ -96,5 +119,5 @@ private:
 	using Force = InstantiateForcer<ourIsRegistered>;
 };
 
-template<class CRTP>
-const bool RegisterUniformAdapter<CRTP>::ourIsRegistered = RegisterUniformAdapter::Register();
+template<class CRTP, bool kIsGlobal>
+const bool RegisterUniformAdapter<CRTP, kIsGlobal>::ourIsRegistered = RegisterUniformAdapter::Register();
