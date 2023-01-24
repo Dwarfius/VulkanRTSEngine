@@ -9,6 +9,7 @@
 #include "Resources/Texture.h"
 #include "Resources/GPUModel.h"
 #include "Resources/UniformBuffer.h"
+#include "UniformAdapterRegister.h"
 
 #include <Core/Profiler.h>
 
@@ -66,6 +67,21 @@ void Graphics::Init()
 		false
 	);
 	myFullScrenQuad = GetOrCreate(cpuModel).Get<GPUModel>();
+
+	// Creating global adapters so that RenderPasses can
+	// use the buffers when scheduling work
+	// Note: hard requirement that all adapters are registered at boot,
+	// which is rather unflexible. But for now dont' have a better idea
+	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
+	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
+		if (!anAdapter.IsGlobal())
+		{
+			return;
+		}
+
+		anAdapter.CreateGlobalUBO(*this);
+	});
+	ProcessCreateQueue();
 }
 
 void Graphics::Gather()
@@ -80,6 +96,23 @@ void Graphics::Gather()
 		myRenderPassesNeedOrdering = false;
 	}
 
+	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
+	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
+		if (!anAdapter.IsGlobal())
+		{
+			return;
+		}
+
+		Handle<UniformBuffer> uboHandle = anAdapter.GetGlobalUBO();
+		ASSERT_STR(uboHandle.IsValid() 
+			&& (uboHandle.Get()->GetState() == GPUResource::State::PendingUpload
+				|| uboHandle.Get()->GetState() == GPUResource::State::Valid),
+			"Uniform Buffer should be available by this point!");
+		UniformBlock block(*uboHandle.Get(), anAdapter.GetDescriptor());
+		AdapterSourceData source(*this);
+		anAdapter.Fill(source, block);
+	});
+
 	for (RenderPass* pass : myRenderPasses)
 	{
 		pass->Execute(*this);
@@ -89,7 +122,7 @@ void Graphics::Gather()
 void Graphics::Display()
 {
 	Profiler::ScopedMark profile("Graphics::Display");
-	// Doing it after EndGather because RenderPasses can 
+	// Doing it after Gather because RenderPasses can 
 	// generate new asset updates at any point of their
 	// execution
 	ProcessGPUQueues();
@@ -103,6 +136,17 @@ void Graphics::CleanUp()
 	{
 		delete pass;
 	}
+
+	// Adapter register keeps global UBOs around, so clean those up as well
+	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
+	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
+		if (!anAdapter.IsGlobal())
+		{
+			return;
+		}
+
+		anAdapter.ReleaseUBO();
+	});
 
 	myFullScrenQuad = Handle<GPUModel>();
 }

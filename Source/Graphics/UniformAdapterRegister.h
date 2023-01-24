@@ -48,7 +48,10 @@ public:
 	bool IsGlobal() const { return myIsGlobal; }
 
 	void CreateGlobalUBO(Graphics& aGraphics);
+	// TODO: find a way to avoid copies here
 	Handle<UniformBuffer> GetGlobalUBO() const { return myGlobalUBO; }
+	// TODO: find a way to just expose a mutable reference to avoid this API
+	void ReleaseUBO() { myGlobalUBO = Handle<UniformBuffer>(); }
 
 private:
 	const FillUBCallback myUBFiller;

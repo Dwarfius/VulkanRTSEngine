@@ -31,6 +31,12 @@ bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics,
 	for (size_t i = 0; i < uboCount; i++)
 	{
 		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		if (uniformAdapter.IsGlobal())
+		{
+			aSet.PushBack(uniformAdapter.GetGlobalUBO().Get());
+			continue;
+		}
+
 		UniformBuffer* uniformBuffer = AllocateUBO(
 			aGraphics,
 			uniformAdapter.GetDescriptor().GetBlockSize()

@@ -42,7 +42,7 @@ private:
 	Pool<Light> myLights;
 };
 
-class LightAdapter : RegisterUniformAdapter<LightAdapter>
+class LightAdapter : RegisterUniformAdapter<LightAdapter, true>
 {
 public:
 	constexpr static uint32_t kMaxLights = 64;
