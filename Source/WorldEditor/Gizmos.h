@@ -3,6 +3,7 @@
 class GameObject;
 class Transform;
 class Game;
+class DebugDrawer;
 
 namespace Utils
 {
@@ -59,13 +60,13 @@ private:
 	Space mySpace = Space::World;
 };
 
-Gizmos::Mode operator|(Gizmos::Mode aLeft, Gizmos::Mode aRight)
+inline Gizmos::Mode operator|(Gizmos::Mode aLeft, Gizmos::Mode aRight)
 {
 	using UnderlyingT = std::underlying_type_t<Gizmos::Mode>;
 	return static_cast<Gizmos::Mode>(UnderlyingT(aLeft) | UnderlyingT(aRight));
 }
 
-Gizmos::Mode operator&(Gizmos::Mode aLeft, Gizmos::Mode aRight)
+inline Gizmos::Mode operator&(Gizmos::Mode aLeft, Gizmos::Mode aRight)
 {
 	using UnderlyingT = std::underlying_type_t<Gizmos::Mode>;
 	return static_cast<Gizmos::Mode>(UnderlyingT(aLeft) & UnderlyingT(aRight));
