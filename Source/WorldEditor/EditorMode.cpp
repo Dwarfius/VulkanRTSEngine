@@ -104,7 +104,7 @@ EditorMode::EditorMode(Game& aGame)
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
 	light.Get()->myTransform.SetPos({ 0, 0, -1 });
 	light.Get()->myColor = glm::vec3(1, 0, 0);
-	light.Get()->myType = Light::Type::Spot;
+	light.Get()->myType = Light::Type::Point;
 	myLights.push_back(std::move(light));
 }
 
