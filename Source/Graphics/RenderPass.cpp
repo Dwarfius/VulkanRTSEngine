@@ -3,6 +3,7 @@
 
 #include "Graphics.h"
 #include "Resources/UniformBuffer.h"
+#include "Resources/GPUPipeline.h"
 
 UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
@@ -17,6 +18,33 @@ UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	}
 	myNewBuckets.emplace(aSize);
 	return nullptr;
+}
+
+bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics, 
+	const AdapterSourceData& aSource, const GPUPipeline& aPipeline)
+{
+	const size_t uboCount = aPipeline.GetAdapterCount();
+	ASSERT_STR(uboCount <= 4,
+		"Tried to push %llu UBOs into a render job that supports only 4!",
+		uboCount);
+
+	for (size_t i = 0; i < uboCount; i++)
+	{
+		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		UniformBuffer* uniformBuffer = AllocateUBO(
+			aGraphics,
+			uniformAdapter.GetDescriptor().GetBlockSize()
+		);
+		if (!uniformBuffer)
+		{
+			return false;
+		}
+
+		UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
+		uniformAdapter.Fill(aSource, uniformBlock);
+		aSet.PushBack(uniformBuffer);
+	}
+	return true;
 }
 
 void RenderPass::Execute(Graphics& aGraphics)

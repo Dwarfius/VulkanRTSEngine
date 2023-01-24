@@ -129,30 +129,18 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderP
 		};
 
 		const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
-		const GPUPipeline* gpuPipeline = isSkinned ?
-			mySkinningPipeline.Get<const GPUPipeline>() :
-			myDefaultPipeline.Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		GPUPipeline* gpuPipeline = isSkinned ?
+			mySkinningPipeline.Get() :
+			myDefaultPipeline.Get();
 		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
+		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+			[[unlikely]]
 		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* ubo = AllocateUBO(
-				aGraphics,
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!ubo)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(ubo);
+			return;
 		}
 
 		RenderJob& job = aJob.AllocateJob();
-		job.SetPipeline(isSkinned ? mySkinningPipeline.Get() : myDefaultPipeline.Get());
+		job.SetPipeline(gpuPipeline);
 		job.SetModel(model.Get());
 		job.GetUniformSet() = uniformSet;
 
@@ -206,28 +194,16 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 			newID | kTerrainBit
 		};
 
-		const GPUPipeline* gpuPipeline = myTerrainPipeline.Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
+		GPUPipeline* gpuPipeline = myTerrainPipeline.Get();
 		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
+		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+			[[unlikely]]
 		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* ubo = AllocateUBO(
-				aGraphics,
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!ubo)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*ubo, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(ubo);
+			return;
 		}
 
 		RenderJob& job = aJob.AllocateJob();
-		job.SetPipeline(myTerrainPipeline.Get());
+		job.SetPipeline(gpuPipeline);
 		job.GetTextures().PushBack(texture.Get());
 		job.GetUniformSet() = uniformSet;
 

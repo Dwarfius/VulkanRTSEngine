@@ -76,6 +76,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	ImGui::Render();
 
 	if (!IsReady())
+		[[unlikely]]
 	{
 		// required GPU resources not created yet, so skip this frame
 		return;
@@ -83,6 +84,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 
 	ImGUIFrame frame = PrepareFrame();
 	if (frame.myParams.empty())
+		[[unlikely]]
 	{
 		return;
 	}

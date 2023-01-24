@@ -44,7 +44,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		}
 
 		// Default Pass handling
-		if (!IsUsable(visObj))
+		if (!IsUsable(visObj)) [[unlikely]]
 		{
 			return;
 		}
@@ -54,12 +54,8 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		// Before building a render-job, we need to try to 
 		// pre-allocate all the the UBOs - since if we can't, 
 		// we need to early out without spawning a job
-		const GPUPipeline* gpuPipeline = visObj.GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount <= 4,
-			"Tried to push %llu UBOs into a render job that supports only 4!",
-			uboCount);
-
+		GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
+		
 		// updating the uniforms - grabbing game state!
 		UniformAdapterSource source{
 			aGraphics,
@@ -68,26 +64,16 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 			visObj
 		};
 		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
+		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline)) 
+			[[unlikely]]
 		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* uniformBuffer = AllocateUBO(
-				aGraphics,
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!uniformBuffer)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(uniformBuffer);
+			return;
 		}
+		
 		// Building a render job
 		RenderJob& renderJob = passJob.AllocateJob();
 		renderJob.SetModel(visObj.GetModel().Get());
-		renderJob.SetPipeline(visObj.GetPipeline().Get());
+		renderJob.SetPipeline(gpuPipeline);
 		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
 		renderJob.GetUniformSet() = uniformSet;
 
@@ -143,11 +129,13 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 	game.ForEachTerrain([&](Game::TerrainEntity& anEntity) {
 		VisualObject* visObj = anEntity.myVisualObject;
 		if (!visObj)
+			[[unlikely]]
 		{
 			return;
 		}
 
 		if (!IsUsable(*visObj))
+			[[unlikely]]
 		{
 			return;
 		}
@@ -161,11 +149,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 		// building a render job
 		const Terrain& terrain = *anEntity.myTerrain;
 
-		const GPUPipeline* gpuPipeline = visObj->GetPipeline().Get<const GPUPipeline>();
-		const size_t uboCount = gpuPipeline->GetAdapterCount();
-		ASSERT_STR(uboCount <= 4,
-			"Tried to push %llu UBOs into a render job that supports only 4!",
-			uboCount);
+		GPUPipeline* gpuPipeline = visObj->GetPipeline().Get();
 
 		// updating the uniforms - grabbing game state!
 		TerrainAdapter::Source source{
@@ -175,28 +159,16 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 			*visObj,
 			terrain
 		};
-
 		RenderJob::UniformSet uniformSet;
-		for (size_t i = 0; i < uboCount; i++)
+		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+			[[unlikely]]
 		{
-			const UniformAdapter& uniformAdapter = gpuPipeline->GetAdapter(i);
-			UniformBuffer* uniformBuffer = AllocateUBO(
-				aGraphics,
-				uniformAdapter.GetDescriptor().GetBlockSize()
-			);
-			if (!uniformBuffer)
-			{
-				return;
-			}
-
-			UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
-			uniformAdapter.Fill(source, uniformBlock);
-			uniformSet.PushBack(uniformBuffer);
+			return;
 		}
 
 		RenderJob& renderJob = passJob.AllocateJob();
 		renderJob.SetModel(visObj->GetModel().Get());
-		renderJob.SetPipeline(visObj->GetPipeline().Get());
+		renderJob.SetPipeline(gpuPipeline);
 		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
 		renderJob.GetUniformSet() = uniformSet;
 

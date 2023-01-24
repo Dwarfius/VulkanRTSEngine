@@ -10,6 +10,7 @@ class Camera;
 class UniformBuffer;
 template<class T>
 class Handle;
+struct AdapterSourceData;
 
 // The goal behind the render passes is to be able to 
 // setup a a render environment, sort the objects, and 
@@ -25,6 +26,10 @@ public:
 	virtual ~RenderPass() = default;
 
 	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
+
+	// Helper for filling UBOs for the render job with game state
+	// Returns false if ran out of allocated UBOs this frame, otherwise true
+	bool FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
 
 	virtual void Execute(Graphics& aGraphics);
 
