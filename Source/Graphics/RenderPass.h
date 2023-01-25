@@ -28,6 +28,7 @@ public:
 	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
 	// Helper for filling UBOs for the render job with game state
+	// Handles both normal and global UBOs.
 	// Returns false if ran out of allocated UBOs this frame, otherwise true
 	bool FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
 
