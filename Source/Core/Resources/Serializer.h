@@ -148,6 +148,8 @@ public:
 
 	bool IsReading() const { return myIsReading; }
 
+	AssetTracker& GetAssetTracker() { return myAssetTracker; }
+
 protected:
 	struct ResourceProxy
 	{

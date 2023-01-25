@@ -74,7 +74,7 @@ void VisualComponent::Serialize(Serializer& aSerializer)
 	if (aSerializer.IsReading())
 	{
 		CreateVOIfNeeded();
-		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
+		AssetTracker& assetTracker = aSerializer.GetAssetTracker();
 		if (!myModelRes.empty() && modelChanged)
 		{
 			myVisualObject->SetModel(assetTracker.GetOrCreate<Model>(myModelRes));
