@@ -8,6 +8,7 @@
 #include <Engine/Components/VisualComponent.h>
 #include <Engine/Input.h>
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
+#include <Engine/Light.h>
 
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/Texture.h>
@@ -142,6 +143,13 @@ StressTest::StressTest(Game& aGame)
 
 	myTriggersTracker = new TriggersTracker(*this);
 	aGame.GetPhysicsWorld()->AddPhysSystem(myTriggersTracker);
+
+	myLight = aGame.GetLightSystem().AllocateLight();
+	Light& light = *myLight.Get();
+	light.myType = Light::Type::Directional;
+	light.myColor = { 1, 1, 1 };
+	light.myAmbientIntensity = 0.9f;
+	light.myTransform.LookAt({ 0, -10, 0 });
 }
 
 StressTest::~StressTest()

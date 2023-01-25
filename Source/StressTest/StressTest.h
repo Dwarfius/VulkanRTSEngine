@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/RefCounted.h>
+#include <Core/Pool.h>
 
 class Game;
 class GameObject;
@@ -8,8 +9,8 @@ class Model;
 class Pipeline;
 class Texture;
 class Camera;
-
 class PhysicsEntity;
+struct Light;
 
 // Sets up and runs the Tank stress test:
 // a "wall" of tanks descends towards the middle,
@@ -73,4 +74,6 @@ private:
 
 	float myRotationAngle = 0.f;
 	void UpdateCamera(Camera& aCam, float aDeltaTime);
+
+	PoolPtr<Light> myLight;
 };
