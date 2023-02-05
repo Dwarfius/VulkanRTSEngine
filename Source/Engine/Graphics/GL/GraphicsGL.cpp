@@ -200,22 +200,25 @@ void GraphicsGL::CleanUp()
 	glfwDestroyWindow(myWindow);
 }
 
-GPUResource* GraphicsGL::Create(Model*, GPUResource::UsageType aUsage) const
+GPUResource* GraphicsGL::Create(Model*, GPUResource::UsageType aUsage)
 {
-	return new ModelGL(aUsage);
+	std::lock_guard lock(myModelsMutex);
+	return &myModels.Allocate(aUsage);
 }
 
-GPUResource* GraphicsGL::Create(Pipeline*, GPUResource::UsageType) const
+GPUResource* GraphicsGL::Create(Pipeline*, GPUResource::UsageType)
 {
-	return new PipelineGL();
+	std::lock_guard lock(myPipelinesMutex);
+	return &myPipelines.Allocate();
 }
 
-GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType) const
+GPUResource* GraphicsGL::Create(Texture*, GPUResource::UsageType)
 {
-	return new TextureGL();
+	std::lock_guard lock(myTexturesMutex);
+	return &myTextures.Allocate();
 }
 
-GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType) const
+GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType)
 {
 	return new ShaderGL();
 }
@@ -299,6 +302,32 @@ void GraphicsGL::OnResize(int aWidth, int aHeight)
 		{
 			frameBuffer.Resize(width, height);
 		}
+	}
+}
+
+void GraphicsGL::DeleteResource(GPUResource* aResource)
+{
+	// TODO: replace the dynamic_casts with compile time paths.
+	// Implemented this way for now to test the performance improvement
+	// of pooling resources
+	if (GPUPipeline* pipeline = dynamic_cast<GPUPipeline*>(aResource))
+	{
+		std::lock_guard lock(myPipelinesMutex);
+		myPipelines.Free(*static_cast<PipelineGL*>(pipeline));
+	}
+	else if (GPUModel* model = dynamic_cast<GPUModel*>(aResource))
+	{
+		std::lock_guard lock(myModelsMutex);
+		myModels.Free(*static_cast<ModelGL*>(model));
+	}
+	else if (GPUTexture* texture = dynamic_cast<GPUTexture*>(aResource))
+	{
+		std::lock_guard lock(myTexturesMutex);
+		myTextures.Free(*static_cast<TextureGL*>(texture));
+	}
+	else
+	{
+		Graphics::DeleteResource(aResource);
 	}
 }
 

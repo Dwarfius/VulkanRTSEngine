@@ -100,6 +100,7 @@ protected:
 	bool AreResourcesEmpty() const { return myResources.empty(); }
 
 	void UnregisterResource(GPUResource* aRes);
+	virtual void DeleteResource(GPUResource* aResource);
 
 	RenderPass* GetRenderPass(uint32_t anId) const;
 
@@ -121,14 +122,16 @@ private:
 
 	void ProcessGPUQueues();
 
-	virtual GPUResource* Create(Model*, GPUResource::UsageType aUsage) const = 0;
-	virtual GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const = 0;
-	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const = 0;
-	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const = 0;
+	virtual GPUResource* Create(Model*, GPUResource::UsageType aUsage) = 0;
+	virtual GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) = 0;
+	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) = 0;
+	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) = 0;
 
 	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
 
 	void SortRenderPasses();
+
+	
 
 	int myWidth = 800;
 	int myHeight = 600;

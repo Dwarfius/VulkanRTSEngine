@@ -9,8 +9,16 @@
 #include <Core/RWBuffer.h>
 #include <Core/StableVector.h>
 
+// TODO: make StableVector work with incomplete types -
+// It's currently needed because of by-value start page
+#include "Graphics/GL/PipelineGL.h"
+#include "Graphics/GL/ModelGL.h"
+#include "Graphics/GL/TextureGL.h"
+
 class PipelineGL;
 class ModelGL;
+class TextureGL;
+class ShaderGL;
 
 class GraphicsGL final: public Graphics
 {
@@ -36,6 +44,8 @@ private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 	void OnResize(int aWidth, int aHeight) override;
 
+	void DeleteResource(GPUResource* aResource) override;
+
 	constexpr static uint32_t kMaxRenderPassJobs = 128;
 	struct RenderPassJobs
 	{
@@ -48,10 +58,17 @@ private:
 	constexpr static uint8_t kFrames = GraphicsConfig::kMaxFramesScheduled + 1;
 	RWBuffer<RenderPassJobs, kFrames> myRenderPassJobs;
 
-	GPUResource* Create(Model*, GPUResource::UsageType aUsage) const override;
-	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) const override;
-	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) const override;
-	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) const override;
+	GPUResource* Create(Model*, GPUResource::UsageType aUsage) override;
+	GPUResource* Create(Pipeline*, GPUResource::UsageType aUsage) override;
+	GPUResource* Create(Texture*, GPUResource::UsageType aUsage) override;
+	GPUResource* Create(Shader*, GPUResource::UsageType aUsage) override;
+
+	StableVector<ModelGL> myModels;
+	StableVector<PipelineGL> myPipelines;
+	StableVector<TextureGL> myTextures;
+	std::mutex myModelsMutex;
+	std::mutex myPipelinesMutex;
+	std::mutex myTexturesMutex;
 
 	UniformBuffer* CreateUniformBufferImpl(size_t aSize) override;
 

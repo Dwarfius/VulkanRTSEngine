@@ -7,7 +7,10 @@
 #include "Resources/Pipeline.h"
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
+#include "Resources/GPUPipeline.h"
 #include "Resources/GPUModel.h"
+#include "Resources/GPUTexture.h"
+#include "Resources/GPUShader.h"
 #include "Resources/UniformBuffer.h"
 #include "UniformAdapterRegister.h"
 
@@ -347,17 +350,19 @@ void Graphics::ProcessNextUnloadQueue()
 	while (unloadQueue.try_pop(aResource))
 	{
 		DEBUG_ONLY(
-			Handle<GPUResource> tempHandle(aResource);
-			ASSERT_STR(tempHandle.IsLastHandle(), 
-				"Trying to cleanup something still in use!"
-			);
+			{
+				Handle<GPUResource> tempHandle(aResource);
+				ASSERT_STR(tempHandle.IsLastHandle(),
+					"Trying to cleanup something still in use!"
+				);
+			}
 		);
 		aResource->TriggerUnload();
 		{
 			tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 			myResources.erase(aResource->myResId);
 		}
-		delete aResource;
+		DeleteResource(aResource);
 	}
 }
 
@@ -374,7 +379,7 @@ void Graphics::ProcessAllUnloadQueues()
 				tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 				myResources.erase(aResource->myResId);
 			}
-			delete aResource;
+			DeleteResource(aResource);
 		}
 	}
 }
@@ -385,6 +390,11 @@ void Graphics::UnregisterResource(GPUResource* aRes)
 		"Resource must be at end of it's life for it to be unregistered!");
 	tbb::spin_mutex::scoped_lock lock(myResourceMutex);
 	myResources.erase(aRes->myResId);
+}
+
+void Graphics::DeleteResource(GPUResource* aResource)
+{
+	delete aResource;
 }
 
 void Graphics::ProcessGPUQueues()
