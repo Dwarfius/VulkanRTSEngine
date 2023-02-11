@@ -124,6 +124,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			}
 		}
 
+		ImGui::SameLine();
 		if (ImGui::Button("Buffer captures"))
 		{
 			const auto& frameData = Profiler::GetInstance().GetBufferedFrameData();
@@ -132,6 +133,8 @@ void ProfilerUI::Draw(bool& aIsOpen)
 				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
 			}
 		}
+
+		ImGui::SameLine();
 		if (ImGui::Button("Clear captures"))
 		{
 			myFramesToRender.clear();
@@ -139,40 +142,260 @@ void ProfilerUI::Draw(bool& aIsOpen)
 
 		ImGui::Checkbox("Auto Record Long Frames?", &myAutoRecordLongFrames);
 
-		bool plotWindowHovered = false;
-		char nodeName[64];
-		for (const FrameData& frameData : myFramesToRender)
+		if (ImGui::TreeNode("Scope Tracking"))
 		{
-			Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameNum);
-			if (ImGui::TreeNode(nodeName))
-			{
-				// Precalculate the whole height
-				float totalHeight = kMarkHeight;
-				for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
-				{
-					totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
-				}
-				totalHeight += ImGui::GetStyle().ScrollbarSize;
-
-				ImGui::BeginChild(nodeName, { 0,totalHeight });
-				plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
-
-				DrawThreadColumn(frameData, totalHeight);
-				ImGui::SameLine();
-				DrawMarksColumn(frameData, totalHeight);
-
-				ImGui::EndChild();
-				ImGui::TreePop();
-			}
+			DrawScopesView();
+			ImGui::TreePop();
 		}
-		if (plotWindowHovered)
+		if (ImGui::TreeNode("Frame Tracking"))
 		{
-			myWidthScale += Input::GetMouseWheelDelta() * 0.1f;
-			myWidthScale = std::max(myWidthScale, 1.0f);
+			bool plotWindowHovered = false;
+			char nodeName[64];
+			for (const FrameData& frameData : myFramesToRender)
+			{
+				Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameNum);
+				if (ImGui::TreeNode(nodeName))
+				{
+					// Precalculate the whole height
+					float totalHeight = kMarkHeight;
+					for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
+					{
+						totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
+					}
+					totalHeight += ImGui::GetStyle().ScrollbarSize;
+
+					ImGui::BeginChild(nodeName, { 0,totalHeight });
+					plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+
+					DrawThreadColumn(frameData, totalHeight);
+					ImGui::SameLine();
+					DrawMarksColumn(frameData, totalHeight);
+
+					ImGui::EndChild();
+					ImGui::TreePop();
+				}
+			}
+			if (plotWindowHovered)
+			{
+				myWidthScale += Input::GetMouseWheelDelta() * 0.1f;
+				myWidthScale = std::max(myWidthScale, 1.0f);
+			}
+			ImGui::TreePop();
 		}
 	}
 
 	ImGui::End();
+}
+
+void ProfilerUI::DrawScopesView()
+{
+	ImGui::Text("Tracked Scopes");
+	for(size_t i=0; i<myScopeNames.size(); i++)
+	{
+		std::string& scope = myScopeNames[i];
+		std::string indexTag = std::format("##{}", i);
+		ImGui::InputText(indexTag.c_str(), scope.data(), scope.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+			[](ImGuiInputTextCallbackData* aData)
+		{
+			std::string* valueStr = static_cast<std::string*>(aData->UserData);
+			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
+			{
+				valueStr->resize(aData->BufTextLen);
+				aData->Buf = valueStr->data();
+			}
+			return 0;
+		}, &scope);
+
+		ImGui::SameLine();
+		std::string deleteButton = "Delete" + indexTag;
+		if (ImGui::Button(deleteButton.c_str()))
+		{
+			myScopeNames.erase(myScopeNames.begin() + i);
+			i--;
+		}
+	}
+	if (ImGui::Button("Add Scope"))
+	{
+		myScopeNames.emplace_back();
+	}
+
+	struct ScopeData
+	{
+		std::string_view myScopeName;
+		size_t myTotalCount = 0;
+		size_t myFoundInFrameCount = 0;
+		size_t myAvgPerFrameCount = 0;
+		uint64_t myMin = std::numeric_limits<uint64_t>::max();
+		uint64_t myMax = 0;
+		uint64_t myMedian = 0;
+	};
+	std::vector<ScopeData> scopeData;
+	scopeData.resize(myScopeNames.size());
+	for (size_t i = 0; i < myScopeNames.size(); i++)
+	{
+		ScopeData& scope = scopeData[i];
+		const std::string& scopeName = myScopeNames[i];
+		scope.myScopeName = scopeName;
+
+		for (const FrameData& frameData : myFramesToRender)
+		{
+			bool foundInFrame = false;
+			for (const auto& [thread, marksVec] : frameData.myThreadMarkMap)
+			{
+				for (const Mark& mark : marksVec)
+				{
+					const std::string_view nameView = mark.myName;
+					if (nameView == scopeName)
+					{
+						foundInFrame = true;
+						scope.myTotalCount++;
+						const uint64_t durationNs = mark.myEnd - mark.myStart;
+						scope.myMin = glm::min(durationNs, scope.myMin);
+						scope.myMax = glm::max(durationNs, scope.myMax);
+					}
+				}
+			}
+
+			if (foundInFrame)
+			{
+				scope.myFoundInFrameCount++;
+			}
+		}
+
+		if (scope.myTotalCount)
+		{
+			scope.myAvgPerFrameCount = scope.myTotalCount / scope.myFoundInFrameCount;
+			scope.myMedian = scope.myMin + (scope.myMax - scope.myMin) / 2;
+		}
+	}
+
+	ImGui::Separator();
+	if (ImGui::BeginTable("Scopes", 6, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+	{
+		ImGui::TableSetupColumn("Name");
+		ImGui::TableSetupColumn("Total");
+		ImGui::TableSetupColumn("Avg Per Frame");
+		ImGui::TableSetupColumn("Min");
+		ImGui::TableSetupColumn("Max");
+		ImGui::TableSetupColumn("Median");
+		ImGui::TableHeadersRow();
+		ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
+		if (sortSpecs)
+		{
+			int count = sortSpecs->SpecsCount;
+			for (int i = 0; i < sortSpecs->SpecsCount; i++)
+			{
+				const ImGuiTableColumnSortSpecs& sortSpec = sortSpecs->Specs[i];
+
+				// We only support 1 level of sorting
+				if (sortSpec.SortOrder == 0)
+				{
+					bool asc = sortSpec.SortDirection == ImGuiSortDirection_Ascending;
+					switch (sortSpec.ColumnIndex)
+					{
+					case 0: // Name
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc 
+								? aLeft.myScopeName < aRight.myScopeName 
+								: aLeft.myScopeName > aRight.myScopeName;
+						}
+						);
+						break;
+					case 1: // Total
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc
+								? aLeft.myTotalCount < aRight.myTotalCount
+								: aLeft.myTotalCount > aRight.myTotalCount;
+						}
+						);
+						break;
+					case 2: // Avg Per Frame
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc
+								? aLeft.myAvgPerFrameCount < aRight.myAvgPerFrameCount
+								: aLeft.myAvgPerFrameCount > aRight.myAvgPerFrameCount;
+						}
+						);
+						break;
+					case 3: // Min
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc 
+								? aLeft.myMin < aRight.myMin
+								: aLeft.myMin > aRight.myMin;
+						}
+						);
+						break;
+					case 4: // Max
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc
+								? aLeft.myMax < aRight.myMax
+								: aLeft.myMax > aRight.myMax;
+						}
+						);
+						break;
+					case 5: // Median
+						std::sort(scopeData.begin(), scopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc
+								? aLeft.myMedian < aRight.myMedian
+								: aLeft.myMedian > aRight.myMedian;
+						}
+						);
+						break;
+					default:
+						ASSERT(false);
+					}
+				}
+			}
+		}
+
+		char buffer[64];
+		for (const ScopeData& scope : scopeData)
+		{
+			ImGui::TableNextRow();
+			if (ImGui::TableNextColumn())
+			{
+				ImGui::Text(scope.myScopeName.data());
+			}
+			if (ImGui::TableNextColumn())
+			{
+				Utils::StringFormat(buffer, "%llu", scope.myTotalCount);
+				ImGui::Text(buffer);
+			}
+			if (ImGui::TableNextColumn())
+			{
+				Utils::StringFormat(buffer, "%llu", scope.myAvgPerFrameCount);
+				ImGui::Text(buffer);
+			}
+			if (ImGui::TableNextColumn())
+			{
+				DurationToString(buffer, scope.myMin);
+				ImGui::Text(buffer);
+			}
+			if (ImGui::TableNextColumn())
+			{
+				DurationToString(buffer, scope.myMax);
+				ImGui::Text(buffer);
+			}
+			if (ImGui::TableNextColumn())
+			{
+				DurationToString(buffer, scope.myMedian);
+				ImGui::Text(buffer);
+			}
+		}
+	}
+	ImGui::EndTable();
 }
 
 void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const

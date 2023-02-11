@@ -32,10 +32,16 @@ public:
 	void Draw(bool& aIsOpen);
 
 private:
+	void DrawScopesView();
 	void DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const;
 	void DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const;
 
 	std::vector<FrameData> myFramesToRender;
+	std::vector<std::string> myScopeNames = { 
+		"Game::SubmitRenderables", 
+		"Graphics::Gather",
+		"GraphicsGL::ExecuteJobs"
+	};
 	float myWidthScale = 1.f;
 	bool myAutoRecordLongFrames = true;
 };
