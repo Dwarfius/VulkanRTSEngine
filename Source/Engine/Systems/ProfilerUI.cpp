@@ -106,6 +106,7 @@ ProfilerUI::ProfilerUI()
 			if (myAutoRecordLongFrames)
 			{
 				myFramesToRender.push_back(std::move(ProcessFrameProfile(aProfile)));
+				myNeedsToUpdateScopeData = true;
 			}
 		}
 	);
@@ -121,6 +122,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			for (const Profiler::FrameProfile& frameProfile : frameData)
 			{
 				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
+				myNeedsToUpdateScopeData = true;
 			}
 		}
 
@@ -131,6 +133,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			for (const Profiler::FrameProfile& frameProfile : frameData)
 			{
 				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
+				myNeedsToUpdateScopeData = true;
 			}
 		}
 
@@ -138,6 +141,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		if (ImGui::Button("Clear captures"))
 		{
 			myFramesToRender.clear();
+			myNeedsToUpdateScopeData = true;
 		}
 
 		ImGui::Checkbox("Auto Record Long Frames?", &myAutoRecordLongFrames);
@@ -194,17 +198,19 @@ void ProfilerUI::DrawScopesView()
 	{
 		std::string& scope = myScopeNames[i];
 		std::string indexTag = std::format("##{}", i);
-		ImGui::InputText(indexTag.c_str(), scope.data(), scope.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+		myNeedsToUpdateScopeData |= ImGui::InputText(indexTag.c_str(), scope.data(), 
+			scope.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
 			[](ImGuiInputTextCallbackData* aData)
-		{
-			std::string* valueStr = static_cast<std::string*>(aData->UserData);
-			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
 			{
-				valueStr->resize(aData->BufTextLen);
-				aData->Buf = valueStr->data();
-			}
-			return 0;
-		}, &scope);
+				std::string* valueStr = static_cast<std::string*>(aData->UserData);
+				if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
+				{
+					valueStr->resize(aData->BufTextLen);
+					aData->Buf = valueStr->data();
+				}
+				return 0;
+			}, &scope
+		);
 
 		ImGui::SameLine();
 		std::string deleteButton = "Delete" + indexTag;
@@ -212,61 +218,57 @@ void ProfilerUI::DrawScopesView()
 		{
 			myScopeNames.erase(myScopeNames.begin() + i);
 			i--;
+			myNeedsToUpdateScopeData = true;
 		}
 	}
 	if (ImGui::Button("Add Scope"))
 	{
 		myScopeNames.emplace_back();
+		myNeedsToUpdateScopeData = true;
 	}
 
-	struct ScopeData
+	if (myNeedsToUpdateScopeData)
 	{
-		std::string_view myScopeName;
-		size_t myTotalCount = 0;
-		size_t myFoundInFrameCount = 0;
-		size_t myAvgPerFrameCount = 0;
-		uint64_t myMin = std::numeric_limits<uint64_t>::max();
-		uint64_t myMax = 0;
-		uint64_t myMedian = 0;
-	};
-	std::vector<ScopeData> scopeData;
-	scopeData.resize(myScopeNames.size());
-	for (size_t i = 0; i < myScopeNames.size(); i++)
-	{
-		ScopeData& scope = scopeData[i];
-		const std::string& scopeName = myScopeNames[i];
-		scope.myScopeName = scopeName;
-
-		for (const FrameData& frameData : myFramesToRender)
+		myScopeData.clear();
+		myScopeData.resize(myScopeNames.size());
+		for (size_t i = 0; i < myScopeNames.size(); i++)
 		{
-			bool foundInFrame = false;
-			for (const auto& [thread, marksVec] : frameData.myThreadMarkMap)
+			ScopeData& scope = myScopeData[i];
+			const std::string& scopeName = myScopeNames[i];
+			scope.myScopeName = scopeName;
+
+			for (const FrameData& frameData : myFramesToRender)
 			{
-				for (const Mark& mark : marksVec)
+				bool foundInFrame = false;
+				for (const auto& [thread, marksVec] : frameData.myThreadMarkMap)
 				{
-					const std::string_view nameView = mark.myName;
-					if (nameView == scopeName)
+					for (const Mark& mark : marksVec)
 					{
-						foundInFrame = true;
-						scope.myTotalCount++;
-						const uint64_t durationNs = mark.myEnd - mark.myStart;
-						scope.myMin = glm::min(durationNs, scope.myMin);
-						scope.myMax = glm::max(durationNs, scope.myMax);
+						const std::string_view nameView = mark.myName;
+						if (nameView == scopeName)
+						{
+							foundInFrame = true;
+							scope.myTotalCount++;
+							const uint64_t durationNs = mark.myEnd - mark.myStart;
+							scope.myMin = glm::min(durationNs, scope.myMin);
+							scope.myMax = glm::max(durationNs, scope.myMax);
+						}
 					}
+				}
+
+				if (foundInFrame)
+				{
+					scope.myFoundInFrameCount++;
 				}
 			}
 
-			if (foundInFrame)
+			if (scope.myTotalCount)
 			{
-				scope.myFoundInFrameCount++;
+				scope.myAvgPerFrameCount = scope.myTotalCount / scope.myFoundInFrameCount;
+				scope.myMedian = scope.myMin + (scope.myMax - scope.myMin) / 2;
 			}
 		}
-
-		if (scope.myTotalCount)
-		{
-			scope.myAvgPerFrameCount = scope.myTotalCount / scope.myFoundInFrameCount;
-			scope.myMedian = scope.myMin + (scope.myMax - scope.myMin) / 2;
-		}
+		myNeedsToUpdateScopeData = false;
 	}
 
 	ImGui::Separator();
@@ -280,7 +282,7 @@ void ProfilerUI::DrawScopesView()
 		ImGui::TableSetupColumn("Median");
 		ImGui::TableHeadersRow();
 		ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
-		if (sortSpecs)
+		if (sortSpecs && sortSpecs->SpecsDirty)
 		{
 			int count = sortSpecs->SpecsCount;
 			for (int i = 0; i < sortSpecs->SpecsCount; i++)
@@ -294,7 +296,7 @@ void ProfilerUI::DrawScopesView()
 					switch (sortSpec.ColumnIndex)
 					{
 					case 0: // Name
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc 
@@ -304,7 +306,7 @@ void ProfilerUI::DrawScopesView()
 						);
 						break;
 					case 1: // Total
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc
@@ -314,7 +316,7 @@ void ProfilerUI::DrawScopesView()
 						);
 						break;
 					case 2: // Avg Per Frame
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc
@@ -324,7 +326,7 @@ void ProfilerUI::DrawScopesView()
 						);
 						break;
 					case 3: // Min
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc 
@@ -334,7 +336,7 @@ void ProfilerUI::DrawScopesView()
 						);
 						break;
 					case 4: // Max
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc
@@ -344,7 +346,7 @@ void ProfilerUI::DrawScopesView()
 						);
 						break;
 					case 5: // Median
-						std::sort(scopeData.begin(), scopeData.end(),
+						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
 							return asc
@@ -358,10 +360,11 @@ void ProfilerUI::DrawScopesView()
 					}
 				}
 			}
+			sortSpecs->SpecsDirty = false;
 		}
 
 		char buffer[64];
-		for (const ScopeData& scope : scopeData)
+		for (const ScopeData& scope : myScopeData)
 		{
 			ImGui::TableNextRow();
 			if (ImGui::TableNextColumn())

@@ -36,7 +36,19 @@ private:
 	void DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const;
 	void DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const;
 
+	struct ScopeData
+	{
+		std::string_view myScopeName;
+		size_t myTotalCount = 0;
+		size_t myFoundInFrameCount = 0;
+		size_t myAvgPerFrameCount = 0;
+		uint64_t myMin = std::numeric_limits<uint64_t>::max();
+		uint64_t myMax = 0;
+		uint64_t myMedian = 0;
+	};
+
 	std::vector<FrameData> myFramesToRender;
+	std::vector<ScopeData> myScopeData;
 	std::vector<std::string> myScopeNames = { 
 		"Game::SubmitRenderables", 
 		"Graphics::Gather",
@@ -44,4 +56,5 @@ private:
 	};
 	float myWidthScale = 1.f;
 	bool myAutoRecordLongFrames = true;
+	bool myNeedsToUpdateScopeData = false;
 };
