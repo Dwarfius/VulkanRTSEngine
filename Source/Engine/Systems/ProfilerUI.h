@@ -3,7 +3,6 @@
 class ProfilerUI
 {
 	constexpr static float kThreadColumnWidth = 80.f;
-	constexpr static float kMarkHeight = 30.f;
 public:
 	struct Mark
 	{
@@ -33,9 +32,9 @@ public:
 
 private:
 	void DrawScopesView();
-	void DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const;
-	void DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const;
-	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, ImU32 aColor, glm::u64vec2 aFrame) const;
+	void DrawThreadColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const;
+	void DrawMarksColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const;
+	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, float aMarkHeight, ImU32 aColor, glm::u64vec2 aFrame) const;
 
 	struct ScopeData
 	{

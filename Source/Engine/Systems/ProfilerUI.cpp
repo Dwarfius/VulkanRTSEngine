@@ -160,25 +160,27 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		{
 			bool plotWindowHovered = false;
 			char nodeName[64];
+			
+			const float markHeight = ImGui::GetFrameHeight();
 			for (const FrameData& frameData : myFramesToRender)
 			{
 				Utils::StringFormat(nodeName, "Frame %llu", frameData.myFrameNum);
 				if (ImGui::TreeNode(nodeName))
 				{
 					// Precalculate the whole height
-					float totalHeight = kMarkHeight;
+					float totalHeight = markHeight;
 					for (const auto& threadMaxLevelPair : frameData.myMaxLevels)
 					{
-						totalHeight += (threadMaxLevelPair.second + 1) * kMarkHeight;
+						totalHeight += (threadMaxLevelPair.second + 1) * markHeight;
 					}
 					totalHeight += ImGui::GetStyle().ScrollbarSize;
 
 					ImGui::BeginChild(nodeName, { 0,totalHeight });
 					plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 
-					DrawThreadColumn(frameData, totalHeight);
+					DrawThreadColumn(frameData, markHeight, totalHeight);
 					ImGui::SameLine();
-					DrawMarksColumn(frameData, totalHeight);
+					DrawMarksColumn(frameData, markHeight, totalHeight);
 
 					ImGui::EndChild();
 					ImGui::TreePop();
@@ -406,7 +408,7 @@ void ProfilerUI::DrawScopesView()
 	ImGui::EndTable();
 }
 
-void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const
+void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const
 {
 	char name[64];
 	Utils::StringFormat(name, "%llu##ThreadColumn", aFrameData.myFrameNum);
@@ -414,12 +416,12 @@ void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeigh
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
 	ImGui::Text("Thread Name");
-	float yOffset = kMarkHeight;
+	float yOffset = aMarkHeight;
 	for (const auto& threadIdLevelPair : aFrameData.myMaxLevels)
 	{
 		const std::thread::id threadId = threadIdLevelPair.first;
 		const uint32_t maxLevel = threadIdLevelPair.second;
-		const float height = (maxLevel + 1) * kMarkHeight;
+		const float height = (maxLevel + 1) * aMarkHeight;
 
 		ImGui::SetCursorPos({ 0, yOffset });
 		std::ostringstream stringStream;
@@ -431,7 +433,7 @@ void ProfilerUI::DrawThreadColumn(const FrameData& aFrameData, float aTotalHeigh
 	ImGui::EndChild();
 }
 
-void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const
+void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const
 {
 	// Unresizing scrollable parent window
 	char name[64];
@@ -452,7 +454,7 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 	Utils::StringFormat(name, "Duration: %s", duration);
 	ImGui::SetCursorPosX(0);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
-	ImGui::Button(name, { plotWidth, kMarkHeight });
+	ImGui::Button(name, { plotWidth, aMarkHeight });
 
 	const long long frameStart = aFrameData.myFrameStart;
 	const long long frameEnd = aFrameData.myFrameEnd;
@@ -469,7 +471,7 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 		IM_COL32(128, 128, 64, 255)
 	};
 
-	float yOffset = kMarkHeight;
+	float yOffset = aMarkHeight;
 	for (const auto& threadIdLevelPair : aFrameData.myMaxLevels)
 	{
 		const std::thread::id threadId = threadIdLevelPair.first;
@@ -479,18 +481,19 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 		const MarksVec& threadMarks = aFrameData.myThreadMarkMap.at(threadId);
 		for (const Mark& mark : threadMarks)
 		{
-			const float y = yOffset + mark.myDepth * kMarkHeight;
+			const float y = yOffset + mark.myDepth * aMarkHeight;
 			const float x = plotWidth * InverseLerpProfile(mark.myStart, frameStart, frameEnd);
 			const int colorInd = mark.myId % (sizeof(kColors) / sizeof(ImU32));
-			DrawMark(mark, {x, y}, plotWidth, kColors[colorInd], {frameStart, frameEnd});
+			DrawMark(mark, {x, y}, plotWidth, aMarkHeight, kColors[colorInd], {frameStart, frameEnd});
+			
 		}
-		yOffset += (maxLevel + 1) * kMarkHeight;
+		yOffset += (maxLevel + 1) * aMarkHeight;
 	}
 	ImGui::EndChild();
 	ImGui::EndChild();
 }
 
-void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, ImU32 aColor, glm::u64vec2 aFrame) const
+void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, float aMarkHeight, ImU32 aColor, glm::u64vec2 aFrame) const
 {
 	const uint64_t frameStart = aFrame.x;
 	const uint64_t frameEnd = aFrame.y;
@@ -529,7 +532,7 @@ void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, I
 	{
 		Utils::StringFormat(name, "%s - Ongoing", aMark.myName);
 	}
-	ImGui::Button(name, { width, kMarkHeight });
+	ImGui::Button(name, { width, aMarkHeight });
 
 	if (ImGui::IsItemHovered())
 	{
