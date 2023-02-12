@@ -35,6 +35,7 @@ private:
 	void DrawScopesView();
 	void DrawThreadColumn(const FrameData& aFrameData, float aTotalHeight) const;
 	void DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight) const;
+	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, ImU32 aColor, glm::u64vec2 aFrame) const;
 
 	struct ScopeData
 	{

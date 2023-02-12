@@ -12,6 +12,11 @@
 
 namespace 
 {
+	float InverseLerpProfile(uint64_t val, uint64_t min, uint64_t max) 
+	{
+		return (val - min) / static_cast<float>(max - min);
+	};
+
 	// converts a duration into larger units of time, them puts it
 	// into a string buffer with a resulting unit of time
 	// Warning: assumes aDuration is in nanosecods!
@@ -452,10 +457,6 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 	const long long frameStart = aFrameData.myFrameStart;
 	const long long frameEnd = aFrameData.myFrameEnd;
 
-	auto InverseLerpProfile = [min = frameStart, max = frameEnd](auto val) { 
-		return (val - min) / static_cast<float>(max - min); 
-	};
-
 	constexpr ImU32 kColors[] = {
 		IM_COL32(0, 128, 128, 255),
 		IM_COL32(192, 128, 128, 255),
@@ -478,61 +479,71 @@ void ProfilerUI::DrawMarksColumn(const FrameData& aFrameData, float aTotalHeight
 		const MarksVec& threadMarks = aFrameData.myThreadMarkMap.at(threadId);
 		for (const Mark& mark : threadMarks)
 		{
-			const long long markDuration = mark.myEnd - mark.myStart;
-			const long long startTimeOffset = mark.myStart - frameStart;
-
 			const float y = yOffset + mark.myDepth * kMarkHeight;
-			const float x = plotWidth * InverseLerpProfile(mark.myStart);
-			float width = plotWidth - x; // by default, max possible
-
-			const bool isMarkFinished = mark.myEnd != frameEnd;
-			if (isMarkFinished)
-			{
-				// if we have a closed mark, then we can calculate actual width
-				const float widthRatio = InverseLerpProfile(mark.myEnd);
-				width = widthRatio * plotWidth - x;
-			}
-			// avoid getting to 0, as ImGUI usess it as a default value
-			// to fit the internal label
-			width = std::max(width, 1.f);
-
-			ImGui::SetCursorPos({ x, y });
-
+			const float x = plotWidth * InverseLerpProfile(mark.myStart, frameStart, frameEnd);
 			const int colorInd = mark.myId % (sizeof(kColors) / sizeof(ImU32));
-			ImGui::PushStyleColor(ImGuiCol_Button, kColors[colorInd]);
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-			ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32_WHITE);
-
-			if (isMarkFinished)
-			{
-				DurationToString(duration, markDuration);
-				Utils::StringFormat(name, "%s - %s", mark.myName, duration);
-			}
-			else
-			{
-				Utils::StringFormat(name, "%s - Ongoing", mark.myName);
-			}
-			ImGui::Button(name, { width, kMarkHeight });
-			
-			if (ImGui::IsItemHovered())
-			{
-				if (isMarkFinished)
-				{
-					ImGui::SetTooltip("Name: %s\nDuration: %s",
-						mark.myName, duration);
-				}
-				else
-				{
-					ImGui::SetTooltip("Name: %s\nDuration: Ongoing",
-						mark.myName);
-				}
-			}
-			ImGui::PopStyleVar();
-			ImGui::PopStyleColor(2);
+			DrawMark(mark, {x, y}, plotWidth, kColors[colorInd], {frameStart, frameEnd});
 		}
 		yOffset += (maxLevel + 1) * kMarkHeight;
 	}
 	ImGui::EndChild();
 	ImGui::EndChild();
+}
+
+void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, ImU32 aColor, glm::u64vec2 aFrame) const
+{
+	const uint64_t frameStart = aFrame.x;
+	const uint64_t frameEnd = aFrame.y;
+
+	const long long markDuration = aMark.myEnd - aMark.myStart;
+	const long long startTimeOffset = aMark.myStart - frameStart;
+	
+	float width = aPlotWidth - aPos.x; // by default, max possible
+
+	const bool isMarkFinished = aMark.myEnd != frameEnd;
+	if (isMarkFinished)
+	{
+		// if we have a closed mark, then we can calculate actual width
+		const float widthRatio = InverseLerpProfile(aMark.myEnd, frameStart, frameEnd);
+		width = widthRatio * aPlotWidth - aPos.x;
+	}
+	// avoid getting to 0, as ImGUI usess it as a default value
+	// to fit the internal label
+	width = std::max(width, 1.f);
+
+	ImGui::SetCursorPos({ aPos.x, aPos.y });
+
+	ImGui::PushStyleColor(ImGuiCol_Button, aColor);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+	ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32_WHITE);
+
+	char name[64];
+	char duration[32];
+	if (isMarkFinished)
+	{
+		DurationToString(duration, markDuration);
+		Utils::StringFormat(name, "%s - %s", aMark.myName, duration);
+	}
+	else
+	{
+		Utils::StringFormat(name, "%s - Ongoing", aMark.myName);
+	}
+	ImGui::Button(name, { width, kMarkHeight });
+
+	if (ImGui::IsItemHovered())
+	{
+		if (isMarkFinished)
+		{
+			ImGui::SetTooltip("Name: %s\nDuration: %s",
+				aMark.myName, duration);
+		}
+		else
+		{
+			ImGui::SetTooltip("Name: %s\nDuration: Ongoing",
+				aMark.myName);
+		}
+	}
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor(2);
 }
