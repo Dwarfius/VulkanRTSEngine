@@ -194,11 +194,12 @@ void ProfilerUI::Draw(bool& aIsOpen)
 void ProfilerUI::DrawScopesView()
 {
 	ImGui::Text("Tracked Scopes");
+	char buffer[64];
 	for(size_t i=0; i<myScopeNames.size(); i++)
 	{
 		std::string& scope = myScopeNames[i];
-		std::string indexTag = std::format("##{}", i);
-		myNeedsToUpdateScopeData |= ImGui::InputText(indexTag.c_str(), scope.data(), 
+		Utils::StringFormat(buffer, "##%llu", i);
+		myNeedsToUpdateScopeData |= ImGui::InputText(buffer, scope.data(),
 			scope.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
 			[](ImGuiInputTextCallbackData* aData)
 			{
@@ -213,8 +214,8 @@ void ProfilerUI::DrawScopesView()
 		);
 
 		ImGui::SameLine();
-		std::string deleteButton = "Delete" + indexTag;
-		if (ImGui::Button(deleteButton.c_str()))
+		Utils::StringFormat(buffer, "Delete##%llu", i);
+		if (ImGui::Button(buffer))
 		{
 			myScopeNames.erase(myScopeNames.begin() + i);
 			i--;
@@ -363,7 +364,6 @@ void ProfilerUI::DrawScopesView()
 			sortSpecs->SpecsDirty = false;
 		}
 
-		char buffer[64];
 		for (const ScopeData& scope : myScopeData)
 		{
 			ImGui::TableNextRow();
