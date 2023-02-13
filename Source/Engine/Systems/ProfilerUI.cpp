@@ -124,26 +124,27 @@ void ProfilerUI::Draw(bool& aIsOpen)
 	{
 		if (ImGui::Button("Buffer Init Frame"))
 		{
-			const auto& frameData = Profiler::GetInstance().GrabInitFrame();
-			for (const Profiler::FrameProfile& frameProfile : frameData)
-			{
-				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
-				myNeedsToUpdateScopeData = true;
-				UpdateThreadMapping();
-			}
+			Profiler::GetInstance().GatherInitFrames(
+				[this](const Profiler::FrameProfile& aFrame)
+				{
+					myFramesToRender.push_back(std::move(ProcessFrameProfile(aFrame)));
+				}
+			);
+			myNeedsToUpdateScopeData = true;
+			UpdateThreadMapping();
 		}
 
 		ImGui::SameLine();
 		if (ImGui::Button("Buffer captures"))
 		{
-			const auto& frameData = Profiler::GetInstance().GetBufferedFrameData();
-			for (const Profiler::FrameProfile& frameProfile : frameData)
-			{
-				// TODO: properly order frames to render!
-				myFramesToRender.push_back(std::move(ProcessFrameProfile(frameProfile)));
-				myNeedsToUpdateScopeData = true;
-				UpdateThreadMapping();
-			}
+			Profiler::GetInstance().GatherBufferedFrames(
+				[this](const Profiler::FrameProfile& aFrame)
+				{
+					myFramesToRender.push_back(std::move(ProcessFrameProfile(aFrame)));
+				}
+			);
+			myNeedsToUpdateScopeData = true;
+			UpdateThreadMapping();
 		}
 
 		ImGui::SameLine();

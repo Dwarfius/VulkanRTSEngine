@@ -47,8 +47,10 @@ public:
     void NewFrame();
     void SetOnLongFrameCallback(const LongFrameCallback& aCallback) { myOnLongFrameCB = aCallback; }
 
-    const std::array<FrameProfile, kMaxFrames>& GetBufferedFrameData() const { return myFrameProfiles;  }
-    const std::array<FrameProfile, kInitFrames>& GrabInitFrame() const { return myInitFrames; };
+    template<class T>
+    void GatherBufferedFrames(const T& aFunc) const;
+    template<class T>
+    void GatherInitFrames(const T& aFunc) const;
 
 private:
     class Storage;
@@ -85,3 +87,23 @@ public:
     ScopedMark(std::string_view aName, Profiler& aProfiler = Profiler::GetInstance());
     ~ScopedMark();
 };
+
+template<class T>
+void Profiler::GatherBufferedFrames(const T& aFunc) const
+{
+    const size_t startInd = myFrameNum - kMaxFrames;
+    for (size_t i = 1; i < kMaxFrames; i++) // skipping 0 as it's being written to
+    {
+        const size_t index = (startInd + i) % kMaxFrames;
+        aFunc(myFrameProfiles[index]);
+    }
+}
+
+template<class T>
+void Profiler::GatherInitFrames(const T& aFunc) const
+{
+    for (size_t i = 0; i < kInitFrames; i++)
+    {
+        aFunc(myInitFrames[i]);
+    }
+}
