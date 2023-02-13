@@ -12,7 +12,6 @@ public:
 		std::thread::id myThreadId;
 		uint32_t myId;
 		uint8_t myDepth;
-
 	};
 	using MarksVec = std::vector<Mark>;
 	using ThreadMarkMap = std::unordered_map<std::thread::id, MarksVec>;
@@ -32,9 +31,10 @@ public:
 
 private:
 	void DrawScopesView();
-	void DrawThreadColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const;
-	void DrawMarksColumn(const FrameData& aFrameData, float aMarkHeight, float aTotalHeight) const;
-	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aPlotWidth, float aMarkHeight, ImU32 aColor, glm::u64vec2 aFrame) const;
+	void DrawThreadColumn(float aMarkHeight, float aTotalHeight) const;
+	void DrawFrameMarks(const FrameData& aFrameData, glm::vec2 aPos, float aMarkHeight, float aFrameWidth) const;
+	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aFrameWidth, float aMarkHeight, ImU32 aColor, glm::u64vec2 aFrameTimes) const;
+	void UpdateThreadMapping();
 
 	struct ScopeData
 	{
@@ -54,6 +54,13 @@ private:
 		"Graphics::Gather",
 		"GraphicsGL::ExecuteJobs"
 	};
+	struct ThreadInfo
+	{
+		std::thread::id myId;
+		uint32_t myMaxLevel = 1;
+		uint32_t myAboveMaxLevel = 0;
+	};
+	std::vector<ThreadInfo> myThreadMapping;
 	float myWidthScale = 1.f;
 	bool myAutoRecordLongFrames = true;
 	bool myNeedsToUpdateScopeData = false;
