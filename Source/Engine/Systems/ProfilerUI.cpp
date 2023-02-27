@@ -9,6 +9,38 @@
 #include <Core/Profiler.h>
 
 #include <sstream>
+#include <imgui_internal.h>
+
+// Taken and adapted from https://github.com/ocornut/imgui/issues/3379#issuecomment-669259429
+void ScrollWhenDraggingOnVoid(const glm::vec2& aDelta, uint32_t aButton)
+{
+	const ImGuiContext& g = *ImGui::GetCurrentContext();
+	ImGuiWindow* window = g.CurrentWindow;
+	const ImGuiID overlayId = window->GetID("##scrolldraggingoverlay");
+	bool hovered = false;
+	if (g.HoveredId == 0 || g.HoveredId == overlayId)
+	{
+		const ImGuiButtonFlags buttonFlags = (aButton == 0)
+			? ImGuiButtonFlags_MouseButtonLeft : (aButton == 1)
+			? ImGuiButtonFlags_MouseButtonRight : ImGuiButtonFlags_MouseButtonMiddle;
+		ImGui::ButtonBehavior(window->Rect(), overlayId, &hovered, nullptr, buttonFlags);
+	}
+	
+	if (hovered // are we still on the invisible button?
+		// or any child elem of the window containg it?
+		|| (g.HoveredWindow && g.HoveredWindow->ID == g.CurrentWindow->ID)) 
+	{
+		const bool held = ImGui::GetIO().MouseDown[aButton];
+		if (held && aDelta.x != 0.0f)
+		{
+			ImGui::SetScrollX(window, window->Scroll.x - aDelta.x);
+		}
+		if (held && aDelta.y != 0.0f)
+		{
+			ImGui::SetScrollY(window, window->Scroll.y - aDelta.y);
+		}
+	}
+}
 
 namespace 
 {
@@ -163,8 +195,6 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		}
 		if (ImGui::TreeNode("Frame Tracking"))
 		{
-			bool plotWindowHovered = false;
-			
 			const float markHeight = ImGui::GetFrameHeight();
 
 			// Precalculate the whole height
@@ -177,10 +207,8 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			totalHeight += ImGui::GetStyle().ScrollbarSize;
 
 			ImGui::BeginChild("Scrollable", { 0,totalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
-			plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+			const bool plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 			DrawThreadColumn(markHeight, totalHeight);
-
-			// TODO: add horizontal mouse drag 
 
 			float xOffset = kThreadColumnWidth;
 			constexpr float kPixelsPerMs = 50; // Just a magic number, gotta start somewhere
@@ -193,6 +221,8 @@ void ProfilerUI::Draw(bool& aIsOpen)
 				DrawFrameMarks(frameData, startPos, markHeight, frameWidth);
 				xOffset += frameWidth;
 			}
+			const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+			ScrollWhenDraggingOnVoid({ mouseDelta.x, 0 }, ImGuiMouseButton_Left);
 			ImGui::EndChild();
 			if (plotWindowHovered)
 			{
