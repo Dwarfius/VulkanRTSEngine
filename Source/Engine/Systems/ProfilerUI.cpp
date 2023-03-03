@@ -142,7 +142,7 @@ ProfilerUI::ProfilerUI()
 		{
 			if (myAutoRecordLongFrames)
 			{
-				myFramesToRender.push_back(std::move(ProcessFrameProfile(aProfile)));
+				myFrames.push_back(std::move(ProcessFrameProfile(aProfile)));
 				myNeedsToUpdateScopeData = true;
 				UpdateThreadMapping();
 			}
@@ -156,14 +156,18 @@ void ProfilerUI::Draw(bool& aIsOpen)
 	{
 		if (ImGui::Button("Buffer Init Frame"))
 		{
+			myInitFrames.clear();
 			Profiler::GetInstance().GatherInitFrames(
 				[this](const Profiler::FrameProfile& aFrame)
 				{
-					myFramesToRender.push_back(std::move(ProcessFrameProfile(aFrame)));
+					myInitFrames.push_back(std::move(ProcessFrameProfile(aFrame)));
 				}
 			);
 			myNeedsToUpdateScopeData = true;
 			UpdateThreadMapping();
+
+			// force zoom to be recalculated
+			myInitFramesScale = std::numeric_limits<float>::min();
 		}
 
 		ImGui::SameLine();
@@ -172,17 +176,20 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			Profiler::GetInstance().GatherBufferedFrames(
 				[this](const Profiler::FrameProfile& aFrame)
 				{
-					myFramesToRender.push_back(std::move(ProcessFrameProfile(aFrame)));
+					myFrames.push_back(std::move(ProcessFrameProfile(aFrame)));
 				}
 			);
 			myNeedsToUpdateScopeData = true;
 			UpdateThreadMapping();
+
+			// force zoom to be recalculated
+			myFramesScale = std::numeric_limits<float>::min();
 		}
 
 		ImGui::SameLine();
 		if (ImGui::Button("Clear captures"))
 		{
-			myFramesToRender.clear();
+			myFrames.clear();
 			myNeedsToUpdateScopeData = true;
 		}
 
@@ -193,42 +200,15 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			DrawScopesView();
 			ImGui::TreePop();
 		}
-		if (ImGui::TreeNode("Frame Tracking"))
+		if (!myInitFrames.empty() 
+			&& ImGui::TreeNode("Frame Tracking - Initial Frames"))
 		{
-			const float markHeight = ImGui::GetFrameHeight();
-
-			// Precalculate the whole height
-			float totalHeight = markHeight; // title row bar
-			if (!myThreadMapping.empty())
-			{
-				const ThreadInfo& lastInfo = myThreadMapping.back();
-				totalHeight += (lastInfo.myAboveMaxLevel + lastInfo.myMaxLevel + 1) * markHeight;
-			}
-			totalHeight += ImGui::GetStyle().ScrollbarSize;
-
-			ImGui::BeginChild("Scrollable", { 0,totalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
-			const bool plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
-			DrawThreadColumn(markHeight, totalHeight);
-
-			float xOffset = kThreadColumnWidth;
-			constexpr float kPixelsPerMs = 50; // Just a magic number, gotta start somewhere
-			for(size_t i=0; i<myFramesToRender.size(); i++)
-			{
-				const FrameData& frameData = myFramesToRender[i];
-				const size_t durationNs = (frameData.myFrameEnd - frameData.myFrameStart);
-				const float frameWidth = kPixelsPerMs * (durationNs / 1'000'000.f) * myWidthScale;
-				const glm::vec2 startPos = { xOffset, 0 };
-				DrawFrameMarks(frameData, startPos, markHeight, frameWidth);
-				xOffset += frameWidth;
-			}
-			const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-			ScrollWhenDraggingOnVoid({ mouseDelta.x, 0 }, ImGuiMouseButton_Left);
-			ImGui::EndChild();
-			if (plotWindowHovered)
-			{
-				myWidthScale += Input::GetMouseWheelDelta() * 0.1f;
-				myWidthScale = std::max(myWidthScale, 1.0f);
-			}
+			DrawFrames(myInitFrames, myInitFramesScale);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Frame Tracking - Recent Frames"))
+		{
+			DrawFrames(myFrames, myFramesScale);
 			ImGui::TreePop();
 		}
 	}
@@ -277,35 +257,43 @@ void ProfilerUI::DrawScopesView()
 	{
 		myScopeData.clear();
 		myScopeData.resize(myScopeNames.size());
+		auto ProcessFrameData = [](const FrameData& aFrameData, ScopeData& aScopeData) {
+			bool foundInFrame = false;
+			for (const auto& [thread, marksVec] : aFrameData.myThreadMarkMap)
+			{
+				for (const Mark& mark : marksVec)
+				{
+					const std::string_view nameView = mark.myName;
+					if (nameView == aScopeData.myScopeName)
+					{
+						foundInFrame = true;
+						aScopeData.myTotalCount++;
+						const uint64_t durationNs = mark.myEnd - mark.myStart;
+						aScopeData.myMin = glm::min(durationNs, aScopeData.myMin);
+						aScopeData.myMax = glm::max(durationNs, aScopeData.myMax);
+					}
+				}
+			}
+
+			if (foundInFrame)
+			{
+				aScopeData.myFoundInFrameCount++;
+			}
+		};
+		
 		for (size_t i = 0; i < myScopeNames.size(); i++)
 		{
 			ScopeData& scope = myScopeData[i];
-			const std::string& scopeName = myScopeNames[i];
-			scope.myScopeName = scopeName;
+			scope.myScopeName = myScopeNames[i];
 
-			for (const FrameData& frameData : myFramesToRender)
+			for (const FrameData& frameData : myInitFrames)
 			{
-				bool foundInFrame = false;
-				for (const auto& [thread, marksVec] : frameData.myThreadMarkMap)
-				{
-					for (const Mark& mark : marksVec)
-					{
-						const std::string_view nameView = mark.myName;
-						if (nameView == scopeName)
-						{
-							foundInFrame = true;
-							scope.myTotalCount++;
-							const uint64_t durationNs = mark.myEnd - mark.myStart;
-							scope.myMin = glm::min(durationNs, scope.myMin);
-							scope.myMax = glm::max(durationNs, scope.myMax);
-						}
-					}
-				}
+				ProcessFrameData(frameData, scope);
+			}
 
-				if (foundInFrame)
-				{
-					scope.myFoundInFrameCount++;
-				}
+			for (const FrameData& frameData : myFrames)
+			{
+				ProcessFrameData(frameData, scope);
 			}
 
 			if (scope.myTotalCount)
@@ -465,6 +453,50 @@ void ProfilerUI::DrawThreadColumn(float aMarkHeight, float aTotalHeight) const
 	}
 }
 
+void ProfilerUI::DrawFrames(std::span<FrameData> aData, float& aScale) const
+{
+	const float markHeight = ImGui::GetFrameHeight();
+
+	// Precalculate the whole height
+	float totalHeight = markHeight; // title row bar
+	if (!myThreadMapping.empty())
+	{
+		const ThreadInfo& lastInfo = myThreadMapping.back();
+		totalHeight += (lastInfo.myAboveMaxLevel + lastInfo.myMaxLevel + 1) * markHeight;
+	}
+	totalHeight += ImGui::GetStyle().ScrollbarSize;
+
+	ImGui::BeginChild("Scrollable", { 0,totalHeight }, false, ImGuiWindowFlags_HorizontalScrollbar);
+	const bool plotWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+	DrawThreadColumn(markHeight, totalHeight);
+
+	float xOffset = kThreadColumnWidth;
+	for (const FrameData& frameData : aData)
+	{
+		const size_t durationNs = (frameData.myFrameEnd - frameData.myFrameStart);
+		const float frameWidth = kPixelsPerMs * (durationNs / 1'000'000.f) * aScale;
+		const glm::vec2 startPos = { xOffset, 0 };
+		DrawFrameMarks(frameData, startPos, markHeight, frameWidth);
+		xOffset += frameWidth;
+	}
+	const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+	ScrollWhenDraggingOnVoid({ mouseDelta.x, 0 }, ImGuiMouseButton_Left);
+	const float clipRectW = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+	ImGui::EndChild();
+
+	const float mouseWheelDelta = Input::GetMouseWheelDelta();
+	if (aScale == std::numeric_limits<float>::min() 
+		|| (plotWindowHovered && mouseWheelDelta))
+	{
+		aScale += mouseWheelDelta * 0.1f;
+
+		// Prevent shrinking of the view
+		const float contentWidth = clipRectW - kThreadColumnWidth;
+		const float maxZoomOut = CalcMaxZoomOut(aData, contentWidth);
+		aScale = std::max(aScale, maxZoomOut);
+	}
+}
+
 void ProfilerUI::DrawFrameMarks(const FrameData& aFrameData, glm::vec2 aPos, float aMarkHeight, float aFrameWidth) const
 {
 	char name[64];
@@ -579,9 +611,8 @@ void ProfilerUI::UpdateThreadMapping()
 {
 	myThreadMapping.clear(); // rebuild the whole mapping, as it's pretty cheap
 
-	for (const FrameData& frameData : myFramesToRender)
-	{
-		for (const auto& [threadId, maxLevel] : frameData.myMaxLevels)
+	auto ProcessFrameData = [&](const FrameData& aFrameData) {
+		for (const auto& [threadId, maxLevel] : aFrameData.myMaxLevels)
 		{
 			const auto iter = std::find_if(myThreadMapping.begin(), myThreadMapping.end(),
 				[threadId](const auto& anItem)
@@ -598,7 +629,17 @@ void ProfilerUI::UpdateThreadMapping()
 				myThreadMapping.push_back({ threadId, maxLevel });
 			}
 		}
+	};
+
+	for (const FrameData& frameData : myInitFrames)
+	{
+		ProcessFrameData(frameData);
 	}
+	for (const FrameData& frameData : myFrames)
+	{
+		ProcessFrameData(frameData);
+	}
+
 	// Precalculate how many "levels" of marks there will be for specific thread
 	// down the list.
 	for (size_t i = 1; i < myThreadMapping.size(); i++)
@@ -606,4 +647,15 @@ void ProfilerUI::UpdateThreadMapping()
 		myThreadMapping[i].myAboveMaxLevel = 
 			myThreadMapping[i - 1].myMaxLevel + 1 + myThreadMapping[i - 1].myAboveMaxLevel;
 	}
+}
+
+float ProfilerUI::CalcMaxZoomOut(std::span<FrameData> aData, float aWidth)
+{
+	float durationMs = 0;
+	for (const FrameData& frameData : aData)
+	{
+		const size_t durationNs = (frameData.myFrameEnd - frameData.myFrameStart);
+		durationMs += durationNs / 1'000'000.f;
+	}
+	return aWidth / (durationMs * kPixelsPerMs);
 }

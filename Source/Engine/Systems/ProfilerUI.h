@@ -3,6 +3,7 @@
 class ProfilerUI
 {
 	constexpr static float kThreadColumnWidth = 80.f;
+	constexpr static float kPixelsPerMs = 50.f;
 public:
 	struct Mark
 	{
@@ -32,9 +33,11 @@ public:
 private:
 	void DrawScopesView();
 	void DrawThreadColumn(float aMarkHeight, float aTotalHeight) const;
+	void DrawFrames(std::span<FrameData> aData, float& aScale) const;
 	void DrawFrameMarks(const FrameData& aFrameData, glm::vec2 aPos, float aMarkHeight, float aFrameWidth) const;
 	void DrawMark(const Mark& aMark, glm::vec2 aPos, float aFrameWidth, float aMarkHeight, ImU32 aColor, glm::u64vec2 aFrameTimes) const;
 	void UpdateThreadMapping();
+	static float CalcMaxZoomOut(std::span<FrameData> aData, float aWidth);
 
 	struct ScopeData
 	{
@@ -47,7 +50,8 @@ private:
 		uint64_t myMedian = 0;
 	};
 
-	std::vector<FrameData> myFramesToRender;
+	std::vector<FrameData> myInitFrames;
+	std::vector<FrameData> myFrames;
 	std::vector<ScopeData> myScopeData;
 	std::vector<std::string> myScopeNames = { 
 		"Game::SubmitRenderables", 
@@ -61,7 +65,8 @@ private:
 		uint32_t myAboveMaxLevel = 0;
 	};
 	std::vector<ThreadInfo> myThreadMapping;
-	float myWidthScale = 1.f;
+	float myInitFramesScale = 1.f;
+	float myFramesScale = 1.f;
 	bool myAutoRecordLongFrames = true;
 	bool myNeedsToUpdateScopeData = false;
 };
