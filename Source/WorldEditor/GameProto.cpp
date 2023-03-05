@@ -9,6 +9,7 @@
 #include <Engine/Input.h>
 
 #include <Graphics/Resources/Texture.h>
+#include <Graphics/Camera.h>
 
 GameProto::GameProto(Game& aGame)
 {
@@ -57,7 +58,7 @@ void GameProto::Generate(Game& aGame, DefaultAssets& aAssets)
 	{
 		const size_t x = i % mySize;
 		const size_t y = i / mySize;
-		const Transform transf({ x * kSize - offset, 0, y * kSize }, {}, { kSize, kSize, kSize });
+		const Transform transf({ x * kSize - offset, 0, y * -kSize }, {}, { kSize, kSize, kSize });
 		Handle<GameObject> newGO = new GameObject(transf);
 		newGO->CreateRenderable();
 
@@ -76,6 +77,15 @@ void GameProto::Generate(Game& aGame, DefaultAssets& aAssets)
 		myGameObjects[i]->GetRenderable()->myVO.SetTexture(colorText);
 	}
 
+	// reposition the camera to see all
+	const glm::vec3 focusPoint = (myGameObjects.front()->GetWorldTransform().GetPos()
+		+ myGameObjects.back()->GetWorldTransform().GetPos()) / 2.f;
+	aGame.GetCamera()->GetTransform().SetPos(
+		focusPoint + glm::vec3{ 0, mySize * kSize, mySize * kSize }
+	);
+	aGame.GetCamera()->GetTransform().LookAt(focusPoint);
+
+	// initailize selection
 	if (!oldSize)
 	{
 		SetColor({ 0, 0 }, kSelected);
