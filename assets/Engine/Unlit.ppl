@@ -1,0 +1,11 @@
+{  
+    "myType":0,
+    "myShaders":[
+        "Engine/baseVert.shd",
+        "Engine/UnlitFrag.shd"
+    ],
+    "myAdapters":[  
+        "ObjectMatricesAdapter",
+        "CameraAdapter"
+    ]
+}

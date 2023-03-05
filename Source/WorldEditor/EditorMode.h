@@ -10,6 +10,7 @@
 #include "HexSolver.h"
 #include "DefaultAssets.h"
 #include "Gizmos.h"
+#include "GameProto.h"
 
 class PhysicsWorld;
 class GameObject;
@@ -83,4 +84,5 @@ private:
 	Handle<GameObject> myGO;
 
 	HexSolver solver;
+	GameProto myProto;
 };

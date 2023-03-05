@@ -33,6 +33,7 @@
 
 EditorMode::EditorMode(Game& aGame)
 	: myDefAssets(aGame)
+	, myProto(aGame)
 {
 	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
 
@@ -199,6 +200,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
 
 	solver.Update(aGame, aDeltaTime);
+	myProto.Update(aGame, myDefAssets, aDeltaTime);
 
 	DrawMenu(aGame);
 
