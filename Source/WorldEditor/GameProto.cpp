@@ -95,21 +95,34 @@ void GameProto::Generate(Game& aGame, DefaultAssets& aAssets)
 void GameProto::HandleInput()
 {
 	glm::uvec2 oldPos = myPos;
+	const bool ignoreTerrain = Input::GetKey(Input::Keys::Shift);
 	if (myPos.y > 0u && Input::GetKeyPressed(Input::Keys::S))
 	{
-		myPos.y -= 1;
+		if (CanTraverseTo(myPos + glm::uvec2{ 0, -1 }) || ignoreTerrain)
+		{
+			myPos.y -= 1;
+		}
 	}
 	if (myPos.y < mySize - 1u && Input::GetKeyPressed(Input::Keys::W))
 	{
-		myPos.y += 1;
+		if (CanTraverseTo(myPos + glm::uvec2{ 0, 1 }) || ignoreTerrain)
+		{
+			myPos.y += 1;
+		}
 	}
 	if (myPos.x > 0u && Input::GetKeyPressed(Input::Keys::A))
 	{
-		myPos.x -= 1;
+		if (CanTraverseTo(myPos + glm::uvec2{ -1, 0 }) || ignoreTerrain)
+		{
+			myPos.x -= 1;
+		}
 	}
 	if (myPos.x < mySize - 1u && Input::GetKeyPressed(Input::Keys::D))
 	{
-		myPos.x += 1;
+		if (CanTraverseTo(myPos + glm::uvec2{ 1, 0 }) || ignoreTerrain)
+		{
+			myPos.x += 1;
+		}
 	}
 
 	if (myPos != oldPos)
@@ -138,4 +151,10 @@ void GameProto::SetColor(glm::uvec2 aPos, uint8_t aColorInd)
 	{
 		myNodes[index].myValue = aColorInd;
 	}
+}
+
+bool GameProto::CanTraverseTo(glm::uvec2 aPos)
+{
+	Node& node = GetNode(aPos);
+	return node.myValue != kVoid && node.myValue != kWater;
 }

@@ -38,6 +38,7 @@ private:
 	void HandleInput();
 	Node& GetNode(glm::uvec2 aPos);
 	void SetColor(glm::uvec2 aPos, uint8_t aColorInd);
+	bool CanTraverseTo(glm::uvec2 aPos);
 
 	std::vector<Handle<GameObject>> myGameObjects;
 	std::vector<Node> myNodes;
