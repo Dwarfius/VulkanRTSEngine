@@ -47,7 +47,7 @@ EditorMode::EditorMode(Game& aGame)
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 
 	myGO = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
-	myGO->ExecLambdaOnLoad([&](Resource* aRes) {
+	myGO->ExecLambdaOnLoad([&, model](Resource* aRes) {
 		myGO->GetComponent<VisualComponent>()->SetModel(model);
 		myGO->GetComponent<VisualComponent>()->SetTexture(0, myGLTFImporter.GetTexture(0));
 		Transform transf = myGO->GetWorldTransform();
