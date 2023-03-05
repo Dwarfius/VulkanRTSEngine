@@ -136,13 +136,13 @@ Game::Game(ReportError aReporterFunc)
 
 Game::~Game()
 {
-	delete myAssetTracker;
 	delete myAnimationSystem;
 	delete myImGUISystem;
 	delete myLightSystem;
 
 	// render thread has to go first, since it relies on glfw to be there
 	delete myRenderThread;
+	delete myAssetTracker;
 	glfwTerminate();
 }
 
