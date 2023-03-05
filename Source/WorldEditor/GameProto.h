@@ -17,14 +17,18 @@ class GameProto
 		uint8_t myValue;
 	};
 
-	constexpr static uint8_t kColorTypes = 3;
-	constexpr static int8_t kVoid = 0;
-	constexpr static int8_t kGround = 1;
-	constexpr static glm::u8vec3 kColors[kColorTypes]{
+	constexpr static int8_t kSelected = 0;
+	constexpr static int8_t kVoid = 1;
+	constexpr static int8_t kWater = 2;
+	constexpr static int8_t kGround = 3;
+	constexpr static glm::u8vec3 kColors[]{
+		{0xFF, 0xD8, 0}, // selected
 		{0, 0, 0}, // void
-		{0xFF, 0xFF, 0xFF}, // empty
+		{0, 0, 0xFF}, // water
+		{0xFF, 0xFF, 0xFF}, // ground
 		{0xFF, 0xFF, 0}
 	};
+	constexpr static uint8_t kColorTypes = std::extent_v<decltype(kColors)>;
 public:
 	GameProto(Game& aGame);
 	void Update(Game& aGame, DefaultAssets& aAssets, float aDelta);
@@ -32,7 +36,8 @@ public:
 private:
 	void Generate(Game& aGame, DefaultAssets& aAssets);
 	void HandleInput();
-	void DestroyAt(glm::uvec2 aPos);
+	Node& GetNode(glm::uvec2 aPos);
+	void SetColor(glm::uvec2 aPos, uint8_t aColorInd);
 
 	std::vector<Handle<GameObject>> myGameObjects;
 	std::vector<Node> myNodes;

@@ -39,7 +39,10 @@ void GameProto::Update(Game& aGame, DefaultAssets& aAssets, float aDelta)
 		}
 	}
 
-	HandleInput();
+	if (myNodes.size())
+	{
+		HandleInput();
+	}
 }
 
 void GameProto::Generate(Game& aGame, DefaultAssets& aAssets)
@@ -72,59 +75,57 @@ void GameProto::Generate(Game& aGame, DefaultAssets& aAssets)
 		const Handle<Texture>& colorText = myTextures[myNodes[i].myValue];
 		myGameObjects[i]->GetRenderable()->myVO.SetTexture(colorText);
 	}
+
+	if (!oldSize)
+	{
+		SetColor({ 0, 0 }, kSelected);
+	}
 }
 
 void GameProto::HandleInput()
 {
-	if (myPos.y > 0u && Input::GetKey(Input::Keys::S))
+	glm::uvec2 oldPos = myPos;
+	if (myPos.y > 0u && Input::GetKeyPressed(Input::Keys::S))
 	{
 		myPos.y -= 1;
 	}
-	if (myPos.y < mySize - 1u && Input::GetKey(Input::Keys::W))
+	if (myPos.y < mySize - 1u && Input::GetKeyPressed(Input::Keys::W))
 	{
 		myPos.y += 1;
 	}
-	if (myPos.x > 0u && Input::GetKey(Input::Keys::A))
+	if (myPos.x > 0u && Input::GetKeyPressed(Input::Keys::A))
 	{
 		myPos.x -= 1;
 	}
-	if (myPos.x < mySize - 1u && Input::GetKey(Input::Keys::D))
+	if (myPos.x < mySize - 1u && Input::GetKeyPressed(Input::Keys::D))
 	{
 		myPos.x += 1;
 	}
 
-	bool destroy = false;
-	glm::uvec2 target;
-	if (myPos.y > 1u && Input::GetKey(Input::Keys::Down))
+	if (myPos != oldPos)
 	{
-		destroy = true;
-		target = myPos + glm::uvec2{ 0, -1 };
-	}
-	if (myPos.y < mySize - 2u && Input::GetKey(Input::Keys::Up))
-	{
-		destroy = true;
-		target = myPos + glm::uvec2{ 0, 1 };
-	}
-	if (myPos.x > 1u && Input::GetKey(Input::Keys::Left))
-	{
-		destroy = true;
-		target = myPos + glm::uvec2{ -1, 0 };
-	}
-	if (myPos.x < mySize - 2u && Input::GetKey(Input::Keys::Right))
-	{
-		destroy = true;
-		target = myPos + glm::uvec2{ 1, 0 };
+		SetColor(oldPos, GetNode(oldPos).myValue);
+		SetColor(myPos, kSelected);
 	}
 
-	if (destroy)
+	if (Input::GetKeyPressed(Input::Keys::Space))
 	{
-		DestroyAt(target);
+		SetColor(myPos, kVoid);
 	}
 }
 
-void GameProto::DestroyAt(glm::uvec2 aPos)
+GameProto::Node& GameProto::GetNode(glm::uvec2 aPos)
 {
 	const size_t index = aPos.y * mySize + aPos.x;
-	Handle<GameObject>& go = myGameObjects[index];
-	go->GetRenderable()->myVO.SetTexture(myTextures[kVoid]);
+	return myNodes[index];
+}
+
+void GameProto::SetColor(glm::uvec2 aPos, uint8_t aColorInd)
+{
+	const size_t index = aPos.y * mySize + aPos.x;
+	myGameObjects[index]->GetRenderable()->myVO.SetTexture(myTextures[aColorInd]);
+	if (aColorInd != kSelected)
+	{
+		myNodes[index].myValue = aColorInd;
+	}
 }
