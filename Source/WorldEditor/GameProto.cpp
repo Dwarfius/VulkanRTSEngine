@@ -21,6 +21,7 @@ GameProto::GameProto(Game& aGame)
 		texture->SetHeight(1);
 		texture->SetWidth(1);
 		texture->SetPixels(new uint8_t[3]{ kColors[i].x, kColors[i].y, kColors[i].z});
+		//tracker.AssignDynamicId(*texture);
 		myTextures[i] = texture;
 	}
 }
@@ -127,8 +128,8 @@ void GameProto::HandleInput()
 
 	if (myPos != oldPos)
 	{
-		SetColor(oldPos, GetNode(oldPos).myValue);
 		SetColor(myPos, kSelected);
+		SetColor(oldPos, GetNode(oldPos).myValue);
 	}
 
 	if (Input::GetKeyPressed(Input::Keys::Space))
