@@ -35,6 +35,9 @@ public:
 
 private:
 	void Generate(Game& aGame, DefaultAssets& aAssets);
+	void GenerateRivers();
+	void UpdateWater();
+
 	void HandleInput();
 	Node& GetNode(glm::uvec2 aPos);
 	void SetColor(glm::uvec2 aPos, uint8_t aColorInd);
@@ -43,7 +46,7 @@ private:
 	std::vector<Handle<GameObject>> myGameObjects;
 	std::vector<Node> myNodes;
 	glm::uvec2 myPos = { 0, 0 };
-	uint8_t mySize = 4;
+	uint8_t mySize = 16;
 	Handle<Pipeline> myPipeline;
 	Handle<Texture> myTextures[kColorTypes];
 };
