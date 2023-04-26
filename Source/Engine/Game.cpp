@@ -171,7 +171,7 @@ void Game::Init(bool aUseDefaultCompositePass)
 	Profiler::ScopedMark profile("Game::Init");
 
 	constexpr static uint32_t kInitReserve = 4000;
-	myGameObjects.reserve(kInitReserve);
+	myWorld.Reserve(kInitReserve);
 
 	myRenderThread->Init(BootWithVK, *myAssetTracker);
 
@@ -315,21 +315,19 @@ void Game::CleanUp()
 
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
+	
 	// get rid of pending objects
 	ourGODeleteEnabled = true;
-	while (myAddQueue.size())
+	while (!myAddQueue.empty())
 	{
 		myAddQueue.pop();
 	}
-	ourGODeleteEnabled = false;
-
-	// get rid of tracked objects
-	for (auto [key, goHandle] : myGameObjects)
+	while (!myRemoveQueue.empty())
 	{
-		RemoveGameObject(goHandle);
+		myRemoveQueue.pop();
 	}
-	RemoveGameObjects();
-	ASSERT_STR(myGameObjects.empty(), "All objects should've been cleaned up!");
+	myWorld.Clear();
+	ourGODeleteEnabled = false;
 
 	for (TerrainEntity terrain : myTerrains)
 	{
@@ -418,7 +416,6 @@ void Game::AddGameObject(Handle<GameObject> aGOHandle)
 			dirtyGOs.push_back(&dirtyGO->GetChild(childInd));
 		}
 	}
-
 }
 
 void Game::RemoveGameObject(Handle<GameObject> aGOHandle)
@@ -535,7 +532,7 @@ void Game::AddGameObjects()
 	{
 		Handle<GameObject> go = myAddQueue.front();
 		myAddQueue.pop();
-		myGameObjects[go->GetUID()] = go;
+		myWorld.Add(go);
 	}
 }
 
@@ -642,7 +639,7 @@ void Game::RemoveGameObjects()
 	while (myRemoveQueue.size())
 	{
 		Handle<GameObject> go = myRemoveQueue.front();
-		myGameObjects.erase(go->GetUID());
+		myWorld.Remove(go);
 		myRemoveQueue.pop();
 	}
 	ourGODeleteEnabled = false;

@@ -9,21 +9,26 @@
 
 void EntitiesWidget::Draw(Game& aGame)
 {
-	aGame.ForEach([&](GameObject& aGo) {
-		if (aGo.GetParent().IsValid())
+	World& world = aGame.GetWorld();
+	world.Access([&](std::vector<Handle<GameObject>>& aGameObjects) {
+		for (Handle<GameObject>& gameObjectHandle : aGameObjects)
 		{
-			// skip children objects - they'll be displayed as part of hierarchy
-			return;
-		}
+			GameObject& gameObject = *gameObjectHandle.Get();
+			if (gameObject.GetParent().IsValid())
+			{
+				// skip children objects - they'll be displayed as part of hierarchy
+				return;
+			}
 
-		char uidBuffer[33];
-		aGo.GetUID().GetString(uidBuffer);
-		if (ImGui::TreeNode(uidBuffer))
-		{
-			DrawGameObject(aGo);
-			DrawChildren(aGo);
+			char uidBuffer[33];
+			gameObject.GetUID().GetString(uidBuffer);
+			if (ImGui::TreeNode(uidBuffer))
+			{
+				DrawGameObject(gameObject);
+				DrawChildren(gameObject);
 
-			ImGui::TreePop();
+				ImGui::TreePop();
+			}
 		}
 	});
 }

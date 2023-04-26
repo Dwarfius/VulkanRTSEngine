@@ -9,6 +9,7 @@
 #include "GameObject.h"
 #include "EngineSettings.h"
 #include "UIWidgets/TopBar.h"
+#include "World.h"
 
 class Camera;
 class Graphics;
@@ -85,9 +86,8 @@ public:
 	// might not be threadsafe!
 	GLFWwindow* GetWindow() const;
 
-	size_t GetGameObjectCount() const { return myGameObjects.size(); }
-	template<class TFunc>
-	void ForEach(TFunc aFunc);
+	World& GetWorld() { return myWorld; }
+	const World& GetWorld() const { return myWorld; }
 	template<class TFunc>
 	void ForEachRenderable(const TFunc& aFunc);
 	template<class TFunc>
@@ -147,7 +147,7 @@ private:
 	Utils::AffinitySetter myAffinitySetter{ Utils::AffinitySetter::Priority::Medium };
 	Camera* myCamera;
 	tbb::spin_mutex myAddLock, myRemoveLock;
-	std::unordered_map<UID, Handle<GameObject>> myGameObjects;
+	World myWorld;
 	std::queue<Handle<GameObject>> myAddQueue;
 	std::queue<Handle<GameObject>> myRemoveQueue;
 	
@@ -173,18 +173,6 @@ private:
 	mutable AssertMutex myTerrainsMutex;
 #endif
 };
-
-template<class TFunc>
-void Game::ForEach(TFunc aFunc)
-{
-#ifdef ASSERT_MUTEX
-	AssertLock assertLock(myGOMutex);
-#endif
-	for (auto& [id, go] : myGameObjects)
-	{
-		aFunc(*go.Get());
-	}
-}
 
 template<class TFunc>
 void Game::ForEachRenderable(const TFunc& aFunc)
