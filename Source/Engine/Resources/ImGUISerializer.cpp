@@ -70,17 +70,7 @@ void ImGUISerializer::Serialize(std::string_view aName, float& aValue)
 
 void ImGUISerializer::Serialize(std::string_view aName, std::string& aValue)
 {
-	ImGui::InputText(aName.data(), aValue.data(), aValue.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-		[](ImGuiInputTextCallbackData* aData)
-	{
-		std::string* valueStr = static_cast<std::string*>(aData->UserData);
-		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-		{
-			valueStr->resize(aData->BufTextLen);
-			aData->Buf = valueStr->data();
-		}
-		return 0;
-	}, &aValue);
+	ImGui::InputText(aName, aValue);
 }
 
 void ImGUISerializer::Serialize(std::string_view aName, glm::vec2& aValue)
@@ -281,17 +271,7 @@ void ImGUISerializer::SerializeSpan(std::string* aValues, size_t aSize)
 		Utils::StringFormat(indexLbl, "%llu", i);
 
 		std::string& value = aValues[i];
-		ImGui::InputText(indexLbl, value.data(), value.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-			[](ImGuiInputTextCallbackData* aData)
-		{
-			std::string* valueStr = static_cast<std::string*>(aData->UserData);
-			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-			{
-				valueStr->resize(aData->BufTextLen);
-				aData->Buf = valueStr->data();
-			}
-			return 0;
-		}, &value);
+		ImGui::InputText(indexLbl, value);
 	}
 }
 

@@ -184,17 +184,7 @@ void Editor::DrawPaintSettings()
 	}
 	else
 	{
-		bool changed = ImGui::InputText("Paint Texture", myTexturesPath.data(), myTexturesPath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-			[](ImGuiInputTextCallbackData* aData)
-		{
-			std::string* valueStr = static_cast<std::string*>(aData->UserData);
-			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-			{
-				valueStr->resize(aData->BufTextLen);
-				aData->Buf = valueStr->data();
-			}
-			return 0;
-		}, & myTexturesPath);
+		bool changed = ImGui::InputText("Paint Texture", myTexturesPath);
 
 		if (changed && !myTexturesPath.empty())
 		{

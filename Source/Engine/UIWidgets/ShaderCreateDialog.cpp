@@ -71,15 +71,5 @@ void ShaderCreateDialog::DrawSaveInput(std::string& aPath)
 	ImGui::Text(Resource::kAssetsFolder.CStr());
 	ImGui::SameLine();
 	ImGui::SetCursorPosY(posY);
-	ImGui::InputText("Save As", aPath.data(), aPath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-		[](ImGuiInputTextCallbackData* aData)
-	{
-		std::string* valueStr = static_cast<std::string*>(aData->UserData);
-		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-		{
-			valueStr->resize(aData->BufTextLen);
-			aData->Buf = valueStr->data();
-		}
-		return 0;
-	}, &aPath);
+	ImGui::InputText("Save As", aPath);
 }

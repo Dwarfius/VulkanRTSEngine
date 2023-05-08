@@ -40,17 +40,7 @@ void PipelineCreateDialog::DrawPipeline()
 	for (size_t shaderType = 1; shaderType < Shader::Type::GetSize(); shaderType++)
 	{
 		std::string& path = myShaderPaths[shaderType - 1];
-		ImGui::InputText(Shader::Type::kNames[shaderType], path.data(), path.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-			[](ImGuiInputTextCallbackData* aData)
-		{
-			std::string* valueStr = static_cast<std::string*>(aData->UserData);
-			if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-			{
-				valueStr->resize(aData->BufTextLen);
-				aData->Buf = valueStr->data();
-			}
-			return 0;
-		}, &path);
+		ImGui::InputText(Shader::Type::kNames[shaderType], path);
 	}
 	
 	ImGui::Indent();
@@ -99,17 +89,7 @@ void PipelineCreateDialog::DrawPipeline()
 
 void PipelineCreateDialog::DrawAdapter(std::string& anAdapter)
 {
-	ImGui::InputText("Adapter", anAdapter.data(), anAdapter.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-		[](ImGuiInputTextCallbackData* aData)
-	{
-		std::string* valueStr = static_cast<std::string*>(aData->UserData);
-		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-		{
-			valueStr->resize(aData->BufTextLen);
-			aData->Buf = valueStr->data();
-		}
-		return 0;
-	}, &anAdapter);
+	ImGui::InputText("Adapter", anAdapter);
 }
 
 void PipelineCreateDialog::DrawSaveInput(std::string& aPath)
@@ -124,15 +104,5 @@ void PipelineCreateDialog::DrawSaveInput(std::string& aPath)
 	ImGui::Text(Resource::kAssetsFolder.CStr());
 	ImGui::SameLine();
 	ImGui::SetCursorPosY(posY);
-	ImGui::InputText("Save As", aPath.data(), aPath.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-		[](ImGuiInputTextCallbackData* aData)
-	{
-		std::string* valueStr = static_cast<std::string*>(aData->UserData);
-		if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-		{
-			valueStr->resize(aData->BufTextLen);
-			aData->Buf = valueStr->data();
-		}
-		return 0;
-	}, &aPath);
+	ImGui::InputText("Save As", aPath);
 }

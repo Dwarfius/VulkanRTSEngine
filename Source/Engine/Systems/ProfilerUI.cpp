@@ -224,19 +224,7 @@ void ProfilerUI::DrawScopesView()
 	{
 		std::string& scope = myScopeNames[i];
 		Utils::StringFormat(buffer, "##%llu", i);
-		myNeedsToUpdateScopeData |= ImGui::InputText(buffer, scope.data(),
-			scope.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-			[](ImGuiInputTextCallbackData* aData)
-			{
-				std::string* valueStr = static_cast<std::string*>(aData->UserData);
-				if (aData->EventFlag == ImGuiInputTextFlags_CallbackResize)
-				{
-					valueStr->resize(aData->BufTextLen);
-					aData->Buf = valueStr->data();
-				}
-				return 0;
-			}, &scope
-		);
+		myNeedsToUpdateScopeData |= ImGui::InputText(buffer, scope);
 
 		ImGui::SameLine();
 		Utils::StringFormat(buffer, "Delete##%llu", i);
