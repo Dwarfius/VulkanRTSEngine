@@ -4,10 +4,10 @@ class File
 {
 public:
 	File(std::string_view aPath);
-	File(const std::string& aPath);
-	File(const std::string& aPath, std::vector<char>&& aData);
+	File(std::string_view aPath, std::vector<char>&& aData);
 
 	static bool Exists(std::string_view aPath);
+	static bool Delete(std::string_view aPath);
 
 	// Blocking until entire file is read
 	bool Read();

@@ -8,13 +8,8 @@ File::File(std::string_view aPath)
 {
 }
 
-File::File(const std::string& aPath)
-	: myPath(aPath)
-{
-}
-
-File::File(const std::string& aPath, std::vector<char>&& aData)
-	: myPath(aPath)
+File::File(std::string_view aPath, std::vector<char>&& aData)
+	: myPath(aPath.data(), aPath.size())
 	, myBuffer(std::move(aData))
 {
 }
@@ -24,6 +19,12 @@ bool File::Exists(std::string_view aPath)
 	[[maybe_unused]] std::error_code error;
 	bool exists = std::filesystem::exists(aPath, error);
 	return exists;
+}
+
+bool File::Delete(std::string_view aPath)
+{
+	[[maybe_unused]] std::error_code error;
+	return std::filesystem::remove(aPath, error);
 }
 
 bool File::Read()
