@@ -56,6 +56,5 @@ void World::Serialize(Serializer& aSerializer)
 	[[maybe_unused]] uint8_t version = 0;
 	aSerializer.SerializeVersion(version);
 
-	aSerializer.Serialize("myName", myName);
 	aSerializer.Serialize("myGameObjects", myGameObjects);
 }

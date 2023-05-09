@@ -10,6 +10,8 @@
 class World : public Resource
 {
 public:
+	constexpr static StaticString kExtension = ".world";
+
 	World() = default;
 	World(Id anId, const std::string& aPath);
 	~World() noexcept = default;
@@ -47,7 +49,6 @@ private:
 	void Serialize(Serializer& aSerializer) final;
 
 	std::vector<Handle<GameObject>> myGameObjects;
-	std::string myName;
 #ifdef ASSERT_MUTEX
 	AssertRWMutex myObjectsMutex;
 #endif

@@ -6,11 +6,30 @@
 #include "Resources/ImGUISerializer.h"
 
 #include <Core/Utils.h>
+#include <Core/Resources/AssetTracker.h>
+#include <Core/File.h>
 
 void EntitiesWidget::Draw(Game& aGame)
 {
 	World& world = aGame.GetWorld();
+
+	if (myWorldPath.empty())
+	{
+		myWorldPath = world.GetPath();
+	}
+	ImGui::InputText("World Path", myWorldPath);
+	if (ImGui::Button("Save") && !myWorldPath.empty())
+	{
+		File::Delete(world.GetPath());
+		aGame.GetAssetTracker().SaveAndTrack(myWorldPath, &world);
+	}
+
 	world.Access([&](std::vector<Handle<GameObject>>& aGameObjects) {
+		ImGui::LabelText("Entities Count", "%llu", aGameObjects.size());
+		if (!aGameObjects.empty())
+		{
+			ImGui::Text("Entities:");
+		}
 		for (Handle<GameObject>& gameObjectHandle : aGameObjects)
 		{
 			GameObject& gameObject = *gameObjectHandle.Get();
