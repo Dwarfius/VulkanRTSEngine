@@ -41,7 +41,22 @@ void EntitiesWidget::Draw(Game& aGame)
 
 			char uidBuffer[33];
 			gameObject.GetUID().GetString(uidBuffer);
-			if (ImGui::TreeNode(uidBuffer))
+			
+			char nodeBuffer[128];
+			if (!gameObject.GetPath().empty())
+			{
+				char nameBuffer[64]{};
+				const std::string_view name = gameObject.GetName();
+				ASSERT_STR(name.size() < std::extent_v<decltype(nameBuffer)>, "Name too long!");
+				std::copy(name.begin(), name.end(), std::begin(nameBuffer));
+				Utils::StringFormat(nodeBuffer, "%s - (%s)", nameBuffer, uidBuffer);
+			}
+			else
+			{
+				std::copy(std::begin(uidBuffer), std::end(uidBuffer), std::begin(nodeBuffer));
+			}
+
+			if (ImGui::TreeNode(nodeBuffer))
 			{
 				DrawGameObject(gameObject);
 				DrawChildren(gameObject);

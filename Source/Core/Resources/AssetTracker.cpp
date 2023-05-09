@@ -31,7 +31,14 @@ AssetTracker::~AssetTracker()
 void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 {
 	// change the handle's path
-	aRes.myPath = Resource::kAssetsFolder.CStr() + aPath;
+	if (!aPath.starts_with(Resource::kAssetsFolder.CStr()))
+	{
+		aRes.myPath = Resource::kAssetsFolder.CStr() + aPath;
+	}
+	else
+	{
+		aRes.myPath = aPath;
+	}
 
 	// dump to disk
 	Serializer* serializer = nullptr;

@@ -55,6 +55,13 @@ bool File::Write(const char* aData, size_t aLength)
 
 bool File::Write() const
 {
+	const std::string_view directory = std::string_view{myPath}
+		.substr(0, myPath.rfind('/'));
+	if (!std::filesystem::exists(directory))
+	{
+		std::filesystem::create_directories(directory);
+	}
+
 	std::ofstream file(myPath, std::ios::binary | std::ios::out);
 	if (!file.is_open())
 	{

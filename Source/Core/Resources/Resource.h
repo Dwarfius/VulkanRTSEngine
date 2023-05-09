@@ -37,6 +37,7 @@ public:
 
 	Id GetId() const { return myId; }
 	const std::string& GetPath() const { return myPath; }
+	std::string_view GetName() const;
 	
 	// Not synchronized, might be out of date for a frame
 	State GetState() const { return myState; }

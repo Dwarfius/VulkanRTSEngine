@@ -56,5 +56,23 @@ void World::Serialize(Serializer& aSerializer)
 	[[maybe_unused]] uint8_t version = 0;
 	aSerializer.SerializeVersion(version);
 
+	if (!aSerializer.IsReading())
+	{
+		AssetTracker& tracker = aSerializer.GetAssetTracker();
+		const std::string_view worldPath = GetPath();
+		const std::string_view pathWithoutExt = worldPath.substr(0, worldPath.rfind('/'));
+		const std::string pathStr(pathWithoutExt.data(), pathWithoutExt.size());
+		char path[256]{};
+		size_t i = 0;
+		for (Handle<GameObject>& go : myGameObjects)
+		{
+			if (go->GetPath().empty())
+			{
+				Utils::StringFormat(path, "%s/GameObjects/GameObject%llu", pathStr.data(), i);
+				tracker.SaveAndTrack(path, go);
+				i++;
+			}
+		}
+	}
 	aSerializer.Serialize("myGameObjects", myGameObjects);
 }

@@ -30,6 +30,15 @@ Resource::~Resource()
 	}
 }
 
+std::string_view Resource::GetName() const
+{
+	ASSERT(!myPath.empty());
+	const std::string_view path = myPath;
+	const size_t end = path.rfind('.');
+	const size_t start = path.rfind('/', end) + 1;
+	return path.substr(start, end - start);
+}
+
 void Resource::ExecLambdaOnLoad(const Callback& aOnLoadCB)
 {
 	tbb::queuing_mutex::scoped_lock lockState(myStateMutex);
