@@ -20,6 +20,7 @@
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Utils.h>
+#include <Core/File.h>
 
 #include <Graphics/Camera.h>
 #include <Graphics/Resources/Model.h>
@@ -267,39 +268,65 @@ void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
 void EditorMode::DrawMenu(Game& aGame)
 {
 	std::lock_guard lock(aGame.GetImGUISystem().GetMutex());
-	if (ImGui::Begin("Entity Creation"))
+
+	if (ImGui::Begin("Editor"))
 	{
-		ImGui::Text("Shapes");
-		if (ImGui::Button("Create Plane"))
+		if (ImGui::BeginTabBar("EditorTable"))
 		{
-			CreateGOWithMesh(aGame, myDefAssets.GetPlane());
-		}
-		if (ImGui::Button("Create Sphere"))
-		{
-			CreateGOWithMesh(aGame, myDefAssets.GetSphere());
-		}
-		if (ImGui::Button("Create Box"))
-		{
-			CreateGOWithMesh(aGame, myDefAssets.GetBox());
-		}
-		if (ImGui::Button("Create Cylinder"))
-		{
-			CreateGOWithMesh(aGame, myDefAssets.GetCylinder());
-		}
-		if (ImGui::Button("Create Cone"))
-		{
-			CreateGOWithMesh(aGame, myDefAssets.GetCone());
-		}
-		if (ImGui::Button("Create Mesh"))
-		{
-			CreateMesh(aGame);
-		}
+			if (ImGui::BeginTabItem("World Management"))
+			{
+				World& world = aGame.GetWorld();
+				if (myWorldPath.empty())
+				{
+					myWorldPath = world.GetPath();
+				}
+				ImGui::InputText("World Path", myWorldPath);
+				if (ImGui::Button("Save") && !myWorldPath.empty())
+				{
+					File::Delete(world.GetPath());
+					aGame.GetAssetTracker().SaveAndTrack(myWorldPath, &world);
+				}
+				ImGui::EndTabItem();
+			}
 
-		ImGui::Separator();
+			if (ImGui::BeginTabItem("Entity Creation"))
+			{
+				ImGui::Text("Shapes");
+				if (ImGui::Button("Create Plane"))
+				{
+					CreateGOWithMesh(aGame, myDefAssets.GetPlane());
+				}
+				if (ImGui::Button("Create Sphere"))
+				{
+					CreateGOWithMesh(aGame, myDefAssets.GetSphere());
+				}
+				if (ImGui::Button("Create Box"))
+				{
+					CreateGOWithMesh(aGame, myDefAssets.GetBox());
+				}
+				if (ImGui::Button("Create Cylinder"))
+				{
+					CreateGOWithMesh(aGame, myDefAssets.GetCylinder());
+				}
+				if (ImGui::Button("Create Cone"))
+				{
+					CreateGOWithMesh(aGame, myDefAssets.GetCone());
+				}
+				if (ImGui::Button("Create Mesh"))
+				{
+					CreateMesh(aGame);
+				}
 
-		if (ImGui::Button("Manage Lights"))
-		{
-			ManageLights(aGame);
+				ImGui::Separator();
+
+				if (ImGui::Button("Manage Lights"))
+				{
+					ManageLights(aGame);
+				}
+
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
 		}
 	}
 	ImGui::End();

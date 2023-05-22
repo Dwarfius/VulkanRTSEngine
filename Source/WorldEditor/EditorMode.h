@@ -47,6 +47,7 @@ private:
 	DefaultAssets myDefAssets;
 	std::function<void(Game& aGame)> myMenuFunction;
 	FileDialog myFileDialog;
+	std::string myWorldPath;
 
 	Gizmos myGizmos;
 	

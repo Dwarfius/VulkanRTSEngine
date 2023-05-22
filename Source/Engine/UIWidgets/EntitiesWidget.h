@@ -17,6 +17,4 @@ public:
 private:
 	void DrawGameObject(GameObject& aGo);
 	void DrawChildren(GameObject& aGo);
-
-	std::string myWorldPath;
 };
