@@ -1,6 +1,6 @@
 #pragma once
 #include "ComponentBase.h"
-#include <Core/Resources/Resource.h>
+#include <Core/RefCounted.h>
 
 class Model;
 class Pipeline;
