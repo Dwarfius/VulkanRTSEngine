@@ -53,6 +53,12 @@ EditorMode::EditorMode(Game& aGame)
 		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
+
+	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
+	light.Get()->myColor = glm::vec3(1, 1, 1);
+	light.Get()->myType = Light::Type::Directional;
+	light.Get()->myAmbientIntensity = 1.f;
+	myLights.push_back(std::move(light));
 }
 
 EditorMode::~EditorMode()
@@ -158,11 +164,35 @@ void EditorMode::CreateBigWorld(Game& aGame)
 	}
 
 	myAnimTest = new AnimationTest(aGame);
+}
 
-	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
-	light.Get()->myColor = glm::vec3(1, 1, 1);
-	light.Get()->myType = Light::Type::Directional;
-	myLights.push_back(std::move(light));
+void EditorMode::CreateNavWorld(Game& aGame)
+{
+	Transform transf;
+	transf.SetScale({ 30.f, 1.f, 30.f });
+	CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
+
+	// Single box to the side
+	transf.SetScale({ 1, 1, 1 });
+	transf.SetPos({ 0, 0.5f, 0 });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	// ramps
+	transf.SetScale({ 1, 0.1f, 1 });
+	for (uint8_t i = 0; i <= 18; i++)
+	{
+		transf.SetRotation(glm::vec3{ glm::radians(i * 5.f), 0, 0 });
+		transf.SetPos({ i * 1.5f - 1.5f * 9, 0, 2.f});
+		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+	}
+
+	// staircase
+	transf.SetScale({ 1, 0.1f, 0.1f });
+	for (uint8_t i = 0; i < 10; i++)
+	{
+		transf.SetPos({ 3.f, i * 0.1f + 0.05f, i * 0.1f });
+		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+	}
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
@@ -247,9 +277,14 @@ void EditorMode::DrawMenu(Game& aGame)
 
 				ImGui::Separator();
 
+				ImGui::Text("Preset Worlds");
 				if (ImGui::Button("Create Big World"))
 				{
 					CreateBigWorld(aGame);
+				}
+				if (ImGui::Button("Create Nav World"))
+				{
+					CreateNavWorld(aGame);
 				}
 
 				ImGui::EndTabItem();
@@ -258,29 +293,32 @@ void EditorMode::DrawMenu(Game& aGame)
 			if (ImGui::BeginTabItem("Entity Creation"))
 			{
 				ImGui::Text("Shapes");
+				Transform transf = aGame.GetCamera()->GetTransform();
+				transf.Translate(transf.GetForward() * 5.f);
+				transf.SetRotation(glm::vec3{ 0,0,0 });
 				if (ImGui::Button("Create Plane"))
 				{
-					CreateGOWithMesh(aGame, myDefAssets.GetPlane());
+					CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 				}
 				if (ImGui::Button("Create Sphere"))
 				{
-					CreateGOWithMesh(aGame, myDefAssets.GetSphere());
+					CreateGOWithMesh(aGame, myDefAssets.GetSphere(), transf);
 				}
 				if (ImGui::Button("Create Box"))
 				{
-					CreateGOWithMesh(aGame, myDefAssets.GetBox());
+					CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 				}
 				if (ImGui::Button("Create Cylinder"))
 				{
-					CreateGOWithMesh(aGame, myDefAssets.GetCylinder());
+					CreateGOWithMesh(aGame, myDefAssets.GetCylinder(), transf);
 				}
 				if (ImGui::Button("Create Cone"))
 				{
-					CreateGOWithMesh(aGame, myDefAssets.GetCone());
+					CreateGOWithMesh(aGame, myDefAssets.GetCone(), transf);
 				}
 				if (ImGui::Button("Create Mesh"))
 				{
-					CreateMesh(aGame);
+					CreateMesh(aGame, transf);
 				}
 
 				ImGui::Separator();
@@ -303,12 +341,9 @@ void EditorMode::DrawMenu(Game& aGame)
 	}
 }
 
-void EditorMode::CreateGOWithMesh(Game& aGame, Handle<Model> aModel)
+Handle<GameObject> EditorMode::CreateGOWithMesh(Game& aGame, Handle<Model> aModel, const Transform& aTransf)
 {
-	Transform transf = aGame.GetCamera()->GetTransform();
-	transf.Translate(transf.GetForward() * 5.f);
-	transf.SetRotation(glm::vec3{ 0,0,0 });
-	Handle<GameObject> go = new GameObject(transf);
+	Handle<GameObject> go = new GameObject(aTransf);
 	VisualComponent* visComp = go->AddComponent<VisualComponent>();
 	visComp->SetModel(aModel);
 	visComp->SetTextureCount(1);
@@ -316,11 +351,13 @@ void EditorMode::CreateGOWithMesh(Game& aGame, Handle<Model> aModel)
 	visComp->SetPipeline(myDefAssets.GetPipeline());
 
 	aGame.AddGameObject(go);
+
+	return go;
 }
 
-void EditorMode::CreateMesh(Game& aGame)
+void EditorMode::CreateMesh(Game& aGame, const Transform& aTransf)
 {
-	myMenuFunction = [this](Game& aGame) {
+	myMenuFunction = [&, this](Game& aGame) {
 		myFileDialog.DrawFor<Model>();
 
 		FileDialog::File selectedFile;
@@ -329,7 +366,7 @@ void EditorMode::CreateMesh(Game& aGame)
 			AssetTracker& assetTracker = aGame.GetAssetTracker();
 			Handle<Model> newModel = assetTracker.GetOrCreate<Model>(selectedFile.myPath);
 
-			CreateGOWithMesh(aGame, newModel);
+			CreateGOWithMesh(aGame, newModel, aTransf);
 
 			myMenuFunction = nullptr;
 		}

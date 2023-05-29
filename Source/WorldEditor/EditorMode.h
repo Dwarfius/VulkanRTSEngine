@@ -34,6 +34,7 @@ public:
 private:
 	// Worlds
 	void CreateBigWorld(Game& aGame);
+	void CreateNavWorld(Game& aGame);
 
 	// Camera
 	void HandleCamera(Transform& aCamTransf, float aDeltaTime);
@@ -43,8 +44,8 @@ private:
 
 	// Editor UI menu
 	void DrawMenu(Game& aGame);
-	void CreateGOWithMesh(Game& aGame, Handle<Model> aModel);
-	void CreateMesh(Game& aGame);
+	Handle<GameObject> CreateGOWithMesh(Game& aGame, Handle<Model> aModel, const Transform& aTransf);
+	void CreateMesh(Game& aGame, const Transform& aTransf);
 	
 	DefaultAssets myDefAssets;
 	std::function<void(Game& aGame)> myMenuFunction;
