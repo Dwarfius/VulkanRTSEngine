@@ -5,7 +5,7 @@
 #endif
 #include <Core/Resources/Resource.h>
 
-#include "GameObject.h"
+class GameObject;
 
 class World : public Resource
 {

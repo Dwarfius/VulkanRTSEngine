@@ -3,6 +3,8 @@
 
 #include <Core/Resources/Serializer.h>
 
+#include "GameObject.h"
+
 World::World(Id anId, const std::string& aPath)
 	: Resource(anId, aPath)
 {
