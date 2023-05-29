@@ -1,7 +1,6 @@
 #pragma once
 #include "ComponentBase.h"
 #include <Core/Resources/Resource.h>
-#include <Core/Transform.h>
 
 class Model;
 class Pipeline;
@@ -22,7 +21,6 @@ public:
 private:
 	void CreateVOIfNeeded();
 
-	Transform myTransf;
 	std::string myModelRes;
 	std::string myPipelineRes;
 	std::vector<std::string> myTextureResources;

@@ -41,8 +41,6 @@ void VisualComponent::SetTexture(size_t anIndex, Handle<Texture> aTexture)
 
 void VisualComponent::Serialize(Serializer& aSerializer)
 {
-	aSerializer.Serialize("myTransf", myTransf);
-
 	bool modelChanged = false;
 	{
 		std::string oldModel = myModelRes;
