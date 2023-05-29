@@ -30,28 +30,104 @@
 
 #include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsWorld.h>
-#include <Physics/PhysicsShapes.h>
 
 EditorMode::EditorMode(Game& aGame)
 	: myDefAssets(aGame)
 	, myProto(aGame)
 {
-	myPhysShape = std::make_shared<PhysicsShapeBox>(glm::vec3(0.5f));
+	AssetTracker& assetTracker = aGame.GetAssetTracker();
+	Handle<Pipeline> idDefaultPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDPipeline.ppl"
+	);
+	Handle<Pipeline> idSkinnedPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDSkinnedPipeline.ppl"
+	);
+	Handle<Pipeline> idTerrainPipeline = assetTracker.GetOrCreate<Pipeline>(
+		"Editor/IDTerrainPipeline.ppl"
+	);
+	Graphics& graphics = *aGame.GetGraphics();
+	myIDRenderPass = new IDRenderPass(
+		graphics,
+		graphics.GetOrCreate(idDefaultPipeline).Get<GPUPipeline>(),
+		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>(),
+		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
+	);
+	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
+}
+
+EditorMode::~EditorMode()
+{
+	delete myAnimTest;
+}
+
+void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
+{
+	Camera* cam = aGame.GetCamera();
+	Transform& camTransf = cam->GetTransform();
+
+	if (Input::GetMouseBtn(1))
+	{
+		HandleCamera(camTransf, aDeltaTime);
+	}
+
+	if (aWorld && Input::GetMouseBtnPressed(0))
+	{
+		glm::vec3 from = camTransf.GetPos();
+		glm::vec3 dir = camTransf.GetForward();
+
+		PhysicsEntity* physEntity;
+		if (aWorld->RaycastClosest(from, dir, 100.f, physEntity)
+			&& physEntity->GetType() == PhysicsEntity::Type::Dynamic)
+		{
+			physEntity->AddForce(dir * 100.f);
+		}
+	}
+
+	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
+	if (myAnimTest)
+	{
+		myAnimTest->Update(aGame.IsPaused() ? 0 : aDeltaTime);
+	}
+
+	const float halfW = 100.f;
+	const float halfH = 100.f;
+	const float halfD = 100.f;
+
+	DebugDrawer& debugDrawer = aGame.GetDebugDrawer();
+	debugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
+	debugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
+	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
+
+	solver.Update(aGame, aDeltaTime);
+	myProto.Update(aGame, myDefAssets, aDeltaTime);
+
+	DrawMenu(aGame);
+
+	UpdatePickedObject(aGame);
+}
+
+void EditorMode::CreateBigWorld(Game& aGame)
+{
+	solver.Init(aGame);
 
 	/*StaticString resPath = Resource::kAssetsFolder + "AnimTest/whale.gltf";
 	StaticString resPath = Resource::kAssetsFolder + "AnimTest/riggedFigure.gltf";
 	StaticString resPath = Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf";*/
 	StaticString resPath = Resource::kAssetsFolder + "Boombox/BoomBox.gltf";
 	//StaticString resPath = Resource::kAssetsFolder + "sparse.gltf";
-	bool res = myGLTFImporter.Load(resPath.CStr());
-	ASSERT(res);
-	Handle<Model> model = myGLTFImporter.GetModel(0);
-	AssetTracker& assetTracker = aGame.GetAssetTracker();
 
+	GLTFImporter gltfImporter;
+	bool res = gltfImporter.Load(resPath.CStr());
+	ASSERT(res);
+	
+	AssetTracker& assetTracker = aGame.GetAssetTracker();
 	myGO = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
-	myGO->ExecLambdaOnLoad([&, model](Resource* aRes) {
+
+	Handle<Model> model = gltfImporter.GetModel(0);
+	Handle<Texture> texture = gltfImporter.GetTexture(0);
+	myGO->ExecLambdaOnLoad([&, model, texture](Resource* aRes) {
 		myGO->GetComponent<VisualComponent>()->SetModel(model);
-		myGO->GetComponent<VisualComponent>()->SetTexture(0, myGLTFImporter.GetTexture(0));
+		myGO->GetComponent<VisualComponent>()->SetTexture(0, texture);
 		Transform transf = myGO->GetWorldTransform();
 		transf.SetScale({ 100, 100, 100 });
 		myGO->SetWorldTransform(transf);
@@ -83,129 +159,10 @@ EditorMode::EditorMode(Game& aGame)
 
 	myAnimTest = new AnimationTest(aGame);
 
-	solver.Init(aGame);
-
-	Handle<Pipeline> idDefaultPipeline = assetTracker.GetOrCreate<Pipeline>(
-		"Editor/IDPipeline.ppl"
-	);
-	Handle<Pipeline> idSkinnedPipeline = assetTracker.GetOrCreate<Pipeline>(
-		"Editor/IDSkinnedPipeline.ppl"
-	);
-	Handle<Pipeline> idTerrainPipeline = assetTracker.GetOrCreate<Pipeline>(
-		"Editor/IDTerrainPipeline.ppl"
-	);
-	Graphics& graphics = *aGame.GetGraphics();
-	myIDRenderPass = new IDRenderPass(
-		graphics,
-		graphics.GetOrCreate(idDefaultPipeline).Get<GPUPipeline>(),
-		graphics.GetOrCreate(idSkinnedPipeline).Get<GPUPipeline>(),
-		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
-	);
-	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
-
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
-	light.Get()->myTransform.SetPos({ 0, 0, -1 });
-	light.Get()->myColor = glm::vec3(1, 0, 0);
-	light.Get()->myType = Light::Type::Point;
+	light.Get()->myColor = glm::vec3(1, 1, 1);
+	light.Get()->myType = Light::Type::Directional;
 	myLights.push_back(std::move(light));
-}
-
-EditorMode::~EditorMode()
-{
-	delete myAnimTest;
-}
-
-void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
-{
-	Camera* cam = aGame.GetCamera();
-	Transform& camTransf = cam->GetTransform();
-
-	if (Input::GetMouseBtn(1))
-	{
-		HandleCamera(camTransf, aDeltaTime);
-	}
-
-	if (aWorld && Input::GetMouseBtnPressed(0))
-	{
-		glm::vec3 from = camTransf.GetPos();
-		glm::vec3 dir = camTransf.GetForward();
-
-		PhysicsEntity* physEntity;
-		if (aWorld->RaycastClosest(from, dir, 100.f, physEntity)
-			&& physEntity->GetType() == PhysicsEntity::Type::Dynamic)
-		{
-			physEntity->AddForce(dir * 100.f);
-		}
-	}
-
-	if (Input::GetMouseBtnPressed(2))
-	{
-		AssetTracker& assetTracker = aGame.GetAssetTracker();
-		AnimationSystem& animSystem = aGame.GetAnimationSystem();
-
-		Transform objTransf = myGLTFImporter.GetTransform(0);
-		objTransf.SetPos(objTransf.GetPos() + camTransf.GetPos());
-		Handle<GameObject> newGO = new GameObject(objTransf);
-		
-		GameObject* go = newGO.Get();
-		go->CreateRenderable();
-		VisualObject& vo = go->GetRenderable()->myVO;
-
-		Handle<Model> model = myGLTFImporter.GetModel(0);
-
-		vo.SetModel(model);
-		if (myGLTFImporter.GetTextureCount() > 0)
-		{
-			vo.SetTexture(myGLTFImporter.GetTexture(0));
-		}
-		else
-		{
-			vo.SetTexture(assetTracker.GetOrCreate<Texture>("gray.img"));
-		}
-
-		if(myGLTFImporter.GetSkeletonCount() > 0)
-		{
-			PoolPtr<Skeleton> testSkeleton = animSystem.AllocateSkeleton(0);
-			*testSkeleton.Get() = myGLTFImporter.GetSkeleton(0);
-			go->SetSkeleton(std::move(testSkeleton));
-
-			if (myGLTFImporter.GetClipCount() > 0)
-			{
-				PoolPtr<AnimationController> animController = animSystem.AllocateController(go->GetSkeleton());
-				animController.Get()->PlayClip(myGLTFImporter.GetAnimClip(0).Get());
-				go->SetAnimController(std::move(animController));
-			}
-			vo.SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));
-		}
-		else
-		{
-			vo.SetPipeline(assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl"));
-		}
-
-		myGOs.push_back(go);
-
-		aGame.AddGameObject(newGO);
-	}
-
-	UpdateTestSkeleton(aGame, aGame.IsPaused() ? 0 : aDeltaTime);
-	myAnimTest->Update(aGame.IsPaused() ? 0 : aDeltaTime);
-
-	const Terrain* terrain = aGame.GetTerrain(0);
-	const float halfW = terrain->GetWidth() / 2.f;
-	const float halfH = 2;
-	const float halfD = terrain->GetDepth() / 2.f;
-
-	DebugDrawer& debugDrawer = aGame.GetDebugDrawer();
-	debugDrawer.AddLine(glm::vec3(-halfW, 0.f, 0.f), glm::vec3(halfW, 0.f, 0.f), glm::vec3(1.f, 0.f, 0.f));
-	debugDrawer.AddLine(glm::vec3(0.f, -halfH, 0.f), glm::vec3(0.f, halfH, 0.f), glm::vec3(0.f, 1.f, 0.f));
-	debugDrawer.AddLine(glm::vec3(0.f, 0.f, -halfD), glm::vec3(0.f, 0.f, halfD), glm::vec3(0.f, 0.f, 1.f));
-
-	solver.Update(aGame, aDeltaTime);
-	myProto.Update(aGame, myDefAssets, aDeltaTime);
-
-	DrawMenu(aGame);
-
-	UpdatePickedObject(aGame);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
@@ -275,6 +232,7 @@ void EditorMode::DrawMenu(Game& aGame)
 		{
 			if (ImGui::BeginTabItem("World Management"))
 			{
+				ImGui::Text("Current World");
 				World& world = aGame.GetWorld();
 				if (myWorldPath.empty())
 				{
@@ -286,6 +244,14 @@ void EditorMode::DrawMenu(Game& aGame)
 					File::Delete(world.GetPath());
 					aGame.GetAssetTracker().SaveAndTrack(myWorldPath, &world);
 				}
+
+				ImGui::Separator();
+
+				if (ImGui::Button("Create Big World"))
+				{
+					CreateBigWorld(aGame);
+				}
+
 				ImGui::EndTabItem();
 			}
 

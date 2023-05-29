@@ -14,7 +14,6 @@
 
 class PhysicsWorld;
 class GameObject;
-class PhysicsShapeBase;
 class Transform;
 class Game;
 class AnimationSystem;
@@ -33,6 +32,9 @@ public:
 	void Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld);
 
 private:
+	// Worlds
+	void CreateBigWorld(Game& aGame);
+
 	// Camera
 	void HandleCamera(Transform& aCamTransf, float aDeltaTime);
 	
@@ -65,9 +67,6 @@ private:
 	constexpr static size_t kInvalidInd = static_cast<size_t>(-1);
 	size_t mySelectedLight = kInvalidInd;
 
-	// Other
-	std::shared_ptr<PhysicsShapeBase> myPhysShape;
-
 	// Testing
 	void AddTestSkeleton(Game& aGame);
 	void UpdateTestSkeleton(Game& aGame, float aDeltaTime);
@@ -76,11 +75,11 @@ private:
 	
 	Skeleton::BoneIndex mySelectedBone = Skeleton::kInvalidIndex;
 	std::vector<GameObject*> myGOs;
-	GLTFImporter myGLTFImporter;
+	
 	int mySelectedSkeleton = -1;
 	int myAddSkeletonCount = 0;
 	bool myShowSkeletonUI = false;
-	AnimationTest* myAnimTest;
+	AnimationTest* myAnimTest = nullptr;
 
 	Handle<GameObject> myGO;
 
