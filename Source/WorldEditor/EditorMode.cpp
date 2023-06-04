@@ -3,6 +3,7 @@
 
 #include "AnimationTest.h"
 #include "IDRenderPass.h"
+#include "NavMeshGen.h"
 
 #include <Engine/Game.h>
 #include <Engine/Input.h>
@@ -182,7 +183,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	for (uint8_t i = 0; i <= 18; i++)
 	{
 		transf.SetRotation(glm::vec3{ glm::radians(i * 5.f), 0, 0 });
-		transf.SetPos({ i * 1.5f - 1.5f * 9, 0, 2.f});
+		transf.SetPos({ i * 1.5f - 1.5f * 9, 0, 2.f });
 		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
 
@@ -326,6 +327,29 @@ void EditorMode::DrawMenu(Game& aGame)
 				if (ImGui::Button("Manage Lights"))
 				{
 					ManageLights(aGame);
+				}
+
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("NavMesh"))
+			{
+				if (ImGui::Button("Generate"))
+				{
+					NavMeshGen gen;
+					NavMeshGen::Input input{ 
+						&aGame.GetWorld(), 
+						{-15.f,-5.f,-15.f}, 
+						{15.f,5.f,15.f} 
+					};
+					NavMeshGen::Settings settings{ 
+						45.f, 
+						0,
+						&aGame.GetDebugDrawer(),
+						false,
+						false
+					};
+					gen.Generate(input, settings, aGame);
 				}
 
 				ImGui::EndTabItem();

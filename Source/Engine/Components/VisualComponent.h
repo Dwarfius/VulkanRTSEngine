@@ -10,8 +10,13 @@ class AssetTracker;
 
 class VisualComponent : public SerializableComponent<VisualComponent>
 {
+	// declaring our own to avoid including Resource
+	using ResourceId = uint32_t;
+	constexpr static ResourceId kInvalId = 0;
+
 public:
 	void SetModel(Handle<Model> aModel);
+	ResourceId GetModelId() const { return myModelId; }
 	void SetPipeline(Handle<Pipeline> aPipeline);
 	void SetTextureCount(size_t aCount);
 	void SetTexture(size_t anIndex, Handle<Texture> aTexture);
@@ -26,4 +31,7 @@ private:
 	std::vector<std::string> myTextureResources;
 	// Not owned!
 	VisualObject* myVisualObject = nullptr;
+
+	// not serialized
+	ResourceId myModelId = kInvalId;
 };
