@@ -410,4 +410,37 @@ void Tests::TestIntersects()
 		// in front
 		ASSERT(!Utils::Intersects({ 0, 0, 2 }, { 0, 1, 2 }, { -1, 1, 2 }, aabb));
 	}
+
+	// extra
+	{
+		ASSERT(Utils::Intersects(
+			{ -0.1f, 1.1f, 0.5f },
+			{ -0.1f, 0.0f, 0.5f },
+			{ 0.5f, 1.1f, 0.5f },
+			aabb
+		));
+
+		ASSERT(Utils::Intersects(
+			{ -0.1f, 1.1f, 0.5f },
+			{ -0.1f, 0.9f, 0.5f },
+			{ 0.5f, 1.1f, 0.5f },
+			aabb
+		));
+
+		ASSERT(Utils::Intersects(
+			{ -0.1f, 1.1f, 0.5f },
+			{ -0.1f, 0.9f, 0.4f },
+			{ 0.5f, 1.1f, 0.5f },
+			aabb
+		));
+
+		const glm::vec3 v1{ -0.5f, 0.501086235f, -0.0375837348f };
+		const glm::vec3 v2{ 0.5f, 0.501086235f, -0.0375837348f };
+		const glm::vec3 v3{ 0.5f, 0.483721435f, -0.136064500f };
+		const Utils::AABB aabbNew{
+			{ -0.5f, 0.400000095f, -0.5f },
+			{ 0.f, 0.5f, 0.f }
+		};
+		ASSERT(Utils::Intersects(v1, v2, v3, aabbNew));
+	}
 }
