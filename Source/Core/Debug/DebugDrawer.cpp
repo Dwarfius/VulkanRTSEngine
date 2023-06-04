@@ -98,26 +98,26 @@ void DebugDrawer::AddAABB(glm::vec3 aMin, glm::vec3 aMax, glm::vec3 aColor, uint
 	const glm::vec3 bBot{ aMax.x, aMin.y, aMin.z };
 	const glm::vec3 cBot{ aMax.x, aMin.y, aMax.z };
 	const glm::vec3 dBot{ aMin.x, aMin.y, aMax.z };
-	AddLine(aBot, bBot, aColor);
-	AddLine(aBot, dBot, aColor);
-	AddLine(bBot, cBot, aColor);
-	AddLine(dBot, cBot, aColor);
+	AddLine(aBot, bBot, aColor, aFramesToLive);
+	AddLine(aBot, dBot, aColor, aFramesToLive);
+	AddLine(bBot, cBot, aColor, aFramesToLive);
+	AddLine(dBot, cBot, aColor, aFramesToLive);
 
 	// top square
 	const glm::vec3 aTop{ aBot.x, aMax.y, aBot.z };
 	const glm::vec3 bTop{ bBot.x, aMax.y, bBot.z };
 	const glm::vec3 cTop{ cBot.x, aMax.y, cBot.z };
 	const glm::vec3 dTop{ dBot.x, aMax.y, dBot.z };
-	AddLine(aTop, bTop, aColor);
-	AddLine(aTop, dTop, aColor);
-	AddLine(bTop, cTop, aColor);
-	AddLine(dTop, cTop, aColor);
+	AddLine(aTop, bTop, aColor, aFramesToLive);
+	AddLine(aTop, dTop, aColor, aFramesToLive);
+	AddLine(bTop, cTop, aColor, aFramesToLive);
+	AddLine(dTop, cTop, aColor, aFramesToLive);
 
 	// verticals
-	AddLine(aBot, aTop, aColor);
-	AddLine(bBot, bTop, aColor);
-	AddLine(cBot, cTop, aColor);
-	AddLine(dBot, dTop, aColor);
+	AddLine(aBot, aTop, aColor, aFramesToLive);
+	AddLine(bBot, bTop, aColor, aFramesToLive);
+	AddLine(cBot, cTop, aColor, aFramesToLive);
+	AddLine(dBot, dTop, aColor, aFramesToLive);
 }
 
 const PosColorVertex* DebugDrawer::GetCurrentVertices() const
