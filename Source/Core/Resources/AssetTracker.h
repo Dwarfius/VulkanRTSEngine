@@ -4,6 +4,7 @@
 
 class Serializer;
 
+// TODO: add std::string_view overrides
 // Class for handling different resource types using the same interface. 
 // Threadsafe
 class AssetTracker
@@ -45,6 +46,9 @@ public:
 	template<class TAsset>
 	Handle<TAsset> GetOrCreate(const std::string& aPath);
 
+	template<class TAsset>
+	Handle<TAsset> Get(Resource::Id anId);
+
 private:
 	void SaveAndTrackImpl(
 		const std::string& aPath,
@@ -61,6 +65,9 @@ private:
 	// returns true if a Resource was found, false otherwise
 	template<class TAsset>
 	bool GetOrCreateResource(Resource::Id anId, const std::string& aPath, TAsset*& aRes);
+	// returns true if a Resource was found, false otherwise
+	template<class TAsset>
+	bool GetResource(Resource::Id anId, TAsset*& aRes);
 
 	void StartLoading(Handle<Resource> aRes);
 
@@ -142,6 +149,20 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 }
 
 template<class TAsset>
+Handle<TAsset> AssetTracker::Get(Resource::Id anId)
+{
+	static_assert(std::is_base_of_v<Resource, TAsset>, "Asset tracker cannot track this type!");
+	static_assert(!std::is_same_v<TAsset, Resource>, "Invalid type, can't load a generic resource!");
+
+	TAsset* asset = nullptr;
+	if (GetResource(anId, asset))
+	{
+		return Handle<TAsset>(asset);
+	}
+	return Handle<TAsset>();
+}
+
+template<class TAsset>
 bool AssetTracker::GetOrCreateResource(Resource::Id anId, const std::string& aPath, TAsset*& aRes)
 {
 	tbb::spin_mutex::scoped_lock lock(myAssetMutex);
@@ -154,5 +175,18 @@ bool AssetTracker::GetOrCreateResource(Resource::Id anId, const std::string& aPa
 
 	aRes = new TAsset(anId, aPath);
 	myAssets[anId] = aRes;
+	return false;
+}
+
+template<class TAsset>
+bool AssetTracker::GetResource(Resource::Id anId, TAsset*& aRes)
+{
+	tbb::spin_mutex::scoped_lock lock(myAssetMutex);
+	AssetIter pair = myAssets.find(anId);
+	if (pair != myAssets.end())
+	{
+		aRes = static_cast<TAsset*>(pair->second);
+		return true;
+	}
 	return false;
 }
