@@ -46,4 +46,6 @@ namespace Utils
 		glm::vec3 myMax;
 	};
 	bool Intersects(const Ray& aRay, const AABB& aBox, float& aRayT);
+
+	bool Intersects(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const AABB& aBox);
 }

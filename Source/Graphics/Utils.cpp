@@ -140,4 +140,77 @@ namespace Utils
 		}
 		return aRayT <= tMax;
 	}
+
+	// TODO: implement "Fast 3D Triangle-Box Overlap Testing" version and test it
+	// https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/code/tribox_tam.pdf
+	bool Intersects(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const AABB& aBox)
+	{
+		auto ProjectTriangle = [=](glm::vec3 anAxis) {
+			const float proj[]{
+				glm::dot(anAxis, aV1),
+				glm::dot(anAxis, aV2),
+				glm::dot(anAxis, aV3)
+			};
+
+			glm::vec2 result; // min, max
+			result.x = proj[0];
+			result.y = result.x;
+
+			for (uint8_t i = 1; i < 3; i++)
+			{
+				result.x = glm::min(result.x, proj[i]);
+				result.y = glm::max(result.y, proj[i]);
+			}
+			return result;
+		};
+
+		auto ProjectAABB = [=](glm::vec3 anAxis) {
+			glm::vec2 result; // min, max
+			result.x = glm::dot(anAxis, aBox.myMin);
+			result.y = result.x;
+
+			const float proj = glm::dot(anAxis, aBox.myMax);
+			result.x = glm::min(result.x, proj);
+			result.y = glm::max(result.y, proj);
+			return result;
+		};
+
+		const glm::vec3 right{ 1, 0, 0 };
+		const glm::vec3 up{ 0, 1, 0 };
+		const glm::vec3 forward{ 0, 0, 1 };
+
+		const glm::vec3 f1 = aV2 - aV1;
+		const glm::vec3 f2 = aV3 - aV2;
+		const glm::vec3 f3 = aV1 - aV3;
+
+		glm::vec3 axes[]{
+			{1, 0, 0},
+			{0, 1, 0},
+			{0, 0, 1},
+			glm::cross(f1, f2),
+			glm::cross(right, f1),
+			glm::cross(right, f2),
+			glm::cross(right, f3),
+			glm::cross(up, f1),
+			glm::cross(up, f2),
+			glm::cross(up, f3),
+			glm::cross(forward, f1),
+			glm::cross(forward, f2),
+			glm::cross(forward, f3)
+		};
+
+		for (glm::vec3 axis : axes)
+		{
+			const glm::vec2 aabbProj = ProjectAABB(axis);
+			const glm::vec2 triangleProj = ProjectTriangle(axis);
+
+			const bool overlaps = aabbProj.y >= triangleProj.x
+				&& aabbProj.x <= triangleProj.y;
+			if (!overlaps)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 }

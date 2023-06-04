@@ -13,4 +13,5 @@ private:
 	static void TestUtilMatches();
 	static void TestStableVector();
 	static void TestStaticVector();
+	static void TestIntersects();
 };
