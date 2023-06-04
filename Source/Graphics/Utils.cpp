@@ -165,13 +165,41 @@ namespace Utils
 		};
 
 		auto ProjectAABB = [=](glm::vec3 anAxis) {
+			const glm::vec3 size = aBox.myMax - aBox.myMin;
+			const glm::vec3 vertices[]{
+				// bottom
+				aBox.myMin,
+				aBox.myMin + glm::vec3{size.x, 0, 0},
+				aBox.myMin + glm::vec3{0, 0, size.z},
+				aBox.myMin + glm::vec3{size.x, 0, size.z},
+
+				// top
+				aBox.myMin + glm::vec3{0, size.y, 0},
+				aBox.myMin + glm::vec3{size.x, size.y, 0},
+				aBox.myMin + glm::vec3{0, size.y, size.z},
+				aBox.myMax
+			};
+
+			const float proj[]{
+				glm::dot(anAxis, vertices[0]),
+				glm::dot(anAxis, vertices[1]),
+				glm::dot(anAxis, vertices[2]),
+				glm::dot(anAxis, vertices[3]),
+				glm::dot(anAxis, vertices[4]),
+				glm::dot(anAxis, vertices[5]),
+				glm::dot(anAxis, vertices[6]),
+				glm::dot(anAxis, vertices[7])
+			};
+
 			glm::vec2 result; // min, max
-			result.x = glm::dot(anAxis, aBox.myMin);
+			result.x = proj[0];
 			result.y = result.x;
 
-			const float proj = glm::dot(anAxis, aBox.myMax);
-			result.x = glm::min(result.x, proj);
-			result.y = glm::max(result.y, proj);
+			for (uint8_t i = 1; i < 8; i++)
+			{
+				result.x = glm::min(result.x, proj[i]);
+				result.y = glm::max(result.y, proj[i]);
+			}
 			return result;
 		};
 
@@ -183,7 +211,7 @@ namespace Utils
 		const glm::vec3 f2 = aV3 - aV2;
 		const glm::vec3 f3 = aV1 - aV3;
 
-		glm::vec3 axes[]{
+		const glm::vec3 axes[]{
 			{1, 0, 0},
 			{0, 1, 0},
 			{0, 0, 1},
@@ -204,7 +232,7 @@ namespace Utils
 			const glm::vec2 aabbProj = ProjectAABB(axis);
 			const glm::vec2 triangleProj = ProjectTriangle(axis);
 
-			const bool overlaps = aabbProj.y >= triangleProj.x
+			const bool overlaps = triangleProj.x <= aabbProj.y
 				&& aabbProj.x <= triangleProj.y;
 			if (!overlaps)
 			{
