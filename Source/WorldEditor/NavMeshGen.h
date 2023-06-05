@@ -19,7 +19,6 @@ public:
 		float myMinFreeHeight; // how much free space between floor and ceil is needed
 
 		// Debug
-		DebugDrawer* myDrawer = nullptr;
 		bool myDrawValidTriangleChecks = false;
 		bool myDrawGeneratedSpans = false;
 	};
@@ -33,6 +32,7 @@ public:
 
 public:
 	void Generate(const Input& anInput, const Settings& aSettings, Game& aGame);
+	void DebugDraw(DebugDrawer& aDrawer) const;
 
 private:
 	Settings mySettings;
@@ -62,6 +62,17 @@ private:
 		float myMaxHeight;
 
 		void Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const Input& aInput);
+
+		// Debug
+		struct Line
+		{
+			glm::vec3 myStart;
+			glm::vec3 myEnd;
+			glm::vec3 myColor;
+		};
+		std::vector<Line> myDebugTriangles;
+		void DrawValidTriangleChecks(DebugDrawer& aDrawer) const;
+		void DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput) const;
 	};
 	Tile myTile;
 

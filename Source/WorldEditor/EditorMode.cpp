@@ -64,6 +64,10 @@ EditorMode::EditorMode(Game& aGame)
 
 EditorMode::~EditorMode()
 {
+	if (myNavMesh)
+	{
+		delete myNavMesh;
+	}
 	delete myAnimTest;
 }
 
@@ -111,6 +115,11 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 	DrawMenu(aGame);
 
 	UpdatePickedObject(aGame);
+
+	if (myNavMesh)
+	{
+		myNavMesh->DebugDraw(debugDrawer);
+	}
 }
 
 void EditorMode::CreateBigWorld(Game& aGame)
@@ -170,7 +179,7 @@ void EditorMode::CreateBigWorld(Game& aGame)
 void EditorMode::CreateNavWorld(Game& aGame)
 {
 	Transform transf;
-	transf.SetScale({ 30.f, 1.f, 30.f });
+	transf.SetScale({ 5.f, 1.f, 5.f });
 	CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 
 	// Single box to the side
@@ -334,22 +343,29 @@ void EditorMode::DrawMenu(Game& aGame)
 
 			if (ImGui::BeginTabItem("NavMesh"))
 			{
+				ImGui::SliderAngle("Max Slope", &myMaxSlope, 0, 90);
+				ImGui::Checkbox("Render Triangle Validity Checks", &myDebugTriangles);
+				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
+
 				if (ImGui::Button("Generate"))
 				{
-					NavMeshGen gen;
+					if (myNavMesh)
+					{
+						delete myNavMesh;
+					}
+					myNavMesh = new NavMeshGen();
 					NavMeshGen::Input input{ 
 						&aGame.GetWorld(), 
 						{-15.f,-5.f,-15.f}, 
 						{15.f,5.f,15.f} 
 					};
 					NavMeshGen::Settings settings{ 
-						45.f, 
+						glm::degrees(myMaxSlope),
 						0,
-						&aGame.GetDebugDrawer(),
-						false,
-						false
+						myDebugTriangles,
+						myRenderVoxels
 					};
-					gen.Generate(input, settings, aGame);
+					myNavMesh->Generate(input, settings, aGame);
 				}
 
 				ImGui::EndTabItem();

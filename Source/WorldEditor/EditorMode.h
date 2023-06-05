@@ -21,6 +21,7 @@ class AnimationTest;
 class IDRenderPass;
 class Terrain;
 struct Light;
+class NavMeshGen;
 
 // Class used for testing and prototyping the engine
 class EditorMode
@@ -53,6 +54,10 @@ private:
 	std::string myWorldPath;
 
 	Gizmos myGizmos;
+	NavMeshGen* myNavMesh = nullptr;
+	float myMaxSlope = glm::radians(45.f);
+	bool myDebugTriangles = false;
+	bool myRenderVoxels = false;
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);

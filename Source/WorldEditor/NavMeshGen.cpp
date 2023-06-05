@@ -27,6 +27,19 @@ void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game&
 	GatherTriangles(aGame.GetAssetTracker());
 }
 
+void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
+{
+	if (mySettings.myDrawValidTriangleChecks)
+	{
+		myTile.DrawValidTriangleChecks(aDrawer);
+	}
+
+	if (mySettings.myDrawGeneratedSpans)
+	{
+		myTile.DrawVoxelSpans(aDrawer, myInput);
+	}
+}
+
 void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 {
 	if (!mySpans.empty())
@@ -104,6 +117,43 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const
 	}
 }
 
+void NavMeshGen::Tile::DrawValidTriangleChecks(DebugDrawer& aDrawer) const
+{
+	for (const Line& line : myDebugTriangles)
+	{
+		aDrawer.AddLine(line.myStart, line.myEnd, line.myColor);
+	}
+}
+
+void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput) const
+{
+	for (uint32_t z = 0; z < mySize.y; z++)
+	{
+		for (uint32_t x = 0; x < mySize.x; x++)
+		{
+			const VoxelColumn& column = myVoxelGrid[z * mySize.x + x];
+			for (const VoxelSpan& span : column.mySpans)
+			{
+				const glm::vec3 min{
+					x * kVoxelSize,
+					span.myMinY * kVoxelHeight,
+					z * kVoxelSize
+				};
+				const glm::vec3 max{
+					(x + 1) * kVoxelSize,
+					span.myMaxY * kVoxelHeight,
+					(z + 1) * kVoxelSize
+				};
+				aDrawer.AddAABB(
+					aInput.myMin + min,
+					aInput.myMin + max,
+					{ 0, 1, 0 }
+				);
+			}
+		}
+	}
+}
+
 void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 {
 	const glm::vec3 bvWidth = myInput.myMax - myInput.myMin;
@@ -140,6 +190,13 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 
 			// TODO: BV check!
 
+			if (mySettings.myDrawValidTriangleChecks)
+			{
+				myTile.myDebugTriangles.reserve(
+					myTile.myDebugTriangles.size() + model->GetIndexCount() / 3
+				);
+			}
+
 			const VertexDescriptor& desc = model->GetVertexDescriptor();
 			// TODO: need to find to generalize access to Pos
 			if (desc == Vertex::GetDescriptor())
@@ -161,11 +218,11 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 					const float slopeCos = glm::dot(normal, { 0, 1, 0 });
 					const bool validTriangle = slopeCos >= maxSlopeCos;
 
-					if (mySettings.myDrawer && mySettings.myDrawValidTriangleChecks)
+					if (mySettings.myDrawValidTriangleChecks)
 					{
 						const glm::vec3 center = (v1 + v2 + v3) / 3.f;
 						const glm::vec3 color = validTriangle ? glm::vec3{ 0, 1, 0 } : glm::vec3{ 1, 0, 0 };
-						mySettings.myDrawer->AddLine(center, center + normal / 4.f, color, 10000);
+						myTile.myDebugTriangles.push_back({ center, center + normal / 4.f, color });
 					}
 
 					if (!validTriangle)
@@ -178,34 +235,4 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 			}
 		}
 	});
-
-	if (mySettings.myDrawer && mySettings.myDrawGeneratedSpans)
-	{
-		for (uint32_t z = 0; z < myTile.mySize.y; z++)
-		{
-			for (uint32_t x = 0; x < myTile.mySize.x; x++)
-			{
-				const VoxelColumn& column = myTile.myVoxelGrid[z * myTile.mySize.x + x];
-				for (const VoxelSpan& span : column.mySpans)
-				{
-					const glm::vec3 min{
-						x * kVoxelSize,
-						span.myMinY * kVoxelHeight,
-						z * kVoxelSize
-					};
-					const glm::vec3 max{
-						(x + 1) * kVoxelSize,
-						span.myMaxY * kVoxelHeight,
-						(z + 1) * kVoxelSize
-					};
-					mySettings.myDrawer->AddAABB(
-						myInput.myMin + min, 
-						myInput.myMin + max, 
-						{ 0, 1, 0 }, 
-						10000
-					);
-				}
-			}
-		}
-	}
 }
