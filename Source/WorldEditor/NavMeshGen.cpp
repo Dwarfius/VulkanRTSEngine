@@ -42,18 +42,18 @@ void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
 
 void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 {
+	// try to extend the span
 	if (!mySpans.empty())
 	{
 		VoxelSpan& span = mySpans.back();
 		if (span.myMaxY == aHeight)
 		{
 			span.myMaxY++;
+			return;
 		}
 	}
-	else
-	{
-		mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, 0 });
-	}
+
+	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, 0 });
 }
 
 void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const Input& aInput)
