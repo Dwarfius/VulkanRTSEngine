@@ -1,5 +1,7 @@
 #pragma once
 
+class Transform;
+
 namespace Utils
 {
 	glm::vec2 WorldToScreen(
@@ -44,7 +46,10 @@ namespace Utils
 	{
 		glm::vec3 myMin;
 		glm::vec3 myMax;
+
+		AABB Transform(const Transform& aTransf) const;
 	};
+	bool Intersects(const AABB& aLeft, const AABB& aRight);
 	bool Intersects(const Ray& aRay, const AABB& aBox, float& aRayT);
 
 	bool Intersects(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const AABB& aBox);

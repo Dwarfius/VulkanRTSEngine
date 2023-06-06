@@ -1,6 +1,8 @@
 #include "Precomp.h"
 #include "Utils.h"
 
+#include <Core/Transform.h>
+
 namespace Utils
 {
 	glm::vec2 WorldToScreen(
@@ -121,6 +123,48 @@ namespace Utils
 			return aRayT >= 0;
 		}
 		return false;
+	}
+
+	AABB AABB::Transform(const ::Transform& aTransf) const
+	{
+		const glm::vec3 e = myMax - myMin;
+		const glm::vec4 vertices[]{
+			{ myMin, 1.f },
+			{ myMin + glm::vec3{ e.x, 0, 0 }, 1.f },
+			{ myMin + glm::vec3{ 0, 0, e.z }, 1.f },
+			{ myMin + glm::vec3{ e.x, 0, e.z }, 1.f },
+
+			{ myMin + glm::vec3{ 0, e.y, 0 }, 1.f },
+			{ myMin + glm::vec3{ e.x, e.y, 0 }, 1.f },
+			{ myMin + glm::vec3{ 0, e.y, e.z }, 1.f },
+			{ myMax, 1.f }
+		};
+
+		const glm::mat4& matrix = aTransf.GetMatrix();
+		glm::vec4 transformed = matrix * vertices[0];
+		glm::vec4 min = transformed;
+		glm::vec4 max = min;
+		for(uint8_t i=1; i<8; i++)
+		{
+			transformed = matrix * vertices[i];
+			min = glm::min(min, transformed);
+			max = glm::max(max, transformed);
+		}
+		return { min, max };
+	}
+
+	bool Intersects(const AABB& aLeft, const AABB& aRight)
+	{
+		for (uint8_t axis = 0; axis < 3; axis++)
+		{
+			const bool overlaps = aRight.myMin[axis] <= aLeft.myMax[axis]
+				&& aLeft.myMin[axis] <= aRight.myMax[axis];
+			if (!overlaps)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	// Taken from https://tavianator.com/2022/ray_box_boundary.html
