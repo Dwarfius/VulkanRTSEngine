@@ -29,6 +29,11 @@ void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game&
 
 void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
 {
+	if (mySettings.myDrawGenAABB)
+	{
+		aDrawer.AddAABB(myInput.myMin, myInput.myMax, { 1, 1, 1 });
+	}
+
 	if (mySettings.myDrawValidTriangleChecks)
 	{
 		myTile.DrawValidTriangleChecks(aDrawer);
@@ -59,35 +64,52 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const Input& aInput)
 {
 	auto Quantize = [](glm::vec3 aVec) {
-		return glm::u32vec3{ 
+		return glm::i32vec3{ 
 			aVec.x / kVoxelSize,
 			aVec.y / kVoxelHeight,
 			aVec.z / kVoxelSize
 		};
 	};
 	// quantized in voxel grid
-	const glm::u32vec3 v1 = Quantize(aV1 - aInput.myMin);
-	const glm::u32vec3 v2 = Quantize(aV2 - aInput.myMin);
-	const glm::u32vec3 v3 = Quantize(aV3 - aInput.myMin);
+	const glm::i32vec3 v1 = Quantize(aV1 - aInput.myMin);
+	const glm::i32vec3 v2 = Quantize(aV2 - aInput.myMin);
+	const glm::i32vec3 v3 = Quantize(aV3 - aInput.myMin);
 
-	const glm::u32vec3 minBV = glm::min(v1, glm::min(v2, v3));
-	const glm::u32vec3 maxBV = glm::max(v1, glm::max(v2, v3));
+	const glm::i32vec3 minBV = glm::min(v1, glm::min(v2, v3));
+	const glm::i32vec3 maxBV = glm::max(v1, glm::max(v2, v3));
 
 	// TODO: optimize as this can cover a lot of empty cells
 	// with large triangles. Instead of using BV of triangle,
 	// just "rasterize" the triangle
+
+	// Vertices can lie outside of the voxel grid
+	// so clamp the bounding voxels
+	const uint32_t minX = static_cast<uint32_t>(glm::max(minBV.x, 0));
+	const uint32_t maxX = static_cast<uint32_t>(
+		glm::min(maxBV.x, static_cast<int32_t>(mySize.x))
+	);
 
 	// Note on -1 for Y: because of floating point inacuracy and rounding, I've
 	// seen cases where it picked voxels outside of triangle, so it never
 	// passed the intersection check. I've tried fudging the numbers to avoid
 	// rounding inaccuracy, but it wasn't applicable to all cases. So I'm
 	// adding the extra height voxel to check - it's inefficient, but stable
-	const uint32_t minY = minBV.y > 1 ? minBV.y - 1 : minBV.y;
-	for (uint32_t z = minBV.z; z <= maxBV.z; z++)
+	const uint32_t minY = static_cast<uint32_t>(
+		minBV.y > 1 ? minBV.y - 1 : glm::max(minBV.y, 0)
+	);
+	const uint32_t maxY = static_cast<uint32_t>(
+		glm::min(maxBV.y, static_cast<int32_t>(mySize.y))
+	);
+
+	const uint32_t minZ = static_cast<uint32_t>(glm::max(minBV.z, 0));
+	const uint32_t maxZ = static_cast<uint32_t>(
+		glm::min(maxBV.z, static_cast<int32_t>(mySize.z))
+	);
+	for (uint32_t z = minZ; z <= maxZ; z++)
 	{
-		for (uint32_t x = minBV.x; x <= maxBV.x; x++)
+		for (uint32_t x = minX; x <= maxX; x++)
 		{
-			for (uint32_t y = minY; y <= maxBV.y; y++)
+			for (uint32_t y = minY; y <= maxY; y++)
 			{
 				const glm::vec3 voxelMin{
 					x * kVoxelSize,
@@ -127,7 +149,7 @@ void NavMeshGen::Tile::DrawValidTriangleChecks(DebugDrawer& aDrawer) const
 
 void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput) const
 {
-	for (uint32_t z = 0; z < mySize.y; z++)
+	for (uint32_t z = 0; z < mySize.z; z++)
 	{
 		for (uint32_t x = 0; x < mySize.x; x++)
 		{
@@ -157,13 +179,14 @@ void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput)
 void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 {
 	const glm::vec3 bvWidth = myInput.myMax - myInput.myMin;
-	myTile.mySize = glm::u32vec2{ 
+	myTile.mySize = glm::u32vec3{ 
 		glm::ceil(bvWidth.x / kVoxelSize), 
+		glm::ceil(bvWidth.y / kVoxelHeight),
 		glm::ceil(bvWidth.z / kVoxelSize) 
 	};
 	myTile.myMinHeight = myInput.myMin.y;
 	myTile.myMaxHeight = myInput.myMax.y;
-	myTile.myVoxelGrid.resize((myTile.mySize.x + 1) * (myTile.mySize.y + 1));
+	myTile.myVoxelGrid.resize((myTile.mySize.x + 1) * (myTile.mySize.z + 1));
 
 	myInput.myWorld->Access([&, this](const std::vector<Handle<GameObject>>& aGOs) {
 		const float maxSlopeCos = glm::cos(glm::radians(mySettings.myMaxSlope));
@@ -188,7 +211,18 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 			const Transform& transf = go->GetWorldTransform();
 			const glm::mat4& transfMat = transf.GetMatrix();
 
-			// TODO: BV check!
+			// AABB early model rejection
+			{
+				const Utils::AABB modelAABB{
+					model->GetAABBMin(),
+					model->GetAABBMax()
+				};
+				const Utils::AABB transfAABB = modelAABB.Transform(transf);
+				if (!Utils::Intersects(transfAABB, { myInput.myMin, myInput.myMax }))
+				{
+					continue;
+				}
+			}
 
 			if (mySettings.myDrawValidTriangleChecks)
 			{

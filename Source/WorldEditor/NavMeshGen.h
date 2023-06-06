@@ -19,6 +19,7 @@ public:
 		float myMinFreeHeight; // how much free space between floor and ceil is needed
 
 		// Debug
+		bool myDrawGenAABB = false;
 		bool myDrawValidTriangleChecks = false;
 		bool myDrawGeneratedSpans = false;
 	};
@@ -57,7 +58,7 @@ private:
 	struct Tile
 	{
 		std::vector<VoxelColumn> myVoxelGrid;
-		glm::u32vec2 mySize;
+		glm::u32vec3 mySize;
 		float myMinHeight;
 		float myMaxHeight;
 

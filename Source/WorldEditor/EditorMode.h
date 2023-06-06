@@ -56,6 +56,7 @@ private:
 	Gizmos myGizmos;
 	NavMeshGen* myNavMesh = nullptr;
 	float myMaxSlope = glm::radians(45.f);
+	bool myDrawGenAABB = false;
 	bool myDebugTriangles = false;
 	bool myRenderVoxels = false;
 	

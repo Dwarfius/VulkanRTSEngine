@@ -179,7 +179,7 @@ void EditorMode::CreateBigWorld(Game& aGame)
 void EditorMode::CreateNavWorld(Game& aGame)
 {
 	Transform transf;
-	transf.SetScale({ 5.f, 1.f, 5.f });
+	transf.SetScale({ 30.f, 1.f, 30.f });
 	CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 
 	// Single box to the side
@@ -344,6 +344,7 @@ void EditorMode::DrawMenu(Game& aGame)
 			if (ImGui::BeginTabItem("NavMesh"))
 			{
 				ImGui::SliderAngle("Max Slope", &myMaxSlope, 0, 90);
+				ImGui::Checkbox("Draw Generation AABB", &myDrawGenAABB);
 				ImGui::Checkbox("Render Triangle Validity Checks", &myDebugTriangles);
 				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
 
@@ -356,12 +357,13 @@ void EditorMode::DrawMenu(Game& aGame)
 					myNavMesh = new NavMeshGen();
 					NavMeshGen::Input input{ 
 						&aGame.GetWorld(), 
-						{-15.f,-5.f,-15.f}, 
-						{15.f,5.f,15.f} 
+						{-1.f,-5.f,-1.f}, 
+						{1.f,5.f,1.f} 
 					};
 					NavMeshGen::Settings settings{ 
 						glm::degrees(myMaxSlope),
 						0,
+						myDrawGenAABB,
 						myDebugTriangles,
 						myRenderVoxels
 					};
