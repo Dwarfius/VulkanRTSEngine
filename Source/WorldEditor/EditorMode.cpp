@@ -357,8 +357,8 @@ void EditorMode::DrawMenu(Game& aGame)
 					myNavMesh = new NavMeshGen();
 					NavMeshGen::Input input{ 
 						&aGame.GetWorld(), 
-						{-1.f,-5.f,-1.f}, 
-						{1.f,5.f,1.f} 
+						{-3.f,-5.f,-3.f}, 
+						{3.f,5.f,3.f} 
 					};
 					NavMeshGen::Settings settings{ 
 						glm::degrees(myMaxSlope),

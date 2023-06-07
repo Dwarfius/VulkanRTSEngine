@@ -12,11 +12,12 @@ class NavMeshGen
 {
 	constexpr static float kVoxelSize = 0.05f; // 5cm
 	constexpr static float kVoxelHeight = 0.01f; // 1cm
+	constexpr static uint32_t kVoxelsPerTile = 256; // 12.8m
 public:
 	struct Settings
 	{
 		float myMaxSlope; // deg, how steep it is to be impassable
-		float myMinFreeHeight; // how much free space between floor and ceil is needed
+		float myMinFreeHeight; // NYI, how much free space between floor and ceil is needed
 
 		// Debug
 		bool myDrawGenAABB = false;
@@ -58,11 +59,12 @@ private:
 	struct Tile
 	{
 		std::vector<VoxelColumn> myVoxelGrid;
-		glm::u32vec3 mySize;
+		glm::u32vec3 mySize; // in voxels
 		float myMinHeight;
+		glm::vec3 myAABBMin;
 		float myMaxHeight;
 
-		void Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const Input& aInput);
+		void Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3);
 
 		// Debug
 		struct Line
@@ -73,10 +75,11 @@ private:
 		};
 		std::vector<Line> myDebugTriangles;
 		void DrawValidTriangleChecks(DebugDrawer& aDrawer) const;
-		void DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput) const;
+		void DrawVoxelSpans(DebugDrawer& aDrawer) const;
 	};
-	Tile myTile;
+	std::vector<Tile> myTiles;
 
+	void CreateTiles();
 	void GatherTriangles(AssetTracker& anAssetTracker);
 	void SegmentTiles();
 	void ExtractContours();

@@ -10,20 +10,15 @@
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
+#include <Core/Profiler.h>
 
 void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game& aGame)
 {
-	ASSERT_STR(static_cast<uint64_t>(anInput.myMax.x - anInput.myMin.x) 
-		/ kVoxelSize < std::numeric_limits<uint32_t>::max(),
-		"u32 is not enough to fit the grid!");
-	ASSERT(static_cast<uint64_t>(anInput.myMax.y - anInput.myMin.y) 
-		/ kVoxelHeight < std::numeric_limits<uint32_t>::max());
-	ASSERT(static_cast<uint64_t>(anInput.myMax.z - anInput.myMin.z) 
-		/ kVoxelSize < std::numeric_limits<uint32_t>::max());
-
+	Profiler::ScopedMark scope("NavMesh::Generate");
 	myInput = anInput;
 	mySettings = aSettings;
 
+	CreateTiles();
 	GatherTriangles(aGame.GetAssetTracker());
 }
 
@@ -32,16 +27,32 @@ void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
 	if (mySettings.myDrawGenAABB)
 	{
 		aDrawer.AddAABB(myInput.myMin, myInput.myMax, { 1, 1, 1 });
+
+		for (const Tile& tile : myTiles)
+		{
+			const glm::vec3 aabbMax{
+				tile.myAABBMin.x + tile.mySize.x * kVoxelSize,
+				tile.myAABBMin.y + tile.mySize.y * kVoxelHeight,
+				tile.myAABBMin.z + tile.mySize.z * kVoxelSize,
+			};
+			aDrawer.AddAABB(tile.myAABBMin, aabbMax, { 0, 1, 0 });
+		}
 	}
 
 	if (mySettings.myDrawValidTriangleChecks)
 	{
-		myTile.DrawValidTriangleChecks(aDrawer);
+		for (const Tile& tile : myTiles)
+		{
+			tile.DrawValidTriangleChecks(aDrawer);
+		}
 	}
 
 	if (mySettings.myDrawGeneratedSpans)
 	{
-		myTile.DrawVoxelSpans(aDrawer, myInput);
+		for (const Tile& tile : myTiles)
+		{
+			tile.DrawVoxelSpans(aDrawer);
+		}
 	}
 }
 
@@ -61,7 +72,7 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, 0 });
 }
 
-void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const Input& aInput)
+void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 {
 	auto Quantize = [](glm::vec3 aVec) {
 		return glm::i32vec3{ 
@@ -71,12 +82,16 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const
 		};
 	};
 	// quantized in voxel grid
-	const glm::i32vec3 v1 = Quantize(aV1 - aInput.myMin);
-	const glm::i32vec3 v2 = Quantize(aV2 - aInput.myMin);
-	const glm::i32vec3 v3 = Quantize(aV3 - aInput.myMin);
+	const glm::i32vec3 v1 = Quantize(aV1 - myAABBMin);
+	const glm::i32vec3 v2 = Quantize(aV2 - myAABBMin);
+	const glm::i32vec3 v3 = Quantize(aV3 - myAABBMin);
 
 	const glm::i32vec3 minBV = glm::min(v1, glm::min(v2, v3));
 	const glm::i32vec3 maxBV = glm::max(v1, glm::max(v2, v3));
+
+	// Entire triangle might lie outside of our tile
+	if (!Utils::Intersects(Utils::AABB{ minBV, maxBV }, Utils::AABB{ {0, 0, 0}, mySize }))
+		return;
 
 	// TODO: optimize as this can cover a lot of empty cells
 	// with large triangles. Instead of using BV of triangle,
@@ -105,9 +120,9 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const
 	const uint32_t maxZ = static_cast<uint32_t>(
 		glm::min(maxBV.z, static_cast<int32_t>(mySize.z))
 	);
-	for (uint32_t z = minZ; z <= maxZ; z++)
+	for (uint32_t z = minZ; z < maxZ; z++)
 	{
-		for (uint32_t x = minX; x <= maxX; x++)
+		for (uint32_t x = minX; x < maxX; x++)
 		{
 			for (uint32_t y = minY; y <= maxY; y++)
 			{
@@ -123,8 +138,8 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const
 				};
 
 				const Utils::AABB voxelAABB{ 
-					aInput.myMin + voxelMin, 
-					aInput.myMin + voxelMax 
+					myAABBMin + voxelMin,
+					myAABBMin + voxelMax
 				};
 				
 				const bool intersects = Utils::Intersects(aV1, aV2, aV3, voxelAABB);
@@ -147,7 +162,7 @@ void NavMeshGen::Tile::DrawValidTriangleChecks(DebugDrawer& aDrawer) const
 	}
 }
 
-void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput) const
+void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer) const
 {
 	for (uint32_t z = 0; z < mySize.z; z++)
 	{
@@ -167,8 +182,8 @@ void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput)
 					(z + 1) * kVoxelSize
 				};
 				aDrawer.AddAABB(
-					aInput.myMin + min,
-					aInput.myMin + max,
+					myAABBMin + min,
+					myAABBMin + max,
 					{ 0, 1, 0 }
 				);
 			}
@@ -176,20 +191,61 @@ void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer, const Input& aInput)
 	}
 }
 
+void NavMeshGen::CreateTiles()
+{
+	constexpr float kTileSize = kVoxelSize * kVoxelsPerTile;
+	const glm::vec3 bvSize = myInput.myMax - myInput.myMin;
+	const glm::u32vec2 tileCount{
+		glm::ceil(bvSize.x / kTileSize),
+		glm::ceil(bvSize.z / kTileSize)
+	};
+	myTiles.resize(tileCount.x * tileCount.y);
+
+	// Round to kVoxelSize
+	const float maxX = glm::ceil(myInput.myMax.x / kVoxelSize) * kVoxelSize;
+	const float maxZ = glm::ceil(myInput.myMax.z / kVoxelSize) * kVoxelSize;
+	for (uint32_t y = 0; y < tileCount.y; y++)
+	{
+		for (uint32_t x = 0; x < tileCount.x; x++)
+		{
+			const glm::vec2 bvMin{ 
+				myInput.myMin.x + x * kTileSize, 
+				myInput.myMin.z + y * kTileSize 
+			};
+			const glm::vec2 bvMax{
+				glm::min(bvMin.x + kTileSize, maxX),
+				glm::min(bvMin.y + kTileSize, maxZ)
+			};
+
+			Tile& tile = myTiles[y * tileCount.x + x];
+			tile.mySize = glm::u32vec3{
+				glm::ceil((bvMax.x - bvMin.x) / kVoxelSize),
+				glm::ceil(bvSize.y / kVoxelHeight),
+				glm::ceil((bvMax.y - bvMin.y) / kVoxelSize)
+			};
+			tile.myAABBMin = glm::vec3{
+				bvMin.x,
+				myInput.myMin.y,
+				bvMin.y
+			};
+			tile.myMinHeight = myInput.myMin.y;
+			tile.myMaxHeight = myInput.myMax.y;
+			tile.myVoxelGrid.resize(tile.mySize.x * tile.mySize.z);
+		}
+	}
+}
+
 void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 {
-	const glm::vec3 bvWidth = myInput.myMax - myInput.myMin;
-	myTile.mySize = glm::u32vec3{ 
-		glm::ceil(bvWidth.x / kVoxelSize), 
-		glm::ceil(bvWidth.y / kVoxelHeight),
-		glm::ceil(bvWidth.z / kVoxelSize) 
-	};
-	myTile.myMinHeight = myInput.myMin.y;
-	myTile.myMaxHeight = myInput.myMax.y;
-	myTile.myVoxelGrid.resize((myTile.mySize.x + 1) * (myTile.mySize.z + 1));
+	const float maxSlopeCos = glm::cos(glm::radians(mySettings.myMaxSlope));
+	auto ProcessForTile = [&](Tile& aTile, const std::vector<Handle<GameObject>>& aGOs) {
+		Profiler::ScopedMark scope("NavMesh::GatherTriangles::ProcessTile");
 
-	myInput.myWorld->Access([&, this](const std::vector<Handle<GameObject>>& aGOs) {
-		const float maxSlopeCos = glm::cos(glm::radians(mySettings.myMaxSlope));
+		const glm::vec3 tileMax{
+			aTile.myAABBMin.x + aTile.mySize.x * kVoxelSize,
+			aTile.myAABBMin.y + aTile.mySize.y * kVoxelHeight,
+			aTile.myAABBMin.z + aTile.mySize.z * kVoxelSize
+		};
 		for (const Handle<GameObject>& go : aGOs)
 		{
 			const VisualComponent* visual = go->GetComponent<VisualComponent>();
@@ -205,7 +261,7 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 			}
 
 			Handle<Model> model = anAssetTracker.Get<Model>(modelRes);
-			ASSERT_STR(model->GetState() == Resource::State::Ready, 
+			ASSERT_STR(model->GetState() == Resource::State::Ready,
 				"Not ready to generate navmesh!");
 
 			const Transform& transf = go->GetWorldTransform();
@@ -218,7 +274,7 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 					model->GetAABBMax()
 				};
 				const Utils::AABB transfAABB = modelAABB.Transform(transf);
-				if (!Utils::Intersects(transfAABB, { myInput.myMin, myInput.myMax }))
+				if (!Utils::Intersects(transfAABB, { aTile.myAABBMin, tileMax }))
 				{
 					continue;
 				}
@@ -226,8 +282,8 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 
 			if (mySettings.myDrawValidTriangleChecks)
 			{
-				myTile.myDebugTriangles.reserve(
-					myTile.myDebugTriangles.size() + model->GetIndexCount() / 3
+				aTile.myDebugTriangles.reserve(
+					aTile.myDebugTriangles.size() + model->GetIndexCount() / 3
 				);
 			}
 
@@ -256,7 +312,7 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 					{
 						const glm::vec3 center = (v1 + v2 + v3) / 3.f;
 						const glm::vec3 color = validTriangle ? glm::vec3{ 0, 1, 0 } : glm::vec3{ 1, 0, 0 };
-						myTile.myDebugTriangles.push_back({ center, center + normal / 4.f, color });
+						aTile.myDebugTriangles.push_back({ center, center + normal / 4.f, color });
 					}
 
 					if (!validTriangle)
@@ -264,9 +320,21 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 						continue;
 					}
 
-					myTile.Insert(v1, v2, v3, myInput);
+					aTile.Insert(v1, v2, v3);
 				}
 			}
 		}
+	};
+
+	myInput.myWorld->Access([&](const std::vector<Handle<GameObject>>& aGOs) {
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, myTiles.size()),
+			[&](tbb::blocked_range<size_t> aRange) 
+		{
+			for (size_t i = aRange.begin(); i < aRange.end(); i++)
+			{
+				Tile& tile = myTiles[i];
+				ProcessForTile(tile, aGOs);
+			}
+		});
 	});
 }
