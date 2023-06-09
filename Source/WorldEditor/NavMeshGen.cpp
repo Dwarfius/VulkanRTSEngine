@@ -410,10 +410,18 @@ void NavMeshGen::SegmentTiles()
 				VoxelColumn& neighborColumn = aTile.myVoxelGrid[z * aTile.mySize.x + x];
 				for (VoxelSpan& span : neighborColumn.mySpans)
 				{
-					if (span.myRegionId != VoxelSpan::kInvalidRegion
-						|| span.myMaxY != aRegion.myHeight)
+					if (span.myRegionId != VoxelSpan::kInvalidRegion)
 					{
 						continue;
+					}
+
+					if (span.myMaxY < aRegion.myHeight)
+					{
+						continue;
+					}
+					else if (span.myMaxY > aRegion.myHeight)
+					{
+						break;
 					}
 
 					span.myRegionId = aRegion.myRegionId;
