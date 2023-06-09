@@ -16,6 +16,7 @@
 
 void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game& aGame)
 {
+	Profiler::GetInstance().CaptureCurrentFrame();
 	Profiler::ScopedMark scope("NavMesh::Generate");
 	myInput = anInput;
 	mySettings = aSettings;

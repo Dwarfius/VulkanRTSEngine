@@ -96,17 +96,19 @@ void Profiler::NewFrame()
         myInitFrames[myFrameNum - 1] = profile;
     }
 
-    if (myFrameNum > 0)
+    if ((myFrameReportingEnabled || myCaptureFrame) && myFrameNum > 0)
     {
         int64_t delta = profile.myEndStamp - profile.myBeginStamp;
         using namespace std::chrono_literals;
         constexpr std::chrono::duration kLimit = 16ms;
-        if (delta > std::chrono::duration_cast<std::chrono::nanoseconds>(kLimit).count())
+        if (delta > std::chrono::duration_cast<std::chrono::nanoseconds>(kLimit).count()
+            || myCaptureFrame)
         {
             myOnLongFrameCB(profile);
         }
     }
     myFrameNum++;
+    myCaptureFrame = false;
 }
 
 Profiler::Storage::Storage(Profiler& aProfiler)

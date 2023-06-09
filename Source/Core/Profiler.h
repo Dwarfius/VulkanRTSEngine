@@ -46,6 +46,8 @@ public:
     // Call to start tracking new Marks for new frame
     void NewFrame();
     void SetOnLongFrameCallback(const LongFrameCallback& aCallback) { myOnLongFrameCB = aCallback; }
+    void SetIsFrameReportingEnabled(bool aEnabled) { myFrameReportingEnabled = aEnabled; }
+    void CaptureCurrentFrame() { myCaptureFrame = true; }
 
     template<class T>
     void GatherBufferedFrames(const T& aFunc) const;
@@ -74,6 +76,8 @@ private:
     std::array<FrameProfile, kInitFrames> myInitFrames;
     LongFrameCallback myOnLongFrameCB;
     size_t myFrameNum = 0;
+    bool myFrameReportingEnabled = false;
+    bool myCaptureFrame = false;
     tbb::spin_mutex myStorageMutex;
 };
 

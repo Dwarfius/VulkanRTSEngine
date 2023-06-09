@@ -137,15 +137,13 @@ namespace
 
 ProfilerUI::ProfilerUI()
 {
+	Profiler::GetInstance().SetIsFrameReportingEnabled(true);
 	Profiler::GetInstance().SetOnLongFrameCallback(
 		[this](const Profiler::FrameProfile& aProfile) 
 		{
-			if (myAutoRecordLongFrames)
-			{
-				myFrames.push_back(std::move(ProcessFrameProfile(aProfile)));
-				myNeedsToUpdateScopeData = true;
-				UpdateThreadMapping();
-			}
+			myFrames.push_back(std::move(ProcessFrameProfile(aProfile)));
+			myNeedsToUpdateScopeData = true;
+			UpdateThreadMapping();
 		}
 	);
 }
@@ -193,7 +191,10 @@ void ProfilerUI::Draw(bool& aIsOpen)
 			myNeedsToUpdateScopeData = true;
 		}
 
-		ImGui::Checkbox("Auto Record Long Frames?", &myAutoRecordLongFrames);
+		if(ImGui::Checkbox("Auto Record Long Frames?", &myAutoRecordLongFrames))
+		{
+			Profiler::GetInstance().SetIsFrameReportingEnabled(myAutoRecordLongFrames);
+		}
 
 		if (ImGui::TreeNode("Scope Tracking"))
 		{
