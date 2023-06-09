@@ -59,6 +59,7 @@ private:
 	bool myDrawGenAABB = false;
 	bool myDebugTriangles = false;
 	bool myRenderVoxels = false;
+	bool myDrawRegions = false;
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);

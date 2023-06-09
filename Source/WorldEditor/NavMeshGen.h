@@ -23,6 +23,7 @@ public:
 		bool myDrawGenAABB = false;
 		bool myDrawValidTriangleChecks = false;
 		bool myDrawGeneratedSpans = false;
+		bool myDrawRegions = false;
 	};
 
 	struct Input
@@ -42,6 +43,8 @@ private:
 
 	struct VoxelSpan
 	{
+		constexpr static uint16_t kInvalidRegion = 0;
+
 		uint32_t myMinY; // discrete from Tile's myMinHeight and myMaxHeight
 		uint32_t myMaxY;
 		uint16_t myRegionId;
@@ -81,7 +84,25 @@ private:
 
 	void CreateTiles();
 	void GatherTriangles(AssetTracker& anAssetTracker);
+
+	struct Region
+	{
+		struct SpanPos
+		{
+			VoxelSpan* mySpan;
+			glm::u32vec2 myPos; // Note: only for debug drawing
+		};
+		std::vector<SpanPos> mySpans;
+		glm::vec3 myTileAABBMin; // Note: only for debug drawing
+		uint32_t myHeight;
+		uint16_t myRegionId;
+
+		void Draw(DebugDrawer& aDrawer) const;
+	};
+	std::vector<Region> myRegions;
+
 	void SegmentTiles();
+
 	void ExtractContours();
 	void MergeTiles();
 	void BuildNavGraph();

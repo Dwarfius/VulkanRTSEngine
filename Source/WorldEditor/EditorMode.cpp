@@ -347,6 +347,7 @@ void EditorMode::DrawMenu(Game& aGame)
 				ImGui::Checkbox("Draw Generation AABB", &myDrawGenAABB);
 				ImGui::Checkbox("Render Triangle Validity Checks", &myDebugTriangles);
 				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
+				ImGui::Checkbox("Render Voxel Regions", &myDrawRegions);
 
 				if (ImGui::Button("Generate"))
 				{
@@ -355,17 +356,19 @@ void EditorMode::DrawMenu(Game& aGame)
 						delete myNavMesh;
 					}
 					myNavMesh = new NavMeshGen();
+					constexpr float kRange = 3.f;
 					NavMeshGen::Input input{ 
 						&aGame.GetWorld(), 
-						{-3.f,-5.f,-3.f}, 
-						{3.f,5.f,3.f} 
+						{-kRange,-5.f,-kRange},
+						{kRange,5.f,kRange}
 					};
 					NavMeshGen::Settings settings{ 
 						glm::degrees(myMaxSlope),
 						0,
 						myDrawGenAABB,
 						myDebugTriangles,
-						myRenderVoxels
+						myRenderVoxels,
+						myDrawRegions
 					};
 					myNavMesh->Generate(input, settings, aGame);
 				}

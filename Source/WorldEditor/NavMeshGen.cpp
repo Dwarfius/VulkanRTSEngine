@@ -12,6 +12,8 @@
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Profiler.h>
 
+#include <stack>
+
 void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game& aGame)
 {
 	Profiler::ScopedMark scope("NavMesh::Generate");
@@ -20,6 +22,7 @@ void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game&
 
 	CreateTiles();
 	GatherTriangles(aGame.GetAssetTracker());
+	SegmentTiles();
 }
 
 void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
@@ -54,6 +57,14 @@ void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
 			tile.DrawVoxelSpans(aDrawer);
 		}
 	}
+
+	if (mySettings.myDrawRegions)
+	{
+		for (const Region& region : myRegions)
+		{
+			region.Draw(aDrawer);
+		}
+	}
 }
 
 void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
@@ -69,7 +80,7 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 		}
 	}
 
-	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, 0 });
+	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, VoxelSpan::kInvalidRegion });
 }
 
 void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
@@ -337,4 +348,116 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 			}
 		});
 	});
+}
+
+void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
+{
+	constexpr float kComp = 1.f;
+	constexpr glm::vec3 kColorTable[]{
+		{ 0, kComp, kComp },
+		{ kComp, 0, kComp },
+		{ kComp, kComp, 0 },
+		{ 0.25f, kComp, kComp },
+		{ kComp, 0.25f, kComp },
+		{ kComp, kComp, 0.25f },
+		{ 0.75f, kComp, kComp },
+		{ kComp, 0.75f, kComp },
+		{ kComp, kComp, 0.75f }
+	};
+	const glm::vec3 color = kColorTable[myRegionId % std::size(kColorTable)];
+	for (const SpanPos& span : mySpans)
+	{
+		const glm::vec3 p1 = myTileAABBMin + glm::vec3{
+			span.myPos.x * kVoxelSize, 
+			myHeight * kVoxelHeight, 
+			span.myPos.y * kVoxelSize
+		};
+		const glm::vec3 p2 = p1 + glm::vec3{ kVoxelSize, 0, 0 };
+		const glm::vec3 p3 = p1 + glm::vec3{ 0, 0, kVoxelSize };
+		const glm::vec3 p4 = p2 + glm::vec3{ 0, 0, kVoxelSize };
+
+		aDrawer.AddLine(p1, p2, color);
+		aDrawer.AddLine(p2, p4, color);
+		aDrawer.AddLine(p4, p3, color);
+		aDrawer.AddLine(p3, p1, color);
+	}
+}
+
+void NavMeshGen::SegmentTiles()
+{
+	auto FindNeighbours = [](std::stack<glm::u32vec2>& aToCheck, Region& aRegion, Tile& aTile) {
+		const glm::u32vec2 spanIndex = aToCheck.top();
+		aToCheck.pop();
+
+		const glm::u32vec2 min = glm::min(
+			glm::u32vec2{ spanIndex.x - 1, spanIndex.y - 1 }, 
+			glm::u32vec2{ 0,0 }
+		);
+		const glm::u32vec2 max = glm::min(
+			glm::u32vec2{ spanIndex.x + 1, spanIndex.y + 1 }, 
+			glm::u32vec2{ aTile.mySize.x - 1, aTile.mySize.z - 1 }
+		);
+		for (uint32_t z = min.y; z <= max.y; z++)
+		{
+			for (uint32_t x = min.x; x <= max.x; x++)
+			{
+				if (z == spanIndex.y && x == spanIndex.x)
+				{
+					continue;
+				}
+
+				VoxelColumn& neighborColumn = aTile.myVoxelGrid[z * aTile.mySize.x + x];
+				for (VoxelSpan& span : neighborColumn.mySpans)
+				{
+					if (span.myRegionId != VoxelSpan::kInvalidRegion
+						|| span.myMaxY != aRegion.myHeight)
+					{
+						continue;
+					}
+
+					span.myRegionId = aRegion.myRegionId;
+					aRegion.mySpans.push_back({ &span, {x, z} });
+					aToCheck.push({ x, z });
+				}
+			}
+		}
+	};
+
+	for (Tile& tile : myTiles)
+	{
+		Profiler::ScopedMark scope("NavMeshGen::SegmentTiles::Tile");
+
+		uint16_t regionCounter = 0;
+		std::stack<glm::u32vec2> spansToCheck;
+		for (uint32_t z = 0; z < tile.mySize.z; z++)
+		{
+			for (uint32_t x = 0; x < tile.mySize.x; x++)
+			{
+				VoxelColumn& column = tile.myVoxelGrid[z * tile.mySize.x + x];
+				for (VoxelSpan& span : column.mySpans)
+				{
+					if (span.myRegionId != VoxelSpan::kInvalidRegion)
+					{
+						continue;
+					}
+
+					span.myRegionId = ++regionCounter;
+					myRegions.push_back({ 
+						{}, 
+						tile.myAABBMin, 
+						span.myMaxY, 
+						span.myRegionId 
+					});
+					Region& region = myRegions.back();
+					region.mySpans.push_back({ &span, {x, z} });
+
+					spansToCheck.push({ x, z });
+					while (!spansToCheck.empty())
+					{
+						FindNeighbours(spansToCheck, region, tile);
+					}
+				}
+			}
+		}
+	}
 }
