@@ -386,9 +386,9 @@ void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
 
 void NavMeshGen::SegmentTiles()
 {
-	auto FindNeighbours = [](std::stack<glm::u32vec2>& aToCheck, Region& aRegion, Tile& aTile) {
-		const glm::u32vec2 spanIndex = aToCheck.top();
-		aToCheck.pop();
+	auto FindNeighbours = [](std::vector<glm::u32vec2>& aToCheck, Region& aRegion, Tile& aTile) {
+		const glm::u32vec2 spanIndex = aToCheck.back();
+		aToCheck.pop_back();
 
 		const glm::u32vec2 min = glm::min(
 			glm::u32vec2{ spanIndex.x - 1, spanIndex.y - 1 }, 
@@ -418,7 +418,7 @@ void NavMeshGen::SegmentTiles()
 
 					span.myRegionId = aRegion.myRegionId;
 					aRegion.mySpans.push_back({ &span, {x, z} });
-					aToCheck.push({ x, z });
+					aToCheck.push_back({ x, z });
 				}
 			}
 		}
@@ -429,7 +429,9 @@ void NavMeshGen::SegmentTiles()
 		Profiler::ScopedMark scope("NavMeshGen::SegmentTiles::Tile");
 
 		uint16_t regionCounter = 0;
-		std::stack<glm::u32vec2> spansToCheck;
+		std::vector<glm::u32vec2> spansToCheck;
+		// assume 1 span per voxel column
+		spansToCheck.reserve(kVoxelsPerTile * kVoxelsPerTile);
 		for (uint32_t z = 0; z < tile.mySize.z; z++)
 		{
 			for (uint32_t x = 0; x < tile.mySize.x; x++)
@@ -452,7 +454,7 @@ void NavMeshGen::SegmentTiles()
 					Region& region = myRegions.back();
 					region.mySpans.push_back({ &span, {x, z} });
 
-					spansToCheck.push({ x, z });
+					spansToCheck.push_back({ x, z });
 					while (!spansToCheck.empty())
 					{
 						FindNeighbours(spansToCheck, region, tile);
