@@ -12,8 +12,6 @@
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Profiler.h>
 
-#include <stack>
-
 void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game& aGame)
 {
 	Profiler::GetInstance().CaptureCurrentFrame();
