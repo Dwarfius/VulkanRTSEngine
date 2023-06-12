@@ -82,6 +82,34 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, VoxelSpan::kInvalidRegion });
 }
 
+void NavMeshGen::VoxelColumn::Merge()
+{
+	std::sort(mySpans.begin(), mySpans.end(),
+		[](const VoxelSpan& aLeft, const VoxelSpan& aRight) 
+		{
+			return aLeft.myMinY < aRight.myMinY;
+		}
+	);
+
+	for (uint32_t i = 0; i < mySpans.size() - 1; i++)
+	{
+		VoxelSpan& span = mySpans[i];
+		VoxelSpan& nextSpan = mySpans[i + 1];
+		
+		if (span.myMaxY >= nextSpan.myMinY && span.myMinY <= nextSpan.myMaxY)
+		{
+			nextSpan.myMinY = glm::min(span.myMinY, nextSpan.myMinY);
+			nextSpan.myMaxY = glm::max(span.myMaxY, nextSpan.myMaxY);
+
+			span.myMinY = span.myMaxY; // reset a span
+		}
+	}
+
+	std::erase_if(mySpans, 
+		[](const VoxelSpan& aSpan) { return aSpan.myMinY == aSpan.myMaxY; }
+	);
+}
+
 void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 {
 	auto Quantize = [](glm::vec3 aVec) {
@@ -161,6 +189,15 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 				}
 			}
 		}
+	}
+}
+
+void NavMeshGen::Tile::MergeColumns()
+{
+	Profiler::ScopedMark scope("NavMeshGen::Tile::MergeColumns");
+	for (VoxelColumn& column : myVoxelGrid)
+	{
+		column.Merge();
 	}
 }
 
@@ -249,7 +286,7 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 {
 	const float maxSlopeCos = glm::cos(glm::radians(mySettings.myMaxSlope));
 	auto ProcessForTile = [&](Tile& aTile, const std::vector<Handle<GameObject>>& aGOs) {
-		Profiler::ScopedMark scope("NavMesh::GatherTriangles::ProcessTile");
+		Profiler::ScopedMark scope("NavMeshGen::GatherTriangles::ProcessTile");
 
 		const glm::vec3 tileMax{
 			aTile.myAABBMin.x + aTile.mySize.x * kVoxelSize,
@@ -334,6 +371,8 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 				}
 			}
 		}
+
+		aTile.MergeColumns();
 	};
 
 	myInput.myWorld->Access([&](const std::vector<Handle<GameObject>>& aGOs) {

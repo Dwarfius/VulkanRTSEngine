@@ -57,6 +57,8 @@ private:
 		void AddTop(uint32_t aHeight);
 		void AddBottom(uint32_t aHeight);
 		void AddBoth(uint32_t aHeight);
+
+		void Merge();
 	};
 
 	struct Tile
@@ -68,6 +70,7 @@ private:
 		float myMaxHeight;
 
 		void Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3);
+		void MergeColumns();
 
 		// Debug
 		struct Line
