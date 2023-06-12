@@ -343,11 +343,19 @@ void EditorMode::DrawMenu(Game& aGame)
 
 			if (ImGui::BeginTabItem("NavMesh"))
 			{
+				ImGui::DragFloat3("Origin", glm::value_ptr(myNavMeshOrigin));
+				ImGui::DragFloat3("Extents", glm::value_ptr(myNavMeshExtents));
 				ImGui::SliderAngle("Max Slope", &myMaxSlope, 0, 90);
 				ImGui::Checkbox("Draw Generation AABB", &myDrawGenAABB);
 				ImGui::Checkbox("Render Triangle Validity Checks", &myDebugTriangles);
 				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
 				ImGui::Checkbox("Render Voxel Regions", &myDrawRegions);
+
+				aGame.GetDebugDrawer().AddAABB(
+					myNavMeshOrigin - myNavMeshExtents,
+					myNavMeshOrigin + myNavMeshExtents,
+					{ 1, 1, 1 }
+				);
 
 				if (ImGui::Button("Generate"))
 				{
@@ -356,11 +364,10 @@ void EditorMode::DrawMenu(Game& aGame)
 						delete myNavMesh;
 					}
 					myNavMesh = new NavMeshGen();
-					constexpr float kRange = 3.f;
 					NavMeshGen::Input input{ 
 						&aGame.GetWorld(), 
-						{-kRange,-5.f,-kRange},
-						{kRange,5.f,kRange}
+						myNavMeshOrigin - myNavMeshExtents,
+						myNavMeshOrigin + myNavMeshExtents
 					};
 					NavMeshGen::Settings settings{ 
 						glm::degrees(myMaxSlope),
