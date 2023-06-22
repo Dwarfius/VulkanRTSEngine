@@ -84,6 +84,11 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 
 void NavMeshGen::VoxelColumn::Merge()
 {
+	if (mySpans.empty())
+	{
+		return;
+	}
+
 	std::sort(mySpans.begin(), mySpans.end(),
 		[](const VoxelSpan& aLeft, const VoxelSpan& aRight) 
 		{
