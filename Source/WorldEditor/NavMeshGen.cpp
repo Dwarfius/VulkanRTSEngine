@@ -117,24 +117,34 @@ void NavMeshGen::VoxelColumn::Merge()
 
 void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 {
-	auto Quantize = [](glm::vec3 aVec) {
-		return glm::i32vec3{ 
-			aVec.x / kVoxelSize,
-			aVec.y / kVoxelHeight,
-			aVec.z / kVoxelSize
-		};
-	};
-	// quantized in voxel grid
-	const glm::i32vec3 v1 = Quantize(aV1 - myAABBMin);
-	const glm::i32vec3 v2 = Quantize(aV2 - myAABBMin);
-	const glm::i32vec3 v3 = Quantize(aV3 - myAABBMin);
-
-	const glm::i32vec3 minBV = glm::min(v1, glm::min(v2, v3));
-	const glm::i32vec3 maxBV = glm::max(v1, glm::max(v2, v3));
+	const glm::vec3 minBVWS = glm::min(aV1, glm::min(aV2, aV3));
+	const glm::vec3 maxBVWS = glm::max(aV1, glm::max(aV2, aV3));
 
 	// Entire triangle might lie outside of our tile
-	if (!Utils::Intersects(Utils::AABB{ minBV, maxBV }, Utils::AABB{ {0, 0, 0}, mySize }))
+	const glm::vec3 aabbMax{
+		myAABBMin.x + mySize.x * kVoxelSize,
+		myAABBMin.y + mySize.y * kVoxelHeight,
+		myAABBMin.z + mySize.z * kVoxelSize,
+	};
+	if (!Utils::Intersects(
+		Utils::AABB{ minBVWS, maxBVWS },
+		Utils::AABB{ myAABBMin, aabbMax }))
+	{
 		return;
+	}
+
+	// Quantize in voxel grid
+	const glm::vec3 minBV{
+		glm::floor((minBVWS.x - myAABBMin.x) / kVoxelSize),
+		glm::floor((minBVWS.y - myAABBMin.y) / kVoxelHeight),
+		glm::floor((minBVWS.z - myAABBMin.z) / kVoxelSize)
+	};
+
+	const glm::vec3 maxBV{
+		glm::ceil((maxBVWS.x - myAABBMin.x) / kVoxelSize),
+		glm::ceil((maxBVWS.y - myAABBMin.y) / kVoxelHeight),
+		glm::ceil((maxBVWS.z - myAABBMin.z) / kVoxelSize)
+	};
 
 	// TODO: optimize as this can cover a lot of empty cells
 	// with large triangles. Instead of using BV of triangle,
@@ -142,27 +152,35 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 
 	// Vertices can lie outside of the voxel grid
 	// so clamp the bounding voxels
-	const uint32_t minX = static_cast<uint32_t>(glm::max(minBV.x, 0));
+	const uint32_t minX = static_cast<uint32_t>(glm::max(minBV.x, 0.f));
 	const uint32_t maxX = static_cast<uint32_t>(
-		glm::min(maxBV.x, static_cast<int32_t>(mySize.x))
+		glm::min(maxBV.x, static_cast<float>(mySize.x))
 	);
 
-	// Note on -1 for Y: because of floating point inacuracy and rounding, I've
-	// seen cases where it picked voxels outside of triangle, so it never
-	// passed the intersection check. I've tried fudging the numbers to avoid
-	// rounding inaccuracy, but it wasn't applicable to all cases. So I'm
-	// adding the extra height voxel to check - it's inefficient, but stable
-	const uint32_t minY = static_cast<uint32_t>(
-		minBV.y > 1 ? minBV.y - 1 : glm::max(minBV.y, 0)
-	);
+	const uint32_t minY = static_cast<uint32_t>(glm::max(minBV.y, 0.f));
 	const uint32_t maxY = static_cast<uint32_t>(
-		glm::min(maxBV.y, static_cast<int32_t>(mySize.y))
+		glm::min(maxBV.y, static_cast<float>(mySize.y))
 	);
 
-	const uint32_t minZ = static_cast<uint32_t>(glm::max(minBV.z, 0));
+	const uint32_t minZ = static_cast<uint32_t>(glm::max(minBV.z, 0.f));
 	const uint32_t maxZ = static_cast<uint32_t>(
-		glm::min(maxBV.z, static_cast<int32_t>(mySize.z))
+		glm::min(maxBV.z, static_cast<float>(mySize.z))
 	);
+
+	// It's possible to lose precision as we're translating from voxel space
+	// (above min/max coords) to world space, resulting in failing triangle-AABB
+	// tests. This happens because we're comparing triangle's WS coords that are
+	// precise, to coords that have made a round trip transformation 
+	// (WS -> VS -> WS) - so we avoid it, instead bringing it all to VS.
+	// Translate into tile space to maintain precision first
+	const glm::vec3 v1TS = aV1 - myAABBMin;
+	const glm::vec3 v2TS = aV2 - myAABBMin;
+	const glm::vec3 v3TS = aV3 - myAABBMin;
+
+	constexpr Utils::AABB voxelAABB{
+		{ 0, 0, 0 },
+		{ kVoxelSize, kVoxelHeight, kVoxelSize }
+	};
 	for (uint32_t z = minZ; z < maxZ; z++)
 	{
 		for (uint32_t x = minX; x < maxX; x++)
@@ -174,18 +192,12 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 					y * kVoxelHeight,
 					z * kVoxelSize
 				};
-				const glm::vec3 voxelMax{
-					(x + 1) * kVoxelSize,
-					(y + 1) * kVoxelHeight,
-					(z + 1) * kVoxelSize
-				};
+				// Translate to voxel space to maintain precision
+				const glm::vec3 v1VS = v1TS - voxelMin;
+				const glm::vec3 v2VS = v2TS - voxelMin;
+				const glm::vec3 v3VS = v3TS - voxelMin;
 
-				const Utils::AABB voxelAABB{ 
-					myAABBMin + voxelMin,
-					myAABBMin + voxelMax
-				};
-				
-				const bool intersects = Utils::Intersects(aV1, aV2, aV3, voxelAABB);
+				const bool intersects = Utils::Intersects(v1VS, v2VS, v3VS, voxelAABB);
 				if (intersects)
 				{
 					// TODO: track top and bottom!

@@ -183,8 +183,8 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 
 	// Single box to the side
+	transf.SetPos({ 1, 0.5f, 0 });
 	transf.SetScale({ 1, 1, 1 });
-	transf.SetPos({ 0, 0.5f, 0 });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	// ramps
@@ -203,6 +203,17 @@ void EditorMode::CreateNavWorld(Game& aGame)
 		transf.SetPos({ 3.f, i * 0.1f + 0.05f, i * 0.1f });
 		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
+
+	// adjacent boxes
+	transf.SetPos({ 0, 0, 0 });
+	transf.SetScale({ 0.2f, 0.2f, 0.2f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	transf.SetPos({ 0.2f, 0, 0.2f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	transf.SetPos({ -0.1f, 0, -0.2f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 }
 
 void EditorMode::HandleCamera(Transform& aCamTransf, float aDeltaTime)
