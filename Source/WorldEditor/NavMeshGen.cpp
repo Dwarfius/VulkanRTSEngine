@@ -536,9 +536,13 @@ void NavMeshGen::SegmentTiles()
 		const glm::u32vec2 spanIndex = aToCheck.back();
 		aToCheck.pop_back();
 
+		const glm::i32vec2 neighborOrigin{
+			spanIndex.x - 1,
+			spanIndex.y - 1
+		};
 		const glm::u32vec2 min = glm::max(
-			glm::u32vec2{ spanIndex.x - 1, spanIndex.y - 1 }, 
-			glm::u32vec2{ 0,0 }
+			neighborOrigin,
+			glm::i32vec2{ 0,0 }
 		);
 		const glm::u32vec2 max = glm::min(
 			glm::u32vec2{ spanIndex.x + 1, spanIndex.y + 1 }, 
@@ -567,7 +571,7 @@ void NavMeshGen::SegmentTiles()
 						break;
 					}
 
-					const glm::u32vec2 delta = glm::u32vec2{ x, z } - min;
+					const glm::u32vec2 delta = glm::i32vec2{ x, z } - neighborOrigin;
 					neighbors |= kNeighborEncTable[delta.y * 3 + delta.x];
 					
 					if (span.myRegionId != VoxelSpan::kInvalidRegion)
