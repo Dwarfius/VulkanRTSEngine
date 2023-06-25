@@ -64,6 +64,54 @@ void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
 			region.Draw(aDrawer);
 		}
 	}
+
+	if (mySettings.myDrawCornerPoints)
+	{
+		for (const Region& region : myRegions)
+		{
+			region.DrawCornerPoints(aDrawer);
+		}
+	}
+}
+
+bool NavMeshGen::IsVertexCorner(uint8_t aVert, uint8_t aNeighborsSet)
+{
+	// Note: kNeighborEncTable in NavMeshGen::SegmentTiles()
+	constexpr static uint8_t kCornerMasks[]{
+		11, 22, 104, 208
+	};
+	// If the vertex has any of these neighbors 
+	// then it's not a corner
+	constexpr static uint8_t kNeighbors[][3]{
+		{11, 8, 2},
+		{22, 2, 16},
+		{104, 8, 64},
+		{208, 16,64}
+	};
+	const uint8_t neighbors = aNeighborsSet & kCornerMasks[aVert];
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		if (neighbors == kNeighbors[aVert][i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool NavMeshGen::IsVertexSlashPoint(uint8_t aVert, uint8_t aNeighborsSet)
+{
+	// Note: kNeighborEncTable in NavMeshGen::SegmentTiles()
+	constexpr static uint8_t kCornerMasks[]{
+		11, 22, 104, 208
+	};
+	// If the vertex has any of these neighbors 
+	// then it's not a corner
+	constexpr static uint8_t kNeighbors[]{
+		1, 4, 32, 128
+	};
+	const uint8_t neighbors = aNeighborsSet & kCornerMasks[aVert];
+	return neighbors == kNeighbors[aVert] && IsVertexCorner(aVert, aNeighborsSet);
 }
 
 void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
@@ -79,7 +127,7 @@ void NavMeshGen::VoxelColumn::AddBoth(uint32_t aHeight)
 		}
 	}
 
-	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, VoxelSpan::kInvalidRegion });
+	mySpans.push_back(VoxelSpan{ aHeight, aHeight + 1, VoxelSpan::kInvalidRegion, 0 });
 }
 
 void NavMeshGen::VoxelColumn::Merge()
@@ -438,8 +486,52 @@ void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
 	}
 }
 
+void NavMeshGen::Region::DrawCornerPoints(DebugDrawer& aDrawer) const
+{
+	constexpr static glm::vec3 kOffsets[]{
+		{0, 0, kVoxelSize},
+		{kVoxelSize, 0, kVoxelSize},
+		{0, 0, 0},
+		{kVoxelSize, 0, 0}
+	};
+	for (const SpanPos& spanPos : myCornerSpans)
+	{
+		const VoxelSpan& span = *spanPos.mySpan;
+		const glm::vec3 spanOrigin = myTileAABBMin + glm::vec3{
+			spanPos.myPos.x * kVoxelSize,
+			span.myMaxY * kVoxelHeight,
+			spanPos.myPos.y * kVoxelSize
+		};
+		for (uint8_t cornerInd = 0; cornerInd < 4; cornerInd++)
+		{
+			if (IsVertexSlashPoint(cornerInd, span.myNeighbors))
+			{
+				aDrawer.AddSphere(
+					spanOrigin + kOffsets[cornerInd],
+					kVoxelSize / 5.f,
+					{ 1, 0, 0 }
+				);
+			}
+			else if (IsVertexCorner(cornerInd, span.myNeighbors))
+			{
+				aDrawer.AddSphere(
+					spanOrigin + kOffsets[cornerInd], 
+					kVoxelSize / 5.f, 
+					{ 0, 1, 0 }
+				);
+			}
+		}
+	}
+}
+
 void NavMeshGen::SegmentTiles()
 {
+	constexpr static uint8_t kNeighborEncTable[]{
+		32, 64, 128,
+		8, 0, 16,
+		1, 2, 4
+	};
+
 	auto FindNeighbours = [](std::vector<glm::u32vec2>& aToCheck, Region& aRegion, Tile& aTile) {
 		const glm::u32vec2 spanIndex = aToCheck.back();
 		aToCheck.pop_back();
@@ -452,6 +544,8 @@ void NavMeshGen::SegmentTiles()
 			glm::u32vec2{ spanIndex.x + 1, spanIndex.y + 1 }, 
 			glm::u32vec2{ aTile.mySize.x - 1, aTile.mySize.z - 1 }
 		);
+		
+		uint8_t neighbors = 0;
 		for (uint32_t z = min.y; z <= max.y; z++)
 		{
 			for (uint32_t x = min.x; x <= max.x; x++)
@@ -464,11 +558,6 @@ void NavMeshGen::SegmentTiles()
 				VoxelColumn& neighborColumn = aTile.myVoxelGrid[z * aTile.mySize.x + x];
 				for (VoxelSpan& span : neighborColumn.mySpans)
 				{
-					if (span.myRegionId != VoxelSpan::kInvalidRegion)
-					{
-						continue;
-					}
-
 					if (span.myMaxY < aRegion.myHeight)
 					{
 						continue;
@@ -478,10 +567,52 @@ void NavMeshGen::SegmentTiles()
 						break;
 					}
 
+					const glm::u32vec2 delta = glm::u32vec2{ x, z } - min;
+					neighbors |= kNeighborEncTable[delta.y * 3 + delta.x];
+					
+					if (span.myRegionId != VoxelSpan::kInvalidRegion)
+					{
+						continue;
+					}
+
 					span.myRegionId = aRegion.myRegionId;
 					aRegion.mySpans.push_back({ &span, {x, z} });
 					aToCheck.push_back({ x, z });
+					break;
 				}
+			}
+		}
+		
+		// update the neighbors info
+		bool foundCorner = false;
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			if (IsVertexCorner(i, neighbors))
+			{
+				foundCorner = true;
+				break;
+			}
+		}
+
+		if (foundCorner)
+		{
+			VoxelColumn& currColumn = aTile.myVoxelGrid[
+				spanIndex.y * aTile.mySize.x + spanIndex.x
+			];
+			for (VoxelSpan& span : currColumn.mySpans)
+			{
+				if (span.myMaxY < aRegion.myHeight)
+				{
+					continue;
+				}
+				else if (span.myMaxY > aRegion.myHeight)
+				{
+					break;
+				}
+
+				aRegion.myCornerSpans.push_back({ &span, spanIndex });
+				span.myNeighbors = neighbors;
+				break;
 			}
 		}
 	};
@@ -508,13 +639,14 @@ void NavMeshGen::SegmentTiles()
 
 					span.myRegionId = ++regionCounter;
 					myRegions.push_back({ 
-						{}, 
+						{},
+						{},
 						tile.myAABBMin, 
 						span.myMaxY, 
 						span.myRegionId 
 					});
 					Region& region = myRegions.back();
-					region.mySpans.push_back({ &span, {x, z} });
+					region.mySpans.push_back({ &span, { x, z } });
 
 					spansToCheck.push_back({ x, z });
 					while (!spansToCheck.empty())
@@ -525,4 +657,8 @@ void NavMeshGen::SegmentTiles()
 			}
 		}
 	}
+}
+
+void NavMeshGen::ExtractContours()
+{
 }

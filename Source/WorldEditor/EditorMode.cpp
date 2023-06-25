@@ -180,12 +180,12 @@ void EditorMode::CreateNavWorld(Game& aGame)
 {
 	Transform transf;
 	transf.SetScale({ 30.f, 1.f, 30.f });
-	CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
+	//CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 
 	// Single box to the side
 	transf.SetPos({ 1, 0.5f, 0 });
 	transf.SetScale({ 1, 1, 1 });
-	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+	//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	// ramps
 	transf.SetScale({ 1, 0.1f, 1 });
@@ -193,7 +193,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	{
 		transf.SetRotation(glm::vec3{ glm::radians(i * 5.f), 0, 0 });
 		transf.SetPos({ i * 1.5f - 1.5f * 9, 0, 2.f });
-		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+		//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
 
 	// staircase
@@ -201,7 +201,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	for (uint8_t i = 0; i < 10; i++)
 	{
 		transf.SetPos({ 3.f, i * 0.1f + 0.05f, i * 0.1f });
-		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+		//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
 
 	// adjacent boxes
@@ -209,10 +209,19 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	transf.SetScale({ 0.2f, 0.2f, 0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.2f, 0, 0.2f });
+	transf.SetPos({ 0.21f, 0, 0.21f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	transf.SetPos({ 0.31f, 0, 0 });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	transf.SetPos({ -0.1f, 0, -0.2f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	transf.SetPos({ 0.21f, 0, -0.2f });
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+
+	transf.SetPos({ 0.1f, 0, -0.3f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 }
 
@@ -361,6 +370,7 @@ void EditorMode::DrawMenu(Game& aGame)
 				ImGui::Checkbox("Render Triangle Validity Checks", &myDebugTriangles);
 				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
 				ImGui::Checkbox("Render Voxel Regions", &myDrawRegions);
+				ImGui::Checkbox("Render Corner Points", &myDrawCornerPoints);
 
 				aGame.GetDebugDrawer().AddAABB(
 					myNavMeshOrigin - myNavMeshExtents,
@@ -386,7 +396,8 @@ void EditorMode::DrawMenu(Game& aGame)
 						myDrawGenAABB,
 						myDebugTriangles,
 						myRenderVoxels,
-						myDrawRegions
+						myDrawRegions,
+						myDrawCornerPoints
 					};
 					myNavMesh->Generate(input, settings, aGame);
 				}

@@ -24,6 +24,7 @@ public:
 		bool myDrawValidTriangleChecks = false;
 		bool myDrawGeneratedSpans = false;
 		bool myDrawRegions = false;
+		bool myDrawCornerPoints = false;
 	};
 
 	struct Input
@@ -41,6 +42,16 @@ private:
 	Settings mySettings;
 	Input myInput;
 
+
+	// Indexing is done as follows (top down)
+	// 3 4
+	// 1 2
+	static bool IsVertexCorner(uint8_t aVert, uint8_t aNeighborsSet);
+	// Indexing is done as follows (top down)
+	// 3 4
+	// 1 2
+	static bool IsVertexSlashPoint(uint8_t aVert, uint8_t aNeighborsSet);
+
 	struct VoxelSpan
 	{
 		constexpr static uint16_t kInvalidRegion = 0;
@@ -48,6 +59,7 @@ private:
 		uint32_t myMinY; // discrete from Tile's myMinHeight and myMaxHeight
 		uint32_t myMaxY;
 		uint16_t myRegionId;
+		uint8_t myNeighbors;
 	};
 
 	struct VoxelColumn
@@ -96,11 +108,13 @@ private:
 			glm::u32vec2 myPos; // Note: only for debug drawing
 		};
 		std::vector<SpanPos> mySpans;
+		std::vector<SpanPos> myCornerSpans;
 		glm::vec3 myTileAABBMin; // Note: only for debug drawing
 		uint32_t myHeight;
 		uint16_t myRegionId;
 
 		void Draw(DebugDrawer& aDrawer) const;
+		void DrawCornerPoints(DebugDrawer& aDrawer) const;
 	};
 	std::vector<Region> myRegions;
 
