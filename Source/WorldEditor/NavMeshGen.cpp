@@ -444,7 +444,7 @@ void NavMeshGen::SegmentTiles()
 		const glm::u32vec2 spanIndex = aToCheck.back();
 		aToCheck.pop_back();
 
-		const glm::u32vec2 min = glm::min(
+		const glm::u32vec2 min = glm::max(
 			glm::u32vec2{ spanIndex.x - 1, spanIndex.y - 1 }, 
 			glm::u32vec2{ 0,0 }
 		);
