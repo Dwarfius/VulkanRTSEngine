@@ -183,15 +183,15 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 
 	// Quantize in voxel grid
 	const glm::vec3 minBV{
-		glm::floor((minBVWS.x - myAABBMin.x) / kVoxelSize),
-		glm::floor((minBVWS.y - myAABBMin.y) / kVoxelHeight),
-		glm::floor((minBVWS.z - myAABBMin.z) / kVoxelSize)
+		glm::round((minBVWS.x - myAABBMin.x) / kVoxelSize),
+		glm::round((minBVWS.y - myAABBMin.y) / kVoxelHeight),
+		glm::round((minBVWS.z - myAABBMin.z) / kVoxelSize)
 	};
 
 	const glm::vec3 maxBV{
-		glm::ceil((maxBVWS.x - myAABBMin.x) / kVoxelSize),
-		glm::ceil((maxBVWS.y - myAABBMin.y) / kVoxelHeight),
-		glm::ceil((maxBVWS.z - myAABBMin.z) / kVoxelSize)
+		glm::round((maxBVWS.x - myAABBMin.x) / kVoxelSize),
+		glm::round((maxBVWS.y - myAABBMin.y) / kVoxelHeight),
+		glm::round((maxBVWS.z - myAABBMin.z) / kVoxelSize)
 	};
 
 	// TODO: optimize as this can cover a lot of empty cells

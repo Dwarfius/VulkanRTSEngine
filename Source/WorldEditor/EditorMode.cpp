@@ -193,7 +193,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	{
 		transf.SetRotation(glm::vec3{ glm::radians(i * 5.f), 0, 0 });
 		transf.SetPos({ i * 1.5f - 1.5f * 9, 0, 2.f });
-		//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
 
 	// staircase
@@ -201,7 +201,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	for (uint8_t i = 0; i < 10; i++)
 	{
 		transf.SetPos({ 3.f, i * 0.1f + 0.05f, i * 0.1f });
-		//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+		CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 	}
 
 	// adjacent boxes
@@ -209,16 +209,16 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	transf.SetScale({ 0.2f, 0.2f, 0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.21f, 0, 0.21f });
+	transf.SetPos({ 0.2f, 0, 0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.31f, 0, 0 });
+	transf.SetPos({ 0.3f, 0, 0 });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	transf.SetPos({ -0.1f, 0, -0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.21f, 0, -0.2f });
+	transf.SetPos({ 0.2f, 0, -0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	transf.SetPos({ 0.1f, 0, -0.3f });
