@@ -372,6 +372,7 @@ void EditorMode::DrawMenu(Game& aGame)
 				ImGui::Checkbox("Render Voxel Spans", &myRenderVoxels);
 				ImGui::Checkbox("Render Voxel Regions", &myDrawRegions);
 				ImGui::Checkbox("Render Corner Points", &myDrawCornerPoints);
+				ImGui::Checkbox("Render Contours", &myDrawContours);
 
 				aGame.GetDebugDrawer().AddAABB(
 					myNavMeshOrigin - myNavMeshExtents,
@@ -398,7 +399,8 @@ void EditorMode::DrawMenu(Game& aGame)
 						myDebugTriangles,
 						myRenderVoxels,
 						myDrawRegions,
-						myDrawCornerPoints
+						myDrawCornerPoints,
+						myDrawContours
 					};
 					myNavMesh->Generate(input, settings, aGame);
 				}

@@ -63,6 +63,7 @@ private:
 	bool myRenderVoxels = false;
 	bool myDrawRegions = false;
 	bool myDrawCornerPoints = false;
+	bool myDrawContours = false;
 	
 	// Object Picking
 	void UpdatePickedObject(Game& aGame);

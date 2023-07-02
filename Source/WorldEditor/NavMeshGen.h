@@ -25,6 +25,7 @@ public:
 		bool myDrawGeneratedSpans = false;
 		bool myDrawRegions = false;
 		bool myDrawCornerPoints = false;
+		bool myDrawContours = false;
 	};
 
 	struct Input
@@ -44,12 +45,12 @@ private:
 
 
 	// Indexing is done as follows (top down)
-	// 3 4
-	// 1 2
+	// 2 3
+	// 0 1
 	static bool IsVertexCorner(uint8_t aVert, uint8_t aNeighborsSet);
 	// Indexing is done as follows (top down)
-	// 3 4
-	// 1 2
+	// 2 3
+	// 0 1
 	static bool IsVertexSlashPoint(uint8_t aVert, uint8_t aNeighborsSet);
 
 	struct VoxelSpan
@@ -105,7 +106,7 @@ private:
 		struct SpanPos
 		{
 			VoxelSpan* mySpan;
-			glm::u32vec2 myPos; // Note: only for debug drawing
+			glm::u32vec2 myPos;
 		};
 		std::vector<SpanPos> mySpans;
 		std::vector<SpanPos> myCornerSpans;
@@ -120,7 +121,22 @@ private:
 
 	void SegmentTiles();
 
+	struct Contour
+	{
+		struct Vertex
+		{
+			glm::u32vec2 myPos;
+			uint8_t myVert; // 0, 1, 2, 3
+		};
+		std::vector<Vertex> myVerts;
+		const Region* myRegion;
+
+		void Draw(DebugDrawer& aDrawer) const;
+	};
+	std::vector<Contour> myContours;
+
 	void ExtractContours();
+
 	void MergeTiles();
 	void BuildNavGraph();
 };
