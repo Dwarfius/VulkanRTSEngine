@@ -185,7 +185,7 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	// Single box to the side
 	transf.SetPos({ 1, 0.5f, 0 });
 	transf.SetScale({ 1, 1, 1 });
-	//CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
+	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
 	// ramps
 	transf.SetScale({ 1, 0.1f, 1 });

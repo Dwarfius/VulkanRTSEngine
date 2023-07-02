@@ -305,34 +305,37 @@ void NavMeshGen::Tile::DrawVoxelSpans(DebugDrawer& aDrawer) const
 
 void NavMeshGen::CreateTiles()
 {
+	// Round to kTileSize
 	constexpr float kTileSize = kVoxelSize * kVoxelsPerTile;
-	const glm::vec3 bvSize = myInput.myMax - myInput.myMin;
+	const float minX = glm::floor(myInput.myMin.x / kTileSize) * kTileSize;
+	const float minZ = glm::floor(myInput.myMin.z / kTileSize) * kTileSize;
+	const float maxX = glm::ceil(myInput.myMax.x / kTileSize) * kTileSize;
+	const float maxZ = glm::ceil(myInput.myMax.z / kTileSize) * kTileSize;
+	const float height = glm::ceil(myInput.myMax.y - myInput.myMin.y) / kVoxelHeight;
+	
 	const glm::u32vec2 tileCount{
-		glm::ceil(bvSize.x / kTileSize),
-		glm::ceil(bvSize.z / kTileSize)
+		glm::ceil((maxX - minX) / kTileSize),
+		glm::ceil((maxZ - minZ) / kTileSize)
 	};
 	myTiles.resize(tileCount.x * tileCount.y);
 
-	// Round to kVoxelSize
-	const float maxX = glm::ceil(myInput.myMax.x / kVoxelSize) * kVoxelSize;
-	const float maxZ = glm::ceil(myInput.myMax.z / kVoxelSize) * kVoxelSize;
 	for (uint32_t y = 0; y < tileCount.y; y++)
 	{
 		for (uint32_t x = 0; x < tileCount.x; x++)
 		{
 			const glm::vec2 bvMin{ 
-				myInput.myMin.x + x * kTileSize, 
-				myInput.myMin.z + y * kTileSize 
+				glm::max(minX + x * kTileSize, myInput.myMin.x),
+				glm::max(minZ + y * kTileSize, myInput.myMin.z)
 			};
 			const glm::vec2 bvMax{
-				glm::min(bvMin.x + kTileSize, maxX),
-				glm::min(bvMin.y + kTileSize, maxZ)
+				glm::min(minX + (x + 1) * kTileSize, myInput.myMax.x),
+				glm::min(minZ + (y + 1) * kTileSize, myInput.myMax.z)
 			};
 
 			Tile& tile = myTiles[y * tileCount.x + x];
 			tile.mySize = glm::u32vec3{
 				glm::ceil((bvMax.x - bvMin.x) / kVoxelSize),
-				glm::ceil(bvSize.y / kVoxelHeight),
+				height,
 				glm::ceil((bvMax.y - bvMin.y) / kVoxelSize)
 			};
 			tile.myAABBMin = glm::vec3{
