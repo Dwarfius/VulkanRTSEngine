@@ -182,8 +182,8 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	transf.SetScale({ 30.f, 1.f, 30.f });
 	//CreateGOWithMesh(aGame, myDefAssets.GetPlane(), transf);
 
-	// Single box to the side
-	transf.SetPos({ 1, 0.5f, 0 });
+	// Single unit box
+	transf.SetPos({ 0, 0.5f, 0 });
 	transf.SetScale({ 1, 1, 1 });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
@@ -205,23 +205,24 @@ void EditorMode::CreateNavWorld(Game& aGame)
 	}
 
 	// adjacent boxes
-	transf.SetPos({ 0, 0, 0 });
+	constexpr glm::vec3 kSideOrigin{1.2f, 0.f, 1.2f};
+	transf.SetPos(kSideOrigin);
 	transf.SetScale({ 0.2f, 0.2f, 0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.2f, 0, 0.2f });
+	transf.SetPos(kSideOrigin + glm::vec3{ 0.2f, 0, 0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.3f, 0, 0 });
+	transf.SetPos(kSideOrigin + glm::vec3{ 0.3f, 0, 0 });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ -0.1f, 0, -0.2f });
+	transf.SetPos(kSideOrigin + glm::vec3{ -0.1f, 0, -0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.2f, 0, -0.2f });
+	transf.SetPos(kSideOrigin + glm::vec3{ 0.2f, 0, -0.2f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 
-	transf.SetPos({ 0.1f, 0, -0.3f });
+	transf.SetPos(kSideOrigin + glm::vec3{ 0.1f, 0, -0.3f });
 	CreateGOWithMesh(aGame, myDefAssets.GetBox(), transf);
 }
 

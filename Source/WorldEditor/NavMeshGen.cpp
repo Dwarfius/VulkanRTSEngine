@@ -664,6 +664,13 @@ void NavMeshGen::SegmentTiles()
 			}
 		}
 	}
+
+	// We generated corner points per tile in isolation meaning
+	// tile-edge voxels are missing their neighbors in another tile.
+	// The paper tries to fix this with eliminating these "extra" corner
+	// points. But I think it's beneficial to have them, as they 
+	// create natural points of merging the tiles in the future. 
+	// So I'll skip this step for now and see how it goes.
 }
 
 void NavMeshGen::ExtractContours()
