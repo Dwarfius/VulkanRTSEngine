@@ -22,56 +22,80 @@ void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game&
 	CreateTiles();
 
 	constexpr uint8_t kScenario = 0;
-	Tile& tile = myTiles[0];
+	Tile& tile = myTiles[2];
 	const uint32_t width = tile.mySize.x;
-	if (kScenario == 0)
+	const uint32_t halfHeight = static_cast<uint32_t>(
+		(tile.myMaxHeight - tile.myMinHeight) / kVoxelHeight / 2
+	);
+	switch (kScenario)
 	{
+	case 0:
 		GatherTriangles(aGame.GetAssetTracker());
-	}
-	else if (kScenario == 1)
-	{
-		tile.myVoxelGrid[0].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width + 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width + 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2 + 1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2 + 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3 + 1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3 + 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3 + 3].AddBoth(kVoxelHeight / 2);
-	}
-	else
-	{
-		tile.myVoxelGrid[0].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[4].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width + 1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width + 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width + 4].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2 + 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2 + 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 2 + 4].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3 + 1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 3 + 4].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 4].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 4 + 1].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 4 + 2].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 4 + 3].AddBoth(kVoxelHeight / 2);
-		tile.myVoxelGrid[width * 4 + 4].AddBoth(kVoxelHeight / 2);
+		break;
+	case 1:
+		tile.myVoxelGrid[0].AddBoth(halfHeight);
+		tile.myVoxelGrid[1].AddBoth(halfHeight);
+		tile.myVoxelGrid[2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 2].AddBoth(halfHeight);
+		break;
+	case 2:
+		tile.myVoxelGrid[0].AddBoth(halfHeight);
+		tile.myVoxelGrid[1].AddBoth(halfHeight);
+		tile.myVoxelGrid[2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 2].AddBoth(halfHeight);
+		break;
+	case 3:
+		tile.myVoxelGrid[0].AddBoth(halfHeight);
+		tile.myVoxelGrid[1].AddBoth(halfHeight);
+		tile.myVoxelGrid[2].AddBoth(halfHeight);
+		tile.myVoxelGrid[3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3 + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3 + 3].AddBoth(halfHeight);
+		break;
+	case 4:
+		tile.myVoxelGrid[0].AddBoth(halfHeight);
+		tile.myVoxelGrid[1].AddBoth(halfHeight);
+		tile.myVoxelGrid[2].AddBoth(halfHeight);
+		tile.myVoxelGrid[3].AddBoth(halfHeight);
+		tile.myVoxelGrid[4].AddBoth(halfHeight);
+		tile.myVoxelGrid[width].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width + 4].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 2 + 4].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 3 + 4].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 4].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 4 + 1].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 4 + 2].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 4 + 3].AddBoth(halfHeight);
+		tile.myVoxelGrid[width * 4 + 4].AddBoth(halfHeight);
+		break;
 	}
 
 	SegmentTiles();
-	//ExtractContours();
+	ExtractContours();
 }
 
 void NavMeshGen::DebugDraw(DebugDrawer& aDrawer) const
@@ -514,6 +538,105 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 	});
 }
 
+void NavMeshGen::Region::GatherCornerVerts(const std::vector<SpanPos>& aSpans)
+{
+	auto ConvertToWS = [](glm::vec3 anOrigin, glm::u32vec2 aPos, uint32_t aHeight, uint8_t aVert)
+	{
+		constexpr static glm::vec3 kOffsets[]{
+			{0, 0, kVoxelSize},
+			{kVoxelSize, 0, kVoxelSize},
+			{0, 0, 0},
+			{kVoxelSize, 0, 0}
+		};
+		const glm::vec3 spanOrigin = anOrigin + glm::vec3{
+			aPos.x * kVoxelSize,
+			aHeight * kVoxelHeight,
+			aPos.y * kVoxelSize
+		};
+		return spanOrigin + kOffsets[aVert];
+	};
+
+	struct CornerVertHash 
+	{
+		std::size_t operator()(const CornerVert& aVert) const noexcept
+		{
+			// We only want to deduplicate corners in a region, so we can 
+			// ignore the height and the type of corner. Additionally, because 
+			// float innacuracies can creep in we protect against it by 
+			// preserving only the significant part
+			static_assert(kVoxelSize >= 0.01f && kVoxelSize < 0.1f, 
+				"Update multiplier bellow!");
+			const glm::u32vec2 pos{
+				static_cast<uint32_t>(glm::round(aVert.myPos.x * 100)),
+				static_cast<uint32_t>(glm::round(aVert.myPos.z * 100))
+			};
+			return std::hash<glm::u32vec2>{}(pos);
+		}
+	};
+
+	struct CornerVertEq
+	{
+		bool operator()(const CornerVert& aLeft, const CornerVert& aRight) const noexcept 
+		{
+			static_assert(kVoxelSize >= 0.01f && kVoxelSize < 0.1f,
+				"Update multiplier bellow!");
+			const glm::u32vec2 left{
+				static_cast<uint32_t>(glm::round(aLeft.myPos.x * 100)),
+				static_cast<uint32_t>(glm::round(aLeft.myPos.z * 100))
+			};
+			const glm::u32vec2 right{
+				static_cast<uint32_t>(glm::round(aRight.myPos.x * 100)),
+				static_cast<uint32_t>(glm::round(aRight.myPos.z * 100))
+			};
+			return left == right;
+		}
+	};
+	std::unordered_set<CornerVert, CornerVertHash, CornerVertEq> slashPoints;
+	for (const SpanPos& span : aSpans)
+	{
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			if (IsVertexSlashPoint(i, span.mySpan->myNeighbors))
+			{
+				CornerVert vert{
+					ConvertToWS(myTileAABBMin, span.myPos, myHeight, i),
+					(i == 1 || i == 2) ? 2u : 1u
+				};
+				if (slashPoints.contains(vert))
+				{
+					continue;
+				}
+				slashPoints.insert(vert);
+				myCornerVerts.push_back(vert);
+			}
+			else if(IsVertexCorner(i, span.mySpan->myNeighbors))
+			{
+				CornerVert vert{
+					ConvertToWS(myTileAABBMin, span.myPos, myHeight, i),
+					0
+				};
+				if (slashPoints.contains(vert))
+				{
+					continue;
+				}
+				slashPoints.insert(vert);
+				myCornerVerts.push_back(vert);
+			}
+		}
+	}
+}
+
+void NavMeshGen::CornerVert::Draw(DebugDrawer& aDrawer) const
+{
+	const glm::vec3 color = myType == 0 ? glm::vec3{ 0, 1, 0 }
+		: myType == 2 ? glm::vec3{ 1, 0, 0 } : glm::vec3{ 0, 0, 1 };
+	aDrawer.AddSphere(
+		myPos,
+		kVoxelSize / 5.f,
+		color
+	);
+}
+
 void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
 {
 	constexpr float kComp = 1.f;
@@ -549,39 +672,9 @@ void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
 
 void NavMeshGen::Region::DrawCornerPoints(DebugDrawer& aDrawer) const
 {
-	constexpr static glm::vec3 kOffsets[]{
-		{0, 0, kVoxelSize},
-		{kVoxelSize, 0, kVoxelSize},
-		{0, 0, 0},
-		{kVoxelSize, 0, 0}
-	};
-	for (const SpanPos& spanPos : myCornerSpans)
+	for (const CornerVert& vert : myCornerVerts)
 	{
-		const VoxelSpan& span = *spanPos.mySpan;
-		const glm::vec3 spanOrigin = myTileAABBMin + glm::vec3{
-			spanPos.myPos.x * kVoxelSize,
-			span.myMaxY * kVoxelHeight,
-			spanPos.myPos.y * kVoxelSize
-		};
-		for (uint8_t cornerInd = 0; cornerInd < 4; cornerInd++)
-		{
-			if (IsVertexSlashPoint(cornerInd, span.myNeighbors))
-			{
-				aDrawer.AddSphere(
-					spanOrigin + kOffsets[cornerInd],
-					kVoxelSize / 5.f,
-					{ 1, 0, 0 }
-				);
-			}
-			else if (IsVertexCorner(cornerInd, span.myNeighbors))
-			{
-				aDrawer.AddSphere(
-					spanOrigin + kOffsets[cornerInd], 
-					kVoxelSize / 5.f, 
-					{ 0, 1, 0 }
-				);
-			}
-		}
+		vert.Draw(aDrawer);
 	}
 }
 
@@ -593,7 +686,8 @@ void NavMeshGen::SegmentTiles()
 		1, 2, 4
 	};
 
-	auto FindNeighbours = [](std::vector<glm::u32vec2>& aToCheck, Region& aRegion, Tile& aTile) {
+	auto FindNeighbours = [](std::vector<glm::u32vec2>& aToCheck, Region& aRegion, 
+		std::vector<Region::SpanPos>& aCornerSpans, Tile& aTile) {
 		const glm::u32vec2 spanIndex = aToCheck.back();
 		aToCheck.pop_back();
 
@@ -675,7 +769,7 @@ void NavMeshGen::SegmentTiles()
 					break;
 				}
 
-				aRegion.myCornerSpans.push_back({ &span, spanIndex });
+				aCornerSpans.push_back({ &span, spanIndex });
 				span.myNeighbors = neighbors;
 				break;
 			}
@@ -690,6 +784,9 @@ void NavMeshGen::SegmentTiles()
 		std::vector<glm::u32vec2> spansToCheck;
 		// assume 1 span per voxel column
 		spansToCheck.reserve(kVoxelsPerTile * kVoxelsPerTile);
+
+		std::vector<Region::SpanPos> cornerSpans;
+		cornerSpans.reserve(64); // arbitrary
 		for (uint32_t z = 0; z < tile.mySize.z; z++)
 		{
 			for (uint32_t x = 0; x < tile.mySize.x; x++)
@@ -716,8 +813,11 @@ void NavMeshGen::SegmentTiles()
 					spansToCheck.push_back({ x, z });
 					while (!spansToCheck.empty())
 					{
-						FindNeighbours(spansToCheck, region, tile);
+						FindNeighbours(spansToCheck, region, cornerSpans, tile);
 					}
+
+					region.GatherCornerVerts(cornerSpans);
+					cornerSpans.clear();
 				}
 			}
 		}
@@ -733,35 +833,13 @@ void NavMeshGen::SegmentTiles()
 
 void NavMeshGen::Contour::Draw(DebugDrawer& aDrawer) const
 {
-	constexpr static glm::vec3 kOffsets[]{
-		{0, 0, kVoxelSize},
-		{kVoxelSize, 0, kVoxelSize},
-		{0, 0, 0},
-		{kVoxelSize, 0, 0}
-	};
-	const float height = myRegion->myHeight * kVoxelHeight;
-	const glm::vec3 origin = myRegion->myTileAABBMin;
-	auto DrawLine = [=](DebugDrawer& aDrawer, const Vertex& aStart, const Vertex& anEnd) {
-		const glm::vec3 startPoint = origin + glm::vec3{
-			aStart.myPos.x * kVoxelSize,
-			height,
-			aStart.myPos.y * kVoxelSize
-		} + kOffsets[aStart.myVert];
-
-		const glm::vec3 endPoint = origin + glm::vec3{
-			anEnd.myPos.x * kVoxelSize,
-			height,
-			anEnd.myPos.y * kVoxelSize
-		} + kOffsets[anEnd.myVert];
-		aDrawer.AddLine(startPoint, endPoint, { 0, 0, 1 });
-	};
 	for (uint32_t i = 0; i < myVerts.size() - 1; i++)
 	{
-		const Vertex& start = myVerts[i];
-		const Vertex& end = myVerts[i + 1];
-		DrawLine(aDrawer, start, end);
+		const CornerVert& start = myVerts[i];
+		const CornerVert& end = myVerts[i + 1];
+		aDrawer.AddLine(start.myPos, end.myPos, { 0, 0, 1 });
 	}
-	DrawLine(aDrawer, myVerts.back(), myVerts.front());
+	aDrawer.AddLine(myVerts.back().myPos, myVerts.front().myPos, { 0, 0, 1 });
 }
 
 void NavMeshGen::ExtractContours()
@@ -770,23 +848,23 @@ void NavMeshGen::ExtractContours()
 
 	struct CornerPoint
 	{
-		glm::u32vec2 myPos;
-		uint8_t myVert : 2; // 0, 1, 2, 3
-		uint8_t myIsSlashPoint : 1; // false, true
+		glm::vec3 myPos;
+		uint8_t myType : 2; // 0 - normal, 1 - antislash, 2 - slash
 		uint8_t myIsConnected : 1; // false, true
 
-		CornerPoint(glm::u32vec2 aPos, uint8_t aVert, uint8_t aIsSlashPoint)
-			: myPos(aPos)
-			, myVert(aVert)
-			, myIsSlashPoint(aIsSlashPoint)
+		CornerPoint(const CornerVert& aVert)
+			: myPos(aVert.myPos)
+			, myType(aVert.myType)
 			, myIsConnected(0)
 		{
 		}
 	};
 
 	std::vector<CornerPoint> cornerPoints;
-	std::vector<CornerPoint*> rows[kVoxelsPerTile];
-	std::vector<CornerPoint*> columns[kVoxelsPerTile];
+	std::vector<std::vector<CornerPoint*>> rows;
+	rows.resize(kVoxelsPerTile);
+	std::vector<std::vector<CornerPoint*>> columns;
+	columns.resize(kVoxelsPerTile);
 	std::unordered_map<CornerPoint*, CornerPoint*> neighboursHor;
 	std::unordered_map<CornerPoint*, CornerPoint*> neighboursVer;
 	for (const Region& region : myRegions)
@@ -803,63 +881,43 @@ void NavMeshGen::ExtractContours()
 		neighboursHor.clear();
 		neighboursVer.clear();
 
-		cornerPoints.reserve(region.myCornerSpans.size() * 4); // should be worst case
-		for (const Region::SpanPos& cornerPos : region.myCornerSpans)
+		// reserving to avoid relocations - *2 covers worst case
+		cornerPoints.reserve(region.myCornerVerts.size() * 2); 
+		for (const CornerVert& cornerVert : region.myCornerVerts)
 		{
-			for (uint8_t vert = 0; vert < 4; vert++)
+			const glm::u32vec2 gridPos{
+				glm::round((cornerVert.myPos.x - region.myTileAABBMin.x) / kVoxelSize),
+				glm::round((cornerVert.myPos.z - region.myTileAABBMin.z) / kVoxelSize)
+			};
+			if (cornerVert.myType != 0)
 			{
-				if (IsVertexSlashPoint(vert, cornerPos.mySpan->myNeighbors))
-				{
-					CornerPoint& p1 = cornerPoints.emplace_back(cornerPos.myPos, vert, 1);
-					CornerPoint& p2 = cornerPoints.emplace_back(cornerPos.myPos, vert, 1);
-					rows[cornerPos.myPos.y].push_back(&p1);
-					rows[cornerPos.myPos.y].push_back(&p2);
+				CornerPoint& p1 = cornerPoints.emplace_back(cornerVert);
+				CornerPoint& p2 = cornerPoints.emplace_back(cornerVert);
+				rows[gridPos.y].push_back(&p1);
+				rows[gridPos.y].push_back(&p2);
 
-					columns[cornerPos.myPos.x].push_back(&p1);
-					columns[cornerPos.myPos.x].push_back(&p2);
-				}
-				else if(IsVertexCorner(vert, cornerPos.mySpan->myNeighbors))
-				{
-					CornerPoint& p = cornerPoints.emplace_back(cornerPos.myPos, vert, 0);
-					rows[cornerPos.myPos.y].push_back(&p);
-					columns[cornerPos.myPos.x].push_back(&p);
-				}
+				columns[gridPos.x].push_back(&p1);
+				columns[gridPos.x].push_back(&p2);
+			}
+			else
+			{
+				CornerPoint& p = cornerPoints.emplace_back(cornerVert);
+				rows[gridPos.y].push_back(&p);
+				columns[gridPos.x].push_back(&p);
 			}
 		}
 
 		// sort so that we can use the even-odd rule (Jordan Theorem)
 		for (std::vector<CornerPoint*>& row : rows)
 		{
-			// sorting in asc X order
 			std::sort(row.begin(), row.end(), [](const auto& aLeft, const auto& aRight) {
-				if (aLeft->myPos.x == aRight->myPos.x)
-				{
-					switch (aLeft->myVert)
-					{
-					case 0:
-					case 2:
-						return aRight->myVert == 1 || aRight->myVert == 3;
-					}
-					return false;
-				}
 				return aLeft->myPos.x < aRight->myPos.x;
 			});
 		}
 		for (std::vector<CornerPoint*>& column : columns)
 		{
-			// sorting in asc Y order
 			std::sort(column.begin(), column.end(), [](const auto& aLeft, const auto& aRight) {
-				if (aLeft->myPos.y == aRight->myPos.y)
-				{
-					switch (aLeft->myVert)
-					{
-					case 2:
-					case 3:
-						return aRight->myVert == 0 || aRight->myVert == 1;
-					}
-					return false;
-				}
-				return aLeft->myPos.y < aRight->myPos.y;
+				return aLeft->myPos.z < aRight->myPos.z;
 			});
 		}
 
@@ -895,16 +953,16 @@ void NavMeshGen::ExtractContours()
 				// p1 stands for first of dupe pair, p2 - second
 				CornerPoint* a = nullptr;
 				CornerPoint* b = nullptr;
-				if (s1.myIsSlashPoint == 0 && s2.myIsSlashPoint == 0)
+				if (s1.myType == 0 && s2.myType == 0)
 				{
 					a = &s1;
 					b = &s2;
 				}
-				else if (s1.myIsSlashPoint == 1) // slash or antislash point
+				else if (s1.myType == 1 || s1.myType == 2) // antislash or slash point
 				{
-					if (s1.myVert == 0 || s1.myVert == 3) // antislash point
+					if (s1.myType == 1) // antislash point
 					{
-						if (s2.myIsSlashPoint == 0) // normal
+						if (s2.myType == 0) // normal
 						{
 							// p2 -> p
 							a = &s1;
@@ -919,7 +977,7 @@ void NavMeshGen::ExtractContours()
 					}
 					else // slash point
 					{
-						if (s2.myIsSlashPoint == 0)
+						if (s2.myType == 0)
 						{
 							// p1 -> p
 							a = column[i - 1];
@@ -933,9 +991,9 @@ void NavMeshGen::ExtractContours()
 						}
 					}
 				}
-				else // normal, s2 is slash or antislash
+				else // s1 normal, s2 is slash or antislash
 				{
-					if (s2.myVert == 0 || s2.myVert == 3) // antislash
+					if (s2.myType == 1) // antislash
 					{
 						// p -> p1
 						a = &s1;
@@ -953,7 +1011,6 @@ void NavMeshGen::ExtractContours()
 				neighboursVer.insert({ b, a });
 			}
 		}
-
 		// Connect contour vertices
 		for(CornerPoint& point : cornerPoints)
 		{
@@ -965,13 +1022,13 @@ void NavMeshGen::ExtractContours()
 
 			Contour& cont = myContours.emplace_back();
 			cont.myRegion = &region;
-			cont.myVerts.push_back({ start->myPos, start->myVert });
+			cont.myVerts.push_back({ start->myPos, start->myType });
 			
 			CornerPoint* next = neighboursVer[start];
 			while (next != start)
 			{
 				ASSERT(next->myIsConnected == 0);
-				cont.myVerts.push_back({ next->myPos, next->myVert });
+				cont.myVerts.push_back({ next->myPos, next->myType });
 				next->myIsConnected = 1;
 
 				// avoid looping back

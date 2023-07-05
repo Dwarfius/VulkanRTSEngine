@@ -101,6 +101,14 @@ private:
 	void CreateTiles();
 	void GatherTriangles(AssetTracker& anAssetTracker);
 
+	struct CornerVert
+	{
+		glm::vec3 myPos;
+		uint8_t myType : 2; // 0 - normal, 1 - antislash, 2 - slash
+
+		void Draw(DebugDrawer& aDrawer) const;
+	};
+
 	struct Region
 	{
 		struct SpanPos
@@ -109,10 +117,12 @@ private:
 			glm::u32vec2 myPos;
 		};
 		std::vector<SpanPos> mySpans;
-		std::vector<SpanPos> myCornerSpans;
+		std::vector<CornerVert> myCornerVerts;
 		glm::vec3 myTileAABBMin; // Note: only for debug drawing
 		uint32_t myHeight;
 		uint16_t myRegionId;
+
+		void GatherCornerVerts(const std::vector<SpanPos>& aSpans);
 
 		void Draw(DebugDrawer& aDrawer) const;
 		void DrawCornerPoints(DebugDrawer& aDrawer) const;
@@ -123,12 +133,7 @@ private:
 
 	struct Contour
 	{
-		struct Vertex
-		{
-			glm::u32vec2 myPos;
-			uint8_t myVert; // 0, 1, 2, 3
-		};
-		std::vector<Vertex> myVerts;
+		std::vector<CornerVert> myVerts;
 		const Region* myRegion;
 
 		void Draw(DebugDrawer& aDrawer) const;

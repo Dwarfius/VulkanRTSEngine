@@ -4,6 +4,7 @@
 #include <atomic>
 #include <array>
 #include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 #include <random>
 #include <mutex>
