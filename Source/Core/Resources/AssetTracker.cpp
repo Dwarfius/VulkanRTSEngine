@@ -8,24 +8,7 @@
 
 AssetTracker::AssetTracker()
 	: myCounter(Resource::InvalidId)
-	, myReadSerializers([this]() {	return new JsonSerializer(*this, true);	})
-	, myWriteSerializers([this]() {	return new JsonSerializer(*this, false); })
 {
-}
-
-AssetTracker::~AssetTracker()
-{
-	// we can't use RAII type like std::unique_ptr because it
-	// requires type to be fully defined, but we only forward
-	// declare it at that point
-	for (Serializer* serializer : myReadSerializers)
-	{
-		delete serializer;
-	}
-	for (Serializer* serializer : myWriteSerializers)
-	{
-		delete serializer;
-	}
 }
 
 void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
@@ -41,17 +24,16 @@ void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 	}
 
 	// dump to disk
-	Serializer* serializer = nullptr;
-	BinarySerializer binSerializer(*this, false);
 	if (aRes.PrefersBinarySerialization())
 	{
-		serializer = &binSerializer;
+		BinarySerializer binSerializer(*this, false);
+		aRes.Save(*this, binSerializer);
 	}
 	else
 	{
-		serializer = myWriteSerializers.local();
+		JsonSerializer jsonSerializer(*this, false);
+		aRes.Save(*this, jsonSerializer);
 	}
-	aRes.Save(*this, *serializer);
 
 	// if it's a newly generated object - give it an id for tracking
 	if (aRes.GetId() == Resource::InvalidId)
@@ -119,17 +101,17 @@ void AssetTracker::StartLoading(Handle<Resource> aRes)
 			// so can skip it and destroy it implicitly
 			if (!myRes.IsLastHandle())
 			{
-				Serializer* serializer = nullptr;
-				BinarySerializer binSerializer(myAssetTracker, true);
 				if (myRes->PrefersBinarySerialization())
 				{
-					serializer = &binSerializer;
+					BinarySerializer binSerializer(myAssetTracker, true);
+					myRes->Load(myAssetTracker, binSerializer);
 				}
 				else
 				{
-					serializer = myAssetTracker.myReadSerializers.local();
+					JsonSerializer jsonSerializer(myAssetTracker, true);
+					myRes->Load(myAssetTracker, jsonSerializer);
 				}
-				myRes->Load(myAssetTracker, *serializer);
+				
 				ASSERT_STR(myRes->GetState() == Resource::State::Ready
 					|| myRes->GetState() == Resource::State::Error,
 					"Found a resource that didn't change it's state after Load!");

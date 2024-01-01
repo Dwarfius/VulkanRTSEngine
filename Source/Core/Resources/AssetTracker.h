@@ -2,8 +2,6 @@
 
 #include "Resource.h"
 
-class Serializer;
-
 // TODO: add std::string_view overrides
 // Class for handling different resource types using the same interface. 
 // Threadsafe
@@ -13,11 +11,9 @@ private:
 	using AssetIter = std::unordered_map<Resource::Id, Resource*>::const_iterator;
 	using AssetPair = std::pair<const Resource::Id, Resource*>;
 	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
-	using TLSSerializers = tbb::enumerable_thread_specific<Serializer*>;
 
 public:
 	AssetTracker();
-	~AssetTracker();
 
 	// Saves an asset to the disk. Tracks it for future use
 	// Automatically appends Asset extension if it's missing
@@ -80,9 +76,6 @@ private:
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
 	oneapi::tbb::task_group myLoadTaskGroup;
-
-	TLSSerializers myReadSerializers;
-	TLSSerializers myWriteSerializers;
 };
 
 template<class TAsset>
