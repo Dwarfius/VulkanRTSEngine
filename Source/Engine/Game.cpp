@@ -16,6 +16,7 @@
 #include "Animation/AnimationSystem.h"
 #include "Light.h"
 #include "RenderThread.h"
+#include "Resources/FileWatcher.h"
 #include "UIWidgets/EntitiesWidget.h"
 #include "UIWidgets/ObjImportDialog.h"
 #include "UIWidgets/GltfImportDialog.h"
@@ -132,6 +133,8 @@ Game::Game(ReportError aReporterFunc)
 	myTaskManager = std::make_unique<GameTaskManager>();
 
 	myPhysWorld = new PhysicsWorld();
+
+	myFileWatcher = new FileWatcher(L"D:\\Projects\\VulkanRTSEngine\\assets");
 }
 
 Game::~Game()
@@ -289,6 +292,15 @@ void Game::RunMainThread()
 		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
 
 		{
+			Profiler::ScopedMark fileWatcherProfile("Game::CheckFiles");
+			myFileWatcher->CheckFiles();
+			for (const std::string& file : myFileWatcher->GetModifs())
+			{
+				std::println("FileWatcher: Detected change! {}", file);
+			}
+		}
+
+		{
 			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(Tasks::Render);
 			myTaskManager->Run();
 
@@ -309,6 +321,8 @@ void Game::CleanUp()
 	}
 
 	myImGUISystem->Shutdown();
+
+	delete myFileWatcher;
 
 	// physics clear
 	delete myPhysWorld;

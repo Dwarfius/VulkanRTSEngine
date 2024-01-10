@@ -25,6 +25,7 @@ class AssetTracker;
 struct GLFWwindow;
 class Transform;
 class LightSystem;
+class FileWatcher;
 
 class Game
 {
@@ -164,6 +165,7 @@ private:
 	LightSystem* myLightSystem;
 	EngineSettings mySettings;
 	TopBar myTopBar;
+	FileWatcher* myFileWatcher;
 
 	bool myIsRunning;
 	bool myShouldEnd;
