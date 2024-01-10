@@ -16,14 +16,11 @@ void VisualComponent::SetModel(Handle<Model> aModel)
 	static_assert(std::is_same_v<ResourceId, Resource::Id>, "Update!");
 	static_assert(kInvalId == Resource::InvalidId, "Update!");
 
-	myModelRes = aModel->GetPath();
-
-	ASSERT_STR(aModel->GetId() != kInvalId, "Missing ID for a resource - did you forget to call "
-		"AssetTracker::AssignDynamicId?");
-	myModelId = aModel->GetId();
-
 	CreateVOIfNeeded();
 	myVisualObject->SetModel(aModel);
+
+	myModelRes = aModel->GetPath();
+	myModelId = aModel->GetId();
 }
 
 void VisualComponent::SetPipeline(Handle<Pipeline> aPipeline)
