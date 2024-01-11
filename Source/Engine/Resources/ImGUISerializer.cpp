@@ -113,8 +113,8 @@ bool ImGUISerializer::BeginSerializeObjectImpl(std::string_view aName)
 	{
 		State& state = myStateStack.top();
 
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", state.myCurrIndex);
 		state.myCurrIndex++;
 
 		return ImGui::TreeNode(indexLbl);
@@ -167,8 +167,8 @@ void ImGUISerializer::SerializeSpan(bool* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::Checkbox(indexLbl, aValues + i);
 	}
 }
@@ -177,8 +177,8 @@ void ImGUISerializer::SerializeSpan(uint8_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_U8, aValues + i);
 	}
 }
@@ -187,8 +187,8 @@ void ImGUISerializer::SerializeSpan(uint16_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_U16, aValues + i);
 	}
 }
@@ -197,8 +197,8 @@ void ImGUISerializer::SerializeSpan(uint32_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_U32, aValues + i);
 	}
 }
@@ -207,8 +207,8 @@ void ImGUISerializer::SerializeSpan(uint64_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_U64, aValues + i);
 	}
 }
@@ -217,8 +217,8 @@ void ImGUISerializer::SerializeSpan(int8_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_S8, aValues + i);
 	}
 }
@@ -227,8 +227,8 @@ void ImGUISerializer::SerializeSpan(int16_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_S16, aValues + i);
 	}
 }
@@ -237,8 +237,8 @@ void ImGUISerializer::SerializeSpan(int32_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_S32, aValues + i);
 	}
 }
@@ -247,8 +247,8 @@ void ImGUISerializer::SerializeSpan(int64_t* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputScalar(indexLbl, ImGuiDataType_S64, aValues + i);
 	}
 }
@@ -257,8 +257,8 @@ void ImGUISerializer::SerializeSpan(float* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputFloat(indexLbl, aValues + i);
 	}
 }
@@ -267,8 +267,8 @@ void ImGUISerializer::SerializeSpan(std::string* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 
 		std::string& value = aValues[i];
 		ImGui::InputText(indexLbl, value);
@@ -279,8 +279,8 @@ void ImGUISerializer::SerializeSpan(glm::vec2* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputFloat2(indexLbl, glm::value_ptr(aValues[i]));
 	}
 }
@@ -289,8 +289,8 @@ void ImGUISerializer::SerializeSpan(glm::vec3* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputFloat3(indexLbl, glm::value_ptr(aValues[i]));
 	}
 }
@@ -299,8 +299,8 @@ void ImGUISerializer::SerializeSpan(glm::vec4* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i]));
 	}
 }
@@ -309,8 +309,8 @@ void ImGUISerializer::SerializeSpan(glm::quat* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i]));
 	}
 }
@@ -319,8 +319,8 @@ void ImGUISerializer::SerializeSpan(glm::mat4* aValues, size_t aSize)
 {
 	for (size_t i = 0; i < aSize; i++)
 	{
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", i);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", i);
 		for (char m = 0; m < 4; m++)
 		{
 			ImGui::InputFloat4(indexLbl, glm::value_ptr(aValues[i][m]));
@@ -335,8 +335,8 @@ void ImGUISerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue,
 	{
 		State& state = myStateStack.top();
 		
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", state.myCurrIndex);
 		state.myCurrIndex++;
 
 		ImGui::LabelText(indexLbl, aNames[anEnumValue]);
@@ -356,8 +356,8 @@ void ImGUISerializer::SerializeResource(std::string_view aName, ResourceProxy& a
 	{
 		State& state = myStateStack.top();
 
-		char indexLbl[16] = { 0 };
-		Utils::StringFormat(indexLbl, "%llu", state.myCurrIndex);
+		char indexLbl[16];
+		Utils::StringFormat(indexLbl, "{}", state.myCurrIndex);
 		state.myCurrIndex++;
 
 		ImGui::LabelText(indexLbl, aValue.myPath.c_str());

@@ -109,7 +109,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 			const UniformAdapter& adapter = pipeline->GetAdapter(i);
 			const std::string_view uboName = adapter.GetName();
 			const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
-			ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for %s", uboName.data());
+			ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for {}!", uboName);
 			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
 		}
 
@@ -166,7 +166,7 @@ bool PipelineGL::AreUBOsValid()
 	if (uniformBlocks != adapterCount)
 	{
 		char errorMsg[200];
-		Utils::StringFormat(errorMsg, "Mismatching adapter count, expecting %d got %d",
+		Utils::StringFormat(errorMsg, "Mismatching adapter count, expecting {} got {}",
 			adapterCount, uniformBlocks);
 		SetErrMsg(errorMsg);
 		return false;
@@ -314,11 +314,11 @@ bool PipelineGL::AreUBOsValid()
 			{
 				char errorMsg[200];
 				Utils::StringFormat(errorMsg,
-					"For slot %d in uniform buffer %s expected %s but got %s",
+					"For slot {} in uniform buffer {} expected %s but got {}",
 					uniformInd,
-					adapter.GetName().data(),
+					adapter.GetName(),
 					Descriptor::UniformType::kNames[declaredType],
-					typeName.data()
+					typeName
 				);
 				SetErrMsg(errorMsg);
 				return false;

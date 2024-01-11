@@ -128,7 +128,7 @@ float Terrain::GetHeight(glm::vec3 aLocalPos) const
 void Terrain::PushHeightLevelColor(float aHeightLevel, glm::vec3 aColor)
 {
 	ASSERT_STR(myLevelsCount < kMaxHeightLevels, 
-		"Overflow, terrain only supports %u levels!", kMaxHeightLevels);
+		"Overflow, terrain only supports {} levels!", kMaxHeightLevels);
 
 	myHeightLevelColors[myLevelsCount++] = {
 		.myColor = aColor,

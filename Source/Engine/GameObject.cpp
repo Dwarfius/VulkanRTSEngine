@@ -149,7 +149,7 @@ void GameObject::AddChild(Handle<GameObject>& aChild, bool aKeepChildWorldTransf
 
 void GameObject::DetachChild(size_t aInd)
 {
-	ASSERT_STR(aInd < myChildren.size(), "No child with index %llu!", aInd);
+	ASSERT_STR(aInd < myChildren.size(), "No child with index {}!", aInd);
 	myChildren[aInd]->myParent = Handle<GameObject>();
 	myChildren[aInd]->SetLocalTransform(myChildren[aInd]->GetWorldTransform());
 	myChildren.erase(myChildren.begin() + aInd);

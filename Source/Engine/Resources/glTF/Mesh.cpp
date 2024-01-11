@@ -74,7 +74,7 @@ namespace glTF
 				}
 				else
 				{
-					ASSERT_STR(false, "'%s' semantic attribute NYI, skipping!", attributeName.data());
+					ASSERT_STR(false, "'{}' semantic attribute NYI, skipping!", attributeName);
 					continue;
 				}
 

@@ -19,7 +19,7 @@ namespace Utils
 	std::vector<char> Base64Decode(std::string_view anInput);
 
 	template<uint32_t Length, class... TArgs>
-	void StringFormat(char(& aBuffer)[Length], const char* aFormat, const TArgs&... aArgs);
+	void StringFormat(char(&aBuffer)[Length], std::format_string<TArgs...> aFormat, TArgs&&... aArgs);
 
 	// tries to match the filter to the string. Supports * wildcard
 	bool Matches(std::string_view aStr, std::string_view filter);
@@ -102,15 +102,11 @@ TAssocColl Utils::GroupBy(const TColl& aColl, TPred aPred)
 	return assocCollection;
 }
 
-// TODO: replace with std::format_to_n
 template<uint32_t Length, class... TArgs>
-void Utils::StringFormat(char(&aBuffer)[Length], const char* aFormat, const TArgs&... aArgs)
+void Utils::StringFormat(char(&aBuffer)[Length], std::format_string<TArgs...> aFormat, TArgs&&... aArgs)
 {
-#if defined(__STDC_LIB_EXT1__) || defined(__STDC_WANT_SECURE_LIB__)
-	sprintf_s(aBuffer, aFormat, aArgs...);
-#else
-	std::snprintf(aBuffer, Length, aFormat, aArgs...);
-#endif
+	const auto range = std::format_to_n(aBuffer, Length - 1, aFormat, std::forward<TArgs>(aArgs)...);
+	*range.out = 0;
 }
 
 namespace Utils

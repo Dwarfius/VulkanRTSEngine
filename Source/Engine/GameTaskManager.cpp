@@ -31,7 +31,7 @@ GameTaskManager::GameTaskManager()
 
 void GameTaskManager::AddTask(const GameTask& aTask)
 {
-	ASSERT_STR(!myTasks.contains(aTask.GetType()), "Task id %hu is already in use!", aTask.GetType());
+	ASSERT_STR(!myTasks.contains(aTask.GetType()), "Task id {} is already in use!", aTask.GetType());
 
 	myTasks.insert({ aTask.GetType(), aTask });
 	myNeedsResolve = true;
@@ -40,7 +40,7 @@ void GameTaskManager::AddTask(const GameTask& aTask)
 GameTask& GameTaskManager::GetTask(GameTask::Type anId)
 {
 	auto iter = myTasks.find(anId);
-	ASSERT_STR(iter != myTasks.end(), "Task id %hu not recognized", anId);
+	ASSERT_STR(iter != myTasks.end(), "Task id {} not recognized!", anId);
 	return (*iter).second;
 }
 

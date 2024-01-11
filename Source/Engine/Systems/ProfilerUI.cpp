@@ -72,7 +72,7 @@ namespace
 		case 3: unitOfTime = "s"; break;
 		default: ASSERT(false); break;
 		}
-		Utils::StringFormat(aBuffer, "%lld.%lld%s", aDuration, remainder, unitOfTime);
+		Utils::StringFormat(aBuffer, "{}.{}{}", aDuration, remainder, unitOfTime);
 	}
 
 	ProfilerUI::FrameData ProcessFrameProfile(const Profiler::FrameProfile& aProfile)
@@ -224,11 +224,11 @@ void ProfilerUI::DrawScopesView()
 	for(size_t i=0; i<myScopeNames.size(); i++)
 	{
 		std::string& scope = myScopeNames[i];
-		Utils::StringFormat(buffer, "##%llu", i);
+		Utils::StringFormat(buffer, "##{}", i);
 		myNeedsToUpdateScopeData |= ImGui::InputText(buffer, scope);
 
 		ImGui::SameLine();
-		Utils::StringFormat(buffer, "Delete##%llu", i);
+		Utils::StringFormat(buffer, "Delete##{}", i);
 		if (ImGui::Button(buffer))
 		{
 			myScopeNames.erase(myScopeNames.begin() + i);
@@ -395,12 +395,12 @@ void ProfilerUI::DrawScopesView()
 			}
 			if (ImGui::TableNextColumn())
 			{
-				Utils::StringFormat(buffer, "%llu", scope.myTotalCount);
+				Utils::StringFormat(buffer, "{}", scope.myTotalCount);
 				ImGui::Text(buffer);
 			}
 			if (ImGui::TableNextColumn())
 			{
-				Utils::StringFormat(buffer, "%llu", scope.myAvgPerFrameCount);
+				Utils::StringFormat(buffer, "{}", scope.myAvgPerFrameCount);
 				ImGui::Text(buffer);
 			}
 			if (ImGui::TableNextColumn())
@@ -494,7 +494,7 @@ void ProfilerUI::DrawFrameMarks(const FrameData& aFrameData, glm::vec2 aPos, flo
 	char duration[32];
 	const uint64_t frameDuration = aFrameData.myFrameEnd - aFrameData.myFrameStart;
 	DurationToString(duration, frameDuration);
-	Utils::StringFormat(name, "%llu: %s", aFrameData.myFrameNum, duration);
+	Utils::StringFormat(name, "{}: {}", aFrameData.myFrameNum, duration);
 	ImGui::SetCursorPosX(aPos.x);
 	ImGui::SetCursorPosY(aPos.y);
 	ImGui::SetNextItemWidth(kThreadColumnWidth);
@@ -571,11 +571,11 @@ void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aFrameWidth, 
 	if (isMarkFinished)
 	{
 		DurationToString(duration, markDuration);
-		Utils::StringFormat(name, "%s - %s", aMark.myName, duration);
+		Utils::StringFormat(name, "{} - {}", aMark.myName, duration);
 	}
 	else
 	{
-		Utils::StringFormat(name, "%s - Ongoing", aMark.myName);
+		Utils::StringFormat(name, "{} - Ongoing", aMark.myName);
 	}
 	ImGui::Button(name, { width, aMarkHeight });
 

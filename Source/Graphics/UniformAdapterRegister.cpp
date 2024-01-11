@@ -17,6 +17,6 @@ const UniformAdapter& UniformAdapterRegister::GetAdapter(std::string_view aName)
 #endif
 
 	const auto iter = myAdapters.find(aName);
-	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter: %s", aName.data());
+	ASSERT_STR(iter != myAdapters.end(), "Requested unregistered adapter: {}!", aName);
 	return iter->second;
 }

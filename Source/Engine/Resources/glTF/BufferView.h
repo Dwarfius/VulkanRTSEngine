@@ -51,7 +51,7 @@ namespace glTF
 				aView.myTarget = Target::IndexBuffer;
 				break;
 			default:
-				ASSERT_STR(false, "Unrecognized target! %d", target);
+				ASSERT_STR(false, "Unrecognized target! {}", target);
 			}
 			aView.myByteStride = ReadOptional(aViewJson, "byteStride", 0u);
 		}

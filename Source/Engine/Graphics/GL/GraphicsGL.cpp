@@ -275,7 +275,7 @@ void GraphicsGL::ResizeNamedFrameBuffer(std::string_view aName, glm::ivec2 aSize
 
 	auto iter = myFrameBuffers.find(aName);
 	ASSERT_STR(iter != myFrameBuffers.end(),
-		"FrameBuffer %s not registered!", aName.data());
+		"FrameBuffer {} not registered!", aName);
 	iter->second.SetIsFullScreen(aSize == FrameBuffer::kFullScreen);
 	iter->second.Resize(aSize.x, aSize.y);
 }
@@ -284,7 +284,7 @@ FrameBufferGL& GraphicsGL::GetFrameBufferGL(std::string_view aName)
 {
 	auto iter = myFrameBuffers.find(aName);
 	ASSERT_STR(iter != myFrameBuffers.end(), 
-		"FrameBuffer with name %s doesn't exist!", aName.data());
+		"FrameBuffer with name {} doesn't exist!", aName);
 	return iter->second;
 }
 
@@ -293,7 +293,7 @@ RenderPassJob& GraphicsGL::CreateRenderPassJob(const RenderContext& renderContex
 	RenderPassJobs& jobs = myRenderPassJobs.GetWrite();
 
 	ASSERT_STR(jobs.myJobCounter != kMaxRenderPassJobs,
-		"Exhausted capacity render pass jobs(%u), please increase "
+		"Exhausted capacity render pass jobs({}), please increase "
 		"GraphicsGL::kMaxRenderPassJobs!", kMaxRenderPassJobs);
 
 	RenderPassJobGL& job = jobs.myJobs[jobs.myJobCounter++];
@@ -410,7 +410,7 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	
 	if (shouldAssert)
 	{
-		ASSERT_STR(false, "Severe GL Error(%d): %s\nSource: %s\nType: %s",
+		ASSERT_STR(false, "Severe GL Error({}): {}\nSource: {}\nType: {}",
 			aId, aMessage, source, type);
 	}
 	else

@@ -8,7 +8,7 @@
 void SkeletonAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const UniformAdapterSource& data = static_cast<const UniformAdapterSource&>(aData);
-	ASSERT_STR(data.myGO, "GameObject needed to access skeleton");
+	ASSERT_STR(data.myGO, "GameObject needed to access skeleton!");
 	const PoolPtr<Skeleton>& skeletonPtr = data.myGO->GetSkeleton();
 	ASSERT_STR(skeletonPtr.IsValid(), "Using adapter for an object that doesn't have a skeleton!");
 

@@ -35,16 +35,16 @@ namespace DebugImpl
 
 	template<uint32_t HashVal, class... TArgs>
 	void AssertNotify(const char* anExpr, const char* aFile, int aLine, 
-						const char* aFmt, const TArgs&... aArgs);
+		std::format_string<TArgs...> aFmt, TArgs&&... aArgs);
 }
 
 #include "../CRC32.h" // using Utils::CRC32
 
 // Basic assert
-#define ASSERT(cond) if(!(cond)) { DebugImpl::AssertNotify<Utils::CRC32(CONCAT(__FILE__, STRINGIFY(__LINE__)))>(#cond, __FILE__, __LINE__, nullptr); } FORCE_SEMICOLON
+#define ASSERT(cond) if(!(cond)) { DebugImpl::AssertNotify<Utils::CRC32(CONCAT(__FILE__, STRINGIFY(__LINE__)))>(#cond, __FILE__, __LINE__, std::string_view{}); } FORCE_SEMICOLON
 // An assert that supports a formatted message. Use:
 // either ASSERT_STR(false, "Test 1");
-// or     ASSERT_STR(false, "Test %d", 2);
+// or     ASSERT_STR(false, "Test {}", 2);
 #define ASSERT_STR(cond, ...) if(!(cond)) { DebugImpl::AssertNotify<Utils::CRC32(CONCAT(__FILE__, STRINGIFY(__LINE__)))>(#cond, __FILE__, __LINE__, __VA_ARGS__); } FORCE_SEMICOLON
 
 static_assert(Utils::CRC32("test", 4) == 0xD87F7E0C, "CRC32 Algo error!");

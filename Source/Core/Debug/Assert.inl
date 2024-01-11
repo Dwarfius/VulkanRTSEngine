@@ -10,7 +10,7 @@ namespace DebugImpl
 
 	template<uint32_t HashVal, class... TArgs>
 	void AssertNotify(const char* anExpr, const char* aFile, int aLine, 
-						const char* aFmt, const TArgs&... aArgs)
+		std::format_string<TArgs...> aFmt, TArgs&&... aArgs)
 	{
 		{
 			// first, check whether this assert should be ignored
@@ -24,19 +24,23 @@ namespace DebugImpl
 
 		constexpr size_t cSmallMsgSize = 256;
 		constexpr size_t cFullMsgSize = 1024;
-		char smallMsgBuffer[cSmallMsgSize] = { 0 };
-		if (aFmt)
+		char smallMsgBuffer[cSmallMsgSize]{ 0 };
+		if (!aFmt.get().empty())
 		{
-			Utils::StringFormat(smallMsgBuffer, aFmt, aArgs...);
+			Utils::StringFormat(smallMsgBuffer, aFmt, std::forward<TArgs>(aArgs)...);
 		}
-		char fullMsg[cFullMsgSize];
-		if (aFmt)
+		char fullMsg[cFullMsgSize]{ 0 };
+		if (!aFmt.get().empty())
 		{
-			Utils::StringFormat(fullMsg, "%s\nExpression %s has failed (file: %s:%d).\n", smallMsgBuffer, anExpr, aFile, aLine);
+			Utils::StringFormat(fullMsg, "{}\nExpression {} has failed (file: {}:{}).",
+				smallMsgBuffer, anExpr, aFile, aLine
+			);
 		}
 		else
 		{
-			Utils::StringFormat(fullMsg, "Expression %s has failed (file: %s:%d).\n", anExpr, aFile, aLine);
+			Utils::StringFormat(fullMsg, "Expression {} has failed (file: {}:{}).",
+				anExpr, aFile, aLine
+			);
 		}
 
 		{

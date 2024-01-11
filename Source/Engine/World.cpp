@@ -70,7 +70,7 @@ void World::Serialize(Serializer& aSerializer)
 		{
 			if (go->GetPath().empty())
 			{
-				Utils::StringFormat(path, "%s/GameObjects/GameObject%llu", pathStr.data(), i);
+				Utils::StringFormat(path, "{}/GameObjects/GameObject{}", pathStr, i);
 				tracker.SaveAndTrack(path, go);
 				i++;
 			}

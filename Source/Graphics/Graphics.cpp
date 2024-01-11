@@ -157,7 +157,7 @@ void Graphics::CleanUp()
 void Graphics::AddNamedFrameBuffer(std::string_view aName, const FrameBuffer& aBuffer)
 {
 	ASSERT_STR(myNamedFrameBuffers.find(aName) == myNamedFrameBuffers.end(),
-		"FrameBuffer named %s is already registered!", aName.data());
+		"FrameBuffer named {} is already registered!", aName.data());
 	myNamedFrameBuffers.insert({ aName, aBuffer });
 }
 
@@ -165,7 +165,7 @@ const FrameBuffer& Graphics::GetNamedFrameBuffer(std::string_view aName) const
 {
 	auto iter = myNamedFrameBuffers.find(aName);
 	ASSERT_STR(iter != myNamedFrameBuffers.end(), 
-		"Couldn't find a FrameBuffer named %s", aName.data());
+		"Couldn't find a FrameBuffer named {}", aName.data());
 	return iter->second;
 }
 
@@ -413,7 +413,7 @@ RenderPass* Graphics::GetRenderPass(uint32_t anId) const
 			return pass;
 		}
 	}
-	ASSERT_STR(false, "Failed to find a render pass for id %d!", anId);
+	ASSERT_STR(false, "Failed to find a render pass for id {}!", anId);
 	return nullptr;
 }
 

@@ -36,7 +36,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 	bool loaded = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, &stream, &matFileReader);
 	if (!loaded)
 	{
-		ASSERT_STR(false, err.c_str());
+		ASSERT_STR(false, "Failed to load, error: {}!", err);
 		return false;
 	}
 

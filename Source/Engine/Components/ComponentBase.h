@@ -34,7 +34,7 @@ public:
 
 	void Register(std::string_view aName, CreateFunc aFunc)
 	{
-		ASSERT_STR(myCreateFuncs.find(aName) == myCreateFuncs.end(), "%s already registered!", aName.data());
+		ASSERT_STR(myCreateFuncs.find(aName) == myCreateFuncs.end(), "{} already registered!", aName);
 		myCreateFuncs.insert({ aName, aFunc });
 	}
 
@@ -46,7 +46,7 @@ public:
 	ComponentBase* Create(std::string_view aName) const
 	{
 		auto funcIter = myCreateFuncs.find(aName);
-		ASSERT_STR(funcIter != myCreateFuncs.end(), "Missing Creation callback for %s", aName.data());
+		ASSERT_STR(funcIter != myCreateFuncs.end(), "Missing Creation callback for {}!", aName);
 		return funcIter->second();
 	}
 

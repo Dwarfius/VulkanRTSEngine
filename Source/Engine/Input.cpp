@@ -148,7 +148,7 @@ void Input::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int aM
 {
 	static_cast<void>(aWindow);
 
-	ASSERT_STR(aButton >= 0 && aButton < kMButtonCount, "Unsupported button: %d", aButton);
+	ASSERT_STR(aButton >= 0 && aButton < kMButtonCount, "Unsupported button: {}!", aButton);
 	uint8_t button = static_cast<uint8_t>(aButton);
 	ourPendingMsgs.push(InputMsg{ button, static_cast<uint8_t>(anAction), false });
 }

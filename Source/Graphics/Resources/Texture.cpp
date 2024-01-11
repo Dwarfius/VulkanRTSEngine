@@ -10,7 +10,7 @@ Handle<Texture> Texture::LoadFromDisk(std::string_view aPath)
 	File file(aPath);
 	bool success = file.Read();
 	DEBUG_ONLY(std::string path(aPath.data(), aPath.size()););
-	ASSERT_STR(success, "Failed to read a file: %s", path.data());
+	ASSERT_STR(success, "Failed to read a file: {}", path);
 
 	Handle<Texture> textureHandle = new Texture();
 	Texture* texture = textureHandle.Get();

@@ -25,7 +25,7 @@ bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics,
 {
 	const size_t uboCount = aPipeline.GetAdapterCount();
 	ASSERT_STR(uboCount <= 4,
-		"Tried to push %llu UBOs into a render job that supports only 4!",
+		"Tried to push {} UBOs into a render job that supports only 4!",
 		uboCount);
 
 	for (size_t i = 0; i < uboCount; i++)

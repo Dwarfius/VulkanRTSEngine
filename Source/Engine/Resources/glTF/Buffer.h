@@ -27,7 +27,7 @@ namespace glTF
 				File file(aRelPath + uri);
 				if (!file.Read())
 				{
-					ASSERT_STR(false, "Failed to read %s", file.GetPath());
+					ASSERT_STR(false, "Failed to read {}!", file.GetPath());
 					return;
 				}
 				aBuffer = std::move(file.ConsumeBuffer());

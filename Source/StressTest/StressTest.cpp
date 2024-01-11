@@ -112,7 +112,7 @@ StressTest::StressTest(Game& aGame)
 		OBJImporter importer;
 		constexpr StaticString path = Resource::kAssetsFolder + "Tank/Tank.obj";
 		[[maybe_unused]] bool loadRes = importer.Load(path);
-		ASSERT_STR(loadRes, "Failed to load %s", path.CStr());
+		ASSERT_STR(loadRes, "Failed to load {}", path);
 		myTankModel = importer.GetModel(0);
 	}
 
@@ -120,7 +120,7 @@ StressTest::StressTest(Game& aGame)
 		OBJImporter importer;
 		constexpr StaticString path = Resource::kAssetsFolder + "sphere.obj";
 		[[maybe_unused]] bool loadRes = importer.Load(path);
-		ASSERT_STR(loadRes, "Failed to load %s", path.CStr());
+		ASSERT_STR(loadRes, "Failed to load {}", path);
 		mySphereModel = importer.GetModel(0);
 	}
 

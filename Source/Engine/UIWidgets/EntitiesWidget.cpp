@@ -36,7 +36,7 @@ void EntitiesWidget::Draw(Game& aGame)
 				const std::string_view name = gameObject.GetName();
 				ASSERT_STR(name.size() < std::extent_v<decltype(nameBuffer)>, "Name too long!");
 				std::copy(name.begin(), name.end(), std::begin(nameBuffer));
-				Utils::StringFormat(nodeBuffer, "%s - (%s)", nameBuffer, uidBuffer);
+				Utils::StringFormat(nodeBuffer, "{} - ({})", nameBuffer, uidBuffer);
 			}
 			else
 			{
@@ -75,7 +75,7 @@ void EntitiesWidget::DrawChildren(GameObject& aGo)
 	for (size_t childInd = 0; childInd < childCount; childInd++)
 	{
 		char childBuff[15];
-		Utils::StringFormat(childBuff, "Child %zu", childInd);
+		Utils::StringFormat(childBuff, "Child {}", childInd);
 		if (ImGui::TreeNode(childBuff))
 		{
 			GameObject& childGo = aGo.GetChild(childInd);

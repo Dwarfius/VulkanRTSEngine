@@ -65,7 +65,7 @@ FrameBufferGL::FrameBufferGL(GraphicsGL& aGraphics, const FrameBuffer& aDescript
 
 	ASSERT_STR(aDescriptor.myStencil.myType == FrameBuffer::AttachmentType::None
 		|| depthAttachment == GL_DEPTH_ATTACHMENT, "Invalid Frame Buffer setup - attempting "
-		"to setup a stencil when there is already a depth&stencil resource created");
+		"to setup a stencil when there is already a depth&stencil resource created!");
 	switch (aDescriptor.myStencil.myType)
 	{
 	case FrameBuffer::AttachmentType::None: break;

@@ -18,19 +18,12 @@ void AssertRWMutex::LockWrite(std::source_location aLocation)
 	// most-significant bit is reserved for a write lock
 	// check whether we just locked a write-locked mutex
 	unsigned char currVal = myLock.fetch_or(kWriteVal);
-	if (currVal) // if any of the bits are set, then a reader write/read-lock is active
-	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! "
-			<< aLocation.function_name()
-			<< " at "
-			<< aLocation.file_name()
-			<< ":"
-			<< aLocation.line()
-			<< " tried to lock mutex for write while it's locked for read by "
-			<< funcName << " at " << fileName << ":" << line;
-		ASSERT_STR(false, stream.str().c_str());
-	}
+	// if any of the bits are set, then a reader write/read-lock is active
+	ASSERT_STR(currVal == 0, "Contention! {} at {}:{} tried to lock mutex for write "
+		"while it's locked for read by {} at {}:{}",
+		aLocation.function_name(), aLocation.file_name(), aLocation.line(),
+		funcName, fileName, line
+	);
 }
 
 void AssertRWMutex::UnlockWrite()
@@ -56,19 +49,11 @@ void AssertRWMutex::LockRead(std::source_location aLocation)
 	uint_least32_t line = myWriteLine.load(std::memory_order::relaxed);
 	// check whether we've just read-locked a write-locked mutex
 	unsigned char currVal = myLock.fetch_add(1);
-	if (currVal & kWriteVal)
-	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! "
-			<< aLocation.function_name()
-			<< " at "
-			<< aLocation.file_name()
-			<< ":"
-			<< aLocation.line()
-			<< " tried to lock mutex for read while it's locked for write by "
-			<< funcName << " at " << fileName << ":" << line;
-		ASSERT_STR(false, stream.str().c_str());
-	}
+	ASSERT_STR((currVal & kWriteVal) == 0, "Contention! {} at {}:{} tried to lock mutex for read "
+		"while it's locked for write by {} at {}:{}",
+		aLocation.function_name(), aLocation.file_name(), aLocation.line(),
+		funcName, fileName, line
+	);
 }
 
 void AssertRWMutex::UnlockRead()

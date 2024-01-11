@@ -198,3 +198,8 @@ constexpr StaticString<N + M - 1> operator+(const StaticString<N>& aString1,
 {
 	return StaticString<N + M - 1>(aString1, aString2);
 }
+
+template<int N>
+struct std::formatter<StaticString<N>> : std::formatter<std::string_view>
+{
+};

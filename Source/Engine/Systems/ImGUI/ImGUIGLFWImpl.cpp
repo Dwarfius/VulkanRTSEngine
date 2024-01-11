@@ -92,7 +92,8 @@ void ImGUIGLFWImpl::Shutdown()
 void ImGUIGLFWImpl::NewFrame(float aDeltaTime)
 {
     ImGuiIO& io = ImGui::GetIO();
-    ASSERT_STR(io.Fonts->IsBuilt(), "Font atlas not built! It is generally built by the renderer back-end. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
+    ASSERT_STR(io.Fonts->IsBuilt(), "Font atlas not built! It is generally built by the renderer back-end. "
+        "Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
 
     // Setup display size (every frame to accommodate for window resizing)
     GLFWwindow* window = myGame.GetWindow();

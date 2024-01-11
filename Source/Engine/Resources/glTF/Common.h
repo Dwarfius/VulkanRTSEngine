@@ -61,7 +61,7 @@ namespace glTF
 			&& mimeType != "image/jpeg")
 		{
 			std::string mimeTypeStr(aUri.c_str() + 5, separatorInd - 5);
-			ASSERT_STR(false, "Data uri %s not supported!", mimeTypeStr.c_str());
+			ASSERT_STR(false, "Data uri {} not supported!", mimeTypeStr);
 			return std::vector<char>();
 		}
 

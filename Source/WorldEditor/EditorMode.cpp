@@ -472,7 +472,7 @@ void EditorMode::ManageLights(Game& aGame)
 				{
 					const PoolPtr<Light>& light = myLights[i];
 					char buffer[8];
-					Utils::StringFormat(buffer, "%u", i);
+					Utils::StringFormat(buffer, "{}", i);
 					if (ImGui::Selectable(buffer))
 					{
 						myPickedGO = nullptr;
@@ -712,7 +712,7 @@ void EditorMode::DrawBoneHierarchy(int aSkeletonIndex)
 			index++)
 		{
 			glm::vec3 worldPos = skeleton->GetBoneWorldTransform(index).GetPos();
-			Utils::StringFormat(formatBuffer, "%u", index);
+			Utils::StringFormat(formatBuffer, "{}", index);
 
 			const bool isSelectedBone = index == mySelectedBone;
 

@@ -1429,7 +1429,7 @@ void GraphicsVK::TransitionLayout(vk::Image anImg, vk::Format aFormat, vk::Image
 	}
 	else
 	{
-		ASSERT_STR(false, "Transition image layout unsupported : %d -> %d\n", anOldLayout, aNewLayout);
+		ASSERT_STR(false, "Transition image layout unsupported : {} -> {}!", anOldLayout, aNewLayout);
 	}
 
 	cmdBuffer.pipelineBarrier(

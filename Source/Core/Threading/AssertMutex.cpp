@@ -18,16 +18,10 @@ void AssertMutex::Lock(std::source_location aLocation)
 	std::atomic_thread_fence(std::memory_order::release);
 	if (myIsLocked.test_and_set())
 	{
-		std::basic_stringstream<std::string::value_type> stream;
-		stream << "Contention! "
-			<< aLocation.function_name()
-			<< " at "
-			<< aLocation.file_name()
-			<< ":"
-			<< aLocation.line()
-			<< " tried to lock mutex owned by "
-		    << funcName << " at " << fileName << ":" << line;
-		ASSERT_STR(false, stream.str().c_str());
+		ASSERT_STR(false, "Contention! {} at {}:{} tried to lock mutex owned by {} at {}:{}",
+			aLocation.function_name(), aLocation.file_name(), aLocation.line(),
+			funcName, fileName, line
+		);
 	}
 }
 
