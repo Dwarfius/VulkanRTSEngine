@@ -57,7 +57,8 @@ UID UID::Create()
 
 void UID::GetString(char* aString) const
 {
-	std::snprintf(aString, 32, "%.16zX%.8X%.8X", myMac, myTime, myRndNum);
+	std::format_to_n(aString, 32, "{:016X}{:08X}{:08X}", myMac, myTime, myRndNum);
+	aString[32] = 0;
 }
 
 void UID::Serialize(Serializer& aSerializer)

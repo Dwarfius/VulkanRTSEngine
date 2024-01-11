@@ -84,12 +84,12 @@ void RenderThread::SubmitRenderables()
 	if (myNeedsSwitch)
 	{
 		// TODO: replace with Init call
-		printf("[Info] Switching renderer...\n");
+		std::println("[Info] Switching renderer...");
 		myIsUsingVulkan = !myIsUsingVulkan;
 
 		myGraphics->CleanUp();
 
-		printf("\n");
+		std::println("");
 		if (myIsUsingVulkan)
 		{
 			myGraphics = make_unique<GraphicsVK>();

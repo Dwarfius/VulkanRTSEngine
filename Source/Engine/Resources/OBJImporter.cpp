@@ -42,7 +42,7 @@ bool OBJImporter::Load(const std::vector<char>& aBuffer)
 
 	if (!err.empty())
 	{
-		printf("[Warning] Model loading warning: %s\n", err.c_str());
+		std::println("[Warning] Model loading warning: {}", err);
 	}
 
 	auto vertEq = [](const Vertex& aLeft, const Vertex& aRight) {

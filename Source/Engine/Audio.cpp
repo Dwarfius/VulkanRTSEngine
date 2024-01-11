@@ -155,7 +155,7 @@ void Audio::CheckError(uint32_t aLine)
 	ALenum error = alutGetError();
 	if (error != ALUT_ERROR_NO_ERROR)
 	{
-		printf("[Error] ALUT error at %d: %s\n", aLine, alutGetErrorString(error));
+		std::println("[Error] ALUT error at {}: {}", aLine, alutGetErrorString(error));
 	}
 }
 #endif

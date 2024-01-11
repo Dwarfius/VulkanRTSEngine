@@ -60,7 +60,7 @@ void Resource::SetErrMsg(std::string&& anErrString)
 	myState = State::Error;
 #ifdef _DEBUG
 	myErrString = std::move(anErrString);
-	printf("[Error] %s: %s\n", myPath.c_str(), myErrString.c_str());
+	std::println("[Error] {}: {}\n", myPath, myErrString);
 #endif
 }
 

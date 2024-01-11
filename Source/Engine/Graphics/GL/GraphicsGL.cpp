@@ -32,6 +32,25 @@ void GLAPIENTRY glDebugOutput(GLenum, GLenum, GLuint, GLenum,
 	GLsizei, const GLchar*, const void*);
 #endif
 
+template<>
+struct std::formatter<const GLubyte*>
+{
+	template<class Context>
+	constexpr Context::iterator parse(Context& aCtx)
+	{
+		std::formatter<const char*> fmt;
+		return fmt.parse(aCtx);
+	}
+
+	template<class Context>
+	Context::iterator format(const GLubyte* aString, Context& aCtx) const
+	{
+		std::formatter<const char*> fmt;
+		const char* str = reinterpret_cast<const char*>(aString);
+		return fmt.format(str, aCtx);
+	}
+};
+
 GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 	: Graphics(anAssetTracker)
 {
@@ -63,12 +82,12 @@ void GraphicsGL::Init()
 	GLenum err = glewInit();
 	if (err != GLEW_OK)
 	{
-		printf("[Error] GLEW failed to init, error: %s\n", glewGetErrorString(err));
+		std::println("[Error] GLEW failed to init, error: {}", glewGetErrorString(err));
 		return;
 	}
 	glGetError(); // skip the glew error
-	printf("[Info] OpenGL context found, version: %s\n", glGetString(GL_VERSION));
-	printf("[Info] GLEW initialized, version: %s\n", glewGetString(GLEW_VERSION));
+	std::println("[Info] OpenGL context found, version: {}", glGetString(GL_VERSION));
+	std::println("[Info] GLEW initialized, version: {}", glewGetString(GLEW_VERSION));
 
 #ifdef DEBUG_GL_CALLS
 	// check if the GL context has been provided
@@ -396,8 +415,11 @@ void GLAPIENTRY glDebugOutput(GLenum aSource,
 	}
 	else
 	{
-		printf("=================\nGL Debug(%d): %s\nSource: %s\nType: %s\nSeverity: %s\n",
-			aId, aMessage, source, type, severity);
+		std::println("=================");
+		std::println("GL Debug({}): {}", aId, aMessage);
+		std::println("Source: {}", source);
+		std::println("Type: {}", type);
+		std::println("Severity: {}", severity);
 	}
 }
 #endif

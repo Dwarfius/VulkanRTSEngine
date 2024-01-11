@@ -82,7 +82,7 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 	nlohmann::json gltfJson = nlohmann::json::parse(aBuffer.cbegin(), aBuffer.cend(), nullptr, false);
 	if (!gltfJson.is_object())
 	{
-		printf("Failed to parse file!");
+		std::println("Failed to parse file!");
 		return false;
 	}
 
@@ -90,13 +90,13 @@ bool GLTFImporter::Load(const std::vector<char>& aBuffer, const std::string& aDi
 		std::string version;
 		if (!glTF::FindVersion(gltfJson, version))
 		{
-			printf("Failed to find asset version, unsupported version!");
+			std::println("Failed to find asset version, unsupported version!");
 			return false;
 		}
 
 		if (version.compare("2.0"))
 		{
-			printf("Found asset version unsupported: %s", version.c_str());
+			std::println("Found asset version unsupported: {}", version);
 			return false;
 		}
 	}

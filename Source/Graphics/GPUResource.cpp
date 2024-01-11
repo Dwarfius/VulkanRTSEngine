@@ -88,11 +88,11 @@ void GPUResource::SetErrMsg(std::string_view anErrString)
 #ifdef _DEBUG
 	if (myResHandle.IsValid())
 	{
-		printf("[Error] %s: %s\n", myResHandle->GetPath().c_str(), anErrString.data());
+		std::println("[Error] {}: {}", myResHandle->GetPath(), anErrString);
 	}
 	else
 	{
-		printf("[Error] %s\n", anErrString.data());
+		std::println("[Error] {}", anErrString);
 	}
 #endif
 }

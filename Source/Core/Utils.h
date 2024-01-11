@@ -102,6 +102,7 @@ TAssocColl Utils::GroupBy(const TColl& aColl, TPred aPred)
 	return assocCollection;
 }
 
+// TODO: replace with std::format_to_n
 template<uint32_t Length, class... TArgs>
 void Utils::StringFormat(char(&aBuffer)[Length], const char* aFormat, const TArgs&... aArgs)
 {

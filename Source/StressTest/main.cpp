@@ -6,7 +6,7 @@
 
 void glfwErrorReporter(int code, const char* desc)
 {
-	printf("GLFW error(%d): %s", code, desc);
+	std::println("GLFW error({}): {}", code, desc);
 }
 
 int main()

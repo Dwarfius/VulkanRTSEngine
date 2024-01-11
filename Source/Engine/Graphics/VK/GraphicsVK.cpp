@@ -35,7 +35,7 @@ void GraphicsVK::Init(const vector<Terrain*>& aTerrainList)
 {
 	if (glfwVulkanSupported() == GLFW_FALSE)
 	{
-		printf("[Error] Vulkan loader unavailable\n");
+		std::println("[Error] Vulkan loader unavailable");
 		return;
 	}
 
@@ -636,11 +636,11 @@ void GraphicsVK::CreateDevice()
 	vector<vk::PhysicalDevice> devices = myInstance.enumeratePhysicalDevices();
 	if (devices.size() == 0)
 	{
-		printf("[Error] No vulkan devices found!");
+		std::println("[Error] No vulkan devices found!");
 		return;
 	}
 
-	printf("[Info] Found %zu vulkan devices\n", devices.size());
+	std::println("[Info] Found {} vulkan devices", devices.size());
 	vk::PhysicalDevice pickedDevice = VK_NULL_HANDLE;
 	for (vk::PhysicalDevice myDevice : devices)
 	{
@@ -652,7 +652,7 @@ void GraphicsVK::CreateDevice()
 	}
 	if (!pickedDevice)
 	{
-		printf("[Error] No suitable vulkan myDevice found!");
+		std::println("[Error] No suitable vulkan myDevice found!");
 		return;
 	}
 	myPhysDevice = pickedDevice;
@@ -712,7 +712,7 @@ void GraphicsVK::CreateDevice()
 		}
 		i++;
 	}
-	printf("[Info] Using queue families: graphics=%d, compute=%d and transfer=%d\n", myQueues.myGraphicsFamIndex, myQueues.myComputeFamIndex, myQueues.myTransferFamIndex);
+	std::println("[Info] Using queue families: graphics={}, compute={} and transfer={}", myQueues.myGraphicsFamIndex, myQueues.myComputeFamIndex, myQueues.myTransferFamIndex);
 
 	// proper set-up of queues is a bit convoluted, cause it has to take care of the 3! cases of combinations
 	vector<vk::DeviceQueueCreateInfo> queuesToCreate;
@@ -723,7 +723,7 @@ void GraphicsVK::CreateDevice()
 		queuesToCreate.push_back({ {}, fam, 1, &priority });
 	}
 	
-	printf("[Info] Creating %zu queues\n", used.size());
+	std::println("[Info] Creating {} queues", used.size());
 
 	// now, finally the logical myDevice creation
 	vk::PhysicalDeviceFeatures features;
@@ -834,7 +834,7 @@ void GraphicsVK::CreateSurface()
 	VkSurfaceKHR vkSurface;
 	if (glfwCreateWindowSurface(myInstance, myWindow, nullptr, &vkSurface) != VK_SUCCESS)
 	{
-		printf("[Error] Surface creation failed");
+		std::println("[Error] Surface creation failed");
 		return;
 	}
 	// good thing is we can still keep the vulkan.hpp definitions by manually constructing them
@@ -919,7 +919,7 @@ void GraphicsVK::CreateSwapchain()
 		imageCount = mySwapInfo.mySurfCaps.maxImageCount;
 	}
 		
-	printf("[Info] Swapchain params: format=%d, colorSpace=%d, presentMode=%d, extent={%d,%d}, imgCount=%d\n",
+	std::println("[Info] Swapchain params: format={}, colorSpace={}, presentMode={}, extent={{{},{}}}, imgCount={}",
 		mySwapInfo.myImgFormat, format.colorSpace, mode, mySwapInfo.mySwapExtent.width, mySwapInfo.mySwapExtent.height, imageCount);
 
 	// time to fill up the swapchain creation information
@@ -952,7 +952,7 @@ void GraphicsVK::CreateSwapchain()
 
 	// swapchain creates the images for us to render to
 	myImages = myDevice.getSwapchainImagesKHR(mySwapchain);
-	printf("[Info] Images acquired: %zu\n", myImages.size());
+	std::println("[Info] Images acquired: {}", myImages.size());
 
 	// but in order to use them, we need imageviews
 	for (int i = 0; i < myImages.size(); i++)
@@ -1321,7 +1321,7 @@ void GraphicsVK::CreateDescriptorSet()
 void GraphicsVK::CreateUBO()
 {
 	size_t uboSize = GetAlignedOffset(Game::maxObjects * 3, sizeof(MatUBO));
-	printf("[Info] Ubo size: %zd(for %d*3, min alignment: %zd)\n", uboSize, Game::maxObjects, myLimits.minUniformBufferOffsetAlignment);
+	std::println("[Info] Ubo size: {}(for {}*3, min alignment: {})", uboSize, Game::maxObjects, myLimits.minUniformBufferOffsetAlignment);
 	CreateBuffer(uboSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, myUbo, myUboMem);
 
 	void* mappedMemStart = myDevice.mapMemory(myUboMem, 0, uboSize, {});
@@ -1614,7 +1614,7 @@ bool GraphicsVK::LayersAvailable(const vector<const char*> &aValidationLayersLis
 		}
 		if (!found)
 		{
-			printf("[Warning] Didn't find validation layer: %s\n", layerRequested);
+			std::println("[Warning] Didn't find validation layer: {}", layerRequested);
 			foundAll = false;
 			break;
 		}
@@ -1626,11 +1626,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsVK::DebugCallback(VkDebugReportFlagsEXT f
 {
 	string type;
 	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-		printf("[Error] VL: %s\n", msg);
+		std::println("[Error] VL: {}", msg);
 	else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-		printf("[Warning] VL: %s\n", msg);
+		std::println("[Warning] VL: {}", msg);
 	else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-		printf("[Performance] VL: %s\n", msg);
+		std::println("[Performance] VL: {}", msg);
 	return VK_FALSE;
 }
 
