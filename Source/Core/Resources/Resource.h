@@ -48,8 +48,6 @@ public:
 	// or executes it immediately if object is loaded. Guarantees queued
 	// order of execution.
 	void ExecLambdaOnLoad(const Callback& aOnLoadCB);
-	// Sets the callback to call when the object gets destroyed
-	void AddOnDestroyCB(const Callback& aOnDestroyCB) { myOnDestroyCBs.push_back(aOnDestroyCB); }
 
 protected:
 	// A convinience wrapper to set the error message in debug builds.
@@ -77,7 +75,7 @@ private:
 
 	std::string myPath;
 	std::vector<Callback> myOnLoadCBs;
-	std::vector<Callback> myOnDestroyCBs;
+	Callback myOnDestroyCB;
 	Id myId;
 	State myState;
 

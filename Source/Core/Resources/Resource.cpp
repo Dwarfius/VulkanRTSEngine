@@ -21,12 +21,9 @@ Resource::Resource(Id anId, const std::string& aPath)
 
 Resource::~Resource()
 {
-	if (myOnDestroyCBs.size())
+	if (myOnDestroyCB)
 	{
-		for (const Callback& destroyCB : myOnDestroyCBs)
-		{
-			destroyCB(this);
-		}
+		myOnDestroyCB(this);
 	}
 }
 

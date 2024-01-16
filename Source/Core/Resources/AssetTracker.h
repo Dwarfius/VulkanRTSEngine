@@ -132,7 +132,7 @@ Handle<TAsset> AssetTracker::GetOrCreate(const std::string& aPath)
 	// We didn't find it, which means it's newly created and needs loading
 	// set up the onDestroy callback, so that we can clean up 
 	// the registry and assets containters when it gets removed
-	asset->AddOnDestroyCB([=](const Resource* aRes) { RemoveResource(aRes); });
+	asset->myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
 
 	// adding it to the queue of loading, since we know that it'll be loaded from file
 	Handle<TAsset> assetHandle{ asset };
