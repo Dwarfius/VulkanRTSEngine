@@ -134,7 +134,7 @@ Game::Game(ReportError aReporterFunc)
 
 	myPhysWorld = new PhysicsWorld();
 
-	myFileWatcher = new FileWatcher(L"D:\\Projects\\VulkanRTSEngine\\assets");
+	myFileWatcher = new FileWatcher(Resource::kAssetsFolder);
 }
 
 Game::~Game()

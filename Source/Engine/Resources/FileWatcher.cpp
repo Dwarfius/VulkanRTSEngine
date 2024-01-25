@@ -30,37 +30,43 @@ namespace Win32
         using HandlePtr = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>;
 
         // 64kb max, ReadDirectoryChangesW requires DWORD alignment
-        alignas(DWORD) std::byte myBuffer[64 * 1024]{}; 
-        HandlePtr myDirHandle{ INVALID_HANDLE_VALUE };
-        HandlePtr myDirCompPort{ INVALID_HANDLE_VALUE };
+        alignas(DWORD) std::byte myBuffer[64 * 1024]{};
+        std::string myPath;
         OVERLAPPED myResult;
         std::vector<FileModif> myTrackedSet;
         std::thread::id myThreadId = std::this_thread::get_id();
+        HandlePtr myDirHandle{ INVALID_HANDLE_VALUE };
+        HandlePtr myDirCompPort{ INVALID_HANDLE_VALUE };
     };
 
     void PrintWinErrror()
     {
-        DWORD errorCode = GetLastError();
+        const DWORD errorCode = GetLastError();
         LPSTR errString = nullptr;
-        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, errorCode, LANG_SYSTEM_DEFAULT, (LPSTR)&errString, 0, NULL);
+        const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
+        FormatMessageA(flags, nullptr, errorCode, LANG_SYSTEM_DEFAULT, (LPSTR)&errString, 0, nullptr);
         std::println("Error({}): {}", errorCode, errString);
         LocalFree(errString);
     }
 
-    std::unique_ptr<State> InitState(std::wstring_view aPath)
+    std::unique_ptr<State> InitState(std::string_view aPath)
     {
         std::unique_ptr<State> statePtr(new State());
         State& state = *statePtr.get();
-        state.myDirHandle.reset(CreateFileW(aPath.data(), FILE_LIST_DIRECTORY, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL));
+        state.myPath = std::string(aPath.data(), aPath.size());
+        const DWORD accessFlags = GENERIC_READ;
+        const DWORD fileShareFlags = FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE;
+        const DWORD extraModes = FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED;
+        state.myDirHandle.reset(CreateFileA(aPath.data(), accessFlags, fileShareFlags, nullptr, OPEN_EXISTING, extraModes, nullptr));
         if (state.myDirHandle.get() == INVALID_HANDLE_VALUE)
         {
             PrintWinErrror();
-            std::filesystem::path p(aPath);
+            const std::filesystem::path p(aPath);
             std::println("Failed to open handle to {}", p.string());
             return {};
         }
 
-        state.myDirCompPort.reset(CreateIoCompletionPort(state.myDirHandle.get(), NULL, NULL, 0));
+        state.myDirCompPort.reset(CreateIoCompletionPort(state.myDirHandle.get(), nullptr, 0, 0));
         if (state.myDirCompPort.get() == INVALID_HANDLE_VALUE)
         {
             PrintWinErrror();
@@ -68,10 +74,11 @@ namespace Win32
             return {};
         }
 
+        const DWORD changeTypes = FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME;
         if (!ReadDirectoryChangesExW(state.myDirHandle.get(), 
             state.myBuffer, sizeof(state.myBuffer), 
-            TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, NULL, 
-            &state.myResult, NULL, ReadDirectoryNotifyExtendedInformation))
+            TRUE, changeTypes, nullptr,
+            &state.myResult, nullptr, ReadDirectoryNotifyExtendedInformation))
         {
             PrintWinErrror();
             std::println("Failed to queue up directory changes call!");
@@ -98,11 +105,39 @@ namespace Win32
         aDetected.clear();
         while (GetQueuedCompletionStatus(aState.myDirCompPort.get(), &bytesCount, &completionKey, &resultPtr, 0))
         {
-            for (const std::byte* ptr = aState.myBuffer;;)
+            for (std::byte* ptr = aState.myBuffer;;)
             {
-                const FILE_NOTIFY_EXTENDED_INFORMATION* info = reinterpret_cast<const FILE_NOTIFY_EXTENDED_INFORMATION*>(ptr);
-                const std::wstring_view pathSlice(info->FileName, info->FileName + info->FileNameLength / 2);
-                const std::filesystem::path modifPath(pathSlice);
+                // Non-const as we have to in-place convert separators dwon the line
+                FILE_NOTIFY_EXTENDED_INFORMATION* info = 
+                    reinterpret_cast<FILE_NOTIFY_EXTENDED_INFORMATION*>(ptr);
+                // we track renames only to see if destination file changed, 
+                // so can ignore the source of rename
+                if (info->Action != FILE_ACTION_RENAMED_NEW_NAME
+                    && info->Action != FILE_ACTION_MODIFIED)
+                {
+                    if (!info->NextEntryOffset)
+                    {
+                        break;
+                    }
+                    ptr += info->NextEntryOffset;
+                    continue;
+                }
+                wchar_t* beginPtr = info->FileName;
+                wchar_t* endPtr = info->FileName + info->FileNameLength / 2;
+                std::replace(beginPtr, endPtr, L'\\', L'/');
+                const std::wstring_view pathSlice(beginPtr, endPtr);
+                std::filesystem::path modifPath(aState.myPath);
+                modifPath.append(pathSlice);
+                // we only care about files
+                if (std::filesystem::is_directory(modifPath))
+                {
+                    if (!info->NextEntryOffset)
+                    {
+                        break;
+                    }
+                    ptr += info->NextEntryOffset;
+                    continue;
+                }
 
                 // https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntquerysystemtime
                 // ...This is a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
@@ -130,10 +165,11 @@ namespace Win32
             }
 
             // reque our notification waiter
+            const DWORD changeTypes = FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME;
             if (!ReadDirectoryChangesExW(aState.myDirHandle.get(),
                 aState.myBuffer, sizeof(aState.myBuffer),
-                TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, NULL,
-                &aState.myResult, NULL, ReadDirectoryNotifyExtendedInformation))
+                TRUE, changeTypes, nullptr,
+                &aState.myResult, nullptr, ReadDirectoryNotifyExtendedInformation))
             {
                 PrintWinErrror();
             }
@@ -147,7 +183,7 @@ namespace Win32
 }
 #endif // WIN32
 
-FileWatcher::FileWatcher(std::wstring_view aPath)
+FileWatcher::FileWatcher(std::string_view aPath)
 {
 #ifdef WIN32
     namespace Platform = Win32;

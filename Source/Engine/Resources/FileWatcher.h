@@ -5,7 +5,7 @@ class FileWatcher
 public:
     struct OSState { virtual ~OSState() = default; };
 
-    FileWatcher(std::wstring_view aPath);
+    FileWatcher(std::string_view aPath);
 
     void CheckFiles();
 
