@@ -20,7 +20,7 @@ void Shader::Serialize(Serializer& aSerializer)
 
 	std::string shaderSrcFile = GetPath();
 	shaderSrcFile = shaderSrcFile.replace(shaderSrcFile.size() - 3, 3, "txt");
-	aSerializer.SerializeExternal(shaderSrcFile, myFileContents);
+	aSerializer.SerializeExternal(shaderSrcFile, myFileContents, GetId());
 }
 
 void Shader::Upload(const char* aData, size_t aSize)

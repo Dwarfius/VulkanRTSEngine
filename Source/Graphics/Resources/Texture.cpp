@@ -142,7 +142,7 @@ void Texture::Serialize(Serializer& aSerializer)
 
 	std::string imgFile = GetPath();
 	imgFile = imgFile.replace(imgFile.size() - 3, 3, myImgExtension);
-	aSerializer.SerializeExternal(imgFile, myRawSource);
+	aSerializer.SerializeExternal(imgFile, myRawSource, GetId());
 
 	if (shouldLoadImg)
 	{

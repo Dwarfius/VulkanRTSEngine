@@ -11,6 +11,14 @@ AssetTracker::AssetTracker()
 {
 }
 
+void AssetTracker::RegisterExternal(std::string_view aPath, Resource::Id anId)
+{
+	const std::string path{ aPath.data(), aPath.size() };
+
+	tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
+	myExternals.insert({path, anId});
+}
+
 void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 {
 	// change the handle's path
@@ -55,8 +63,18 @@ void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 
 void AssetTracker::RemoveResource(const Resource* aRes)
 {
+	const Resource::Id id = aRes->GetId();
+	{
 	tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
-	myAssets.erase(aRes->GetId());
+		myAssets.erase(id);
+	}
+	
+	{
+		tbb::spin_mutex::scoped_lock externLock(myExternalsMutex);
+		std::erase_if(myExternals, [id](const auto& item) {
+			return item.second == id;
+		});
+	}
 }
 
 void AssetTracker::AssignDynamicId(Resource& aResource)

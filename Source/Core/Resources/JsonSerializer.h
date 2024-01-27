@@ -29,7 +29,7 @@ public:
 	void Serialize(std::string_view aName, glm::quat& aValue) override;
 	void Serialize(std::string_view aName, glm::mat4& aValue) override;
 
-	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob) override;
+	void SerializeExternal(std::string_view aFile, std::vector<char>& aBlob, Resource::Id anId) override;
 
 private:
 	bool BeginSerializeObjectImpl(std::string_view aName) override;

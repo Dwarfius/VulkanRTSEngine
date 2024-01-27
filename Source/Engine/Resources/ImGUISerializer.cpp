@@ -101,7 +101,7 @@ void ImGUISerializer::Serialize(std::string_view aName, glm::mat4& aValue)
 	}
 }
 
-void ImGUISerializer::SerializeExternal(std::string_view, std::vector<char>&)
+void ImGUISerializer::SerializeExternal(std::string_view, std::vector<char>&, Resource::Id)
 {
 	// NOOP for now
 }

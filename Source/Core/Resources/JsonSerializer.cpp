@@ -70,8 +70,9 @@ void JsonSerializer::WriteTo(std::vector<char>& aBuffer) const
 	generatedJson.copy(aBuffer.data(), generatedJson.size());
 }
 
-void JsonSerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob)
+void JsonSerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob, Resource::Id anId)
 {
+    GetAssetTracker().RegisterExternal(aFile, anId);
     File file(aFile);
     if (IsReading())
     {

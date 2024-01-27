@@ -45,6 +45,8 @@ public:
 	template<class TAsset>
 	Handle<TAsset> Get(Resource::Id anId);
 
+	void RegisterExternal(std::string_view aPath, Resource::Id anId);
+
 private:
 	void SaveAndTrackImpl(
 		const std::string& aPath,
@@ -67,14 +69,19 @@ private:
 
 	void StartLoading(Handle<Resource> aRes);
 
+	// TODO: replace with mutexes, as unordered_map 
+	// operations are too heavy
 	tbb::spin_mutex myRegisterMutex;
 	tbb::spin_mutex myAssetMutex;
+	tbb::spin_mutex myExternalsMutex;
 	std::atomic<Resource::Id> myCounter;
 	// since all resources come from disk, we can track them by their path
 	std::unordered_map<std::string, Resource::Id> myRegister;
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
+	// Map of external assets to owning resource - hotreload support
+	std::unordered_map<std::string, Resource::Id> myExternals;
 	oneapi::tbb::task_group myLoadTaskGroup;
 };
 

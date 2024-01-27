@@ -244,7 +244,7 @@ void BinarySerializer::Serialize(std::string_view, glm::mat4& aValue)
 	Impl::SerializeSpan(myBuffer, myIndex, glm::value_ptr(aValue), 16, IsReading());
 }
 
-void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob)
+void BinarySerializer::SerializeExternal(std::string_view aFile, std::vector<char>& aBlob, Resource::Id)
 {
 	std::string filename(aFile);
 	Serialize("myExternFile", filename);
