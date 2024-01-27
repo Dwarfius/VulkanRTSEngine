@@ -81,6 +81,8 @@ public:
 
 	Handle<GPUModel> GetFullScreenQuad() const { return myFullScrenQuad; }
 
+	void FileChanged(const std::string& aFile);
+
 protected:
 	void TriggerUpload(GPUResource* aGPUResource);
 	void TriggerUnload(GPUResource* aGPUResource);

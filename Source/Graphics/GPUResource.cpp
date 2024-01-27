@@ -49,7 +49,6 @@ void GPUResource::UpdateRegion(UploadRegion aRegion)
 	ASSERT_STR(myResHandle.IsValid() || myResId == Resource::InvalidId, 
 		"Can't update the GPU resource - source resource has been discarded!");
 	myRegionsToUpload.push_back(aRegion);
-	myState = State::PendingUpload;
 	myGraphics->ScheduleUpload(this);
 }
 
@@ -58,7 +57,6 @@ void GPUResource::UpdateRegions(const UploadRegion* aRegions, uint8_t aRegCount)
 	ASSERT_STR(myResHandle.IsValid() || myResId == Resource::InvalidId,
 		"Can't update the GPU resource - source resource has been discarded!");
 	myRegionsToUpload.insert(myRegionsToUpload.end(), aRegions, aRegions + aRegCount);
-	myState = State::PendingUpload;
 	myGraphics->ScheduleUpload(this);
 }
 
@@ -70,6 +68,13 @@ void GPUResource::Unload()
 
 bool GPUResource::AreDependenciesValid() const
 {
+	// Hot-reload can schedule uploading before the resource has finished loading.
+	// In that case, we are not ready
+	if (myResHandle.IsValid() && myResHandle->GetState() != Resource::State::Ready)
+	{
+		return false;
+	}
+
 	// Not thread safe, but worst case scenario is
 	// it's going to be 1 frame delayed result
 	for (Handle<GPUResource> dependency : myDependencies)
@@ -100,6 +105,7 @@ void GPUResource::SetErrMsg(std::string_view anErrString)
 void GPUResource::TriggerCreate()
 {
 	OnCreate(*myGraphics);
+	myState = State::PendingUpload;
 	UpdateRegion({ 0, 0 });
 }
 

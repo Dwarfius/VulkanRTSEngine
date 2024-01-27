@@ -45,6 +45,7 @@ public:
 	template<class TAsset>
 	Handle<TAsset> Get(Resource::Id anId);
 
+	Handle<Resource> FileChanged(const std::string& aPath);
 	void RegisterExternal(std::string_view aPath, Resource::Id anId);
 
 private:

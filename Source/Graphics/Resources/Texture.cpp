@@ -138,7 +138,8 @@ void Texture::Serialize(Serializer& aSerializer)
 	std::string oldExt = myImgExtension;
 	aSerializer.Serialize("myImgExtension", myImgExtension);
 
-	bool shouldLoadImg = aSerializer.IsReading() && (!myPixels || oldExt != myImgExtension);
+	bool shouldLoadImg = aSerializer.IsReading() 
+		&& (GetState() == State::Uninitialized || oldExt != myImgExtension);
 
 	std::string imgFile = GetPath();
 	imgFile = imgFile.replace(imgFile.size() - 3, 3, myImgExtension);

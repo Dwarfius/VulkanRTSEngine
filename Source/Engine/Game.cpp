@@ -297,6 +297,7 @@ void Game::RunMainThread()
 			for (const std::string& file : myFileWatcher->GetModifs())
 			{
 				std::println("FileWatcher: Detected change! {}", file);
+				myRenderThread->GetGraphics()->FileChanged(file);
 			}
 		}
 

@@ -11,6 +11,45 @@ AssetTracker::AssetTracker()
 {
 }
 
+Handle<Resource> AssetTracker::FileChanged(const std::string& aPath)
+{
+	auto GetResId = [&](const std::string& aStr) {
+		Resource::Id resourceId = Resource::InvalidId;
+		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
+		auto iter = myRegister.find(aStr);
+		if (iter != myRegister.end())
+		{
+			resourceId = iter->second;
+		}
+		return resourceId;
+	};
+
+	Resource::Id resourceId = GetResId(aPath);
+
+	// not an asset we had loaded/tracking
+	if (resourceId == Resource::InvalidId)
+	{
+		tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
+		auto iter = myExternals.find(aPath);
+		if (iter == myExternals.end())
+		{
+			return {};
+		}
+
+		resourceId = iter->second;
+	}
+
+	Resource* changedRes = nullptr;
+	GetResource(resourceId, changedRes);
+	if(!changedRes) // TODO: support unloaded cases!
+	{
+		return {};
+	}
+	changedRes->myState = Resource::State::Uninitialized;
+	StartLoading(changedRes);
+	return changedRes;
+}
+
 void AssetTracker::RegisterExternal(std::string_view aPath, Resource::Id anId)
 {
 	const std::string path{ aPath.data(), aPath.size() };
@@ -65,7 +104,7 @@ void AssetTracker::RemoveResource(const Resource* aRes)
 {
 	const Resource::Id id = aRes->GetId();
 	{
-	tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
+		tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
 		myAssets.erase(id);
 	}
 	

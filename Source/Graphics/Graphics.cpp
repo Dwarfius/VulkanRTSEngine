@@ -242,7 +242,8 @@ void Graphics::ScheduleCreate(Handle<GPUResource> aGPUResource)
 
 void Graphics::ScheduleUpload(Handle<GPUResource> aGPUResource)
 {
-	ASSERT_STR(aGPUResource->GetState() == GPUResource::State::PendingUpload,
+	ASSERT_STR(aGPUResource->GetState() == GPUResource::State::PendingUpload
+		|| aGPUResource->GetState() == GPUResource::State::Valid,
 		"Invalid GPU resource state!");
 	ASSERT_STR(!aGPUResource.IsLastHandle(), "Resource will die after being processed!");
 	myUploadQueue.push(aGPUResource);
@@ -261,6 +262,32 @@ Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
 	Handle<UniformBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
 	uniformBuffer->Create(*this, {});
 	return uniformBuffer;
+}
+
+void Graphics::FileChanged(const std::string& aFile)
+{
+	Handle<Resource> res = myAssetTracker.FileChanged(aFile);
+	if (!res.IsValid())
+	{
+		return;
+	}
+
+	Handle<GPUResource> gpuRes;
+	{
+		tbb::spin_mutex::scoped_lock lock(myResourceMutex);
+		auto iter = myResources.find(res->GetId());
+		if (iter == myResources.end())
+		{
+			return;
+		}
+		gpuRes = iter->second;
+	}
+	
+	if (gpuRes->GetState() == GPUResource::State::Valid)
+	{
+		gpuRes->myResHandle = res;
+		ScheduleUpload(gpuRes);
+	}
 }
 
 void Graphics::TriggerUpload(GPUResource* aGPUResource)

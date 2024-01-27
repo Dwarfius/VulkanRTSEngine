@@ -15,7 +15,7 @@ public:
 	{
 		Invalid,
 		PendingCreate,
-		PendingUpload,
+		PendingUpload, // pending first upload
 		Valid,
 		PendingUnload,
 		Error

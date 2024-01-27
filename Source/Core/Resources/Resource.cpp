@@ -49,6 +49,9 @@ void Resource::ExecLambdaOnLoad(const Callback& aOnLoadCB)
 		// scheduled callbacks already ran,
 		// we can just execute new one right now
 		aOnLoadCB(this);
+
+		// Preserve the callback for hot-reload
+		myOnLoadCBs.push_back(aOnLoadCB);
 	}
 }
 
@@ -82,16 +85,15 @@ void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 	}
 
 	// Either execute the callbacks now, or get in queue for when the
-	// callback schedulign finishes
+	// callback scheduling finishes
 	tbb::queuing_mutex::scoped_lock lockState(myStateMutex);
 	myState = State::Ready;
-	if (myOnLoadCBs.size())
+	if (!myOnLoadCBs.empty())
 	{
 		for (const Callback& loadCB : myOnLoadCBs)
 		{
 			loadCB(this);
 		}
-		myOnLoadCBs.clear();
 		myOnLoadCBs.shrink_to_fit();
 	}
 }
