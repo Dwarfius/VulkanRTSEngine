@@ -25,9 +25,10 @@ Handle<Resource> AssetTracker::FileChanged(const std::string& aPath)
 	};
 
 	Resource::Id resourceId = GetResId(aPath);
-
+	const bool isPathValid = resourceId != Resource::InvalidId;
+	
 	// not an asset we had loaded/tracking
-	if (resourceId == Resource::InvalidId)
+	if (!isPathValid)
 	{
 		tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
 		auto iter = myExternals.find(aPath);
@@ -41,9 +42,23 @@ Handle<Resource> AssetTracker::FileChanged(const std::string& aPath)
 
 	Resource* changedRes = nullptr;
 	GetResource(resourceId, changedRes);
-	if(!changedRes) // TODO: support unloaded cases!
+	if(!changedRes)
 	{
-		return {};
+		const std::string* path = &aPath;
+		if (!isPathValid)
+		{
+			tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
+			auto pathIter = myPaths.find(resourceId);
+			ASSERT(pathIter != myPaths.end());
+			path = &pathIter->second;
+		}
+
+		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
+		auto createIter = myCreates.find(resourceId);
+		ASSERT(createIter != myCreates.end());
+		changedRes = createIter->second(resourceId, *path);
+		changedRes->myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
+		myAssets[resourceId] = changedRes;
 	}
 	changedRes->myState = Resource::State::Uninitialized;
 	StartLoading(changedRes);
@@ -92,6 +107,7 @@ void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
 		myRegister[aPath] = aRes.GetId();
+		myPaths[aRes.GetId()] = aPath;
 	}
 
 	{

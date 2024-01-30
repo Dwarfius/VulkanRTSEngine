@@ -266,6 +266,8 @@ Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
 
 void Graphics::FileChanged(const std::string& aFile)
 {
+	// TODO: this always loads a file, even if we don't have
+	// anything loaded for it!
 	Handle<Resource> res = myAssetTracker.FileChanged(aFile);
 	if (!res.IsValid())
 	{

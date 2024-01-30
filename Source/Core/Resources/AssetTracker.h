@@ -78,9 +78,13 @@ private:
 	std::atomic<Resource::Id> myCounter;
 	// since all resources come from disk, we can track them by their path
 	std::unordered_map<std::string, Resource::Id> myRegister;
+	// TODO: reduce the amount of strings we're storing!
+	std::unordered_map<Resource::Id, std::string> myPaths;
 	// Resources have unique(among their type) Id, and it's the main way to find it
 	// Yes, it's stored as raw, but the memory is managed by Handles
 	std::unordered_map<Resource::Id, Resource*> myAssets;
+	using CreateCallback = Resource*(*)(Resource::Id, const std::string&);
+	std::unordered_map<Resource::Id, CreateCallback> myCreates;
 	// Map of external assets to owning resource - hotreload support
 	std::unordered_map<std::string, Resource::Id> myExternals;
 	oneapi::tbb::task_group myLoadTaskGroup;
@@ -174,8 +178,20 @@ bool AssetTracker::GetOrCreateResource(Resource::Id anId, const std::string& aPa
 		return true;
 	}
 
-	aRes = new TAsset(anId, aPath);
+	// The only reason this exists is so that we can capture the type
+	// for when we need to dynamically create a new instance, as
+	// AssetManager usually doesn't know what type of a resource it's loading
+	struct Helper
+	{
+		static Resource* Create(Resource::Id anId, const std::string& aPath)
+		{
+			return new TAsset(anId, aPath);
+		}
+	};
+
+	aRes = static_cast<TAsset*>(Helper::Create(anId, aPath));
 	myAssets[anId] = aRes;
+	myCreates[anId] = &Helper::Create;
 	return false;
 }
 
