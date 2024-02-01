@@ -266,29 +266,48 @@ Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
 
 void Graphics::FileChanged(const std::string& aFile)
 {
-	// TODO: this always loads a file, even if we don't have
-	// anything loaded for it!
-	Handle<Resource> res = myAssetTracker.FileChanged(aFile);
-	if (!res.IsValid())
+	// Because we can drop CPU-side resources when we upload
+	// GPU-resources, we have to check if we currently have a GPU-resource
+	// loaded - otherwise we might end up loading resources that we don't
+	// actually need. 
+	AssetTracker::ResIdPair resInfo = myAssetTracker.FindRes(aFile);
+	if (resInfo.myId == Resource::InvalidId)
 	{
 		return;
 	}
 
+	// Since AssetTracker knows about a resource, it's either one belonging to
+	// GPU or belongs to CPU only. 
 	Handle<GPUResource> gpuRes;
 	{
 		tbb::spin_mutex::scoped_lock lock(myResourceMutex);
-		auto iter = myResources.find(res->GetId());
+		auto iter = myResources.find(resInfo.myId);
 		if (iter == myResources.end())
 		{
 			return;
 		}
 		gpuRes = iter->second;
 	}
-	
-	if (gpuRes->GetState() == GPUResource::State::Valid)
+
+	if (gpuRes.IsValid())
 	{
-		gpuRes->myResHandle = res;
-		ScheduleUpload(gpuRes);
+		// If it is a GPU resource, it might be unloaded
+		// so we will need to load it before we can push an update to GPU.
+		// That's why we'll force the load
+		Handle<Resource> res = myAssetTracker.ResourceChanged(resInfo, true);
+		ASSERT(res.IsValid());
+
+		if (gpuRes->GetState() == GPUResource::State::Valid)
+		{
+			gpuRes->myResHandle = res;
+			ScheduleUpload(gpuRes);
+		}
+	}
+	else
+	{
+		// Otherwise it's a CPU resource, and no GPU operations are necessary,
+		// so we will let AssetTracker decide what to do with it
+		myAssetTracker.ResourceChanged(resInfo);
 	}
 }
 

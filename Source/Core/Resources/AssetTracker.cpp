@@ -11,57 +11,61 @@ AssetTracker::AssetTracker()
 {
 }
 
-Handle<Resource> AssetTracker::FileChanged(const std::string& aPath)
+AssetTracker::ResIdPair AssetTracker::FindRes(const std::string& aPath)
 {
-	auto GetResId = [&](const std::string& aStr) {
-		Resource::Id resourceId = Resource::InvalidId;
+	Resource::Id resourceId = Resource::InvalidId;
+	const std::string* path = &aPath;
+	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-		auto iter = myRegister.find(aStr);
+		auto iter = myRegister.find(aPath);
 		if (iter != myRegister.end())
 		{
 			resourceId = iter->second;
 		}
-		return resourceId;
-	};
-
-	Resource::Id resourceId = GetResId(aPath);
-	const bool isPathValid = resourceId != Resource::InvalidId;
-	
-	// not an asset we had loaded/tracking
-	if (!isPathValid)
-	{
-		tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
-		auto iter = myExternals.find(aPath);
-		if (iter == myExternals.end())
-		{
-			return {};
-		}
-
-		resourceId = iter->second;
 	}
-
-	Resource* changedRes = nullptr;
-	GetResource(resourceId, changedRes);
-	if(!changedRes)
+	// It could be that the resource is external, so try to find it's owner
+	if(resourceId == Resource::InvalidId)
 	{
-		const std::string* path = &aPath;
-		if (!isPathValid)
 		{
+			tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
+			auto iter = myExternals.find(aPath);
+			if (iter == myExternals.end())
+			{
+				// we didn't find it, return a dud
+				return { };
+			}
+
+			resourceId = iter->second;
+		}
+		{
+			// if we found it, then we have to look up the path of the owner
 			tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
 			auto pathIter = myPaths.find(resourceId);
 			ASSERT(pathIter != myPaths.end());
 			path = &pathIter->second;
 		}
-
-		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-		auto createIter = myCreates.find(resourceId);
-		ASSERT(createIter != myCreates.end());
-		changedRes = createIter->second(resourceId, *path);
-		changedRes->myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
-		myAssets[resourceId] = changedRes;
 	}
-	changedRes->myState = Resource::State::Uninitialized;
-	StartLoading(changedRes);
+	return { path, resourceId };
+}
+
+Handle<Resource> AssetTracker::ResourceChanged(ResIdPair aRes, bool aForceLoad /* = false */)
+{
+	Resource* changedRes = nullptr;
+	GetResource(aRes.myId, changedRes);
+	if(!changedRes && aForceLoad)
+	{
+		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
+		auto createIter = myCreates.find(aRes.myId);
+		ASSERT(createIter != myCreates.end());
+		changedRes = createIter->second(aRes.myId, *aRes.myPath);
+		changedRes->myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
+		myAssets[aRes.myId] = changedRes;
+	}
+	if (changedRes)
+	{
+		changedRes->myState = Resource::State::Uninitialized;
+		StartLoading(changedRes);
+	}
 	return changedRes;
 }
 

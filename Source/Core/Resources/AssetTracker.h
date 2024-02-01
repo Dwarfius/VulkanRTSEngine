@@ -45,7 +45,15 @@ public:
 	template<class TAsset>
 	Handle<TAsset> Get(Resource::Id anId);
 
-	Handle<Resource> FileChanged(const std::string& aPath);
+	struct ResIdPair
+	{
+		const std::string* myPath = nullptr; // TODO: convert to std::string_view!
+		Resource::Id myId = Resource::InvalidId;
+	};
+	// Find an ID and a resource path if the path passed it represents
+	// it or one of it's external dependencies
+	ResIdPair FindRes(const std::string& aPath);
+	Handle<Resource> ResourceChanged(ResIdPair aRes, bool aForceLoad = false);
 	void RegisterExternal(std::string_view aPath, Resource::Id anId);
 
 private:
@@ -76,6 +84,8 @@ private:
 	tbb::spin_mutex myAssetMutex;
 	tbb::spin_mutex myExternalsMutex;
 	std::atomic<Resource::Id> myCounter;
+	// TODO: add suppor for heterogeneous lookup:
+	// https://en.cppreference.com/w/cpp/container/unordered_map/find
 	// since all resources come from disk, we can track them by their path
 	std::unordered_map<std::string, Resource::Id> myRegister;
 	// TODO: reduce the amount of strings we're storing!
