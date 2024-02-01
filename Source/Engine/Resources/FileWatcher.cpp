@@ -128,14 +128,23 @@ namespace Win32
                 const std::wstring_view pathSlice(beginPtr, endPtr);
                 std::filesystem::path modifPath(aState.myPath);
                 modifPath.append(pathSlice);
+
                 // we only care about files
-                if (std::filesystem::is_directory(modifPath))
+                std::error_code errCode;
+                if (std::filesystem::is_directory(modifPath, errCode))
                 {
                     if (!info->NextEntryOffset)
                     {
                         break;
                     }
                     ptr += info->NextEntryOffset;
+                    continue;
+                }
+
+                if (errCode)
+                {
+                    std::println("Unrecognized dir: {}, error: {}({})", 
+                        modifPath.string(), errCode.message(), errCode.value());
                     continue;
                 }
 
