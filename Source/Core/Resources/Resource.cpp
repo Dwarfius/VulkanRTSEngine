@@ -76,6 +76,7 @@ void Resource::Load(AssetTracker& anAssetTracker, Serializer& aSerializer)
 		return;
 	}
 	const std::vector<char>& buffer = file.GetBuffer();
+	ASSERT_STR(!buffer.empty(), "How does this happen?");
 	aSerializer.ReadFrom(buffer);
 	Serialize(aSerializer);
 
