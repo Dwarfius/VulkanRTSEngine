@@ -65,12 +65,40 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
-	// Upload is just linking the dependencies on the GPU
+	// To support multiple uploads for HotReload, we gotta
+	// know what we can attach and what needs to be detached
+	constexpr GLsizei kMaxShaders = 4;
+	GLsizei shaderCount = 0;
+	GLuint shaders[kMaxShaders]{};
+	bool wasFound[kMaxShaders]{};
+	glGetAttachedShaders(myGLProgram, kMaxShaders, &shaderCount, shaders);
+
 	for (Handle<GPUResource> dependency : myDependencies)
 	{
 		const ShaderGL* shader = dependency.Get<const ShaderGL>();
-		glAttachShader(myGLProgram, shader->GetShaderId());
+		const uint32_t id = shader->GetShaderId();
+
+		auto iter = std::ranges::find(shaders, id);
+		if (iter == std::end(shaders))
+		{
+			glAttachShader(myGLProgram, id);
+		}
+		else
+		{
+			const uint32_t index = std::distance(std::begin(shaders), iter);
+			wasFound[index] = true;
+		}
 	}
+
+	// Before we link, drop any shaders that are no longer dependencies
+	for (uint8_t i = 0; i < kMaxShaders; i++)
+	{
+		if (!wasFound[i])
+		{
+			glDetachShader(myGLProgram, shaders[i]);
+		}
+	}
+
 	glLinkProgram(myGLProgram);
 
 	GLint isLinked = 0;
