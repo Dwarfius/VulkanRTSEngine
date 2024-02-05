@@ -93,7 +93,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		}
 		else
 		{
-			const uint32_t index = std::distance(std::begin(shaders), iter);
+			const std::ptrdiff_t index = std::distance(std::begin(shaders), iter);
 			wasFound[index] = true;
 		}
 	}
