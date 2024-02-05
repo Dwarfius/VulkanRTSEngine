@@ -380,6 +380,11 @@ void Graphics::ProcessUploadQueue()
 			continue;
 		}
 		aResourceHandle->TriggerUpload();
+		// After uploading, we can be in 3 states: Valid, Error or PendingUpload(deferred)
+		if (aResourceHandle->GetState() == GPUResource::State::PendingUpload)
+		{
+			delayQueue.push(aResourceHandle);
+		}
 	}
 	// reschedule delayed resources from this frame for next
 	while (!delayQueue.empty())
