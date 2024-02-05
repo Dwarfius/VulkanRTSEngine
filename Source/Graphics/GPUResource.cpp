@@ -99,14 +99,14 @@ void GPUResource::TriggerCreate()
 
 void GPUResource::TriggerUpload()
 {
-	bool success = OnUpload(*myGraphics);
-	myRegionsToUpload.clear();
-	if (!myKeepResHandle)
-	{
-		myResHandle = nullptr;
-	}
+	const bool success = OnUpload(*myGraphics);
 	if (success)
 	{
+		myRegionsToUpload.clear();
+		if (!myKeepResHandle)
+		{
+			myResHandle = nullptr;
+		}
 		myState = State::Valid;
 	}
 }
