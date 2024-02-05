@@ -64,7 +64,6 @@ public:
 protected:
 	Handle<Resource> myResHandle;
 	Resource::Id myResId;
-	std::vector<Handle<GPUResource>> myDependencies;
 	State myState;
 	Graphics* myGraphics; // non owning ptr
 

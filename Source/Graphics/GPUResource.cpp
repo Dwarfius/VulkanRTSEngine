@@ -22,9 +22,6 @@ void GPUResource::Cleanup()
 		// we don't delete the resource here, instead Graphics will take care of it
 		Unload();
 	}
-	// we can also immediately drop our dependencies
-	// this schedules their removal earlier
-	myDependencies.clear();
 }
 
 void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShouldKeepRes /* = false*/)
@@ -75,15 +72,6 @@ bool GPUResource::AreDependenciesValid() const
 		return false;
 	}
 
-	// Not thread safe, but worst case scenario is
-	// it's going to be 1 frame delayed result
-	for (Handle<GPUResource> dependency : myDependencies)
-	{
-		if (dependency->GetState() != State::Valid)
-		{
-			return false;
-		}
-	}
 	return true;
 }
 

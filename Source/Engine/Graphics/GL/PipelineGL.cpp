@@ -35,6 +35,14 @@ void PipelineGL::Bind()
 	}
 }
 
+void PipelineGL::Cleanup()
+{
+	GPUPipeline::Cleanup();
+	// We drop shaders earlier (before OnUnload) so that
+	// their removal can be scheduled earlier
+	myShaders.clear();
+}
+
 void PipelineGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLProgram, "Pipeline already created!");
@@ -55,7 +63,7 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 	{
 		const std::string& shaderName = pipeline->GetShader(i);
 		Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
-		myDependencies.push_back(aGraphics.GetOrCreate(shader));
+		myShaders.push_back(aGraphics.GetOrCreate(shader).Get<ShaderGL>());
 	}
 }
 
@@ -73,7 +81,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 	bool wasFound[kMaxShaders]{};
 	glGetAttachedShaders(myGLProgram, kMaxShaders, &shaderCount, shaders);
 
-	for (Handle<GPUResource> dependency : myDependencies)
+	for (Handle<ShaderGL> dependency : myShaders)
 	{
 		const ShaderGL* shader = dependency.Get<const ShaderGL>();
 		const uint32_t id = shader->GetShaderId();
@@ -182,6 +190,24 @@ void PipelineGL::OnUnload(Graphics& aGraphics)
 	ASSERT_STR(myGLProgram, "Empty pipeline detected!");
 	glDeleteProgram(myGLProgram);
 	myGLProgram = 0;
+}
+
+bool PipelineGL::AreDependenciesValid() const
+{
+	if (!GPUResource::AreDependenciesValid())
+	{
+		return false;
+	}
+
+	for (const Handle<ShaderGL> shaderHandle : myShaders)
+	{
+		if (shaderHandle->GetState() != State::Valid)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 #ifdef _DEBUG

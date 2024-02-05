@@ -2,6 +2,8 @@
 
 #include <Graphics/Resources/GPUPipeline.h>
 
+class ShaderGL;
+
 class PipelineGL final : public GPUPipeline
 {
 public:
@@ -14,10 +16,14 @@ public:
 	void Bind();
 
 private:
+	void Cleanup() override;
+
 	// Changes OpenGL state, not thread safe.
 	void OnCreate(Graphics& aGraphics) override;
 	bool OnUpload(Graphics& aGraphics) override;
 	void OnUnload(Graphics& aGraphics) override;
+
+	bool AreDependenciesValid() const override;
 
 #ifdef _DEBUG
 	bool AreUBOsValid();
@@ -25,5 +31,6 @@ private:
 
 	uint32_t myGLProgram;
 	std::vector<uint32_t> mySamplerUniforms;
-	std::vector<uint32_t> mySamplerTypes; 
+	std::vector<uint32_t> mySamplerTypes;
+	std::vector<Handle<ShaderGL>> myShaders;
 };
