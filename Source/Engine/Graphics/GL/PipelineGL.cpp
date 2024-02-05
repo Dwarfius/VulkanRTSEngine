@@ -15,14 +15,6 @@ PipelineGL::PipelineGL()
 {
 }
 
-PipelineGL::~PipelineGL()
-{
-	if (myGLProgram)
-	{
-		Unload();
-	}
-}
-
 void PipelineGL::Bind()
 {
 	glUseProgram(myGLProgram);

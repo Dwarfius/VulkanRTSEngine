@@ -8,7 +8,6 @@ class PipelineGL final : public GPUPipeline
 {
 public:
 	PipelineGL();
-	~PipelineGL();
 
 	// Only binds the GL program, and sends the sampler
 	// uniforms. Caller must bing UBOs manually.
