@@ -91,7 +91,7 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 	}
 
 	// Before we link, drop any shaders that are no longer dependencies
-	for (uint8_t i = 0; i < kMaxShaders; i++)
+	for (uint8_t i = 0; i < shaderCount; i++)
 	{
 		if (!wasFound[i])
 		{
