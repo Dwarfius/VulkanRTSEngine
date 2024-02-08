@@ -291,7 +291,7 @@ void Graphics::FileChanged(const std::string& aFile)
 
 	if (gpuRes.IsValid())
 	{
-		// If it is a GPU resource, it might be unloaded
+		// If it is a GPUResource, the underlying Resource might be unloaded
 		// so we will need to load it before we can push an update to GPU.
 		// That's why we'll force the load
 		Handle<Resource> res = myAssetTracker.ResourceChanged(resInfo, true);
@@ -379,10 +379,30 @@ void Graphics::ProcessUploadQueue()
 			delayQueue.push(aResourceHandle);
 			continue;
 		}
+		const bool isReloaded = aResourceHandle->GetState() == GPUResource::State::Valid;
 		const bool uploaded = aResourceHandle->TriggerUpload();
+		if (uploaded && isReloaded)
+		{
+			// If we reloaded succesfully, time to notify all dependents that 
+			// they're ready to reload
+			aResourceHandle->ForEachDependent([&](GPUResource* aRes) {
+				if (aRes->GetState() != GPUResource::State::Valid)
+				{
+					return;
+				}
+
+				AssetTracker::ResIdPair resInfo{ nullptr, aRes->myResId };
+				Handle<Resource> res = myAssetTracker.ResourceChanged(resInfo, true);
+				if (res.IsValid())
+				{
+					aRes->myResHandle = res;
+					ScheduleUpload(aRes);
+				}
+			});
+		}
 		// If we failed to upload, we can be in 3 states: Valid(deferred, hot reload), 
 		// PendingUpload(deferred, first upload) and Error
-		if (!uploaded && aResourceHandle->GetState() != GPUResource::State::Error)
+		else if (!uploaded && aResourceHandle->GetState() != GPUResource::State::Error)
 		{
 			delayQueue.push(aResourceHandle);
 		}
