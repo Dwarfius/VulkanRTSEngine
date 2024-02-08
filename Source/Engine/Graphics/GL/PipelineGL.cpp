@@ -147,6 +147,8 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		int uniformCount = 0;
 		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORMS, &uniformCount);
 		ASSERT(uniformCount >= 0);
+		mySamplerUniforms.clear();
+		mySamplerTypes.clear();
 		// We will need the name in order to find the location of the uniform
 		int maxNameLength = 0;
 		glGetProgramiv(myGLProgram, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
