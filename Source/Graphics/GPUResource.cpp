@@ -97,7 +97,7 @@ void GPUResource::TriggerCreate()
 	UpdateRegion({ 0, 0 });
 }
 
-void GPUResource::TriggerUpload()
+bool GPUResource::TriggerUpload()
 {
 	const bool success = OnUpload(*myGraphics);
 	if (success)
@@ -109,6 +109,7 @@ void GPUResource::TriggerUpload()
 		}
 		myState = State::Valid;
 	}
+	return success;
 }
 
 void GPUResource::TriggerUnload()

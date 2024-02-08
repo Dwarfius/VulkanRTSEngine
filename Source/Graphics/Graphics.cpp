@@ -379,9 +379,10 @@ void Graphics::ProcessUploadQueue()
 			delayQueue.push(aResourceHandle);
 			continue;
 		}
-		aResourceHandle->TriggerUpload();
-		// After uploading, we can be in 3 states: Valid, Error or PendingUpload(deferred)
-		if (aResourceHandle->GetState() == GPUResource::State::PendingUpload)
+		const bool uploaded = aResourceHandle->TriggerUpload();
+		// If we failed to upload, we can be in 3 states: Valid(deferred, hot reload), 
+		// PendingUpload(deferred, first upload) and Error
+		if (!uploaded && aResourceHandle->GetState() != GPUResource::State::Error)
 		{
 			delayQueue.push(aResourceHandle);
 		}

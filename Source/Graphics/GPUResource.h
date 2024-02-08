@@ -81,7 +81,7 @@ private:
 	friend class Graphics;
 
 	void TriggerCreate();
-	void TriggerUpload();
+	bool TriggerUpload();
 	void TriggerUnload();
 	//================================
 
