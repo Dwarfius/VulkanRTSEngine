@@ -122,18 +122,8 @@ void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 
 void AssetTracker::RemoveResource(const Resource* aRes)
 {
-	const Resource::Id id = aRes->GetId();
-	{
-		tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
-		myAssets.erase(id);
-	}
-	
-	{
-		tbb::spin_mutex::scoped_lock externLock(myExternalsMutex);
-		std::erase_if(myExternals, [id](const auto& item) {
-			return item.second == id;
-		});
-	}
+	tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
+	myAssets.erase(aRes->GetId());
 }
 
 void AssetTracker::AssignDynamicId(Resource& aResource)
@@ -161,6 +151,7 @@ Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
 		// we don't have one, so register one
 		resourceId = ++myCounter;
 		myRegister[aPath] = resourceId;
+		myPaths[resourceId] = aPath;
 	}
 
 	return resourceId;
