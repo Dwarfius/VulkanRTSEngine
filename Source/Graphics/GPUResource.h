@@ -61,6 +61,24 @@ public:
 	// keep the resource handle
 	Handle<Resource> GetResource() const { return myResHandle; }
 
+	// Adds a dependent for hot reload tracking. The dependents will
+	// be reloaded if this GPUResource is reloaded. Asserts on duplicates. 
+	// Caller is responsible for cleaning up dependents via RemoveDependent. 
+	void AddDependent(GPUResource* aDependent);
+	// Removes the dependent from the list, if it has one. 
+	void RemoveDependent(GPUResource* aDependent);
+	template<class TFunc>
+	void ForEachDependent(const TFunc& aFunc) const
+	{
+#if ASSERT_MUTEX
+		AssertReadLock lock(myDependentsMutex);
+#endif
+		for (GPUResource* res : myDependents)
+		{
+			aFunc(res);
+		}
+	}
+
 protected:
 	Handle<Resource> myResHandle;
 	Resource::Id myResId;
@@ -85,6 +103,10 @@ private:
 	void TriggerUnload();
 	//================================
 
+	std::vector<GPUResource*> myDependents;
 	std::vector<UploadRegion> myRegionsToUpload;
+#if ASSERT_MUTEX
+	mutable AssertRWMutex myDependentsMutex;
+#endif
 	bool myKeepResHandle;
 };

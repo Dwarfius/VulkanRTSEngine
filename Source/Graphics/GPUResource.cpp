@@ -75,6 +75,24 @@ bool GPUResource::AreDependenciesValid() const
 	return true;
 }
 
+void GPUResource::AddDependent(GPUResource* aDependent)
+{
+#if ASSERT_MUTEX
+	AssertWriteLock lock(myDependentsMutex);
+#endif
+	ASSERT_STR(!std::ranges::contains(myDependents, aDependent),
+		"Dependent is already tracked!");
+	myDependents.push_back(aDependent);
+}
+
+void GPUResource::RemoveDependent(GPUResource* aDependent)
+{
+#if ASSERT_MUTEX
+	AssertWriteLock lock(myDependentsMutex);
+#endif
+	std::erase(myDependents, aDependent);
+}
+
 void GPUResource::SetErrMsg(std::string_view anErrString)
 {
 	myState = State::Error;
