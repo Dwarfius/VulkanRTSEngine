@@ -32,6 +32,10 @@ void PipelineGL::Cleanup()
 	GPUPipeline::Cleanup();
 	// We drop shaders earlier (before OnUnload) so that
 	// their removal can be scheduled earlier
+	for (Handle<ShaderGL>& shaderGL : myShaders)
+	{
+		OnShaderRemove(*shaderGL.Get());
+	}
 	myShaders.clear();
 }
 
@@ -66,12 +70,15 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 		{
 			Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
 			myShaders.push_back(aGraphics.GetOrCreate(shader).Get<ShaderGL>());
+			OnShaderAttach(*myShaders[i].Get());
 			myShaderNames.push_back(shaderName);
 		}
 		else if (shaderName != myShaderNames[i])
 		{
 			Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
+			OnShaderRemove(*myShaders[i].Get());
 			myShaders[i] = aGraphics.GetOrCreate(shader).Get<ShaderGL>();
+			OnShaderAttach(*myShaders[i].Get());
 			myShaderNames[i] = shaderName;
 		}
 	}
@@ -223,6 +230,16 @@ bool PipelineGL::AreDependenciesValid() const
 	}
 
 	return true;
+}
+
+void PipelineGL::OnShaderAttach(ShaderGL& aShader)
+{
+	aShader.AddDependent(this);
+}
+
+void PipelineGL::OnShaderRemove(ShaderGL& aShader)
+{
+	aShader.RemoveDependent(this);
 }
 
 #ifdef _DEBUG

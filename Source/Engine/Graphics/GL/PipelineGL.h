@@ -23,6 +23,8 @@ private:
 	void OnUnload(Graphics& aGraphics) override;
 
 	bool AreDependenciesValid() const override;
+	void OnShaderAttach(ShaderGL& aShader);
+	void OnShaderRemove(ShaderGL& aShader);
 
 #ifdef _DEBUG
 	bool AreUBOsValid();
