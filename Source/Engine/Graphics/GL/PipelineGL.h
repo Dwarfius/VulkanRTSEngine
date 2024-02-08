@@ -32,4 +32,5 @@ private:
 	std::vector<uint32_t> mySamplerUniforms;
 	std::vector<uint32_t> mySamplerTypes;
 	std::vector<Handle<ShaderGL>> myShaders;
+	std::vector<std::string> myShaderNames;
 };

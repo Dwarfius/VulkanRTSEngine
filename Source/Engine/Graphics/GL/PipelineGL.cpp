@@ -39,24 +39,6 @@ void PipelineGL::OnCreate(Graphics& aGraphics)
 {
 	ASSERT_STR(!myGLProgram, "Pipeline already created!");
 	myGLProgram = glCreateProgram();
-
-	// request the creation of uniform buffers,
-	// since they're not kept as part of myDependencies
-	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
-	const size_t adapterCount = pipeline->GetAdapterCount();
-	myAdapters.reserve(adapterCount);
-	for(size_t i=0; i< adapterCount; i++)
-	{
-		myAdapters.push_back(&pipeline->GetAdapter(i));
-	}
-
-	const size_t shaderCount = pipeline->GetShaderCount();
-	for (size_t i = 0; i < shaderCount; i++)
-	{
-		const std::string& shaderName = pipeline->GetShader(i);
-		Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
-		myShaders.push_back(aGraphics.GetOrCreate(shader).Get<ShaderGL>());
-	}
 }
 
 bool PipelineGL::OnUpload(Graphics& aGraphics)
@@ -65,10 +47,49 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 
 	ASSERT_STR(myGLProgram, "Pipeline missing!");
 
+	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
+	const size_t adapterCount = pipeline->GetAdapterCount();
+	myAdapters.clear();
+	myAdapters.reserve(adapterCount);
+	for (size_t i = 0; i < adapterCount; i++)
+	{
+		myAdapters.push_back(&pipeline->GetAdapter(i));
+	}
+
+	// as part of hot reload, we might swap out the shaders,
+	// so we gotta check if have changed the shaders we depend upon
+	GLsizei shaderCount = static_cast<GLsizei>(pipeline->GetShaderCount());
+	for (size_t i = 0; i < shaderCount; i++)
+	{
+		const std::string& shaderName = pipeline->GetShader(i);
+		if (i >= myShaderNames.size())
+		{
+			Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
+			myShaders.push_back(aGraphics.GetOrCreate(shader).Get<ShaderGL>());
+			myShaderNames.push_back(shaderName);
+		}
+		else if (shaderName != myShaderNames[i])
+		{
+			Handle<Shader> shader = aGraphics.GetAssetTracker().GetOrCreate<Shader>(shaderName);
+			myShaders[i] = aGraphics.GetOrCreate(shader).Get<ShaderGL>();
+			myShaderNames[i] = shaderName;
+		}
+	}
+
+	if (!AreDependenciesValid())
+	{
+		// Shaders haven't loaded yet - we gotta defer
+		return false;
+	}
+
+	// Trim excess
+	myShaders.resize(shaderCount);
+	myShaderNames.resize(shaderCount);
+
 	// To support multiple uploads for HotReload, we gotta
 	// know what we can attach and what needs to be detached
 	constexpr GLsizei kMaxShaders = 4;
-	GLsizei shaderCount = 0;
+	shaderCount = 0;
 	GLuint shaders[kMaxShaders]{};
 	bool wasFound[kMaxShaders]{};
 	glGetAttachedShaders(myGLProgram, kMaxShaders, &shaderCount, shaders);
