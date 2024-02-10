@@ -16,7 +16,7 @@ void ShaderGL::OnCreate(Graphics& aGraphics)
 
 	const Shader* shader = myResHandle.Get<const Shader>();
 
-	uint32_t glType;
+	uint32_t glType = GL_VERTEX_SHADER;
 	switch (shader->GetType())
 	{
 	case IShader::Type::Vertex:	glType = GL_VERTEX_SHADER; break;
