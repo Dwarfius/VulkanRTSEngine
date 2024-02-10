@@ -19,12 +19,12 @@ void ShaderGL::OnCreate(Graphics& aGraphics)
 	uint32_t glType;
 	switch (shader->GetType())
 	{
-	case IShader::Type::Vertex:		glType = GL_VERTEX_SHADER; break;
-	case IShader::Type::Fragment:	glType = GL_FRAGMENT_SHADER; break;
-	case IShader::Type::Geometry:	glType = GL_GEOMETRY_SHADER; break;
+	case IShader::Type::Vertex:	glType = GL_VERTEX_SHADER; break;
+	case IShader::Type::Fragment: glType = GL_FRAGMENT_SHADER; break;
+	case IShader::Type::Geometry: glType = GL_GEOMETRY_SHADER; break;
 	case IShader::Type::TessControl: glType = GL_TESS_CONTROL_SHADER; break;
-	case IShader::Type::TessEval:	glType = GL_TESS_EVALUATION_SHADER; break;
-	case IShader::Type::Compute:		glType = GL_COMPUTE_SHADER; break;
+	case IShader::Type::TessEval: glType = GL_TESS_EVALUATION_SHADER; break;
+	case IShader::Type::Compute: glType = GL_COMPUTE_SHADER; break;
 	default: ASSERT(false);
 	}
 	myGLShader = glCreateShader(glType);
@@ -39,8 +39,8 @@ bool ShaderGL::OnUpload(Graphics& aGraphics)
 	const Shader* shader = myResHandle.Get<const Shader>();
 	const std::vector<char>& shaderBuffer = shader->GetBuffer();
 
-	const char* dataPtrs[] = {						shaderBuffer.data()   };
-	int dataSizes[] = {			static_cast<GLint>(	shaderBuffer.size() ) };
+	const char* dataPtrs[] = { shaderBuffer.data() };
+	GLint dataSizes[] = { static_cast<GLint>(shaderBuffer.size()) };
 	glShaderSource(myGLShader, 1, dataPtrs, dataSizes);
 
 	glCompileShader(myGLShader);
