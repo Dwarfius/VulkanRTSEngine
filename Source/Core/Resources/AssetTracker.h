@@ -10,7 +10,7 @@ class AssetTracker
 private:
 	struct StringHash
 	{
-		using is_transient = void;
+		using is_transparent = void;
 		using Hasher = std::hash<std::string_view>;
 
 		size_t operator()(std::string_view aView) const { return Hasher{}(aView); }
