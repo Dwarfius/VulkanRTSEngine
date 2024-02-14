@@ -8,9 +8,15 @@
 class AssetTracker
 {
 private:
-	using AssetIter = std::unordered_map<Resource::Id, Resource*>::const_iterator;
-	using AssetPair = std::pair<const Resource::Id, Resource*>;
-	using RegisterIter = std::unordered_map<std::string, Resource::Id>::const_iterator;
+	struct StringHash
+	{
+		using is_transient = void;
+		using Hasher = std::hash<std::string_view>;
+
+		size_t operator()(std::string_view aView) const { return Hasher{}(aView); }
+		size_t operator()(const std::string& aString) const { return Hasher{}(aString); }
+	};
+	using StringToIdMap = std::unordered_map<std::string, Resource::Id, StringHash, std::equal_to<>>;
 
 public:
 	AssetTracker();
@@ -84,10 +90,8 @@ private:
 	tbb::spin_mutex myAssetMutex;
 	tbb::spin_mutex myExternalsMutex;
 	std::atomic<Resource::Id> myCounter;
-	// TODO: add suppor for heterogeneous lookup:
-	// https://en.cppreference.com/w/cpp/container/unordered_map/find
 	// since all resources come from disk, we can track them by their path
-	std::unordered_map<std::string, Resource::Id> myRegister;
+	StringToIdMap myRegister;
 	// TODO: reduce the amount of strings we're storing!
 	std::unordered_map<Resource::Id, std::string> myPaths;
 	// Resources have unique(among their type) Id, and it's the main way to find it
@@ -96,7 +100,7 @@ private:
 	using CreateCallback = Resource*(*)(Resource::Id, const std::string&);
 	std::unordered_map<Resource::Id, CreateCallback> myCreates;
 	// Map of external assets to owning resource - hotreload support
-	std::unordered_map<std::string, Resource::Id> myExternals;
+	StringToIdMap myExternals;
 	oneapi::tbb::task_group myLoadTaskGroup;
 };
 
@@ -181,7 +185,7 @@ template<class TAsset>
 bool AssetTracker::GetOrCreateResource(Resource::Id anId, const std::string& aPath, TAsset*& aRes)
 {
 	tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-	AssetIter pair = myAssets.find(anId);
+	auto pair = myAssets.find(anId);
 	if (pair != myAssets.end())
 	{
 		aRes = static_cast<TAsset*>(pair->second);
@@ -209,7 +213,7 @@ template<class TAsset>
 bool AssetTracker::GetResource(Resource::Id anId, TAsset*& aRes)
 {
 	tbb::spin_mutex::scoped_lock lock(myAssetMutex);
-	AssetIter pair = myAssets.find(anId);
+	auto pair = myAssets.find(anId);
 	if (pair != myAssets.end())
 	{
 		aRes = static_cast<TAsset*>(pair->second);
