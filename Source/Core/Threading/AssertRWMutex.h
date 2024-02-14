@@ -21,6 +21,7 @@ private:
 	constexpr static uint8_t kWriteVal = 1 << 7;
 
 	std::atomic<uint8_t> myLock = 0;
+	// TODO: reduce the footprint of this monstrosity
 	std::atomic<uint_least32_t> myWriteLine = 0;
 	std::atomic<const char*> myWriteFuncName = "";
 	std::atomic<const char*> myWriteFileName = "";
