@@ -81,7 +81,7 @@ public:
 
 	Handle<GPUModel> GetFullScreenQuad() const { return myFullScrenQuad; }
 
-	void FileChanged(const std::string& aFile);
+	void FileChanged(std::string_view aFile);
 
 protected:
 	void TriggerUpload(GPUResource* aGPUResource);
@@ -132,8 +132,6 @@ private:
 	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
 
 	void SortRenderPasses();
-
-	
 
 	int myWidth = 800;
 	int myHeight = 600;

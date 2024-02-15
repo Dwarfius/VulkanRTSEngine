@@ -264,7 +264,7 @@ Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
 	return uniformBuffer;
 }
 
-void Graphics::FileChanged(const std::string& aFile)
+void Graphics::FileChanged(std::string_view aFile)
 {
 	// Because we can drop CPU-side resources when we upload
 	// GPU-resources, we have to check if we currently have a GPU-resource
