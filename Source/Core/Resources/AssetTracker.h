@@ -2,7 +2,6 @@
 
 #include "Resource.h"
 
-// TODO: add std::string_view overrides
 // Class for handling different resource types using the same interface. 
 // Threadsafe
 class AssetTracker
@@ -47,13 +46,13 @@ public:
 
 	struct ResIdPair
 	{
-		const std::string* myPath = nullptr; // TODO: convert to std::string_view!
+		std::string_view myPath;
 		Resource::Id myId = Resource::InvalidId;
 	};
 	// Find an ID and a resource path if the path passed it represents
 	// it or one of it's external dependencies
 	// Path must already be rooted in Resource::kAssetPath and have a valid extension
-	ResIdPair FindRes(const std::string& aPath);
+	ResIdPair FindRes(std::string_view aPath);
 	Handle<Resource> ResourceChanged(ResIdPair aRes, bool aForceLoad = false);
 	void RegisterExternal(std::string_view aPath, Resource::Id anId);
 

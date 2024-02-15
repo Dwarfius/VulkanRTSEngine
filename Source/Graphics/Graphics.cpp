@@ -391,7 +391,7 @@ void Graphics::ProcessUploadQueue()
 					return;
 				}
 
-				AssetTracker::ResIdPair resInfo{ nullptr, aRes->myResId };
+				AssetTracker::ResIdPair resInfo{ {}, aRes->myResId };
 				Handle<Resource> res = myAssetTracker.ResourceChanged(resInfo, true);
 				if (res.IsValid())
 				{

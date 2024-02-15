@@ -11,10 +11,10 @@ AssetTracker::AssetTracker()
 {
 }
 
-AssetTracker::ResIdPair AssetTracker::FindRes(const std::string& aPath)
+AssetTracker::ResIdPair AssetTracker::FindRes(std::string_view aPath)
 {
 	Resource::Id resourceId = Resource::InvalidId;
-	const std::string* path = &aPath;
+	std::string_view foundPath = aPath;
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
 		auto iter = myRegister.find(aPath);
@@ -42,10 +42,10 @@ AssetTracker::ResIdPair AssetTracker::FindRes(const std::string& aPath)
 			tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
 			auto pathIter = myPaths.find(resourceId);
 			ASSERT(pathIter != myPaths.end());
-			path = &pathIter->second;
+			foundPath = pathIter->second;
 		}
 	}
-	return { path, resourceId };
+	return { foundPath, resourceId };
 }
 
 Handle<Resource> AssetTracker::ResourceChanged(ResIdPair aRes, bool aForceLoad /* = false */)
@@ -57,7 +57,7 @@ Handle<Resource> AssetTracker::ResourceChanged(ResIdPair aRes, bool aForceLoad /
 		tbb::spin_mutex::scoped_lock lock(myAssetMutex);
 		auto createIter = myCreates.find(aRes.myId);
 		ASSERT(createIter != myCreates.end());
-		changedRes = createIter->second(aRes.myId, *aRes.myPath);
+		changedRes = createIter->second(aRes.myId, aRes.myPath);
 		changedRes->myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
 		myAssets[aRes.myId] = changedRes;
 	}
