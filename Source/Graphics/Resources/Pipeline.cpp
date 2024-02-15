@@ -10,7 +10,7 @@ Pipeline::Pipeline()
 {
 }
 
-Pipeline::Pipeline(Resource::Id anId, const std::string& aPath)
+Pipeline::Pipeline(Resource::Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 	, myType(IPipeline::Type::Graphics)
 {

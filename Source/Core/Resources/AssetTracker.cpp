@@ -71,23 +71,44 @@ Handle<Resource> AssetTracker::ResourceChanged(ResIdPair aRes, bool aForceLoad /
 
 void AssetTracker::RegisterExternal(std::string_view aPath, Resource::Id anId)
 {
-	const std::string path{ aPath.data(), aPath.size() };
+	const std::string path{ aPath };
 
 	tbb::spin_mutex::scoped_lock lock(myExternalsMutex);
 	myExternals.insert({path, anId});
 }
 
-void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
+std::string AssetTracker::NormalizePath(std::string_view aPath, std::string_view anExt)
+{
+	static_assert(std::string_view(Resource::kAssetsFolder).back() == '/', "Asset Folder must end with a slash!");
+	ASSERT_STR(anExt[0] == '.', "Extension must start with a period!");
+
+	const bool hasAssetsRoot = aPath.starts_with(Resource::kAssetsFolder);
+	const bool hasExt = aPath.ends_with(anExt);
+
+	std::string normalizedPath;
+	normalizedPath.reserve(
+		(!hasAssetsRoot ? Resource::kAssetsFolder.GetLength() : 0) + 
+		aPath.size() + 
+		(!hasExt ? anExt.size() : 0) +
+		1 // for \0
+	);
+
+	if (!hasAssetsRoot)
+	{
+		normalizedPath.append(Resource::kAssetsFolder);
+	}
+	normalizedPath.append(aPath);
+	if (!hasExt)
+	{
+		normalizedPath.append(anExt);
+	}
+	return normalizedPath;
+}
+
+void AssetTracker::SaveAndTrackImpl(std::string_view aPath, Resource& aRes)
 {
 	// change the handle's path
-	if (!aPath.starts_with(Resource::kAssetsFolder.CStr()))
-	{
-		aRes.myPath = Resource::kAssetsFolder.CStr() + aPath;
-	}
-	else
-	{
-		aRes.myPath = aPath;
-	}
+	aRes.myPath.assign(aPath);
 
 	// dump to disk
 	if (aRes.PrefersBinarySerialization())
@@ -110,8 +131,8 @@ void AssetTracker::SaveAndTrackImpl(const std::string& aPath, Resource& aRes)
 	// register for tracking
 	{
 		tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-		myRegister[aPath] = aRes.GetId();
-		myPaths[aRes.GetId()] = aPath;
+		myRegister[aRes.myPath] = aRes.GetId();
+		myPaths[aRes.GetId()] = aRes.myPath;
 	}
 
 	{
@@ -136,12 +157,12 @@ void AssetTracker::AssignDynamicId(Resource& aResource)
 	}
 }
 
-Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
+Resource::Id AssetTracker::GetOrCreateResourceId(std::string_view aPath)
 {
 	Resource::Id resourceId = Resource::InvalidId;
 
 	tbb::spin_mutex::scoped_lock lock(myRegisterMutex);
-	std::unordered_map<std::string, Resource::Id>::const_iterator pair = myRegister.find(aPath);
+	auto pair = myRegister.find(aPath);
 	if (pair != myRegister.end())
 	{
 		resourceId = pair->second;
@@ -150,8 +171,9 @@ Resource::Id AssetTracker::GetOrCreateResourceId(const std::string& aPath)
 	{
 		// we don't have one, so register one
 		resourceId = ++myCounter;
-		myRegister[aPath] = resourceId;
-		myPaths[resourceId] = aPath;
+		std::string path{ aPath };
+		myRegister[path] = resourceId;
+		myPaths[resourceId] = std::move(path);
 	}
 
 	return resourceId;

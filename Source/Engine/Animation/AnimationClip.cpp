@@ -28,7 +28,7 @@ AnimationClip::AnimationClip(float aLength, bool aIsLooping)
 {
 }
 
-AnimationClip::AnimationClip(Id anId, const std::string& aPath)
+AnimationClip::AnimationClip(Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 	, myLength(0.f)
 	, myIsLooping(false)

@@ -12,7 +12,7 @@ public:
 	constexpr static StaticString kExtension = ".ppl";
 
 	Pipeline();
-	Pipeline(Resource::Id anId, const std::string& aPath);
+	Pipeline(Resource::Id anId, std::string_view aPath);
 
 	Type GetType() const { return myType; }
 	void SetType(Type aType) { myType = aType; }

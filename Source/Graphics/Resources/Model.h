@@ -85,7 +85,7 @@ public:
 	template<class VertType, size_t VertSpanSize, size_t IndexSpanSize>
 	Model(PrimitiveType aPrimitiveType, std::span<VertType, VertSpanSize> aVerts, std::span<IndexType, IndexSpanSize> aIndices);
 
-	Model(Resource::Id anId, const std::string& aPath);
+	Model(Resource::Id anId, std::string_view aPath);
 	~Model();
 
 	// Full access to typed vertex storage of a model

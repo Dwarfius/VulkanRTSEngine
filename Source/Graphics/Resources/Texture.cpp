@@ -68,7 +68,7 @@ Handle<Texture> Texture::LoadFromMemory(const char* aBuffer, size_t aLength)
 	return textureHandle;
 }
 
-Texture::Texture(Resource::Id anId, const std::string& aPath)
+Texture::Texture(Resource::Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 {
 }

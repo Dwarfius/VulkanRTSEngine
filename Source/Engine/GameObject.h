@@ -26,7 +26,7 @@ public:
 	constexpr static StaticString kExtension = ".go";
 
 	GameObject(const Transform& aTransform);
-	GameObject(Id anId, const std::string& aPath);
+	GameObject(Id anId, std::string_view aPath);
 	~GameObject();
 
 	const Transform& GetLocalTransform() const { return myLocalTransf; }

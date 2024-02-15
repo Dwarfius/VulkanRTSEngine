@@ -12,7 +12,7 @@ Resource::Resource()
 {
 }
 
-Resource::Resource(Id anId, const std::string& aPath)
+Resource::Resource(Id anId, std::string_view aPath)
 	: myId(anId)
 	, myState(State::Uninitialized)
 	, myPath(aPath)

@@ -28,7 +28,7 @@ public:
 	// creates a dynamic resource
 	Resource();
 	// creates a resource from a file
-	Resource(Id anId, const std::string& aPath);
+	Resource(Id anId, std::string_view aPath);
 	~Resource();
 
 	// We disable copies to avoid accidental resource duplication

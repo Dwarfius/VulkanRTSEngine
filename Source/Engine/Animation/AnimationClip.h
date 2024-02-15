@@ -63,7 +63,7 @@ public:
 
 public:
 	AnimationClip(float aLength, bool myIsLooping);
-	AnimationClip(Id anId, const std::string& aPath);
+	AnimationClip(Id anId, std::string_view aPath);
 
 	bool IsLooping() const { return myIsLooping; }
 	void SetLooping(bool aIsLooping) { myIsLooping = aIsLooping; }

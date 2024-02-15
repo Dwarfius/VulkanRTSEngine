@@ -13,7 +13,7 @@ public:
 	constexpr static StaticString kExtension = ".world";
 
 	World() = default;
-	World(Id anId, const std::string& aPath);
+	World(Id anId, std::string_view aPath);
 	~World() noexcept = default;
 
 	void Add(const Handle<GameObject>& aGameObject);

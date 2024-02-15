@@ -10,7 +10,7 @@ public:
 	constexpr static StaticString kExtension = ".shd";
 
 	Shader();
-	Shader(Resource::Id anId, const std::string& aPath);
+	Shader(Resource::Id anId, std::string_view aPath);
 
 	IShader::Type GetType() const { return myType; }
 	void SetType(IShader::Type aType) { myType = aType; }

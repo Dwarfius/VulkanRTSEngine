@@ -19,7 +19,7 @@ GameObject::GameObject(const Transform& aTransform)
 {
 }
 
-GameObject::GameObject(Id anId, const std::string& aPath)
+GameObject::GameObject(Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 	, myUID(UID::Create())
 	, myWorldTransf(Transform())

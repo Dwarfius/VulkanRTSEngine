@@ -14,7 +14,7 @@ public:
 
 public:
 	Texture() = default;
-	Texture(Resource::Id anId, const std::string& aPath);
+	Texture(Resource::Id anId, std::string_view aPath);
 	~Texture();
 
 	Format GetFormat() const { return myFormat; }

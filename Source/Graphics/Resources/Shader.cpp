@@ -8,7 +8,7 @@ Shader::Shader()
 {
 }
 
-Shader::Shader(Resource::Id anId, const std::string& aPath)
+Shader::Shader(Resource::Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 	, myType(IShader::Type::Invalid)
 {

@@ -5,7 +5,7 @@
 
 #include "GameObject.h"
 
-World::World(Id anId, const std::string& aPath)
+World::World(Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 {
 }

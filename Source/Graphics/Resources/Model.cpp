@@ -7,7 +7,7 @@
 #include <TinyObjLoader/tiny_obj_loader.h>
 #include <sstream>
 
-Model::Model(Resource::Id anId, const std::string& aPath)
+Model::Model(Resource::Id anId, std::string_view aPath)
 	: Resource(anId, aPath)
 {
 }
