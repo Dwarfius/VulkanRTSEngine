@@ -73,6 +73,9 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 		}
 	}
 
+	// TODO: It might be useful to add an NRVO utility that is compile checked
+	// it'll come at expense of slightly adjusting the code both at declaration and
+	// at the callsite, but if possible, would be compile-time enforced efficiency!
 	// NRVO
 	return tree;
 }
