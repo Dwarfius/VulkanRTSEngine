@@ -24,6 +24,7 @@
 #include "UIWidgets/TextureImportDialog.h"
 #include "UIWidgets/ShaderCreateDialog.h"
 #include "UIWidgets/PipelineCreateDialog.h"
+#include "UIWidgets/GameTasksDialog.h"
 #include "Systems/ProfilerUI.h"
 
 #include <Core/Profiler.h>
@@ -239,6 +240,7 @@ void Game::Init(bool aUseDefaultCompositePass)
 		UIWidgets::DrawCameraInfo(*this, aIsVisible);
 	});
 	myTopBar.Register("Widgets/Profiler", &UIWidgets::DrawProfilerUI);
+	myTopBar.Register("Widgets/Game Tasks", &GameTasksDialog::Draw);
 	myTopBar.Register("Widgets/Entities View",
 		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {
 		entitiesWidget.DrawDialog(*this, aIsVisible);

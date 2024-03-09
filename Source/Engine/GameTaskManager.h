@@ -55,6 +55,8 @@ public:
 	GameTask& GetTask(GameTask::Type anId);
 	ExternalDependencyScope AddExternalDependency(GameTask::Type aType);
 
+	const std::unordered_map<GameTask::Type, GameTask>& GetTasks() const { return myTasks; }
+
 	void Run();
 	void Wait();
 
