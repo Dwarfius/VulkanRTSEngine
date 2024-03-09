@@ -202,7 +202,18 @@ void GameTasksDialog::DrawTree(const DrawState& aState)
 	// all lines should go under the "Nodes", so draw them first
 	if (aState.myHoveredIter != aState.myTree.end())
 	{
+		const Node& hoveredNode = *aState.myHoveredIter;
+		const Index hoveredIndex = static_cast<Index>(std::distance(aState.myTree.begin(), aState.myHoveredIter));
 		DrawConnections(*aState.myHoveredIter, aState);
+
+		auto IsPredecessor = [&](const Node& aNode) { 
+			return aNode.myColumn == hoveredNode.myColumn - 1 
+				&& std::ranges::contains(aNode.myChildrenInd, hoveredIndex); 
+		};
+		for (const Node& prev : aState.myTree | std::views::filter(IsPredecessor))
+		{
+			DrawConnection(prev, hoveredNode, aState);
+		}
 	}
 	else
 	{
@@ -248,6 +259,7 @@ void GameTasksDialog::DrawConnections(const Node& aNode, const DrawState& aState
 	startPos.x += ImGui::GetWindowPos().x;
 	startPos.y += ImGui::GetWindowPos().y;
 
+	// Draw connections to next tasks
 	for (Index index : aNode.myChildrenInd)
 	{
 		const Node& endNode = aState.myTree[index];
@@ -258,11 +270,26 @@ void GameTasksDialog::DrawConnections(const Node& aNode, const DrawState& aState
 	}
 }
 
+void GameTasksDialog::DrawConnection(const Node& aNode, const Node& aNextNode, const DrawState& aState)
+{
+	using namespace Drawing;
+
+	ImVec2 startPos = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
+	startPos.x += ImGui::GetWindowPos().x;
+	startPos.y += ImGui::GetWindowPos().y;
+
+	ImVec2 endPos = CalcNodePos(aNextNode.myColumn, aNextNode.myRow, aState.myRowsPerColumn[aNextNode.myColumn], aState.myMaxRows);
+	endPos.x += ImGui::GetWindowPos().x;
+	endPos.y += ImGui::GetWindowPos().y;
+
+	ImGui::GetWindowDrawList()->AddLine(startPos, endPos, 0xFFFFFFFF);
+}
+
 void GameTasksDialog::DrawNode(const Node& aNode, const DrawState& aState)
 {
 	using namespace Drawing;
 
-	// ABGR
+	// Imgui packs it as ABGR
 	constexpr uint32_t kDone = 0xFF00FF00;
 	constexpr uint32_t kInProgress = 0xFF00FFFF;
 	constexpr uint32_t kTodo = 0xFF0000FF;

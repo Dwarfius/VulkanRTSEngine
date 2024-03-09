@@ -24,8 +24,7 @@ class GameTasksDialog
 	{
 		std::span<const Node> myTree;
 		std::vector<uint16_t> myRowsPerColumn;
-		// Excluding hovered node!
-		std::vector<bool> myIsPartOfHoveredSubTree;
+		std::vector<bool> myIsPartOfHoveredSubTree; // Excluding hovered node!
 		std::span<const Node>::iterator myHoveredIter;
 		uint16_t myMaxRows = 0;
 	};
@@ -38,6 +37,7 @@ private:
 	
 	static void DrawTree(const DrawState& aState);
 	static void DrawConnections(const Node& aNode, const DrawState& aState);
+	static void DrawConnection(const Node& aNode, const Node& aNextNode, const DrawState& aState);
 	static void DrawNode(const Node& aNode, const DrawState& aState);
 	
 	static bool IsHovered(const Node& aNode, const DrawState& aState);
