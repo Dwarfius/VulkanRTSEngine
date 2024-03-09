@@ -11,7 +11,7 @@ class GameTasksDialog
 
 	struct Node
 	{
-		std::vector<Index> myChildrenInd;
+		std::vector<Index> myNextInd;
 		Index myColumn = 0, myRow = 0;
 		Type myType;
 

@@ -60,7 +60,7 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 		{
 			// no dependencies - it'll be kicked off from the start via Broadcast
 			// so add it to root's children
-			tree[0].myChildrenInd.push_back(taskIndex);
+			tree[0].myNextInd.push_back(taskIndex);
 		}
 		else
 		{
@@ -68,7 +68,7 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 			for (Type depType : taskDeps)
 			{
 				const Index depInd = typeToIndMap[depType];
-				tree[depInd].myChildrenInd.push_back(taskIndex);
+				tree[depInd].myNextInd.push_back(taskIndex);
 			}
 		}
 	}
@@ -116,7 +116,7 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 			// this can add duplicates, as we might encounter children on different levels
 			column.push_back(index);
 
-			for (Index childInd : currNode.myChildrenInd)
+			for (Index childInd : currNode.myNextInd)
 			{
 				if (alreadyAddedChildren.contains(childInd))
 				{
@@ -179,7 +179,7 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 	{
 		std::vector<Index>& stack = columns[0]; // reusing for tree traversal
 		stack.clear();
-		stack.append_range(state.myHoveredIter->myChildrenInd);
+		stack.append_range(state.myHoveredIter->myNextInd);
 
 		while (!stack.empty())
 		{
@@ -189,7 +189,7 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 			const Node& currNode = state.myTree[currIndex];
 			state.myIsPartOfHoveredSubTree[currIndex] = true;
 
-			stack.append_range(currNode.myChildrenInd);
+			stack.append_range(currNode.myNextInd);
 		}
 	}
 
@@ -208,7 +208,7 @@ void GameTasksDialog::DrawTree(const DrawState& aState)
 
 		auto IsPredecessor = [&](const Node& aNode) { 
 			return aNode.myColumn == hoveredNode.myColumn - 1 
-				&& std::ranges::contains(aNode.myChildrenInd, hoveredIndex); 
+				&& std::ranges::contains(aNode.myNextInd, hoveredIndex); 
 		};
 		for (const Node& prev : aState.myTree | std::views::filter(IsPredecessor))
 		{
@@ -260,7 +260,7 @@ void GameTasksDialog::DrawConnections(const Node& aNode, const DrawState& aState
 	startPos.y += ImGui::GetWindowPos().y;
 
 	// Draw connections to next tasks
-	for (Index index : aNode.myChildrenInd)
+	for (Index index : aNode.myNextInd)
 	{
 		const Node& endNode = aState.myTree[index];
 		ImVec2 endPos = CalcNodePos(endNode.myColumn, endNode.myRow, aState.myRowsPerColumn[endNode.myColumn], aState.myMaxRows);
