@@ -18,21 +18,22 @@ int main()
 	Game* game = new Game(&glfwErrorReporter);
 	game->Init(true);
 
-	// setup and inject our editor mode task
+	// setup and inject our test mode task
 	StressTest* testScenario = new StressTest(*game);
-	constexpr GameTask::Type kEditorUpdateTask = Game::Tasks::Last + 1;
-	GameTask editorUpdate(kEditorUpdateTask, [testScenario, game] {
+	constexpr GameTask::Type kTestUpdateTask = Game::Tasks::Last + 1;
+	GameTask testUpdate(kTestUpdateTask, [testScenario, game] {
 		const float deltaTime = game->GetLastFrameDeltaTime();
 		testScenario->Update(*game, deltaTime);
 	});
-	editorUpdate.AddDependency(Game::Tasks::BeginFrame);
-	editorUpdate.AddDependency(Game::Tasks::PhysicsUpdate);
-	editorUpdate.AddDependency(Game::Tasks::AnimationUpdate);
+	testUpdate.AddDependency(Game::Tasks::BeginFrame);
+	testUpdate.AddDependency(Game::Tasks::PhysicsUpdate);
+	testUpdate.AddDependency(Game::Tasks::AnimationUpdate);
+	testUpdate.SetName("StressTest");
 
 	GameTaskManager& taskManager = game->GetTaskManager();
-	taskManager.AddTask(editorUpdate);
-	taskManager.GetTask(Game::Tasks::UpdateEnd).AddDependency(kEditorUpdateTask);
-	taskManager.GetTask(Game::Tasks::RemoveGameObjects).AddDependency(kEditorUpdateTask);
+	taskManager.AddTask(testUpdate);
+	taskManager.GetTask(Game::Tasks::UpdateEnd).AddDependency(kTestUpdateTask);
+	taskManager.GetTask(Game::Tasks::RemoveGameObjects).AddDependency(kTestUpdateTask);
 
 	// start running
 	while (game->IsRunning())

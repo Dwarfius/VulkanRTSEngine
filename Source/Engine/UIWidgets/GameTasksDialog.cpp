@@ -34,7 +34,7 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 
 	// store the root first!
 	constexpr Type kBroadcast = static_cast<Type>(GameTask::ReservedTypes::GraphBroadcast);
-	tree.emplace_back(kBroadcast);
+	tree.emplace_back(kBroadcast, "GraphBrodcast");
 	typeToIndMap.insert({ kBroadcast , 0 });
 
 	// gather all the tasks before we start resolving indices for parents and children
@@ -45,7 +45,7 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 			ASSERT_STR(type != kBroadcast, "This is built on the assumption that GameTaskManager doesn't"
 				" store the root of the graph, but if it ever changes I got to remove manual root creation!");
 
-			tree.emplace_back(type);
+			tree.emplace_back(type, task.GetName());
 			typeToIndMap.insert({ type, taskInd++ });
 		}
 	}
@@ -319,6 +319,7 @@ void GameTasksDialog::DrawNode(const Node& aNode, const DrawState& aState)
 	if (isHovering)
 	{
 		ImGui::PopStyleColor(2);
+		ImGui::SetTooltip(aNode.myName.data());
 	}
 }
 

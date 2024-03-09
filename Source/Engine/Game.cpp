@@ -198,38 +198,47 @@ void Game::Init(bool aUseDefaultCompositePass)
 	// setting up a task tree
 	{
 		GameTask task(Tasks::BeginFrame, [this] { BeginFrame(); });
+		task.SetName("BeginFrame");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::AddGameObjects, [this] { AddGameObjects(); });
+		task.SetName("AddGameObjects");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::PhysicsUpdate, [this] { PhysicsUpdate(); });
+		task.SetName("PhysicsUpdate");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::AnimationUpdate, [this] { AnimationUpdate(); });
 		task.AddDependency(Tasks::PhysicsUpdate);
+		task.SetName("AnimationUpdate");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::GameUpdate, [this] { Update(); });
 		task.AddDependency(Tasks::BeginFrame);
 		task.AddDependency(Tasks::AddGameObjects);
+		task.SetName("GameUpdate");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::RemoveGameObjects, [this] { RemoveGameObjects(); });
 		task.AddDependency(Tasks::GameUpdate);
+		task.SetName("RemoveGameObjects");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::UpdateEnd, [this] { UpdateEnd(); });
 		task.AddDependency(Tasks::RemoveGameObjects);
+		task.SetName("UpdateEnd");
 		myTaskManager->AddTask(task);
 
 		task = GameTask(Tasks::Render, [this] { Render(); });
 		task.AddDependency(Tasks::UpdateEnd);
+		task.SetName("Render");
 		myTaskManager->AddTask(task);
 
 		// TODO: will need to fix up audio
 		task = GameTask(Tasks::UpdateAudio, [this] { UpdateAudio(); });
 		task.AddDependency(Tasks::UpdateEnd);
+		task.SetName("UpdateAudio");
 		myTaskManager->AddTask(task);
 	}
 

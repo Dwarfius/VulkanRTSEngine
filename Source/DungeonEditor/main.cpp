@@ -54,6 +54,7 @@ int main()
 			editor->Run();
 		});
 		task.AddDependency(Game::Tasks::BeginFrame);
+		task.SetName("EditorUpdate");
 
 		GameTaskManager& taskManager = game->GetTaskManager();
 		taskManager.GetTask(Game::Tasks::UpdateEnd).AddDependency(kEditorTask);

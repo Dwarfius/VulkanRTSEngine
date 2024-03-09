@@ -12,10 +12,14 @@ class GameTasksDialog
 	struct Node
 	{
 		std::vector<Index> myNextInd;
+		std::string_view myName;
 		Index myColumn = 0, myRow = 0;
 		Type myType;
 
-		Node(Type aType) : myType(aType) {}
+		Node(Type aType, std::string_view aName)
+			: myType(aType)
+			, myName(aName)
+		{}
 	};
 
 	// TODO: I reaaaaly need to isolate Windows.h

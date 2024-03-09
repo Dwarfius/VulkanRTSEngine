@@ -29,6 +29,7 @@ int main()
 	editorUpdate.AddDependency(Game::Tasks::BeginFrame);
 	editorUpdate.AddDependency(Game::Tasks::PhysicsUpdate);
 	editorUpdate.AddDependency(Game::Tasks::AnimationUpdate);
+	editorUpdate.SetName("EditorUpdate");
 
 	GameTaskManager& taskManager = game->GetTaskManager();
 	taskManager.AddTask(editorUpdate);

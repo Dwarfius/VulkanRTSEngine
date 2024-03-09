@@ -19,13 +19,17 @@ public:
 	void AddDependency(Type aType) { myDependencies.push_back(aType); }
 	const std::vector<Type>& GetDependencies() const { return myDependencies; }
 
+	void SetName(std::string_view aName) { myName = aName; }
+	std::string_view GetName() const { return myName; }
+
 private:
 	friend class GameTaskManager;
 	Type GetType() const { return myType; }
 
 	std::function<void()> myCallback;
-	Type myType;
 	std::vector<Type> myDependencies;
+	std::string_view myName;
+	Type myType;
 };
 
 // thanks https://software.intel.com/en-us/node/506218
