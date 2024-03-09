@@ -55,6 +55,7 @@
 #include <GLFW/glfw3native.h>
 
 #include <Core/Debug/Assert.h>
+#include <Core/Utils.h>
 
 #include <imgui.h>
 
