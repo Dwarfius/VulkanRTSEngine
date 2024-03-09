@@ -17,16 +17,25 @@ class GameTasksDialog
 
 		Node(Type aType) : myType(aType) {}
 	};
+
+	// TODO: I reaaaaly need to isolate Windows.h
+	// as these leaking macros are annoying!
+	struct DrawState
+	{
+		std::span<const Node> myTree;
+		std::vector<uint16_t> myRowsPerColumn;
+		uint16_t myMaxRows = 0;
+	};
 public:
 	static void Draw(bool& aIsOpen);
 
 private:
 	static std::vector<Node> GenerateTree(const TaskMap& aTasks);
-	static void SplitTree(std::span<Node> aTree);
+	static DrawState SplitTree(std::span<Node> aTree);
 	
-	static void DrawTree(std::span<const Node> aTree);
-	static void DrawConnections(const Node& aNode, std::span<const Node> aTree);
-	static void DrawNode(const Node& aNode);
+	static void DrawTree(const DrawState& aState);
+	static void DrawConnections(const Node& aNode, const DrawState& aState);
+	static void DrawNode(const Node& aNode, const DrawState& aState);
 	
-	static bool IsHovered(const Node& aNode);
+	static bool IsHovered(const Node& aNode, const DrawState& aState);
 };

@@ -17,8 +17,8 @@ void GameTasksDialog::Draw(bool& aIsOpen)
 		// Just in case, going to track it for the future
 		Profiler::ScopedMark scopeMark("GameTasksDialog::Draw");
 		std::vector<Node> tree = GenerateTree(tasks);
-		SplitTree(tree);
-		DrawTree(tree);
+		DrawState state = SplitTree(tree);
+		DrawTree(state);
 	}
 	ImGui::End();
 }
@@ -77,7 +77,7 @@ std::vector<GameTasksDialog::Node> GameTasksDialog::GenerateTree(const TaskMap& 
 	return tree;
 }
 
-void GameTasksDialog::SplitTree(std::span<Node> aTree)
+GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 {
 	// Splits the tree horizontally by organizing tasks in columns
 	// based on the dependencies of the preceeding tasks.
@@ -147,7 +147,11 @@ void GameTasksDialog::SplitTree(std::span<Node> aTree)
 		});
 	}
 
-	// Now that everything is split and grouped, we can assign out indices
+	// Now that everything is split and grouped, we can assign out indices and generate a drawing state
+	DrawState state;
+	state.myTree = aTree;
+	state.myRowsPerColumn.resize(columnsOfNodes.size());
+
 	ASSERT(columnsOfNodes.size() <= std::numeric_limits<Index>::max());
 	for (size_t column = 0; column < columnsOfNodes.size(); column++)
 	{
@@ -158,30 +162,37 @@ void GameTasksDialog::SplitTree(std::span<Node> aTree)
 			aTree[nodeInd].myRow = row;
 			aTree[nodeInd].myColumn = column;
 		}
+
+		const uint16_t columnSize = static_cast<uint16_t>(nodes.size());
+		state.myRowsPerColumn[column] = columnSize;
+		state.myMaxRows = std::max(state.myMaxRows, columnSize);
 	}
+
+	// NRVO
+	return state;
 }
 
-void GameTasksDialog::DrawTree(std::span<const Node> aTree)
+void GameTasksDialog::DrawTree(const DrawState& aState)
 {
 	// all lines should go under the "Nodes", so draw them first
-	const auto hoverIter = std::ranges::find_if(aTree, [](const Node& aNode) {
-		return IsHovered(aNode);
+	const auto hoverIter = std::ranges::find_if(aState.myTree, [&](const Node& aNode) {
+		return IsHovered(aNode, aState);
 	});
-	if (hoverIter != aTree.end())
+	if (hoverIter != aState.myTree.end())
 	{
-		DrawConnections(*hoverIter, aTree);
+		DrawConnections(*hoverIter, aState);
 	}
 	else
 	{
-		for (const Node& node : aTree)
+		for (const Node& node : aState.myTree)
 		{
-			DrawConnections(node, aTree);
+			DrawConnections(node, aState);
 		}
 	}
 
-	for (const Node& node : aTree)
+	for (const Node& node : aState.myTree)
 	{
-		DrawNode(node);
+		DrawNode(node, aState);
 	}
 }
 
@@ -190,43 +201,46 @@ namespace Drawing
 	constexpr float kSize = 60;
 	constexpr float kSpace = 30;
 
-	ImVec2 CalcNodePos(uint16_t aColumn, uint16_t aRow)
+	ImVec2 CalcNodePos(uint16_t aColumn, uint16_t aRow, uint16_t aRowCount, uint16_t aMaxRows)
 	{
 		constexpr float kSize = 60;
 		constexpr float kSpace = 30;
 
-		const float xOffset = ImGui::GetWindowContentRegionMin().x;
-		const float yOffset = ImGui::GetWindowContentRegionMin().y;
+		const float xOffset = ImGui::GetWindowContentRegionMin().x + kSize / 2;
+		const float yOffset = ImGui::GetWindowContentRegionMin().y + kSize / 2;
 
-		const float centerX = xOffset + aColumn * (kSpace + kSize) + kSize / 2;
-		const float centerY = yOffset + aRow * (kSpace + kSize) + kSize / 2;
-		return { centerX, centerY };
+		const float maxHeight = aMaxRows * (kSpace + kSize);
+		const float columnHeight = aRowCount * (kSpace + kSize);
+
+		const float x = aColumn * (kSpace + kSize);
+		const float y = aRow * (kSpace + kSize) + maxHeight / 2 - columnHeight / 2;
+		return { xOffset + x, yOffset + y};
 	}
 }
 
-void GameTasksDialog::DrawConnections(const Node& aNode, std::span<const Node> aTree)
+void GameTasksDialog::DrawConnections(const Node& aNode, const DrawState& aState)
 {
 	using namespace Drawing;
 
-	ImVec2 startPos = CalcNodePos(aNode.myColumn, aNode.myRow);
+	ImVec2 startPos = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
 	startPos.x += ImGui::GetWindowPos().x;
 	startPos.y += ImGui::GetWindowPos().y;
 
 	for (Index index : aNode.myChildrenInd)
 	{
-		const Node& endNode = aTree[index];
-		ImVec2 endPos = CalcNodePos(endNode.myColumn, endNode.myRow);
+		const Node& endNode = aState.myTree[index];
+		ImVec2 endPos = CalcNodePos(endNode.myColumn, endNode.myRow, aState.myRowsPerColumn[endNode.myColumn], aState.myMaxRows);
 		endPos.x += ImGui::GetWindowPos().x;
 		endPos.y += ImGui::GetWindowPos().y;
 		ImGui::GetWindowDrawList()->AddLine(startPos, endPos, 0xFFFFFFFF);
 	}
 }
 
-void GameTasksDialog::DrawNode(const Node& aNode)
+void GameTasksDialog::DrawNode(const Node& aNode, const DrawState& aState)
 {
 	using namespace Drawing;
 
-	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow);
+	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
 	ImGui::SetCursorPosX(center.x - kSize / 2);
 	ImGui::SetCursorPosY(center.y - kSize / 2);
 	ImGui::SetNextItemWidth(kSize);
@@ -235,11 +249,11 @@ void GameTasksDialog::DrawNode(const Node& aNode)
 	ImGui::Button(name, { kSize, kSize });
 }
 
-bool GameTasksDialog::IsHovered(const Node& aNode)
+bool GameTasksDialog::IsHovered(const Node& aNode, const DrawState& aState)
 {
 	using namespace Drawing;
 
-	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow);
+	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
 	const ImVec2 windowPos = ImGui::GetWindowPos();
 	const ImVec2 min{ windowPos.x + center.x - kSize, windowPos.y + center.y - kSize };
 	const ImVec2 max{ windowPos.x + center.x + kSize, windowPos.y + center.y + kSize };
