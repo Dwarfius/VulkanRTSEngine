@@ -171,6 +171,28 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 		state.myMaxRows = std::max(state.myMaxRows, columnSize);
 	}
 
+	state.myHoveredIter = std::ranges::find_if(state.myTree, [&](const Node& aNode) {
+		return IsHovered(aNode, state);
+	});
+	state.myIsPartOfHoveredSubTree.resize(state.myTree.size());
+	if (state.myHoveredIter != state.myTree.end())
+	{
+		std::vector<Index>& stack = columns[0]; // reusing for tree traversal
+		stack.clear();
+		stack.append_range(state.myHoveredIter->myChildrenInd);
+
+		while (!stack.empty())
+		{
+			const Index currIndex = stack.back();
+			stack.pop_back();
+
+			const Node& currNode = state.myTree[currIndex];
+			state.myIsPartOfHoveredSubTree[currIndex] = true;
+
+			stack.append_range(currNode.myChildrenInd);
+		}
+	}
+
 	// NRVO
 	return state;
 }
@@ -178,12 +200,9 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 void GameTasksDialog::DrawTree(const DrawState& aState)
 {
 	// all lines should go under the "Nodes", so draw them first
-	const auto hoverIter = std::ranges::find_if(aState.myTree, [&](const Node& aNode) {
-		return IsHovered(aNode, aState);
-	});
-	if (hoverIter != aState.myTree.end())
+	if (aState.myHoveredIter != aState.myTree.end())
 	{
-		DrawConnections(*hoverIter, aState);
+		DrawConnections(*aState.myHoveredIter, aState);
 	}
 	else
 	{
@@ -243,13 +262,37 @@ void GameTasksDialog::DrawNode(const Node& aNode, const DrawState& aState)
 {
 	using namespace Drawing;
 
+	// ABGR
+	constexpr uint32_t kDone = 0xFF00FF00;
+	constexpr uint32_t kInProgress = 0xFF00FFFF;
+	constexpr uint32_t kTodo = 0xFF0000FF;
+	
+	const bool isHovering = aState.myHoveredIter != aState.myTree.end();
+	if (isHovering)
+	{
+		const Node& hoveredNode = *aState.myHoveredIter;
+		// Dangerous if aNode is not part of the tree!
+		const Index nodeInd = static_cast<Index>(std::distance(std::to_address(aState.myTree.begin()), &aNode));
+		const bool isDone = hoveredNode.myColumn > aNode.myColumn;
+		uint32_t color = isDone ? kDone : aState.myIsPartOfHoveredSubTree[nodeInd] ? kTodo : kInProgress;
+		ImGui::PushStyleColor(ImGuiCol_Button, color);
+		// I picked too bright of a yellow so text becomes hard to see
+		ImGui::PushStyleColor(ImGuiCol_Text, color == kInProgress ? 0xFF000000 : 0xFFFFFFFF);
+	}
+
 	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
 	ImGui::SetCursorPosX(center.x - kSize / 2);
 	ImGui::SetCursorPosY(center.y - kSize / 2);
 	ImGui::SetNextItemWidth(kSize);
+
 	char name[8];
 	Utils::StringFormat(name, "{}", aNode.myType);
 	ImGui::Button(name, { kSize, kSize });
+
+	if (isHovering)
+	{
+		ImGui::PopStyleColor(2);
+	}
 }
 
 bool GameTasksDialog::IsHovered(const Node& aNode, const DrawState& aState)
@@ -258,8 +301,8 @@ bool GameTasksDialog::IsHovered(const Node& aNode, const DrawState& aState)
 
 	const ImVec2 center = CalcNodePos(aNode.myColumn, aNode.myRow, aState.myRowsPerColumn[aNode.myColumn], aState.myMaxRows);
 	const ImVec2 windowPos = ImGui::GetWindowPos();
-	const ImVec2 min{ windowPos.x + center.x - kSize, windowPos.y + center.y - kSize };
-	const ImVec2 max{ windowPos.x + center.x + kSize, windowPos.y + center.y + kSize };
+	const ImVec2 min{ windowPos.x + center.x - kSize / 2, windowPos.y + center.y - kSize / 2 };
+	const ImVec2 max{ windowPos.x + center.x + kSize / 2, windowPos.y + center.y + kSize / 2 };
 
 	return ImGui::IsMouseHoveringRect(min, max);
 }

@@ -24,6 +24,9 @@ class GameTasksDialog
 	{
 		std::span<const Node> myTree;
 		std::vector<uint16_t> myRowsPerColumn;
+		// Excluding hovered node!
+		std::vector<bool> myIsPartOfHoveredSubTree;
+		std::span<const Node>::iterator myHoveredIter;
 		uint16_t myMaxRows = 0;
 	};
 public:
