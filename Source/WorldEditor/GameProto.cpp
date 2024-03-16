@@ -8,8 +8,9 @@
 #include <Engine/Systems/ImGUI/ImGUISystem.h>
 #include <Engine/Input.h>
 
-#include <Graphics/Resources/Texture.h>
 #include <Graphics/Camera.h>
+#include <Graphics/Resources/Pipeline.h>
+#include <Graphics/Resources/Texture.h>
 
 GameProto::GameProto(Game& aGame)
 {
