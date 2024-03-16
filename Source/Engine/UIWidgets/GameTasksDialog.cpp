@@ -319,7 +319,10 @@ void GameTasksDialog::DrawNode(const Node& aNode, const DrawState& aState)
 	if (isHovering)
 	{
 		ImGui::PopStyleColor(2);
-		ImGui::SetTooltip(aNode.myName.data());
+		if (&aNode == std::to_address(aState.myHoveredIter))
+		{
+			ImGui::SetTooltip(aNode.myName.data());
+		}
 	}
 }
 
