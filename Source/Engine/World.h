@@ -48,7 +48,9 @@ public:
 private:
 	void Serialize(Serializer& aSerializer) final;
 
+	// TODO: Merge into flat_map from C++23
 	std::vector<Handle<GameObject>> myGameObjects;
+	std::unordered_map<const GameObject*, size_t> myGameObjIndices;
 #ifdef ASSERT_MUTEX
 	AssertRWMutex myObjectsMutex;
 #endif

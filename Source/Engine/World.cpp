@@ -17,7 +17,9 @@ void World::Add(const Handle<GameObject>& aGameObject)
 #ifdef ASSERT_MUTEX
 	AssertWriteLock lock(myObjectsMutex);
 #endif
+	const size_t newIndex = myGameObjects.size();
 	myGameObjects.push_back(aGameObject);
+	myGameObjIndices.insert({ aGameObject.Get(), newIndex });
 }
 
 void World::Remove(const Handle<GameObject>& aGameObject)
@@ -29,12 +31,20 @@ void World::Remove(const Handle<GameObject>& aGameObject)
 #endif
 
 	const GameObject* objPtr = aGameObject.Get();
-	[[maybe_unused]] const size_t count = std::erase_if(myGameObjects, 
-		[=](const Handle<GameObject>& aGo) {
-			return aGo.Get() == objPtr;
-		}
-	);
-	ASSERT_STR(count > 0, "Game Object didn't belong to world!");
+	const auto objIndIter = myGameObjIndices.find(objPtr);
+	ASSERT_STR(objIndIter != myGameObjIndices.end(), "Game Object didn't belong to world!");
+	const size_t toDeleteInd = objIndIter->second;
+
+	const auto lastIter = myGameObjects.end() - 1;
+	if (toDeleteInd != myGameObjects.size() - 1)
+	{
+		const auto toDeleteIter = myGameObjects.begin() + toDeleteInd;
+		std::swap(*toDeleteIter, *lastIter);
+		// Update the index of what used to be last, since we just swapped
+		myGameObjIndices[toDeleteIter->Get()] = toDeleteInd;
+	}
+	myGameObjects.erase(lastIter);
+	myGameObjIndices.erase(objIndIter);
 }
 
 void World::Clear()
@@ -43,6 +53,7 @@ void World::Clear()
 	AssertWriteLock lock(myObjectsMutex);
 #endif
 	myGameObjects.clear();
+	myGameObjIndices.clear();
 }
 
 void World::Reserve(size_t aSize)
@@ -51,6 +62,7 @@ void World::Reserve(size_t aSize)
 	AssertWriteLock lock(myObjectsMutex);
 #endif
 	myGameObjects.reserve(aSize);
+	myGameObjIndices.reserve(aSize);
 }
 
 void World::Serialize(Serializer& aSerializer)
