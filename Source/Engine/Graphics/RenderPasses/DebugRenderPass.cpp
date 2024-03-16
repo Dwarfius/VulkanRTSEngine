@@ -45,6 +45,7 @@ DebugRenderPass::~DebugRenderPass()
 
 void DebugRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("IDRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	if (!IsReady())

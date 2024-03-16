@@ -64,6 +64,7 @@ PaintParams PaintingRenderPass::GetParams() const
 
 void PaintingRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("IDRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	if (!myPaintPipeline.IsValid() 

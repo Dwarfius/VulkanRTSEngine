@@ -52,6 +52,7 @@ IDRenderPass::IDRenderPass(Graphics& aGraphics,
 
 void IDRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("IDRenderPass::Execute");
 	switch (myState)
 	{
 	case State::None:

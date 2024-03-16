@@ -20,6 +20,7 @@ FinalCompositeRenderPass::FinalCompositeRenderPass(
 
 void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("IDRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	if (myPipeline->GetState() != GPUResource::State::Valid

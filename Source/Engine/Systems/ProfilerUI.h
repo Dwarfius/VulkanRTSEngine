@@ -56,7 +56,9 @@ private:
 	std::vector<std::string> myScopeNames = { 
 		"Game::SubmitRenderables", 
 		"Graphics::Gather",
-		"GraphicsGL::ExecuteJobs"
+		"GraphicsGL::ExecuteJobs",
+		"PhysicsUpdate",
+		"RemoveGameObjects"
 	};
 	struct ThreadInfo
 	{

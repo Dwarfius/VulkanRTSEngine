@@ -18,6 +18,7 @@
 
 void DefaultRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("DefaultRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	// TODO: get rid of singleton access here - pass from Game/Graphics
@@ -111,6 +112,7 @@ TerrainRenderPass::TerrainRenderPass()
 
 void TerrainRenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("DefaultRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	// TODO: get rid of singleton access here - pass from Game/Graphics

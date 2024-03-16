@@ -5,6 +5,8 @@
 #include "Resources/UniformBuffer.h"
 #include "Resources/GPUPipeline.h"
 
+#include <Core/Profiler.h>
+
 UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
 	auto bucketIter = std::lower_bound(
@@ -55,6 +57,7 @@ bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics,
 
 void RenderPass::Execute(Graphics& aGraphics)
 {
+	Profiler::ScopedMark mark("RenderPass::Execute");
 	// Note: this is not thread safe if same pass is started concurrently
 	for (size_t newBucket : myNewBuckets)
 	{
