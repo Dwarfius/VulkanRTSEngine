@@ -209,7 +209,6 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		}
 		if (ImGui::TreeNode("Frame Tracking - Recent Frames"))
 		{
-			Profiler::ScopedMark mark("DrawFrames");
 			DrawFrames(myFrames, myFramesScale);
 			ImGui::TreePop();
 		}
