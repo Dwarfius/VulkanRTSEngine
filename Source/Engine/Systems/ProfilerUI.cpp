@@ -209,6 +209,7 @@ void ProfilerUI::Draw(bool& aIsOpen)
 		}
 		if (ImGui::TreeNode("Frame Tracking - Recent Frames"))
 		{
+			Profiler::ScopedMark mark("DrawFrames");
 			DrawFrames(myFrames, myFramesScale);
 			ImGui::TreePop();
 		}
@@ -555,9 +556,13 @@ void ProfilerUI::DrawMark(const Mark& aMark, glm::vec2 aPos, float aFrameWidth, 
 		const float widthRatio = InverseLerpProfile(aMark.myEnd, frameStart, frameEnd);
 		width = widthRatio * aFrameWidth - x;
 	}
-	// avoid getting to 0, as ImGUI usess it as a default value
-	// to fit the internal label
-	width = std::max(width, 1.f);
+	// Don't render out marks that are too small to see at current zoom level
+	// This'll mean that users might not spot it. But, since we have Scopes view,
+	// they'll be able to filter for it
+	if (width < 1.f)
+	{
+		return;
+	}
 
 	ImGui::SetCursorPos({ aPos.x + x, aPos.y + y });
 
