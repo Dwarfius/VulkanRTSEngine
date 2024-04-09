@@ -39,15 +39,18 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 	game.ForEachRenderable([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
 
-		if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
 		{
-			return;
-		}
+			Profiler::ScopedMark earlyChecks("EarlyChecks");
+			if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+			{
+				return;
+			}
 
-		// Default Pass handling
-		if (!IsUsable(visObj)) [[unlikely]]
-		{
-			return;
+			// Default Pass handling
+			if (!IsUsable(visObj)) [[unlikely]]
+			{
+				return;
+			}
 		}
 
 		const GameObject* gameObject = aRenderable.myGO;
@@ -57,31 +60,37 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		// we need to early out without spawning a job
 		GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
 		
-		// updating the uniforms - grabbing game state!
-		UniformAdapterSource source{
-			aGraphics,
-			camera,
-			gameObject,
-			visObj
-		};
 		RenderJob::UniformSet uniformSet;
-		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline)) 
-			[[unlikely]]
 		{
-			return;
+			Profiler::ScopedMark earlyChecks("FillUBO");
+			// updating the uniforms - grabbing game state!
+			UniformAdapterSource source{
+				aGraphics,
+				camera,
+				gameObject,
+				visObj
+			};
+			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+				[[unlikely]]
+			{
+				return;
+			}
 		}
 		
-		// Building a render job
-		RenderJob& renderJob = passJob.AllocateJob();
-		renderJob.SetModel(visObj.GetModel().Get());
-		renderJob.SetPipeline(gpuPipeline);
-		renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
-		renderJob.GetUniformSet() = uniformSet;
+		{
+			Profiler::ScopedMark earlyChecks("BuildRenderJob");
+			// Building a render job
+			RenderJob& renderJob = passJob.AllocateJob();
+			renderJob.SetModel(visObj.GetModel().Get());
+			renderJob.SetPipeline(gpuPipeline);
+			renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
+			renderJob.GetUniformSet() = uniformSet;
 
-		RenderJob::IndexedDrawParams drawParams;
-		drawParams.myOffset = 0;
-		drawParams.myCount = renderJob.GetModel()->GetPrimitiveCount();
-		renderJob.SetDrawParams(drawParams);
+			RenderJob::IndexedDrawParams drawParams;
+			drawParams.myOffset = 0;
+			drawParams.myCount = renderJob.GetModel()->GetPrimitiveCount();
+			renderJob.SetDrawParams(drawParams);
+		}
 	});
 }
 
