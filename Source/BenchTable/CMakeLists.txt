@@ -9,6 +9,7 @@ SET(BENCHTABLE_GenProfiling FALSE CACHE BOOL "Should BenchTable include Profilin
 SET(BENCHTABLE_GenPool FALSE CACHE BOOL "Should BenchTable include Pool tests")
 SET(BENCHTABLE_GenSkeleton FALSE CACHE BOOL "Should BenchTable include Skeleton tests")
 SET(BENCHTABLE_GenDirList FALSE CACHE BOOL "Should BenchTable include DirList tests")
+SET(BENCHTABLE_GenStableVector FALSE CACHE BOOL "Should BenchTable include StableVector tests")
 
 FetchContent_Declare(
 	googleBench
@@ -60,6 +61,11 @@ endif()
 
 if(BENCHTABLE_GenDirList)
 	file(GLOB_RECURSE SRC_EXTRA DirList/*)
+	list(APPEND SRC ${SRC_EXTRA})
+endif()
+
+if(BENCHTABLE_GenStableVector)
+	file(GLOB_RECURSE SRC_EXTRA StableVector/*)
 	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
