@@ -74,6 +74,7 @@ static void AddToExpStableVector(benchmark::State& aState)
 	{
 		Exp::StableVector<uint32_t> vec;
 		uint32_t& firstElem = vec.Allocate(0);
+		vec.Reserve(aState.range(0)); // almost no benefit for test
 		for (uint32_t i = 1; i < aState.range(0); i++)
 		{
 			[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
@@ -143,9 +144,9 @@ static void ForEachExpStableVector(benchmark::State& aState)
 	}
 }
 
-BENCHMARK(ForEachVector)->Apply(Impl::SetupBenchmark);
-BENCHMARK(ForEachStableVector)->Apply(Impl::SetupBenchmark);
-BENCHMARK(ForEachExpStableVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(ForEachVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(ForEachStableVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(ForEachExpStableVector)->Apply(Impl::SetupBenchmark);
 
 static void ParallelForEachVector(benchmark::State& aState)
 {
@@ -208,6 +209,6 @@ static void ParallelForEachExpStableVector(benchmark::State& aState)
 	}
 }
 
-BENCHMARK(ParallelForEachVector)->Apply(Impl::SetupParallelBenchmark);
-BENCHMARK(ParallelForEachStableVector)->Apply(Impl::SetupParallelBenchmark);
-BENCHMARK(ParallelForEachExpStableVector)->Apply(Impl::SetupParallelBenchmark);
+//BENCHMARK(ParallelForEachVector)->Apply(Impl::SetupParallelBenchmark);
+//BENCHMARK(ParallelForEachStableVector)->Apply(Impl::SetupParallelBenchmark);
+//BENCHMARK(ParallelForEachExpStableVector)->Apply(Impl::SetupParallelBenchmark);
