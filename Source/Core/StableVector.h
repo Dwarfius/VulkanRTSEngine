@@ -121,39 +121,6 @@ class StableVector
             }
         }
 
-        Iterator begin() 
-        { 
-            Iterator iter{ this, 0 }; 
-            if (!iter.IsValid())
-            {
-                iter++;
-            }
-            return iter;
-        }
-        Iterator begin() const
-        {
-            Iterator iter{ this, 0 };
-            if (!iter.IsValid())
-            {
-                iter++;
-            }
-            return iter;
-        }
-
-        Iterator end() { return { this, PageSize }; }
-        Iterator end() const { return { this, PageSize }; }
-
-        // Note: linear complexity!
-        Iterator GetIterAt(size_t anElemNum)
-        {
-            Iterator iter = begin();
-            while (anElemNum-- > 0)
-            {
-                iter++;
-            }
-            return iter;
-        }
-
         FreeListNode myItems[PageSize];
         size_t myFreeNode = 0;
         size_t myCount = 0;
@@ -166,44 +133,6 @@ class StableVector
         Page myPage;
         PageNode* myNext = nullptr;
         uint16_t myIndex = 0;
-    };
-
-    // Note: A convenience stopgap to help with ParallelFor
-    // Not intended to be a proper iterator implementation, so
-    // before exposing to users it needs being rounded up
-    struct Iterator
-    {
-        T& operator*()
-        {
-            return *myPageIter;
-        }
-
-        void operator++(int)
-        {
-            do
-            {
-                myPageIter++;
-                if (myPageIter == myPageNode->myPage.end())
-                {
-                    myPageNode = myPageNode->myNext;
-                    if (myPageNode)
-                    {
-                        myPageIter = myPageNode->myPage.begin();
-                    }
-                }
-            } while (myPageNode != nullptr
-                && myPageIter != myPageNode->myPage.end()
-                && !myPageIter.IsValid());
-        }
-
-        bool operator==(const Iterator& aOther) const
-        {
-            return myPageNode == aOther.myPageNode
-                && myPageIter == aOther.myPageIter;
-        }
-
-        PageNode* myPageNode;
-        Page::Iterator myPageIter;
     };
 
 public:
