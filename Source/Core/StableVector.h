@@ -228,24 +228,20 @@ public:
     template<class... Ts>
     [[nodiscard]] T& Allocate(Ts&& ...anArgs)
     {
-        Page* freePage = nullptr;
-        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        myCount++; // we always allocate
+        if (myCount > myCapacity)
         {
-            Page& page = pageNode->myPage;
-            if (page.HasSpace())
-            {
-                freePage = &page;
-                break;
-            }
-            else if (!pageNode->myNext)
-            {
-                pageNode->myNext = new PageNode;
-                freePage = &pageNode->myNext->myPage;
-                break;
-            }
+            Reserve(myCount);
         }
-        myCount++;
-        return freePage->Allocate(std::forward<Ts>(anArgs)...);
+
+        PageNode* freePage = nullptr;
+        for (freePage = &myStartPage;
+            !freePage->myPage.HasSpace();
+            freePage = freePage->myNext)
+        {
+        }
+        
+        return freePage->myPage.Allocate(std::forward<Ts>(anArgs)...);
     }
 
     void Free(T& anItem)
@@ -293,6 +289,24 @@ public:
             }
         }
         return false;
+    }
+
+    void Reserve(size_t aSize)
+    {
+        PageNode* pageNode = &myStartPage;
+        while (pageNode->myNext)
+        {
+            pageNode = pageNode->myNext;
+        }
+
+        size_t allocatedSize = myCapacity;
+        while (allocatedSize < aSize)
+        {
+            pageNode->myNext = new PageNode;
+            pageNode = pageNode->myNext;
+            allocatedSize += PageSize;
+        }
+        myCapacity = allocatedSize;
     }
 
     template<class TFunc>
@@ -402,4 +416,5 @@ public:
 private:
     PageNode myStartPage;
     size_t myCount = 0;
+    size_t myCapacity = PageSize;
 };

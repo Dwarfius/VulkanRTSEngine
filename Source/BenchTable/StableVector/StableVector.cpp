@@ -29,20 +29,6 @@ static void AddToVector(benchmark::State& aState)
 	for (auto _ : aState)
 	{
 		std::vector<uint32_t> vec;
-		for (uint32_t i = 0; i < aState.range(0); i++)
-		{
-			vec.push_back(i);
-		}
-		benchmark::DoNotOptimize(vec.data());
-		benchmark::ClobberMemory();
-	}
-}
-
-static void AddToReservedVector(benchmark::State& aState)
-{
-	for (auto _ : aState)
-	{
-		std::vector<uint32_t> vec;
 		vec.reserve(aState.range(0));
 		for (uint32_t i = 0; i < aState.range(0); i++)
 		{
@@ -58,6 +44,7 @@ static void AddToStableVector(benchmark::State& aState)
 	for (auto _ : aState)
 	{
 		StableVector<uint32_t> vec;
+		vec.Reserve(aState.range(0)); // almost no benefit for test
 		uint32_t& firstElem = vec.Allocate(0);
 		for (uint32_t i = 1; i < aState.range(0); i++)
 		{
@@ -73,8 +60,8 @@ static void AddToExpStableVector(benchmark::State& aState)
 	for (auto _ : aState)
 	{
 		Exp::StableVector<uint32_t> vec;
-		uint32_t& firstElem = vec.Allocate(0);
 		vec.Reserve(aState.range(0)); // almost no benefit for test
+		uint32_t& firstElem = vec.Allocate(0);
 		for (uint32_t i = 1; i < aState.range(0); i++)
 		{
 			[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
@@ -85,7 +72,6 @@ static void AddToExpStableVector(benchmark::State& aState)
 }
 
 BENCHMARK(AddToVector)->Apply(Impl::SetupBenchmark);
-BENCHMARK(AddToReservedVector)->Apply(Impl::SetupBenchmark);
 BENCHMARK(AddToStableVector)->Apply(Impl::SetupBenchmark);
 BENCHMARK(AddToExpStableVector)->Apply(Impl::SetupBenchmark);
 
