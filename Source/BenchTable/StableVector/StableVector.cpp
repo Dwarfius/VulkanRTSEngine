@@ -44,7 +44,7 @@ static void AddToStableVector(benchmark::State& aState)
 	for (auto _ : aState)
 	{
 		StableVector<uint32_t> vec;
-		vec.Reserve(aState.range(0)); // almost no benefit for test
+		vec.Reserve(aState.range(0));
 		uint32_t& firstElem = vec.Allocate(0);
 		for (uint32_t i = 1; i < aState.range(0); i++)
 		{
@@ -60,7 +60,7 @@ static void AddToExpStableVector(benchmark::State& aState)
 	for (auto _ : aState)
 	{
 		Exp::StableVector<uint32_t> vec;
-		vec.Reserve(aState.range(0)); // almost no benefit for test
+		vec.Reserve(aState.range(0));
 		uint32_t& firstElem = vec.Allocate(0);
 		for (uint32_t i = 1; i < aState.range(0); i++)
 		{
@@ -71,9 +71,9 @@ static void AddToExpStableVector(benchmark::State& aState)
 	}
 }
 
-BENCHMARK(AddToVector)->Apply(Impl::SetupBenchmark);
-BENCHMARK(AddToStableVector)->Apply(Impl::SetupBenchmark);
-BENCHMARK(AddToExpStableVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(AddToVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(AddToStableVector)->Apply(Impl::SetupBenchmark);
+//BENCHMARK(AddToExpStableVector)->Apply(Impl::SetupBenchmark);
 
 static void ForEachVector(benchmark::State& aState)
 {
@@ -97,8 +97,8 @@ static void ForEachVector(benchmark::State& aState)
 static void ForEachStableVector(benchmark::State& aState)
 {
 	StableVector<uint32_t> vec;
-	uint32_t& firstElem = vec.Allocate(0);
-	for (uint32_t i = 1; i < aState.range(0); i++)
+	vec.Reserve(aState.range(0));
+	for (uint32_t i = 0; i < aState.range(0); i++)
 	{
 		[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
 	}
@@ -115,8 +115,8 @@ static void ForEachStableVector(benchmark::State& aState)
 static void ForEachExpStableVector(benchmark::State& aState)
 {
 	Exp::StableVector<uint32_t> vec;
-	uint32_t& firstElem = vec.Allocate(0);
-	for (uint32_t i = 1; i < aState.range(0); i++)
+	vec.Reserve(aState.range(0));
+	for (uint32_t i = 0; i < aState.range(0); i++)
 	{
 		[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
 	}
@@ -147,11 +147,15 @@ static void ParallelForEachVector(benchmark::State& aState)
 	{
 		uint32_t sum = 0;
 		// same as StableVector batching
-		const size_t batchSize = std::max(vec.size() / std::thread::hardware_concurrency() / 2, 1ull);
-		tbb::parallel_for(tbb::blocked_range<size_t>(0, vec.size(), batchSize),
+		constexpr size_t kPageSize = 256;
+		const size_t batches = (vec.size() + kPageSize - 1) / kPageSize;
+		const size_t batchSize = std::max(batches / std::thread::hardware_concurrency() / 2, 1ull);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, batches, batchSize),
 			[&](tbb::blocked_range<size_t> aRange)
 		{
-			for (size_t i = aRange.begin(); i < aRange.end(); i++)
+			const size_t start = aRange.begin() * kPageSize;
+			const size_t end = std::min(aRange.end() * kPageSize, vec.size());
+			for (size_t i = start; i < end; i++)
 			{
 				benchmark::DoNotOptimize(sum += vec[i]);
 			}
@@ -162,8 +166,8 @@ static void ParallelForEachVector(benchmark::State& aState)
 static void ParallelForEachStableVector(benchmark::State& aState)
 {
 	StableVector<uint32_t> vec;
-	uint32_t& firstElem = vec.Allocate(0);
-	for (uint32_t i = 1; i < aState.range(0); i++)
+	vec.Reserve(aState.range(0));
+	for (uint32_t i = 0; i < aState.range(0); i++)
 	{
 		[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
 	}
@@ -180,8 +184,8 @@ static void ParallelForEachStableVector(benchmark::State& aState)
 static void ParallelForEachExpStableVector(benchmark::State& aState)
 {
 	Exp::StableVector<uint32_t> vec;
-	uint32_t& firstElem = vec.Allocate(0);
-	for (uint32_t i = 1; i < aState.range(0); i++)
+	vec.Reserve(aState.range(0));
+	for (uint32_t i = 0; i < aState.range(0); i++)
 	{
 		[[maybe_unused]] uint32_t& newElem = vec.Allocate(i);
 	}
@@ -195,6 +199,6 @@ static void ParallelForEachExpStableVector(benchmark::State& aState)
 	}
 }
 
-//BENCHMARK(ParallelForEachVector)->Apply(Impl::SetupParallelBenchmark);
-//BENCHMARK(ParallelForEachStableVector)->Apply(Impl::SetupParallelBenchmark);
-//BENCHMARK(ParallelForEachExpStableVector)->Apply(Impl::SetupParallelBenchmark);
+BENCHMARK(ParallelForEachVector)->Apply(Impl::SetupParallelBenchmark);
+BENCHMARK(ParallelForEachStableVector)->Apply(Impl::SetupParallelBenchmark);
+BENCHMARK(ParallelForEachExpStableVector)->Apply(Impl::SetupParallelBenchmark);

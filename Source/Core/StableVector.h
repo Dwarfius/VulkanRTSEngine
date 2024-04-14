@@ -409,30 +409,36 @@ public:
             return;
         }
 
+        if (myCapacity == PageSize)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+            myStartPage.myPage.ForEach(aFunc);
+            return;
+        }
+
         DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
+
+        const size_t bucketCount = myCapacity / PageSize;
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
-        const size_t batchSize = std::max(myCount / std::thread::hardware_concurrency() / 2, 1ull);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, myCount, batchSize),
+        const size_t threadCount = std::thread::hardware_concurrency() * 2;
+        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
             [&](tbb::blocked_range<size_t> aRange)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-
-            // Find starting iterator
-            size_t index = aRange.begin();
-            PageNode* node = &myStartPage;
-            while (index >= node->myPage.myCount)
+            size_t startPage = aRange.begin();
+            PageNode* page = &myStartPage;
+            while (startPage-- > 0)
             {
-                index -= node->myPage.myCount;
-                node = node->myNext;
+                page = page->myNext;
             }
 
-            // Iterate over the chunk
-            Iterator iter{ node, node->myPage.GetIterAt(index) };
-            for (size_t i = 0; i < aRange.size(); i++)
+            size_t iters = aRange.size();
+            while (iters-- > 0 && page)
             {
-                aFunc(*iter);
-                iter++;
-                DEBUG_ONLY(foundCount++;);
+                page->myPage.ForEach(aFunc);
+                DEBUG_ONLY(foundCount += page->myPage.myCount;);
+                page = page->myNext;
             }
         });
         ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
@@ -446,30 +452,36 @@ public:
             return;
         }
 
+        if (myCapacity == PageSize)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+            myStartPage.myPage.ForEach(aFunc);
+            return;
+        }
+
         DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
+
+        const size_t bucketCount = myCapacity / PageSize;
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
-        const size_t batchSize = std::max(myCount / std::thread::hardware_concurrency() / 2, 1ull);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, myCount, batchSize),
+        const size_t threadCount = std::thread::hardware_concurrency() * 2;
+        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
             [&](tbb::blocked_range<size_t> aRange)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-
-            // Find starting iterator
-            size_t index = aRange.begin();
-            PageNode* node = &myStartPage;
-            while (index >= node->myPage.myCount)
+            size_t startPage = aRange.begin();
+            PageNode* page = &myStartPage;
+            while (startPage-- > 0)
             {
-                index -= node->myPage.myCount;
-                node = node->myNext;
+                page = page->myNext;
             }
 
-            // Iterate over the chunk
-            Iterator iter{ node, node->myPage.GetIterAt(index) };
-            for (size_t i = 0; i < aRange.size(); i++)
+            size_t iters = aRange.size();
+            while (iters-- > 0 && page)
             {
-                aFunc(*iter);
-                iter++;
-                DEBUG_ONLY(foundCount++;);
+                page->myPage.ForEach(aFunc);
+                DEBUG_ONLY(foundCount += page->myPage.myCount;);
+                page = page->myNext;
             }
         });
         ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");

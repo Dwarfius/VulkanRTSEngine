@@ -150,14 +150,39 @@ namespace Exp
 
         void Reserve(size_t aCount)
         {
-            size_t pagesNeeded = aCount / PageSize;
-            PageNode* currPage = &myStartPage;
-            while (pagesNeeded-- > 1)
+            if (aCount < myCapacity)
             {
-                currPage->myNext = new PageNode;
-                currPage = currPage->myNext;
-                myCapacity += PageSize;
+                return;
             }
+
+            PageNode* pageNode = &myStartPage;
+            while (pageNode->myNext)
+            {
+                pageNode = pageNode->myNext;
+            }
+
+            size_t allocatedSize = myCapacity;
+
+            // Unrolling 1 by hand to update the cached free page
+            pageNode->myNext = new PageNode;
+            pageNode = pageNode->myNext;
+            allocatedSize += PageSize;
+            // Either the user invokes the reserve, meaning cached free page
+            // is still valid (so we have to check with Unlikely assumption)
+            // or we internally know we need to grow, meaning we ran out
+            // of free pages
+            if (!myFreePage->myPage.HasSpace()) [[unlikely]]
+            {
+                myFreePage = pageNode;
+            }
+
+            while (allocatedSize < aCount)
+            {
+                pageNode->myNext = new PageNode;
+                pageNode = pageNode->myNext;
+                allocatedSize += PageSize;
+            }
+            myCapacity = allocatedSize;
         }
 
         template<class... Ts>
@@ -175,30 +200,6 @@ namespace Exp
 
             myCount++;
             return myFreePage->myPage.Allocate(std::forward<Ts>(anArgs)...);
-        }
-
-        void Free(T& anItem)
-        {
-            for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
-            {
-                Page& page = pageNode->myPage;
-                if (page.Contains(&anItem))
-                {
-                    page.Free(anItem);
-                    myCount--;
-                    return;
-                }
-            }
-        }
-
-        void Clear()
-        {
-            for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
-            {
-                Page& page = pageNode->myPage;
-                page.Clear();
-            }
-            myCount = 0;
         }
 
         bool IsEmpty() const
@@ -247,15 +248,33 @@ namespace Exp
                 return;
             }
 
-            DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
+            if (myCapacity == PageSize)
+            {
+                myStartPage.myPage.ForEach(aFunc);
+                return;
+            }
+
+            const size_t bucketCount = myCapacity / PageSize;
             // Attempt to have 2 batches per thread, so that it's easier to schedule around
-            const size_t batchSize = std::max(myCount / std::thread::hardware_concurrency() / 2, 1ull);
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, myCount, batchSize),
+            const size_t threadCount = std::thread::hardware_concurrency() * 2;
+            const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
                 [&](tbb::blocked_range<size_t> aRange)
             {
-                // TODO
+                size_t startPage = aRange.begin();
+                PageNode* page = &myStartPage;
+                while (startPage-- > 0)
+                {
+                    page = page->myNext;
+                }
+
+                size_t iters = aRange.size();
+                while (iters-- > 0 && page)
+                {
+                    page->myPage.ForEach(aFunc);
+                    page = page->myNext;
+                }
             });
-            ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
         }
 
     private:
