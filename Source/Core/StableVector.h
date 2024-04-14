@@ -161,8 +161,11 @@ class StableVector
 
     struct PageNode
     {
+        PageNode(uint16_t anIndex) : myIndex(anIndex) {}
+
         Page myPage;
         PageNode* myNext = nullptr;
+        uint16_t myIndex = 0;
     };
 
     // Note: A convenience stopgap to help with ParallelFor
@@ -234,14 +237,46 @@ public:
             Reserve(myCount);
         }
 
-        PageNode* freePage = nullptr;
-        for (freePage = &myStartPage;
-            !freePage->myPage.HasSpace();
-            freePage = freePage->myNext)
+        T& item = myFreePage->myPage.Allocate(std::forward<Ts>(anArgs)...);
+        
+        // Update the cached free page
+        if (!myFreePage->myPage.HasSpace()) [[unlikely]]
         {
+            if (myCount == myCapacity) [[unlikely]]
+            {
+                // only 1 way to update the cached free page when we're full
+                Reserve(myCount + 1);
+            }
+            else
+            {
+                // at this point there are only 2 cases:
+                // we either have a free page later, or we have one earlier
+                // since we try to always track an earlier page on Free,
+                // it's likely we'll find a free page in the latter part
+                PageNode* page = myFreePage;
+                while (page && !page->myPage.HasSpace())
+                {
+                    page = page->myNext;
+                }
+
+                if (!page)
+                {
+                    page = &myStartPage;
+                    // Note about warning of nullptr-deref: since we haven't found it 
+                    // in the latter part and we know we're not full 
+                    // to capacity, we must find it in the earlier part - 
+                    // so no additional checks needed
+#pragma warning(suppress:6011)
+                    while (!page->myPage.HasSpace())
+                    {
+                        page = page->myNext;
+                    }
+                }
+                myFreePage = page;
+            }
         }
         
-        return freePage->myPage.Allocate(std::forward<Ts>(anArgs)...);
+        return item;
     }
 
     void Free(T& anItem)
@@ -253,6 +288,13 @@ public:
             {
                 page.Free(anItem);
                 myCount--;
+
+                // check if we got an earlier free page
+                if (pageNode->myIndex < myFreePage->myIndex)
+                {
+                    myFreePage = pageNode;
+                }
+
                 return;
             }
         }
@@ -299,10 +341,25 @@ public:
             pageNode = pageNode->myNext;
         }
 
+        uint16_t index = pageNode->myIndex;
         size_t allocatedSize = myCapacity;
+
+        // Unrolling 1 by hand to update the cached free page
+        pageNode->myNext = new PageNode(++index);
+        pageNode = pageNode->myNext;
+        allocatedSize += PageSize;
+        // Either the user invokes the reserve, meaning cached free page
+        // is still valid (so we have to check with Unlikely assumption)
+        // or we internally know we need to grow, meaning we ran out
+        // of free pages
+        if (!myFreePage->myPage.HasSpace()) [[unlikely]]
+        {
+            myFreePage = pageNode;
+        }
+
         while (allocatedSize < aSize)
         {
-            pageNode->myNext = new PageNode;
+            pageNode->myNext = new PageNode(++index);
             pageNode = pageNode->myNext;
             allocatedSize += PageSize;
         }
@@ -414,7 +471,8 @@ public:
     }
 
 private:
-    PageNode myStartPage;
+    PageNode myStartPage{ 0 };
+    PageNode* myFreePage = &myStartPage;
     size_t myCount = 0;
     size_t myCapacity = PageSize;
 };
