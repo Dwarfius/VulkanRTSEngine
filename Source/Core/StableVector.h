@@ -335,6 +335,11 @@ public:
 
     void Reserve(size_t aSize)
     {
+        if (aSize < myCapacity)
+        {
+            return;
+        }
+
         PageNode* pageNode = &myStartPage;
         while (pageNode->myNext)
         {
