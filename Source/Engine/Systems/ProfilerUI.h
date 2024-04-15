@@ -48,6 +48,7 @@ private:
 		uint64_t myMin = std::numeric_limits<uint64_t>::max();
 		uint64_t myMax = 0;
 		uint64_t myMedian = 0;
+		uint64_t myTotalAvg = 0;
 	};
 
 	std::vector<FrameData> myInitFrames;

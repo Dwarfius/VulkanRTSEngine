@@ -260,6 +260,7 @@ void ProfilerUI::DrawScopesView()
 						const uint64_t durationNs = mark.myEnd - mark.myStart;
 						aScopeData.myMin = glm::min(durationNs, aScopeData.myMin);
 						aScopeData.myMax = glm::max(durationNs, aScopeData.myMax);
+						aScopeData.myTotalAvg += durationNs;
 					}
 				}
 			}
@@ -289,17 +290,19 @@ void ProfilerUI::DrawScopesView()
 			{
 				scope.myAvgPerFrameCount = scope.myTotalCount / scope.myFoundInFrameCount;
 				scope.myMedian = scope.myMin + (scope.myMax - scope.myMin) / 2;
+				scope.myTotalAvg /= scope.myFoundInFrameCount;
 			}
 		}
 		myNeedsToUpdateScopeData = false;
 	}
 
 	ImGui::Separator();
-	if (ImGui::BeginTable("Scopes", 6, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+	if (ImGui::BeginTable("Scopes", 7, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 	{
 		ImGui::TableSetupColumn("Name");
-		ImGui::TableSetupColumn("Total");
-		ImGui::TableSetupColumn("Avg Per Frame");
+		ImGui::TableSetupColumn("# Total");
+		ImGui::TableSetupColumn("# Avg Per Frame");
+		ImGui::TableSetupColumn("Avg Frame Total");
 		ImGui::TableSetupColumn("Min");
 		ImGui::TableSetupColumn("Max");
 		ImGui::TableSetupColumn("Median");
@@ -328,7 +331,7 @@ void ProfilerUI::DrawScopesView()
 						}
 						);
 						break;
-					case 1: // Total
+					case 1: // # Total
 						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
@@ -338,7 +341,7 @@ void ProfilerUI::DrawScopesView()
 						}
 						);
 						break;
-					case 2: // Avg Per Frame
+					case 2: // # Avg Per Frame
 						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
@@ -348,7 +351,17 @@ void ProfilerUI::DrawScopesView()
 						}
 						);
 						break;
-					case 3: // Min
+					case 3: // Avg Frame Total
+						std::sort(myScopeData.begin(), myScopeData.end(),
+							[asc](const auto& aLeft, const auto& aRight)
+						{
+							return asc
+								? aLeft.myTotalAvg < aRight.myTotalAvg
+								: aLeft.myTotalAvg > aRight.myTotalAvg;
+						}
+						);
+						break;
+					case 4: // Min
 						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
@@ -358,7 +371,7 @@ void ProfilerUI::DrawScopesView()
 						}
 						);
 						break;
-					case 4: // Max
+					case 5: // Max
 						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
@@ -368,7 +381,7 @@ void ProfilerUI::DrawScopesView()
 						}
 						);
 						break;
-					case 5: // Median
+					case 6: // Median
 						std::sort(myScopeData.begin(), myScopeData.end(),
 							[asc](const auto& aLeft, const auto& aRight)
 						{
@@ -401,6 +414,11 @@ void ProfilerUI::DrawScopesView()
 			if (ImGui::TableNextColumn())
 			{
 				Utils::StringFormat(buffer, "{}", scope.myAvgPerFrameCount);
+				ImGui::Text(buffer);
+			}
+			if (ImGui::TableNextColumn())
+			{
+				DurationToString(buffer, scope.myTotalAvg);
 				ImGui::Text(buffer);
 			}
 			if (ImGui::TableNextColumn())
