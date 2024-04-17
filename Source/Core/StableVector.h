@@ -161,7 +161,7 @@ public:
     [[nodiscard]] T& Allocate(Ts&& ...anArgs)
     {
         myCount++; // we always allocate
-        if (myCount > myCapacity)
+        if (myCount > myCapacity) [[unlikely]]
         {
             Reserve(myCount);
         }
