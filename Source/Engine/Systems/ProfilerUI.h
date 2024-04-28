@@ -59,7 +59,10 @@ private:
 		"Graphics::Gather",
 		"GraphicsGL::ExecuteJobs",
 		"PhysicsUpdate",
-		"RemoveGameObjects"
+		"RemoveGameObjects",
+		"EarlyChecks",
+		"FillUBO",
+		"BuildRenderJob"
 	};
 	struct ThreadInfo
 	{
