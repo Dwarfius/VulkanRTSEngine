@@ -15,16 +15,19 @@
 void VisualObject::SetModel(Handle<Model> aModel)
 {
 	myModel = Game::GetInstance()->GetGraphics()->GetOrCreate(aModel).Get<GPUModel>();
+	myAllValid &= myModel.IsValid() && myModel->GetState() == GPUResource::State::Valid;
 }
 
 void VisualObject::SetPipeline(Handle<Pipeline> aPipeline)
 {
 	myPipeline = Game::GetInstance()->GetGraphics()->GetOrCreate(aPipeline).Get<GPUPipeline>();
+	myAllValid &= myPipeline.IsValid() && myPipeline->GetState() == GPUResource::State::Valid;
 }
 
 void VisualObject::SetTexture(Handle<Texture> aTexture)
 {
 	myTexture = Game::GetInstance()->GetGraphics()->GetOrCreate(aTexture).Get<GPUTexture>();
+	myAllValid &= myTexture.IsValid() && myTexture->GetState() == GPUResource::State::Valid;
 }
 
 glm::vec3 VisualObject::GetCenter() const

@@ -31,9 +31,13 @@ public:
 	void SetTransform(const Transform& aTransf) { myTransf = aTransf; }
 	const Transform& GetTransform() const { return myTransf; }
 
+	bool IsValidForRendering() const { return myAllValid; }
+	void SetIsValidForRendering(bool aIsValid) { myAllValid = aIsValid; };
+
 private:
 	Transform myTransf;
 	Handle<GPUModel> myModel;
 	Handle<GPUPipeline> myPipeline;
 	Handle<GPUTexture> myTexture;
+	bool myAllValid = false;
 };

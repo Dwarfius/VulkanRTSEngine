@@ -47,8 +47,9 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 			}
 
 			// Default Pass handling
-			if (!IsUsable(visObj)) [[unlikely]]
+			if (!visObj.IsValidForRendering()) [[unlikely]]
 			{
+				visObj.SetIsValidForRendering(IsUsable(visObj));
 				return;
 			}
 		}
