@@ -11,6 +11,7 @@ SET(BENCHTABLE_GenSkeleton FALSE CACHE BOOL "Should BenchTable include Skeleton 
 SET(BENCHTABLE_GenDirList FALSE CACHE BOOL "Should BenchTable include DirList tests")
 SET(BENCHTABLE_GenStableVector FALSE CACHE BOOL "Should BenchTable include StableVector tests")
 SET(BENCHTABLE_GenFrustumCulling FALSE CACHE BOOL "Should BenchTable include FrustumCulling tests")
+SET(BENCHTABLE_RenderJob FALSE CACHE BOOL "Should BenchTable include RenderJob tests")
 
 FetchContent_Declare(
 	googleBench
@@ -72,6 +73,11 @@ endif()
 
 if(BENCHTABLE_GenFrustumCulling)
 	file(GLOB_RECURSE SRC_EXTRA FrustumCulling/*)
+	list(APPEND SRC ${SRC_EXTRA})
+endif()
+
+if(BENCHTABLE_RenderJob)
+	file(GLOB_RECURSE SRC_EXTRA RenderJob/*)
 	list(APPEND SRC ${SRC_EXTRA})
 endif()
 
