@@ -2,6 +2,8 @@
 
 #include <Graphics/RenderPassJob.h>
 
+#include <Core/CmdBuffer.h>
+
 #include <random>
 
 class GPUPipeline;
@@ -41,23 +43,27 @@ namespace
 		constexpr uint16_t kPipelineCount = 4;
 		for (uint16_t i = 0; i < kPipelineCount; i++)
 		{
-			aGameState.myPipelines.push_back(reinterpret_cast<GPUPipeline*>(gen()));
+			uint64_t pseudoPtrVal = gen();
+			aGameState.myPipelines.push_back(reinterpret_cast<GPUPipeline*>(pseudoPtrVal));
 		}
 		constexpr uint16_t kModelCount = 3;
 		for (uint16_t i = 0; i < kModelCount; i++)
 		{
-			aGameState.myModels.push_back(reinterpret_cast<GPUModel*>(gen()));
+			uint64_t pseudoPtrVal = gen();
+			aGameState.myModels.push_back(reinterpret_cast<GPUModel*>(pseudoPtrVal));
 		}
 		constexpr uint16_t kTextureCount = 4;
 		for (uint16_t i = 0; i < kTextureCount; i++)
 		{
-			aGameState.myTextures.push_back(reinterpret_cast<GPUTexture*>(gen()));
+			uint64_t pseudoPtrVal = gen();
+			aGameState.myTextures.push_back(reinterpret_cast<GPUTexture*>(pseudoPtrVal));
 		}
 		constexpr uint16_t kUniformBufferCount = kRenderableCount;
 		aGameState.myUniformBuffers.reserve(kUniformBufferCount);
 		for (uint16_t i = 0; i < kUniformBufferCount; i++)
 		{
-			aGameState.myUniformBuffers.push_back(reinterpret_cast<UniformBuffer*>(gen()));
+			uint64_t pseudoPtrVal = gen();
+			aGameState.myUniformBuffers.push_back(reinterpret_cast<UniformBuffer*>(pseudoPtrVal));
 		}
 
 		aGameState.myRenderables.reserve(kRenderableCount);
@@ -123,65 +129,35 @@ BENCHMARK(JobStruct);
 
 namespace
 {
-	struct CmdBuffer
-	{
-		std::vector<std::byte> myStream;
-		uint32_t myIndex = 0;
-
-		template<class T, bool Checked = true> 
-			requires std::is_trivially_copyable_v<T>
-		T& Write()
-		{
-			if constexpr (Checked)
-			{
-				if (myIndex + sizeof(T) + 1 > myStream.size())
-					[[unlikely]]
-				{
-					myStream.resize(myStream.size() * 2);
-				}
-			}
-
-			myStream[myIndex++] = static_cast<std::byte>(T::kCmdId);
-			T* cmd = new(&myStream[myIndex]) T;
-			myIndex += sizeof(T);
-			return *cmd;
-		}
-
-		void Clear()
-		{
-			myIndex = 0;
-		}
-	};
-
 	struct SetModelCmd
 	{
-		static constexpr uint8_t kCmdId = 0;
+		static constexpr uint8_t kId = 0;
 		GPUModel* myModel;
 	};
 
 	struct SetPipelineCmd
 	{
-		static constexpr uint8_t kCmdId = 1;
+		static constexpr uint8_t kId = 1;
 		GPUPipeline* myPipeline;
 	};
 
 	struct SetTextureCmd
 	{
-		static constexpr uint8_t kCmdId = 2;
+		static constexpr uint8_t kId = 2;
 		uint8_t mySlot;
 		GPUTexture* myTexture;
 	};
 
 	struct SetUniformBufferCmd
 	{
-		static constexpr uint8_t kCmdId = 3;
+		static constexpr uint8_t kId = 3;
 		uint8_t mySlot;
 		UniformBuffer* myUniformBuffer;
 	};
 
 	struct DrawIndexedCmd
 	{
-		static constexpr uint8_t kCmdId = 4;
+		static constexpr uint8_t kId = 4;
 		uint32_t myOffset;
 		uint32_t myCount;
 	};
@@ -193,15 +169,15 @@ static void CmdStream(benchmark::State& aState)
 	Generate(gameState);
 
 	CmdBuffer cmdBuffer;
-	const uint32_t kResultSize = gameState.myRenderables.size() * (
+	const uint32_t kResultSize = static_cast<uint32_t>(gameState.myRenderables.size() * (
 		sizeof(SetModelCmd)
 		+ sizeof(SetPipelineCmd)
 		+ sizeof(SetTextureCmd)
 		+ sizeof(SetUniformBufferCmd)
 		+ sizeof(DrawIndexedCmd)
 		+ 5
-	);
-	cmdBuffer.myStream.resize(kResultSize);
+	));
+	cmdBuffer.Resize(kResultSize);
 
 	for (auto _ : aState)
 	{
@@ -240,15 +216,15 @@ static void CmdStreamUnchecked(benchmark::State& aState)
 	Generate(gameState);
 
 	CmdBuffer cmdBuffer;
-	const uint32_t kResultSize = gameState.myRenderables.size() * (
+	const uint32_t kResultSize = static_cast<uint32_t>(gameState.myRenderables.size() * (
 		sizeof(SetModelCmd)
 		+ sizeof(SetPipelineCmd)
 		+ sizeof(SetTextureCmd)
 		+ sizeof(SetUniformBufferCmd)
 		+ sizeof(DrawIndexedCmd)
 		+ 5
-		);
-	cmdBuffer.myStream.resize(kResultSize);
+	));
+	cmdBuffer.Resize(kResultSize);
 
 	for (auto _ : aState)
 	{
@@ -287,15 +263,15 @@ static void CmdStreamCaching(benchmark::State& aState)
 	Generate(gameState);
 
 	CmdBuffer cmdBuffer;
-	const uint32_t kResultSize = gameState.myRenderables.size() * (
+	const uint32_t kResultSize = static_cast<uint32_t>(gameState.myRenderables.size() * (
 		sizeof(SetModelCmd)
 		+ sizeof(SetPipelineCmd)
 		+ sizeof(SetTextureCmd)
 		+ sizeof(SetUniformBufferCmd)
 		+ sizeof(DrawIndexedCmd)
 		+ 5
-		);
-	cmdBuffer.myStream.resize(kResultSize);
+	));
+	cmdBuffer.Resize(kResultSize);
 
 	for (auto _ : aState)
 	{
