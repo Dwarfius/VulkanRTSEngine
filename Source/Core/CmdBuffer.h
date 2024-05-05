@@ -65,6 +65,11 @@ public:
 		myBuffer.resize(aSize);
 	}
 
+	bool IsEmpty() const
+	{
+		return myIndex == 0;
+	}
+
 private:
 	std::vector<std::byte> myBuffer;
 	uint32_t myIndex = 0;
