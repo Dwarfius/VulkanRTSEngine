@@ -331,6 +331,123 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 	});
 }
 
+void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
+{
+	Profiler::ScopedMark profile("RenderPassJobGL::RunCmdBuffer");
+	std::span<const std::byte> bytes = aCmdBuffer.GetBuffer();
+	uint32_t index = 0;
+
+	while (index < bytes.size())
+	{
+		const uint8_t cmdId = static_cast<uint8_t>(bytes[index++]);
+		RenderPassJob::SetTextureCmd* textureCmd;
+		RenderPassJob::DrawIndexedCmd* drawCmd;
+		switch (cmdId)
+		{
+		case RenderPassJob::SetPipelineCmd::kId:
+		{
+			RenderPassJob::SetPipelineCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			PipelineGL* pipeline = static_cast<PipelineGL*>(cmd.myPipeline);
+			ASSERT_STR(pipeline->GetState() == GPUResource::State::Valid
+				|| pipeline->GetState() == GPUResource::State::PendingUnload,
+				"Pipeline must be valid&up-to-date at this point!");
+			if (pipeline != myCurrentPipeline)
+			{
+				pipeline->Bind();
+				myCurrentPipeline = pipeline;
+			}
+			break;
+		}
+			
+		case RenderPassJob::SetModelCmd::kId:
+		{
+			RenderPassJob::SetModelCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			ModelGL* model = static_cast<ModelGL*>(cmd.myModel);
+			ASSERT_STR(model->GetState() == GPUResource::State::Valid
+				|| model->GetState() == GPUResource::State::PendingUnload,
+				"Model must be valid&up-to-date at this point!");
+			if (model != myCurrentModel)
+			{
+				model->Bind();
+				myCurrentModel = model;
+			}
+			break;
+		}
+		case RenderPassJob::SetTextureCmd::kId:
+		{
+			RenderPassJob::SetTextureCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			// TODO: Can we avoid this if? It's "lifting" myTextureSlotsUsed to user-space
+			const int slotToUse = myTextureSlotsToUse[cmd.mySlot];
+			if (slotToUse == -1)
+			{
+				
+				continue;
+			}
+
+			TextureGL* texture = static_cast<TextureGL*>(cmd.myTexture);
+			ASSERT_STR(texture->GetState() == GPUResource::State::Valid
+				|| texture->GetState() == GPUResource::State::PendingUnload,
+				"Texture must be valid&up-to-date at this point!");
+			if (myCurrentTextures[slotToUse] != texture)
+			{
+				glActiveTexture(GL_TEXTURE0 + myTextureSlotsUsed + slotToUse);
+				texture->Bind();
+				myCurrentTextures[slotToUse] = texture;
+			}
+			break;
+		}
+			
+		case RenderPassJob::SetUniformBufferCmd::kId:
+		{
+			RenderPassJob::SetUniformBufferCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			// Now we can update the uniform blocks
+			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(cmd.myUniformBuffer);
+			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid
+				|| buffer.GetState() == GPUResource::State::PendingUnload,
+				"UBO must be valid at this point!");
+			// TODO: implement logic that doesn't rebind same slots:
+			// If pipeline A has X, Y, Z uniform blocks
+			// and pipeline B has X, V, W,
+			// if we bind from A to B (or vice versa), no need to rebind X
+			buffer.Bind(cmd.mySlot);
+			break;
+		}
+		case RenderPassJob::DrawIndexedCmd::kId:
+		{
+			RenderPassJob::DrawIndexedCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			// TODO: bake it into cmd!
+			const uint32_t drawMode = myCurrentModel->GetDrawMode();
+			const uint32_t primitiveCount = cmd.myCount;
+			const size_t indexOffset = cmd.myOffset * sizeof(IModel::IndexType);
+			glDrawElements(drawMode,
+				static_cast<GLsizei>(primitiveCount),
+				GL_UNSIGNED_INT,
+				reinterpret_cast<void*>(indexOffset)
+			);
+			break;
+		}
+		default:
+			ASSERT_STR(false, "Unknown command!");
+		}
+	}
+	ASSERT_STR(index == bytes.size(), "We somehow read more than we wrote!");
+}
+
 void RenderPassJobGL::DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture)
 {
 	const RenderContext& context = GetRenderContext();

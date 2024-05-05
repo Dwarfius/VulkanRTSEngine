@@ -43,6 +43,12 @@ void RenderPassJob::Execute(Graphics& aGraphics)
 		RunJobs(myJobs);
 	}
 
+	if(!myCmdBuffer.IsEmpty())
+	{
+		SetupContext(aGraphics, myContext);
+		RunCommands(myCmdBuffer);
+	}
+
 	if (myContext.myDownloadTexture)
 	{
 		DownloadFrameBuffer(aGraphics, *myContext.myDownloadTexture);

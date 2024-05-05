@@ -4,6 +4,7 @@
 
 #include <Core/StaticVector.h>
 #include <Core/StableVector.h>
+#include <Core/CmdBuffer.h>
 
 class GPUPipeline;
 class GPUTexture;
@@ -85,16 +86,54 @@ private:
 };
 
 // A basic class encapsulating a set of render commands
-// with a specific context. Needs to be specialized for
+// with a specific context for the next frame. Needs to be specialized for
 // different rendering backends!
 class RenderPassJob
 {
 public:
+	template<uint8_t Id>
+	struct RenderPassJobCmd
+	{
+		static constexpr uint8_t kId = Id;
+	};
+
+	struct SetModelCmd : RenderPassJobCmd<0>
+	{
+		GPUModel* myModel;
+	};
+
+	struct SetPipelineCmd : RenderPassJobCmd<1>
+	{
+		GPUPipeline* myPipeline;
+	};
+
+	struct SetTextureCmd : RenderPassJobCmd<2>
+	{
+		uint8_t mySlot;
+		GPUTexture* myTexture;
+	};
+
+	struct SetUniformBufferCmd : RenderPassJobCmd<3>
+	{
+		uint8_t mySlot;
+		UniformBuffer* myUniformBuffer;
+	};
+
+	struct DrawIndexedCmd : RenderPassJobCmd<4>
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
+	};
+
+public:
 	virtual ~RenderPassJob() = default;
 
 	// Allocate a job to be filled out
-	// Threadsafe
+	// Thread safe
 	RenderJob& AllocateJob();
+
+	// Not thread safe
+	CmdBuffer& GetCmdBuffer() { return myCmdBuffer; }
 
 	void Execute(Graphics& aGraphics);
 
@@ -114,6 +153,7 @@ private:
 	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
 	// called last to submit render jobs
 	virtual void RunJobs(StableVector<RenderJob>& aJobs) = 0;
+	virtual void RunCommands(const CmdBuffer& aCmdBuffer) = 0;
 	// called if the user has requested the result of rendering to the framebuffer
 	// to be downloaded back to CPU
 	virtual void DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture) = 0;
@@ -121,4 +161,5 @@ private:
 	RenderContext myContext;
 	StableVector<RenderJob> myJobs;
 	tbb::spin_mutex myJobsMutex;
+	CmdBuffer myCmdBuffer;
 };
