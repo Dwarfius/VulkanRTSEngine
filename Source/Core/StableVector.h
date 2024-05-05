@@ -244,6 +244,11 @@ public:
         return myCount == 0;
     }
 
+    size_t GetCount() const
+    {
+        return myCount;
+    }
+
     bool Contains(const T* anItem) const
     {
         if (IsEmpty())
