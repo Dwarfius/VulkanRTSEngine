@@ -35,6 +35,16 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 	};
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	const uint32_t maxSize = game.GetRenderableCount() *
+		(sizeof(RenderPassJob::SetPipelineCmd) + 1 +
+			sizeof(RenderPassJob::SetModelCmd) + 1 +
+			sizeof(RenderPassJob::SetTextureCmd) + 1 +
+			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
+			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
+	cmdBuffer.Resize(maxSize); // worst case
+	cmdBuffer.Clear();
+	tbb::spin_mutex cmdLock;
 
 	game.ForEachRenderable([&](Renderable& aRenderable) {
 		VisualObject& visObj = aRenderable.myVO;
@@ -81,16 +91,35 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		{
 			Profiler::ScopedMark earlyChecks("BuildRenderJob");
 			// Building a render job
-			RenderJob& renderJob = passJob.AllocateJob();
-			renderJob.SetModel(visObj.GetModel().Get());
-			renderJob.SetPipeline(gpuPipeline);
-			renderJob.GetTextures().PushBack(visObj.GetTexture().Get());
-			renderJob.GetUniformSet() = uniformSet;
+			RenderPassJob::SetPipelineCmd* pipelineCmd;
+			RenderPassJob::SetModelCmd* modelCmd;
+			RenderPassJob::SetTextureCmd* textureCmd;
+			RenderPassJob::SetUniformBufferCmd* uboCmd[4];
+			RenderPassJob::DrawIndexedCmd* drawCmd;
 
-			RenderJob::IndexedDrawParams drawParams;
-			drawParams.myOffset = 0;
-			drawParams.myCount = renderJob.GetModel()->GetPrimitiveCount();
-			renderJob.SetDrawParams(drawParams);
+			{
+				tbb::spin_mutex::scoped_lock lock(cmdLock);
+				pipelineCmd = &cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
+				modelCmd = &cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
+				textureCmd = &cmdBuffer.Write<RenderPassJob::SetTextureCmd, false>();
+				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+				{
+					uboCmd[i] = &cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+				}
+				drawCmd = &cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+			}
+
+			pipelineCmd->myPipeline = gpuPipeline;
+			modelCmd->myModel = visObj.GetModel().Get();
+			textureCmd->mySlot = 0;
+			textureCmd->myTexture = visObj.GetTexture().Get();
+			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+			{
+				uboCmd[i]->mySlot = i;
+				uboCmd[i]->myUniformBuffer = uniformSet[i];
+			}
+			drawCmd->myOffset = 0;
+			drawCmd->myCount = visObj.GetModel().Get()->GetPrimitiveCount();
 		}
 	});
 }

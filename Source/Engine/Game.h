@@ -115,6 +115,8 @@ public:
 	// If GameObject has a parent, it's retained in the world
 	void RemoveGameObject(Handle<GameObject> aGOHandle);
 
+	size_t GetRenderableCount() const { return myRenderables.GetCount(); }
+
 	Renderable& CreateRenderable(GameObject& aGO);
 	void DeleteRenderable(Renderable& aRenderable);
 
