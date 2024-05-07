@@ -12,40 +12,6 @@ class StableVector
         constexpr static uint8_t kSlotIndex = 0;
         constexpr static uint8_t kValueIndex = 1;
 
-        // Note: A convenience stopgap to help with ParallelFor
-        // Not intended to be a proper iterator implementation, so
-        // before exposing to users it needs being rounded up
-        struct Iterator
-        {
-            T& operator*() const
-            {
-                return std::get<kValueIndex>(myPage->myItems[myIndex]);
-            }
-
-            void operator++(int)
-            {
-                do
-                {
-                    myIndex++;
-                } while (myIndex < PageSize
-                    && !IsValid());
-            }
-
-            bool operator==(const Iterator & aOther) const
-            {
-                return myPage == aOther.myPage 
-                    && myIndex == aOther.myIndex;
-            }
-
-            bool IsValid() const
-            {
-                return myPage->myItems[myIndex].index() == kValueIndex;
-            }
-
-            Page* myPage;
-            size_t myIndex;
-        };
-
         Page()
         {
             Clear();
