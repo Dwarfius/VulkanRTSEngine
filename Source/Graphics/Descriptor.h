@@ -65,14 +65,9 @@ public:
 	size_t GetSlotSize(uint32_t aSlot) const;
 	uint32_t GetArraySize(uint32_t aSlot) const { return myEntries[aSlot].myArraySize; }
 	
-	// Name of the adapter that is related to the Uniform Buffer Object
-	std::string_view GetUniformAdapter() const { return myUniformAdapter; }
-	void SetUniformAdapter(const std::string& anAdapter) { myUniformAdapter = anAdapter; }
-
 private:
 	void GetSizeAndAlignment(uint32_t aSlot, size_t& aSize, size_t& anAlignment) const;
 
 	std::vector<Entry> myEntries;
 	size_t myTotalSize = 0;
-	std::string myUniformAdapter;
 };
