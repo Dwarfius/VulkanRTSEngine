@@ -57,7 +57,7 @@ public:
 	constexpr size_t GetBlockSize() const { return myTotalSize; }
 	// Returns the unaligned offset for a specific slot.
 	// 4-byte alligned according to std140 layour specification
-	char* GetPtr(uint32_t aSlot, size_t anArrayIndex, char* aBasePtr) const;
+	constexpr size_t GetOffset(uint32_t aSlot, size_t anArrayIndex) const;
 	// Returns the type of value stored at the specific slot
 	constexpr UniformType GetType(uint32_t aSlot) const { return myEntries[aSlot].myUniformType; }
 
@@ -118,6 +118,15 @@ constexpr void Descriptor::RecomputeSize()
 	{
 		myTotalSize += kStructAlignment - remainder;
 	}
+}
+
+constexpr size_t Descriptor::GetOffset(uint32_t aSlot, size_t anArrayIndex) const
+{
+	const Entry& entry = myEntries[aSlot];
+	size_t slotSize = 0;
+	size_t ignored;
+	GetSizeAndAlignment(aSlot, slotSize, ignored);
+	return entry.myByteOffset + anArrayIndex * slotSize;
 }
 
 constexpr size_t Descriptor::GetSlotSize(uint32_t aSlot) const
