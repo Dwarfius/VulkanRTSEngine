@@ -111,7 +111,7 @@ void Graphics::Gather()
 			&& (uboHandle.Get()->GetState() == GPUResource::State::PendingUpload
 				|| uboHandle.Get()->GetState() == GPUResource::State::Valid),
 			"Uniform Buffer should be available by this point!");
-		UniformBlock block(*uboHandle.Get(), anAdapter.GetDescriptor());
+		UniformBlock block(*uboHandle.Get());
 		AdapterSourceData source(*this);
 		anAdapter.Fill(source, block);
 	});

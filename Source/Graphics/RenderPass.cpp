@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "RenderPass.h"
 
+#include "Descriptor.h"
 #include "Graphics.h"
 #include "Resources/UniformBuffer.h"
 #include "Resources/GPUPipeline.h"
@@ -48,7 +49,7 @@ bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics,
 			return false;
 		}
 
-		UniformBlock uniformBlock(*uniformBuffer, uniformAdapter.GetDescriptor());
+		UniformBlock uniformBlock(*uniformBuffer);
 		uniformAdapter.Fill(aSource, uniformBlock);
 		aSet.PushBack(uniformBuffer);
 	}

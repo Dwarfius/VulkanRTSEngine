@@ -120,7 +120,7 @@ void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
-	UniformBlock block(*myPaintBuffer.Get(), adapter.ourDescriptor);
+	UniformBlock block(*myPaintBuffer.Get());
 	adapter.FillUniformBlock(source, block);
 	job.GetUniformSet().PushBack(myPaintBuffer.Get());
 }
@@ -152,7 +152,7 @@ void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 		paintParams.myBrushSize
 	};
 	PainterAdapter adapter;
-	UniformBlock block(*myDisplayBuffer.Get(), adapter.ourDescriptor);
+	UniformBlock block(*myDisplayBuffer.Get());
 	adapter.FillUniformBlock(source, block);
 	job.GetUniformSet().PushBack(myDisplayBuffer.Get());
 }

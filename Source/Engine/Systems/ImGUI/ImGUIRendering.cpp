@@ -89,7 +89,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
-	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
+	UniformBlock block(*myUniformBuffer.Get());
 	block.SetUniform(0, frame.myMatrix);
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));

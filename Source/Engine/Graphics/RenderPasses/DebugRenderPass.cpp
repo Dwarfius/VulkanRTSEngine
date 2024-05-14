@@ -5,6 +5,7 @@
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/NamedFrameBuffers.h"
 
+#include <Graphics/Descriptor.h>
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
@@ -108,7 +109,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 
 		CameraAdapterSourceData source{ aGraphics, perCamModel.myCamera };
 
-		UniformBlock block(*perCamModel.myBuffer.Get(), adapter.GetDescriptor());
+		UniformBlock block(*perCamModel.myBuffer.Get());
 		adapter.Fill(source, block);
 		job.GetUniformSet().PushBack(perCamModel.myBuffer.Get());
 	}

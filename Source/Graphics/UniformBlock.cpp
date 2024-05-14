@@ -3,9 +3,8 @@
 
 #include "Resources/UniformBuffer.h"
 
-UniformBlock::UniformBlock(UniformBuffer& aBuffer, const Descriptor& aDescriptor)
+UniformBlock::UniformBlock(UniformBuffer& aBuffer)
 	: myBuffer(aBuffer)
-	, myDescriptor(aDescriptor)
 {
 	myData = myBuffer.Map();
 }

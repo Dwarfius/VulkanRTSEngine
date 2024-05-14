@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "UniformAdapterRegister.h"
 
+#include "Descriptor.h"
 #include "Graphics.h"
 
 void UniformAdapter::CreateGlobalUBO(Graphics& aGraphics)
