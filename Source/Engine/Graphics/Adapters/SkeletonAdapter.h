@@ -7,7 +7,7 @@ class SkeletonAdapter : RegisterUniformAdapter<SkeletonAdapter>
 {
 public:
 	constexpr static uint32_t kMaxBones = 100;
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4, kMaxBones }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);

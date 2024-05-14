@@ -9,7 +9,7 @@
 class ObjectMatricesAdapter : RegisterUniformAdapter<ObjectMatricesAdapter>
 {
 public:
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 }

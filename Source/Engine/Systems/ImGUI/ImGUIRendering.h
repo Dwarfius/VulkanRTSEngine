@@ -66,7 +66,7 @@ public:
 	{
 		glm::mat4 myOrthoProj;
 	};
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);

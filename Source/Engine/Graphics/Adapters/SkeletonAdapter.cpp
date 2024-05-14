@@ -21,6 +21,6 @@ void SkeletonAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBl
 		const glm::mat4& inverseBindPoseTransf = skeleton->GetBoneIverseBindTransform(index);
 		glm::mat4 skinningSkeletonSpace = worldBoneTransf * inverseBindPoseTransf;
 
-		aUB.SetUniform(0, index, skinningSkeletonSpace);
+		aUB.SetUniform(ourDescriptor.GetOffset(0, index), skinningSkeletonSpace);
 	}
 }

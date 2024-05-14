@@ -19,20 +19,20 @@ void LightAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock
 			aLight.myTransform.GetPos(), 
 			aLight.myAmbientIntensity 
 		};
-		aUB.SetUniform(0, accumulated, posRange);
+		aUB.SetUniform(ourDescriptor.GetOffset(0, accumulated), posRange);
 		const glm::vec4 lightDirAndInnerLimit{
 			aLight.myTransform.GetForward(),
 			aLight.mySpotlightLimits[0]
 		};
-		aUB.SetUniform(1, accumulated, lightDirAndInnerLimit);
+		aUB.SetUniform(ourDescriptor.GetOffset(1, accumulated), lightDirAndInnerLimit);
 		const glm::vec4 colorPower{ aLight.myColor, aLight.myType };
-		aUB.SetUniform(2, accumulated, colorPower);
+		aUB.SetUniform(ourDescriptor.GetOffset(2, accumulated), colorPower);
 		const glm::vec4 attenuationAndOuterLimit{
 			aLight.myAttenuation,
 			aLight.mySpotlightLimits[1]
 		};
-		aUB.SetUniform(3, accumulated, attenuationAndOuterLimit);
+		aUB.SetUniform(ourDescriptor.GetOffset(3, accumulated), attenuationAndOuterLimit);
 		accumulated++;
 	});
-	aUB.SetUniform(4, 0, accumulated);
+	aUB.SetUniform(ourDescriptor.GetOffset(4, 0), accumulated);
 }

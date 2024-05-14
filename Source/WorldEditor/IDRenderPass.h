@@ -90,7 +90,7 @@ struct IDFrameBuffer
 class IDAdapter : RegisterUniformAdapter<IDAdapter>
 {
 public:
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Int }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);

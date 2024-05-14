@@ -39,13 +39,13 @@ void TerrainAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlo
 	glm::vec3 terrainOrigin = source.myVO.GetTransform().GetPos();
 	// move origin to center
 	terrainOrigin -= glm::vec3(terrain.GetWidth(), 0, terrain.GetDepth()) / 2.f;
-	aUB.SetUniform(0, 0, terrainOrigin);
-	aUB.SetUniform(1, 0, GetTileSize(terrain)); // TODO: split into XY size instead of X size
+	aUB.SetUniform(ourDescriptor.GetOffset(0, 0), terrainOrigin);
+	aUB.SetUniform(ourDescriptor.GetOffset(1, 0), GetTileSize(terrain)); // TODO: split into XY size instead of X size
 
 	const glm::ivec2 gridTiles = GetTileCount(terrain);
-	aUB.SetUniform(2, 0, gridTiles.x);
-	aUB.SetUniform(3, 0, gridTiles.y);
-	aUB.SetUniform(4, 0, terrain.GetYScale());
+	aUB.SetUniform(ourDescriptor.GetOffset(2, 0), gridTiles.x);
+	aUB.SetUniform(ourDescriptor.GetOffset(3, 0), gridTiles.y);
+	aUB.SetUniform(ourDescriptor.GetOffset(4, 0), terrain.GetYScale());
 
 	static_assert(kHeightLayers == Terrain::kMaxHeightLevels,
 		"Please ensure these constants are the same!");
@@ -53,11 +53,11 @@ void TerrainAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlo
 	for (uint8_t i = 0; i < layersCount; i++)
 	{
 		const Terrain::HeightLevelColor heightLevel = terrain.GetHeightLevelColor(i);
-		aUB.SetUniform(5, i, glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
+		aUB.SetUniform(ourDescriptor.GetOffset(5, i), glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
 	}
 	const Terrain::HeightLevelColor heightLevel = terrain.GetHeightLevelColor(layersCount - 1);
 	for (uint8_t i = layersCount; i < kHeightLayers; i++)
 	{
-		aUB.SetUniform(5, i, glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
+		aUB.SetUniform(ourDescriptor.GetOffset(5, i), glm::vec4{ heightLevel.myColor, heightLevel.myHeight });
 	}
 }

@@ -114,7 +114,7 @@ public:
 		const int myBrushRadius;
 	};
 
-	inline static const Descriptor ourDescriptor {
+	constexpr static Descriptor ourDescriptor {
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Vec4 },
 		{ Descriptor::UniformType::Vec2 },

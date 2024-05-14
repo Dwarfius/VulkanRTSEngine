@@ -211,17 +211,17 @@ void PainterAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlo
 {
 	const Source& data = static_cast<const Source&>(aData);
 
-	aUB.SetUniform(0, 0, data.myCam.Get());
-	aUB.SetUniform(1, 0, data.myColor);
+	aUB.SetUniform(ourDescriptor.GetOffset(0, 0), data.myCam.Get());
+	aUB.SetUniform(ourDescriptor.GetOffset(1, 0), data.myColor);
 	const glm::mat4& proj = data.myCam.GetProj();
 	const glm::vec2 size(2 / proj[0][0], 2 / proj[1][1]);
-	aUB.SetUniform(2, 0, size);
-	aUB.SetUniform(3, 0, data.myTexSize);
-	aUB.SetUniform(4, 0, data.myMousePosStart);
-	aUB.SetUniform(5, 0, data.myMousePosEnd);
+	aUB.SetUniform(ourDescriptor.GetOffset(2, 0), size);
+	aUB.SetUniform(ourDescriptor.GetOffset(3, 0), data.myTexSize);
+	aUB.SetUniform(ourDescriptor.GetOffset(4, 0), data.myMousePosStart);
+	aUB.SetUniform(ourDescriptor.GetOffset(5, 0), data.myMousePosEnd);
 	const glm::vec2 gridCellSize = data.myTexSize / glm::vec2(data.myGridDims);
-	aUB.SetUniform(6, 0, gridCellSize);
-	aUB.SetUniform(7, 0, data.myPaintSizeScaled);
-	aUB.SetUniform(8, 0, static_cast<int>(data.myPaintMode));
-	aUB.SetUniform(9, 0, data.myBrushRadius);
+	aUB.SetUniform(ourDescriptor.GetOffset(6, 0), gridCellSize);
+	aUB.SetUniform(ourDescriptor.GetOffset(7, 0), data.myPaintSizeScaled);
+	aUB.SetUniform(ourDescriptor.GetOffset(8, 0), static_cast<int>(data.myPaintMode));
+	aUB.SetUniform(ourDescriptor.GetOffset(9, 0), data.myBrushRadius);
 }

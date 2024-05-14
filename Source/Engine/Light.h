@@ -46,7 +46,7 @@ class LightAdapter : RegisterUniformAdapter<LightAdapter, true>
 {
 public:
 	constexpr static uint32_t kMaxLights = 64;
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // pos + ambient intensity
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // light dir + spot inner limit
 		{ Descriptor::UniformType::Vec4, kMaxLights }, // color + type

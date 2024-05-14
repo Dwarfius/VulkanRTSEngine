@@ -22,7 +22,7 @@ public:
 	static glm::ivec2 GetTileCount(const Terrain& aTerrain);
 
 	constexpr static uint8_t kHeightLayers = 5;
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec4 },
 		{ Descriptor::UniformType::Float },
 		{ Descriptor::UniformType::Int },

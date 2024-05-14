@@ -239,5 +239,5 @@ void TintAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock&
 		color = kPathColor;
 	}
 
-	aUB.SetUniform(0, 0, color);
+	aUB.SetUniform(ourDescriptor.GetOffset(0, 0), color);
 }

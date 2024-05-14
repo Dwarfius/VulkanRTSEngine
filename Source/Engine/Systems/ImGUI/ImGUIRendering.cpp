@@ -15,7 +15,7 @@
 void ImGUIAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB)
 {
 	const ImGUIData& data = static_cast<const ImGUIData&>(aData);
-	aUB.SetUniform(0, 0, data.myOrthoProj);
+	aUB.SetUniform(0, data.myOrthoProj);
 }
 
 ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFontAtlas, Graphics& aGraphics)
@@ -90,7 +90,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	}
 
 	UniformBlock block(*myUniformBuffer.Get(), myPipeline->GetAdapter(0).GetDescriptor());
-	block.SetUniform(0, 0, frame.myMatrix);
+	block.SetUniform(0, frame.myMatrix);
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	for (Params& params : frame.myParams)

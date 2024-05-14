@@ -13,6 +13,14 @@ public:
 	template<class T>
 	void SetUniform(uint32_t aSlot, size_t anArrayIndex, const T& aValue);
 
+	template<class T>
+	void SetUniform(size_t anOffset, T&& aValue)
+	{
+		using TElem = std::decay_t<T>;
+		TElem* slotPointer = reinterpret_cast<TElem*>(myData + anOffset);
+		*slotPointer = std::forward<T>(aValue);
+	}
+
 private:
 	char* myData;
 	UniformBuffer& myBuffer;

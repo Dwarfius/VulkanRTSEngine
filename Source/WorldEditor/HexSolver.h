@@ -42,7 +42,7 @@ public:
 class TintAdapter : RegisterUniformAdapter<TintAdapter>
 {
 public:
-	inline static const Descriptor ourDescriptor{
+	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec4 }
 	};
 	static void FillUniformBlock(const AdapterSourceData& aData, UniformBlock& aUB);

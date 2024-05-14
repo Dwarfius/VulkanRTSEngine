@@ -19,7 +19,7 @@ void ObjectMatricesAdapter::FillUniformBlock(const AdapterSourceData& aData, Uni
 	const glm::mat4& view = camera.GetView();
 	const glm::mat4& vp = camera.Get();
 
-	aUB.SetUniform(0, 0, model);
-	aUB.SetUniform(1, 0, view * model);
-	aUB.SetUniform(2, 0, vp * model);
+	aUB.SetUniform(ourDescriptor.GetOffset(0, 0), model);
+	aUB.SetUniform(ourDescriptor.GetOffset(1, 0), view * model);
+	aUB.SetUniform(ourDescriptor.GetOffset(2, 0), vp * model);
 }

@@ -250,13 +250,13 @@ void IDAdapter::FillUniformBlock(const AdapterSourceData& aData, UniformBlock& a
 	{
 		const IDGOAdapterSourceData& source = 
 			static_cast<const IDGOAdapterSourceData&>(aData);
-		aUB.SetUniform(0, 0, source.myID);
+		aUB.SetUniform(ourDescriptor.GetOffset(0, 0), source.myID);
 	}
 	else
 	{
 		const IDTerrainAdapterSourceData& source = 
 			static_cast<const IDTerrainAdapterSourceData&>(aData);
-		aUB.SetUniform(0, 0, source.myID);
+		aUB.SetUniform(ourDescriptor.GetOffset(0, 0), source.myID);
 	}
 }
 
