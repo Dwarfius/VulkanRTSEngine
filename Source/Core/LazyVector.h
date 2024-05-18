@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "Debug/Assert.h"
 
 // A simple utility class that only allows to insert up
 // to a certain capacity, and the user must manually regrow

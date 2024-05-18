@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Debug/Assert.h"
+
 #include <array>
 
 // A utility buffer which tracks Read and Write positions individually  

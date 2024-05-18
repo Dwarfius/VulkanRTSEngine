@@ -183,8 +183,7 @@ void Game::ForEachRenderable(const TFunc& aFunc)
 {
 	// TODO: replace with a read-only lock
 	std::lock_guard lock(myRenderablesMutex);
-	//myRenderables.ParallelForEach(aFunc);
-	myRenderables.ForEach(aFunc);
+	myRenderables.ParallelForEach(aFunc);
 }
 
 template<class TFunc>
