@@ -8,7 +8,6 @@
 #include <Core/Utils.h>
 #include <Core/Profiler.h>
 
-#include <sstream>
 #include <imgui_internal.h>
 
 // Taken and adapted from https://github.com/ocornut/imgui/issues/3379#issuecomment-669259429
