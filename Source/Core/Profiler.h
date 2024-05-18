@@ -18,13 +18,20 @@ public:
     struct Mark
 	{
         char myName[64]; // TODO: move this out
-        std::thread::id myThreadId; // TODO: look at moving it out
 		Stamp myStamp;
 		uint32_t myId;
 		uint8_t myDepth;
-	};
+    };
+    static_assert(std::is_trivially_constructible_v<Mark>, "Relying on noop ctors!");
     static_assert(std::is_trivially_copyable_v<Mark>, "Relying on fast copies!");
     static_assert(std::is_trivially_destructible_v<Mark>, "Relying on noop destructors!");
+
+    struct ThreadProfile
+    {
+        std::thread::id myThreadId;
+        std::vector<Mark> myStartMarks;
+        std::vector<Mark> myEndMarks;
+    };
 
     // A record of a frame's profiling data - how long the entire frame took,
     // what's the frame counter, and all of the marks of that frame
@@ -33,8 +40,7 @@ public:
         Stamp myBeginStamp;
         Stamp myEndStamp;
         size_t myFrameNum;
-        std::vector<Mark> myStartMarks;
-        std::vector<Mark> myEndMarks;
+        std::vector<ThreadProfile> myThreadProfiles;
     };
 
     static Profiler& GetInstance()

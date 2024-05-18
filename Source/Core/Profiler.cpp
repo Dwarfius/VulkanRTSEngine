@@ -42,11 +42,13 @@ public:
 
     uint32_t StartScope(std::string_view aName);
     void EndScope(uint32_t anId, std::string_view aName);
-    void NewFrame(std::vector<Mark>& aStartMarks, std::vector<Mark>& aEndMarks);
+    void NewFrame(ThreadProfile& aProfile);
+
 private:
     std::atomic<uint32_t>& myIdCounter;
     AtomicLazyMarksVector myStartMarks;
     AtomicLazyMarksVector myEndMarks;
+    std::thread::id myThreadId;
     uint8_t myDepth = 0;
 };
 
@@ -70,23 +72,18 @@ void Profiler::NewFrame()
 
     const uint32_t thisProfileInd = myFrameNum % kMaxFrames;
     const uint32_t nextProfileInd = (myFrameNum + 1) % kMaxFrames;
-    std::vector<Mark> allFrameStartMarks;
-    std::vector<Mark> allFrameEndMarks;
-    // counts of marks-per-frame should be stable in general case, so
-    // try to use it to amortise the allocations
-    allFrameStartMarks.reserve(myFrameProfiles[nextProfileInd].myStartMarks.size());
-    allFrameEndMarks.reserve(myFrameProfiles[nextProfileInd].myStartMarks.size());
-
-    for (Storage* storage : myTLSStorages)
-    {
-        storage->NewFrame(allFrameStartMarks, allFrameEndMarks);
-    }
 
     FrameProfile& profile = myFrameProfiles[thisProfileInd];
     profile.myEndStamp = endTime;
-    profile.myStartMarks = std::move(allFrameStartMarks);
-    profile.myEndMarks = std::move(allFrameEndMarks);
     profile.myFrameNum = myFrameNum;
+    profile.myThreadProfiles.clear();
+    profile.myThreadProfiles.reserve(myTLSStorages.size());
+    for (Storage* storage : myTLSStorages)
+    {
+        ThreadProfile threadProfile;
+        storage->NewFrame(threadProfile);
+        profile.myThreadProfiles.emplace_back(std::move(threadProfile));
+    }
     myFrameProfiles[nextProfileInd].myBeginStamp = profile.myEndStamp;
     myFrameProfiles[nextProfileInd].myEndStamp = profile.myEndStamp; // current frame, not finished yet
 
@@ -113,6 +110,7 @@ void Profiler::NewFrame()
 
 Profiler::Storage::Storage(Profiler& aProfiler)
     : myIdCounter(aProfiler.myIdCounter)
+    , myThreadId(std::this_thread::get_id())
 {
     aProfiler.AddStorage(this);
 }
@@ -128,7 +126,6 @@ uint32_t Profiler::Storage::StartScope(std::string_view aName)
         std::memcpy(newMark->myName, aName.data(), aName.size());
         newMark->myName[aName.size()] = 0;
         newMark->myId = myIdCounter++;
-        newMark->myThreadId = std::this_thread::get_id();
         newMark->myDepth = myDepth++;
         return newMark->myId;
     }
@@ -144,16 +141,16 @@ void Profiler::Storage::EndScope(uint32_t anId, std::string_view aName)
         std::memcpy(newMark->myName, aName.data(), aName.size());
         newMark->myName[aName.size()] = 0;
         newMark->myId = anId;
-        newMark->myThreadId = std::this_thread::get_id();
         newMark->myDepth = --myDepth;
         newMark->myStamp = Clock::now().time_since_epoch().count();
     }
 }
 
-void Profiler::Storage::NewFrame(std::vector<Mark>& aStartMarks, std::vector<Mark>& aEndMarks)
+void Profiler::Storage::NewFrame(ThreadProfile& aProfile)
 {
-    myStartMarks.Transfer(aStartMarks);
-    myEndMarks.Transfer(aEndMarks);
+    aProfile.myThreadId = myThreadId;
+    myStartMarks.Transfer(aProfile.myStartMarks);
+    myEndMarks.Transfer(aProfile.myEndMarks);
 }
 
 Profiler::ScopedMark::ScopedMark(std::string_view aName, Profiler& aProfiler)

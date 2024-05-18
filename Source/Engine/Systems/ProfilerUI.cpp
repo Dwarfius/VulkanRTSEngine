@@ -79,37 +79,40 @@ namespace
 	{
 		std::unordered_map<uint32_t, ProfilerUI::Mark> marksMap;
 
-		for (const Profiler::Mark& startMark : aProfile.myStartMarks)
+		for (const Profiler::ThreadProfile& threadProfile : aProfile.myThreadProfiles)
 		{
-			ProfilerUI::Mark mark;
-			mark.myId = startMark.myId;
-			mark.myThreadId = startMark.myThreadId;
-			mark.myStart = startMark.myStamp;
-			mark.myEnd = aProfile.myEndStamp;
-			mark.myDepth = startMark.myDepth;
-			std::memcpy(mark.myName, startMark.myName, sizeof(startMark.myName));
-			marksMap.insert({ startMark.myId, mark });
-		}
-
-		for (const Profiler::Mark& endMark : aProfile.myEndMarks)
-		{
-			// we either have mark to "close"
-			// or it's a new one from previous frames
-			auto iter = marksMap.find(endMark.myId);
-			if (iter != marksMap.end())
-			{
-				iter->second.myEnd = endMark.myStamp;
-			}
-			else
+			for (const Profiler::Mark& startMark : threadProfile.myStartMarks)
 			{
 				ProfilerUI::Mark mark;
-				mark.myId = endMark.myId;
-				mark.myThreadId = endMark.myThreadId;
-				mark.myStart = aProfile.myBeginStamp;
-				mark.myEnd = endMark.myStamp;
-				mark.myDepth = endMark.myDepth;
-				std::memcpy(mark.myName, endMark.myName, sizeof(endMark.myName));
-				marksMap.insert({ endMark.myId, mark });
+				mark.myId = startMark.myId;
+				mark.myThreadId = threadProfile.myThreadId;
+				mark.myStart = startMark.myStamp;
+				mark.myEnd = aProfile.myEndStamp;
+				mark.myDepth = startMark.myDepth;
+				std::memcpy(mark.myName, startMark.myName, sizeof(startMark.myName));
+				marksMap.insert({ startMark.myId, mark });
+			}
+
+			for (const Profiler::Mark& endMark : threadProfile.myEndMarks)
+			{
+				// we either have mark to "close"
+				// or it's a new one from previous frames
+				auto iter = marksMap.find(endMark.myId);
+				if (iter != marksMap.end())
+				{
+					iter->second.myEnd = endMark.myStamp;
+				}
+				else
+				{
+					ProfilerUI::Mark mark;
+					mark.myId = endMark.myId;
+					mark.myThreadId = threadProfile.myThreadId;
+					mark.myStart = aProfile.myBeginStamp;
+					mark.myEnd = endMark.myStamp;
+					mark.myDepth = endMark.myDepth;
+					std::memcpy(mark.myName, endMark.myName, sizeof(endMark.myName));
+					marksMap.insert({ endMark.myId, mark });
+				}
 			}
 		}
 
