@@ -19,6 +19,8 @@ public:
     void Transfer(std::vector<Profiler::Mark>& aMarks)
     {
         std::lock_guard lock(myMutex);
+        // TODO: don't copy - just move the underlying vector outside
+        static_assert(std::is_trivially_copyable_v<Profiler::Mark>, "Can't get cheap memcpy!");
         aMarks.insert(aMarks.end(), myMarks.begin(), myMarks.end());
 
         if (myMarks.NeedsToGrow())

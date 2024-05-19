@@ -31,8 +31,8 @@ public:
 
 	void Grow(size_t aGrowthFactor = 2)
 	{
-		Clear();
 		myItems.resize(myItems.capacity() * aGrowthFactor);
+		ClearFrom(0);
 	}
 
 	void Clear()
@@ -43,8 +43,11 @@ public:
 	// Inserting new items will start from anIndex
 	void ClearFrom(size_t anIndex)
 	{
-		myItems.erase(myItems.begin() + anIndex, myItems.end());
-		myItems.resize(myItems.capacity());
+		static_assert(std::is_trivially_constructible_v<TItem>
+			&& std::is_trivially_destructible_v<TItem>, "We want to skip destroying the old sized "
+			"span, as that would reuqire us to iterate over the range. We also want to skip default "
+			"initializing new values after resize(since we have to have a valid object to "
+			"overwrite it, or since std::vector will try to destruct all values in it's span).");
 		myIndex = anIndex;
 	}
 
