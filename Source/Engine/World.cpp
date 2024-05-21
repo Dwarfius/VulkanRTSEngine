@@ -11,7 +11,7 @@ World::World(Id anId, std::string_view aPath)
 {
 }
 
-void World::Add(const Handle<GameObject>& aGameObject)
+void World::Add(Handle<GameObject>& aGameObject)
 {
 	ASSERT_STR(aGameObject.IsValid(), "Invalid object passed in!");
 
@@ -21,9 +21,11 @@ void World::Add(const Handle<GameObject>& aGameObject)
 	const size_t newIndex = myGameObjects.size();
 	myGameObjects.push_back(aGameObject);
 	myGameObjIndices.insert({ aGameObject.Get(), newIndex });
+
+	aGameObject->SetWorld(this);
 }
 
-void World::Remove(const Handle<GameObject>& aGameObject)
+void World::Remove(Handle<GameObject>& aGameObject)
 {
 	ASSERT_STR(aGameObject.IsValid(), "Invalid object passed in!");
 
@@ -31,7 +33,7 @@ void World::Remove(const Handle<GameObject>& aGameObject)
 	AssertWriteLock lock(myObjectsMutex);
 #endif
 
-	const GameObject* objPtr = aGameObject.Get();
+	GameObject* objPtr = aGameObject.Get();
 	const auto objIndIter = myGameObjIndices.find(objPtr);
 	ASSERT_STR(objIndIter != myGameObjIndices.end(), "Game Object didn't belong to world!");
 	const size_t toDeleteInd = objIndIter->second;
@@ -46,6 +48,8 @@ void World::Remove(const Handle<GameObject>& aGameObject)
 	}
 	myGameObjects.erase(lastIter);
 	myGameObjIndices.erase(objIndIter);
+
+	objPtr->SetWorld(nullptr);
 }
 
 void World::Clear()

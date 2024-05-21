@@ -10,6 +10,36 @@
 #include <Graphics/Graphics.h>
 #include <memory_resource>
 
+class HierarchyAccess
+{
+public:
+	template<class TFunc>
+	static void RunOnChildren(GameObject& aRoot, TFunc&& aFunc)
+	{
+		constexpr size_t kGOMemorySize = 128;
+		GameObject* ptrMemory[kGOMemorySize];
+		std::pmr::monotonic_buffer_resource stackRes(ptrMemory, sizeof(ptrMemory));
+		std::pmr::vector<GameObject*> dirtyGOs(&stackRes);
+		for (Handle<GameObject>& child : aRoot.myChildren)
+		{
+			dirtyGOs.push_back(child.Get());
+		}
+
+		while (dirtyGOs.size())
+		{
+			GameObject* go = dirtyGOs.back();
+			dirtyGOs.pop_back();
+
+			aFunc(*go);
+			
+			for (Handle<GameObject>& child : go->myChildren)
+			{
+				dirtyGOs.push_back(child.Get());
+			}
+		}
+	}
+};
+
 GameObject::GameObject(const Transform& aTransform)
 	: myUID(UID::Create())
 	, myWorldTransf(aTransform)
@@ -62,7 +92,7 @@ void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren 
 
 		if (aMoveChildren)
 		{
-			UpdateHierarchy();
+			UpdateHierarchyTransform();
 		}
 
 		if (myRenderable)
@@ -93,7 +123,7 @@ void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren 
 
 		if (aMoveChildren)
 		{
-			UpdateHierarchy();
+			UpdateHierarchyTransform();
 		}
 
 		if (myRenderable)
@@ -167,6 +197,14 @@ void GameObject::DetachChild(const Handle<GameObject>& aGO)
 	DetachChild(index);
 }
 
+void GameObject::SetWorld(World* aWorld)
+{
+	myWorld = aWorld;
+	HierarchyAccess::RunOnChildren(*this, [aWorld](GameObject& aGO) {
+		aGO.myWorld = aWorld;
+	});
+}
+
 void GameObject::SetPhysTransform(const glm::mat4& aTransf)
 {
 	// because Bullet doesn't support scaled transforms, 
@@ -182,29 +220,12 @@ void GameObject::GetPhysTransform(glm::mat4& aTransf) const
 	aTransf = myWorldTransf.GetMatrix();
 }
 
-void GameObject::UpdateHierarchy()
+void GameObject::UpdateHierarchyTransform()
 {
 	// Expectation that local transform is up to date!
-	constexpr size_t kGOMemorySize = 128;
-	GameObject* ptrMemory[kGOMemorySize];
-	std::pmr::monotonic_buffer_resource stackRes(ptrMemory, sizeof(ptrMemory));
-	std::pmr::vector<GameObject*> dirtyGOs(&stackRes);
-	for (Handle<GameObject>& child : myChildren)
-	{
-		dirtyGOs.push_back(child.Get());
-	}
-
-	while (dirtyGOs.size())
-	{
-		GameObject* go = dirtyGOs.back();
-		dirtyGOs.pop_back();
-
-		go->myWorldTransf = go->GetParent()->GetWorldTransform() * go->myLocalTransf;
-		for (Handle<GameObject>& child : go->myChildren)
-		{
-			dirtyGOs.push_back(child.Get());
-		}
-	}
+	HierarchyAccess::RunOnChildren(*this, [](GameObject& aGO) {
+		aGO.myWorldTransf = aGO.GetParent()->GetWorldTransform() * aGO.myLocalTransf;
+	});
 }
 
 void GameObject::Serialize(Serializer& aSerializer)

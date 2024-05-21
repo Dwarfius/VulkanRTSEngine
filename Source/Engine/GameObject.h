@@ -11,8 +11,8 @@
 #include "VisualObject.h"
 
 class ComponentBase;
-
 class GameObject;
+class World;
 
 struct Renderable
 {
@@ -66,6 +66,10 @@ public:
 	void DetachChild(size_t aInd);
 	void DetachChild(const Handle<GameObject>& aGO);
 
+	void SetWorld(World* aWorld);
+	World* GetWorld() { return myWorld; }
+	const World* GetWorld() const { return myWorld; }
+
 	void Serialize(Serializer& aSerializer) final;
 
 	// IPhysControllable impl
@@ -74,7 +78,8 @@ private:
 	void GetPhysTransform(glm::mat4& aTranfs) const override final;
 
 private:
-	void UpdateHierarchy();
+	friend class HierarchyAccess;
+	void UpdateHierarchyTransform();
 
 	UID myUID;
 	
@@ -90,6 +95,8 @@ private:
 	Handle<GameObject> myParent;
 	std::vector<Handle<GameObject>> myChildren;
 	bool myIsDead;
+
+	World* myWorld = nullptr;
 
 #ifdef ASSERT_MUTEX
 	AssertMutex myPhysMutex;

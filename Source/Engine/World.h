@@ -17,8 +17,8 @@ public:
 	World(Id anId, std::string_view aPath);
 	~World() noexcept = default;
 
-	void Add(const Handle<GameObject>& aGameObject);
-	void Remove(const Handle<GameObject>& aGameObject);
+	void Add(Handle<GameObject>& aGameObject);
+	void Remove(Handle<GameObject>& aGameObject);
 	void Clear();
 	void Reserve(size_t aSize);
 
