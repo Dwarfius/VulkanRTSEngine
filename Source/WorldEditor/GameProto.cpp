@@ -43,8 +43,8 @@ void GameProto::Update(Game& aGame, DefaultAssets& aAssets, float aDelta)
 			{
 				UpdateWater();
 			}
-			ImGui::End();
 		}
+		ImGui::End();
 	}
 
 	if (myNodes.size())
