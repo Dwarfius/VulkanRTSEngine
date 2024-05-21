@@ -77,6 +77,7 @@ void PhysicsWorld::AddEntity(PhysicsEntity* anEntity)
 	ASSERT(anEntity->GetState() == PhysicsEntity::State::NotInWorld);
 	ASSERT(!anEntity->myWorld);
 	anEntity->myState = PhysicsEntity::State::PendingAddition;
+	anEntity->myWorld = this;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
 	const PhysicsCommandAddBody* cmd = new PhysicsCommandAddBody(anEntity);
 	EnqueueCommand(cmd);
@@ -94,7 +95,8 @@ void PhysicsWorld::RemoveEntity(PhysicsEntity* anEntity)
 
 void PhysicsWorld::DeleteEntity(PhysicsEntity* anEntity)
 {
-	ASSERT(anEntity->GetState() == PhysicsEntity::State::InWorld);
+	ASSERT(anEntity->GetState() == PhysicsEntity::State::InWorld
+		|| anEntity->GetState() == PhysicsEntity::State::PendingAddition);
 	ASSERT(anEntity->myWorld == this);
 	anEntity->myState = PhysicsEntity::State::PendingRemoval;
 	// TODO: get rid of allocs/deallocs by using an internal recycler
@@ -313,7 +315,7 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 {
 	PhysicsEntity* entity = aCmd.myEntity;
 
-	ASSERT(!entity->myWorld);
+	ASSERT(entity->myWorld == this);
 	ASSERT(entity->GetState() == PhysicsEntity::State::PendingAddition);
 
 	switch (entity->GetType())
@@ -330,7 +332,6 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	default:
 		ASSERT(false);
 	}
-	entity->myWorld = this;
 	entity->myState = PhysicsEntity::State::InWorld;
 
 	switch (entity->GetType())

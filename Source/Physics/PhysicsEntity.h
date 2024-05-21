@@ -126,6 +126,8 @@ private:
 
 	std::shared_ptr<PhysicsShapeBase> myShape;
 	btCollisionObject* myBody = nullptr;
+	// Note: World will be set if we're in either of
+	// PendingAddition, InWorld and PendingRemoval states
 	PhysicsWorld* myWorld = nullptr;
 	IPhysControllable* myPhysController = nullptr;
 	State myState = State::NotInWorld;
