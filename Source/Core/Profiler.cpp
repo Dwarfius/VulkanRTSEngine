@@ -19,7 +19,10 @@ public:
     void Transfer(std::vector<Profiler::Mark>& aMarks)
     {
         std::lock_guard lock(myMutex);
-        // TODO: don't copy - just move the underlying vector outside
+        // Note: LazyVector::TransferTo turned out to be a pessimization,
+        // because the "heavy" thread can migrate, causing all storages
+        // to grow big with low occupancy (5 marks vs 16k storage). See
+        // TODO inside LazyVector::TransferTo for more info
         static_assert(std::is_trivially_copyable_v<Profiler::Mark>, "Can't get cheap memcpy!");
         aMarks.insert(aMarks.end(), myMarks.begin(), myMarks.end());
 
@@ -32,6 +35,7 @@ public:
             myMarks.Clear();
         }
     }
+
 private:
     LazyVector<Profiler::Mark, 256> myMarks;
     std::mutex myMutex;

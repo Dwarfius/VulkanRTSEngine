@@ -16,6 +16,7 @@ public:
 	using BaseStorage = std::vector<TItem>;
 	using Iterator = typename BaseStorage::iterator;
 	using ConstIterator = typename BaseStorage::const_iterator;
+	constexpr static size_t kGrowthFactor = 2;
 
 public:
 	LazyVector()
@@ -26,13 +27,19 @@ public:
 
 	bool NeedsToGrow() const
 	{
-		return myIndex >= myItems.capacity();
+		return myIndex >= Capacity();
 	}
 
-	void Grow(size_t aGrowthFactor = 2)
+	void Grow(size_t aGrowthFactor = kGrowthFactor)
 	{
-		myItems.resize(myItems.capacity() * aGrowthFactor);
-		ClearFrom(0);
+		myItems.resize(Capacity() * aGrowthFactor);
+		Clear();
+	}
+
+	void GrowTo(size_t aNewSize)
+	{
+		myItems.resize(aNewSize);
+		Clear();
 	}
 
 	void Clear()
@@ -109,6 +116,26 @@ public:
 
 		new(myItems.data() + myIndex++) TItem(std::forward<TArgs>(args)...);
 		return true;
+	}
+
+	// Automatically regrows if needed
+	void TransferTo(std::vector<TItem>& aVec)
+	{
+		const bool shouldGrow = NeedsToGrow();
+		const size_t oldSize = Capacity();
+
+		// shrink the vector to avoid returning garbage
+		static_assert(std::is_trivially_destructible_v<TItem>, "Shrinking is too expensive!");
+		myItems.resize(myIndex);
+		aVec = std::move(myItems);
+		
+		// TODO: While we use std::vector internally, it'll have to allocate and
+		// then value initialize the memory. Since LazyVector is supposed to help with
+		// large arrays, and we require a trivial/implicit-lifetime TItem, this wastes
+		// performance and becomes more expensive as LazyVector grows while having
+		// low utilization. I either need to change API to be TransferTo(LazyVector&) and
+		// use a custom allocator::construct that does nothing, or roll my own vector
+		GrowTo(oldSize * (shouldGrow ? kGrowthFactor : 1));
 	}
 
 	// conversion move-to
