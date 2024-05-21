@@ -328,22 +328,30 @@ void ImGUISerializer::SerializeSpan(glm::mat4* aValues, size_t aSize)
 	}
 }
 
-void ImGUISerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t)
+void ImGUISerializer::SerializeEnum(std::string_view aName, size_t& anEnumValue, const char* const* aNames, size_t aNamesLength)
 {
+	char indexLbl[16];
 	const bool isPartOfArray = aName.empty();
 	if (isPartOfArray)
 	{
 		State& state = myStateStack.top();
-		
-		char indexLbl[16];
 		Utils::StringFormat(indexLbl, "{}", state.myCurrIndex);
 		state.myCurrIndex++;
-
-		ImGui::LabelText(indexLbl, aNames[anEnumValue]);
 	}
-	else
+
+	const char* const name = isPartOfArray ? indexLbl : aName.data();
+	if (ImGui::BeginCombo(name, aNames[anEnumValue]))
 	{
-		ImGui::LabelText(aName.data(), aNames[anEnumValue]);
+		for (uint8_t i = 0; i < aNamesLength; i++)
+		{
+			bool selected = anEnumValue == i;
+			if (ImGui::Selectable(aNames[i], &selected))
+			{
+				anEnumValue = i;
+			}
+		}
+
+		ImGui::EndCombo();
 	}
 }
 
