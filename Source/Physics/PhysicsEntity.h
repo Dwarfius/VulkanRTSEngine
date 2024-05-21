@@ -97,7 +97,7 @@ public:
 	void SetCollisionFlags(int aFlagSet);
 	int GetCollisionFlags() const;
 
-	const PhysicsShapeBase& GetShape() const { return *myShape; }
+	const PhysicsShapeBase* GetShape() const { return myShape.get(); }
 
 	void SetOffset(glm::vec3 anOffset);
 	glm::vec3 GetOffset() const { return myOffset; }

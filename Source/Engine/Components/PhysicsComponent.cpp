@@ -128,5 +128,18 @@ void PhysicsComponent::Serialize(Serializer& aSerializer)
 			myEntity = new PhysicsEntity();
 		}
 		myEntity->Serialize(aSerializer, myOwner);
+
+		if (aSerializer.IsReading())
+		{
+			World* world = GetOwner()->GetWorld();
+			PhysicsWorld* physWorld = world ? world->GetPhysicsWorld() : nullptr;
+			if (myEntity->GetState() == PhysicsEntity::State::NotInWorld
+				&& myEntity->GetShape()
+				&& myEntity->GetShape()->GetType() != PhysicsShapeBase::Type::Invalid
+				&& physWorld)
+			{
+				physWorld->AddEntity(myEntity);
+			}
+		}
 	}
 }
