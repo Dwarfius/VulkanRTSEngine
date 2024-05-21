@@ -60,6 +60,8 @@ EditorMode::EditorMode(Game& aGame)
 	light.Get()->myType = Light::Type::Directional;
 	light.Get()->myAmbientIntensity = 1.f;
 	myLights.push_back(std::move(light));
+
+	aGame.GetWorld().CreatePhysWorld();
 }
 
 EditorMode::~EditorMode()
@@ -71,7 +73,7 @@ EditorMode::~EditorMode()
 	delete myAnimTest;
 }
 
-void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
+void EditorMode::Update(Game& aGame, float aDeltaTime)
 {
 	Camera* cam = aGame.GetCamera();
 	Transform& camTransf = cam->GetTransform();
@@ -81,13 +83,14 @@ void EditorMode::Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld)
 		HandleCamera(camTransf, aDeltaTime);
 	}
 
-	if (aWorld && Input::GetMouseBtnPressed(0))
+	PhysicsWorld* physWorld = aGame.GetWorld().GetPhysicsWorld();
+	if (physWorld && Input::GetMouseBtnPressed(0))
 	{
 		glm::vec3 from = camTransf.GetPos();
 		glm::vec3 dir = camTransf.GetForward();
 
 		PhysicsEntity* physEntity;
-		if (aWorld->RaycastClosest(from, dir, 100.f, physEntity)
+		if (physWorld->RaycastClosest(from, dir, 100.f, physEntity)
 			&& physEntity->GetType() == PhysicsEntity::Type::Dynamic)
 		{
 			physEntity->AddForce(dir * 100.f);

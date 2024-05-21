@@ -142,7 +142,8 @@ StressTest::StressTest(Game& aGame)
 	myBalls.reserve(500);
 
 	myTriggersTracker = new TriggersTracker(*this);
-	aGame.GetPhysicsWorld()->AddPhysSystem(myTriggersTracker);
+	aGame.GetWorld().CreatePhysWorld();
+	aGame.GetWorld().GetPhysicsWorld()->AddPhysSystem(myTriggersTracker);
 
 	myLight = aGame.GetLightSystem().AllocateLight();
 	Light& light = *myLight.Get();
@@ -254,7 +255,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			);
 			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
 			physComp->CreateTriggerEntity(shape, {0, halfExtents.y, 0});
-			physComp->RequestAddToWorld(*aGame.GetPhysicsWorld());
+			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
 			tank.myTrigger = &physComp->GetPhysicsEntity();
 
 			aGame.AddGameObject(tank.myGO);
@@ -314,7 +315,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			);
 			PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
 			physComp->CreateTriggerEntity(shape, { 0, halfExtents.x, 0 });
-			physComp->RequestAddToWorld(*aGame.GetPhysicsWorld());
+			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
 			ball.myTrigger = &physComp->GetPhysicsEntity();
 
 			aGame.AddGameObject(ball.myGO);

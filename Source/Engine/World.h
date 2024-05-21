@@ -6,6 +6,7 @@
 #include <Core/Resources/Resource.h>
 
 class GameObject;
+class PhysicsWorld;
 
 class World : public Resource
 {
@@ -20,6 +21,10 @@ public:
 	void Remove(const Handle<GameObject>& aGameObject);
 	void Clear();
 	void Reserve(size_t aSize);
+
+	void CreatePhysWorld();
+	PhysicsWorld* GetPhysicsWorld() { return myPhysWorld; }
+	const PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
 
 	template<class TFunc> 
 		requires std::is_invocable_v<
@@ -51,6 +56,7 @@ private:
 	// TODO: Merge into flat_map from C++23
 	std::vector<Handle<GameObject>> myGameObjects;
 	std::unordered_map<const GameObject*, size_t> myGameObjIndices;
+	PhysicsWorld* myPhysWorld = nullptr;
 #ifdef ASSERT_MUTEX
 	AssertRWMutex myObjectsMutex;
 #endif

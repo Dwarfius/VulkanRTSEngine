@@ -23,8 +23,7 @@ int main()
 	constexpr GameTask::Type kEditorUpdateTask = Game::Tasks::Last + 1;
 	GameTask editorUpdate(kEditorUpdateTask, [editor, game] {
 		const float deltaTime = game->GetLastFrameDeltaTime();
-		PhysicsWorld* physWorld = game->GetPhysicsWorld();
-		editor->Update(*game, deltaTime, physWorld);
+		editor->Update(*game, deltaTime);
 	});
 	editorUpdate.AddDependency(Game::Tasks::BeginFrame);
 	editorUpdate.AddDependency(Game::Tasks::PhysicsUpdate);

@@ -14,8 +14,6 @@
 class Camera;
 class Graphics;
 class Terrain;
-class PhysicsWorld;
-class PhysicsEntity;
 class PhysicsShapeBase;
 class PhysicsComponent;
 class ImGUISystem;
@@ -96,7 +94,6 @@ public:
 	void ForEachDebugDrawer(const DebugDrawerCallback& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
-	PhysicsWorld* GetPhysicsWorld() const { return myPhysWorld; }
 
 	// utility method for accessing the time across game
 	float GetTime() const;
@@ -158,7 +155,6 @@ private:
 	std::mutex myRenderablesMutex;
 	
 	std::vector<TerrainEntity> myTerrains;
-	PhysicsWorld* myPhysWorld;
 	AssetTracker* myAssetTracker;
 	// TODO: explore thread-local drawers!
 	DebugDrawer myDebugDrawer;

@@ -12,7 +12,6 @@
 #include "Gizmos.h"
 #include "GameProto.h"
 
-class PhysicsWorld;
 class GameObject;
 class Transform;
 class Game;
@@ -30,7 +29,7 @@ public:
 	EditorMode(Game& aGame);
 	~EditorMode();
 
-	void Update(Game& aGame, float aDeltaTime, PhysicsWorld* aWorld);
+	void Update(Game& aGame, float aDeltaTime);
 
 private:
 	// Worlds

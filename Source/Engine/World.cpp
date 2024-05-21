@@ -1,6 +1,7 @@
 #include "Precomp.h"
 #include "World.h"
 
+#include <Physics/PhysicsWorld.h>
 #include <Core/Resources/Serializer.h>
 
 #include "GameObject.h"
@@ -54,6 +55,11 @@ void World::Clear()
 #endif
 	myGameObjects.clear();
 	myGameObjIndices.clear();
+
+	if (myPhysWorld)
+	{
+		delete myPhysWorld;
+	}
 }
 
 void World::Reserve(size_t aSize)
@@ -63,6 +69,12 @@ void World::Reserve(size_t aSize)
 #endif
 	myGameObjects.reserve(aSize);
 	myGameObjIndices.reserve(aSize);
+}
+
+void World::CreatePhysWorld()
+{
+	ASSERT(!myPhysWorld);
+	myPhysWorld = new PhysicsWorld();
 }
 
 void World::Serialize(Serializer& aSerializer)

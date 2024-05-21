@@ -133,8 +133,6 @@ Game::Game(ReportError aReporterFunc)
 
 	myTaskManager = std::make_unique<GameTaskManager>();
 
-	myPhysWorld = new PhysicsWorld();
-
 	myFileWatcher = new FileWatcher(Resource::kAssetsFolder);
 }
 
@@ -336,9 +334,6 @@ void Game::CleanUp()
 
 	delete myFileWatcher;
 
-	// physics clear
-	delete myPhysWorld;
-
 	// we can mark that the engine is done - wrap the threads
 	myIsRunning = false;
 	
@@ -382,7 +377,10 @@ GLFWwindow* Game::GetWindow() const
 void Game::ForEachDebugDrawer(const DebugDrawerCallback& aFunc)
 {
 	aFunc(myDebugDrawer);
-	aFunc(myPhysWorld->GetDebugDrawer());
+	if (PhysicsWorld* physWorld = myWorld.GetPhysicsWorld())
+	{
+		aFunc(physWorld->GetDebugDrawer());
+	}
 }
 
 float Game::GetTime() const
@@ -524,7 +522,7 @@ void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 	terrainEntity.myVisualObject->SetTexture(terrainTexture);
 
 	terrainTexture->ExecLambdaOnLoad([
-		physWorld = myPhysWorld, 
+		physWorld = myWorld.GetPhysicsWorld(),
 		entity = &terrainEntity
 	](const Resource* aRes) {
 		Terrain* terrain = entity->myTerrain;
@@ -533,18 +531,21 @@ void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 		glm::vec3 pos = terrain->GetPhysShape()->AdjustPositionForRecenter(transf.GetPos());
 		transf.SetPos(pos);
 
-		PhysicsComponent* physComp = new PhysicsComponent();
-		physComp->CreateOwnerlessPhysicsEntity(0,
-			terrain->GetPhysShape(),
-			transf.GetMatrix()
-		);
-		physComp->GetPhysicsEntity().SetCollisionFlags(
-			physComp->GetPhysicsEntity().GetCollisionFlags()
-			| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
-		);
+		if (physWorld)
+		{
+			PhysicsComponent* physComp = new PhysicsComponent();
+			physComp->CreateOwnerlessPhysicsEntity(0,
+				terrain->GetPhysShape(),
+				transf.GetMatrix()
+			);
+			physComp->GetPhysicsEntity().SetCollisionFlags(
+				physComp->GetPhysicsEntity().GetCollisionFlags()
+				| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT
+			);
 
-		physComp->RequestAddToWorld(*physWorld);
-		entity->myPhysComponent = physComp;
+			physComp->RequestAddToWorld(*physWorld);
+			entity->myPhysComponent = physComp;
+		}
 	});
 }
 
@@ -594,17 +595,18 @@ void Game::Update()
 
 void Game::PhysicsUpdate()
 {
-	if (!mySettings.myIsPaused)
+	PhysicsWorld* physWorld = myWorld.GetPhysicsWorld();
+	if (!mySettings.myIsPaused && physWorld)
 	{
 		Profiler::ScopedMark profile(__func__);
 
-		const bool isDrawing = myPhysWorld->IsDebugDrawingEnabled();
+		const bool isDrawing = physWorld->IsDebugDrawingEnabled();
 		if (mySettings.myDrawPhysicsDebug != isDrawing)
 		{
-			myPhysWorld->SetDebugDrawing(mySettings.myDrawPhysicsDebug);
+			physWorld->SetDebugDrawing(mySettings.myDrawPhysicsDebug);
 		}
 
-		myPhysWorld->Simulate(myDeltaTime);
+		physWorld->Simulate(myDeltaTime);
 	}
 }
 
