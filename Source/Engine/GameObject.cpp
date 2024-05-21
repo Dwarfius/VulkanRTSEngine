@@ -46,7 +46,9 @@ GameObject::~GameObject()
 
 void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren /* = true */)
 {
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myPhysMutex);
+#endif
 	if (aTransf != myLocalTransf)
 	{
 		myLocalTransf = aTransf;
@@ -72,7 +74,9 @@ void GameObject::SetLocalTransform(const Transform& aTransf, bool aMoveChildren 
 
 void GameObject::SetWorldTransform(const Transform& aTransf, bool aMoveChildren /* = true */)
 {
+#ifdef ASSERT_MUTEX
 	AssertLock lock(myPhysMutex);
+#endif
 	if (aTransf != myWorldTransf)
 	{
 		myWorldTransf = aTransf;

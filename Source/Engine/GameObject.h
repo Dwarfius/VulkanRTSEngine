@@ -91,7 +91,9 @@ private:
 	std::vector<Handle<GameObject>> myChildren;
 	bool myIsDead;
 
+#ifdef ASSERT_MUTEX
 	AssertMutex myPhysMutex;
+#endif
 };
 
 template<class TComp, class... TArgs>
