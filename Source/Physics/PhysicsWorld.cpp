@@ -284,26 +284,30 @@ void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 }
 
 // little macro helper for switch cases to reduce the length
-#define CALL_COMMAND_HANDLER(Type, Cmd) case PhysicsCommand::Type: Type##Handler (static_cast<const PhysicsCommand##Type&>(Cmd)); break;
 void PhysicsWorld::ResolveCommands()
 {
 	tbb::spin_mutex::scoped_lock lock(myCommandsLock);
+	std::unordered_set<PhysicsEntity*> skippedPhysEntities;
 	for (const PhysicsCommand* cmd : myCommands)
 	{
 		const PhysicsCommand& cmdRef = *cmd;
 		switch (cmdRef.myType)
 		{
-			CALL_COMMAND_HANDLER(AddBody, cmdRef);
-			CALL_COMMAND_HANDLER(RemoveBody, cmdRef);
-			CALL_COMMAND_HANDLER(DeleteBody, cmdRef);
-			default: ASSERT(false);
+		case PhysicsCommand::AddBody:
+			AddBodyHandler(static_cast<const PhysicsCommandAddBody&>(cmdRef), skippedPhysEntities);
+			break;
+		case PhysicsCommand::RemoveBody:
+			RemoveBodyHandler(static_cast<const PhysicsCommandRemoveBody&>(cmdRef), skippedPhysEntities);
+			break;
+		case PhysicsCommand::DeleteBody:
+			DeleteBodyHandler(static_cast<const PhysicsCommandDeleteBody&>(cmdRef), skippedPhysEntities);
+			break;
 		}
 		// TODO: get rid of allocs/deallocs by using an internal recycler
 		delete cmd;
 	}
 	myCommands.clear();
 }
-#undef CALL_COMMAND_HANDLER
 
 void PhysicsWorld::EnqueueCommand(const PhysicsCommand* aCmd)
 {
@@ -311,11 +315,18 @@ void PhysicsWorld::EnqueueCommand(const PhysicsCommand* aCmd)
 	myCommands.push_back(aCmd);
 }
 
-void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
+void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd, std::unordered_set<PhysicsEntity*>& aSkippedSet)
 {
 	PhysicsEntity* entity = aCmd.myEntity;
-
 	ASSERT(entity->myWorld == this);
+
+	// It's possible the entity got requested to be added right as we're shutting down the world
+	if (entity->GetState() == PhysicsEntity::State::PendingRemoval)
+	{
+		aSkippedSet.insert(entity);
+		return;
+	}
+
 	ASSERT(entity->GetState() == PhysicsEntity::State::PendingAddition);
 
 	switch (entity->GetType())
@@ -350,12 +361,21 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd)
 	}
 }
 
-void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
+void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet)
 {
 	PhysicsEntity* entity = aCmd.myEntity;
 
 	ASSERT(entity->myWorld == this);
 	ASSERT(entity->GetState() == PhysicsEntity::State::PendingRemoval);
+
+	entity->myWorld = nullptr;
+	entity->myState = PhysicsEntity::State::NotInWorld;
+
+	if (aSkippedSet.contains(entity))
+	{
+		// Nothing to do, since it's addition was skipped
+		return;
+	}
 
 	switch (entity->GetType())
 	{
@@ -369,9 +389,7 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 	default:
 		ASSERT(false);
 	}
-	entity->myWorld = nullptr;
-	entity->myState = PhysicsEntity::State::NotInWorld;
-
+	
 	// TODO: accelerate this by using binary search
 	switch (entity->GetType())
 	{
@@ -389,11 +407,11 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd)
 	}
 }
 
-void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd)
+void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet)
 {
 	// remove it from the world first
 	PhysicsCommandRemoveBody remCmd(aCmd.myEntity);
-	RemoveBodyHandler(remCmd);
+	RemoveBodyHandler(remCmd, aSkippedSet);
 
 	// now it's safe to delete it
 	delete aCmd.myEntity;

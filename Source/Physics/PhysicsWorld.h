@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: move to .cpp
 #include "PhysicsCommands.h"
 
 #include <Core/Threading/AssertRWMutex.h>
@@ -102,7 +103,7 @@ private:
 
 	// all command handlers
 private:
-	void AddBodyHandler(const PhysicsCommandAddBody& aCmd);
-	void RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd);
-	void DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd);
+	void AddBodyHandler(const PhysicsCommandAddBody& aCmd, std::unordered_set<PhysicsEntity*>& aSkippedSet);
+	void RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet);
+	void DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet);
 };
