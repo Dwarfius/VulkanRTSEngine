@@ -1,8 +1,5 @@
 #pragma once
 
-// TODO: move to .cpp
-#include "PhysicsCommands.h"
-
 #include <Core/Threading/AssertRWMutex.h>
 
 class PhysicsEntity;
@@ -13,6 +10,10 @@ class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
 class btGhostPairCallback;
 class DebugDrawer;
+struct PhysicsCommand;
+struct PhysicsCommandAddBody;
+struct PhysicsCommandRemoveBody;
+struct PhysicsCommandDeleteBody;
 
 class PhysicsWorld
 {

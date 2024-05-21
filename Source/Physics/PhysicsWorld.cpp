@@ -1,10 +1,12 @@
 #include "Precomp.h"
 #include "PhysicsWorld.h"
 
+#include "PhysicsCommands.h"
 #include "PhysicsDebugDrawer.h"
 #include "PhysicsEntity.h"
 
 #include <Core/Utils.h>
+#include <Core/Profiler.h>
 
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
@@ -113,13 +115,19 @@ void PhysicsWorld::Simulate(float aDeltaTime)
 		AssertWriteLock writeLock(mySimulationMutex);
 #endif
 
-		myIsBeingStepped = true;
-		// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
-		// the simulation, but it will update the motion states, thus achieving interpolation
-		myWorld->stepSimulation(aDeltaTime, kMaxSteps, kFixedStepLength);
-		myIsBeingStepped = false;
+		{
+			Profiler::ScopedMark scope("PhysicsWorld::StepSimulation");
+			myIsBeingStepped = true;
+			// even if we don't have enough deltaTime this frame, Bullet will avoid stepping
+			// the simulation, but it will update the motion states, thus achieving interpolation
+			myWorld->stepSimulation(aDeltaTime, kMaxSteps, kFixedStepLength);
+			myIsBeingStepped = false;
+		}
 
-		myWorld->debugDrawWorld();
+		{
+			Profiler::ScopedMark scope("PhysicsWorld::DebugDraw");
+			myWorld->debugDrawWorld();
+		}
 	}
 }
 
@@ -286,6 +294,7 @@ void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 // little macro helper for switch cases to reduce the length
 void PhysicsWorld::ResolveCommands()
 {
+	Profiler::ScopedMark scope("PhysicsWorld::ResolveCommands");
 	tbb::spin_mutex::scoped_lock lock(myCommandsLock);
 	std::unordered_set<PhysicsEntity*> skippedPhysEntities;
 	for (const PhysicsCommand* cmd : myCommands)
