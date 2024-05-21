@@ -3,12 +3,12 @@
 
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Graphics.h>
+#include <Graphics/Descriptor.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Profiler.h>
 
 #include "ShaderGL.h"
 #include "UniformBufferGL.h"
-
 
 PipelineGL::PipelineGL()
 	: myGLProgram(0)
