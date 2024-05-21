@@ -117,6 +117,9 @@ private:
 	void UpdateTransform();
 
 	void CreateBody(const InitParams& aParams);
+	void UpdateType(Type aType);
+	void UpdateShape(const std::shared_ptr<PhysicsShapeBase>& aShape);
+	void UpdateMass(float aMass);
 
 	int GetOverlapCount() const;
 	const PhysicsEntity* GetOverlapContact(int anIndex) const;

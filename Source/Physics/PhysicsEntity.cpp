@@ -167,25 +167,30 @@ void PhysicsEntity::DeferDelete()
 
 void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEntity)
 {
-	aSerializer.Serialize("myType", myType);
+	Type type = myType;
+	const Type oldType = type;
+	aSerializer.Serialize("myType", type);
+	const bool updateType = type != oldType;
 
 	PhysicsShapeBase::Type shapeType = myShape ?
 		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
 	aSerializer.Serialize("myShape", shapeType);
+	const bool createShape = aSerializer.IsReading()
+		&& (!myShape || shapeType != myShape->GetType());
 	
 	float mass = myBody && myType == Type::Dynamic 
 		? static_cast<btRigidBody*>(myBody)->getMass() 
 		: 0;
-	float oldMass = mass;
+	const float oldMass = mass;
 	aSerializer.Serialize("myMass", mass);
+	const bool updateMass = mass != oldMass;
 
 	glm::vec3 offset = myOffset;
-	glm::vec3 oldOffset = offset;
+	const glm::vec3 oldOffset = offset;
 	aSerializer.Serialize("myOffset", offset);
+	const bool updateOffset = offset != oldOffset;
 
-	const bool createShape = aSerializer.IsReading()
-		&& (!myShape || shapeType != myShape->GetType());
-
+	std::shared_ptr<PhysicsShapeBase> newShape;
 	if (shapeType != PhysicsShapeBase::Type::Invalid)
 	{
 		switch (shapeType)
@@ -200,7 +205,7 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 			aSerializer.Serialize("myHalfExtents", halfExtents);
 			if (createShape)
 			{
-				myShape = std::make_shared<PhysicsShapeBox>(halfExtents);
+				newShape = std::make_shared<PhysicsShapeBox>(halfExtents);
 			}
 			else
 			{
@@ -218,7 +223,7 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 			aSerializer.Serialize("myRadius", radius);
 			if (createShape)
 			{
-				myShape = std::make_shared<PhysicsShapeSphere>(radius);
+				newShape = std::make_shared<PhysicsShapeSphere>(radius);
 			}
 			else
 			{
@@ -240,7 +245,7 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 			aSerializer.Serialize("myHeight", height);
 			if (createShape)
 			{
-				myShape = std::make_shared<PhysicsShapeCapsule>(radius, height);
+				newShape = std::make_shared<PhysicsShapeCapsule>(radius, height);
 			}
 			else
 			{
@@ -275,27 +280,54 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 
 			// Bullet doesn't expose heightfield data, so we can't modify existing shape
 			// so we only support creating it once
+			ASSERT_STR(myShape.get() == nullptr, "Updating Terrain shapes are not supported!");
 			if (createShape)
 			{
-				myShape = std::make_shared<PhysicsShapeHeightfield>(width, depth, std::move(heights), minHeight, maxHeight);
+				newShape = std::make_shared<PhysicsShapeHeightfield>(width, depth, std::move(heights), minHeight, maxHeight);
 			}
 			break;
 		}
 		default:
 			ASSERT(false);
+			break;
 		}
 	}
 
 	if (aSerializer.IsReading())
 	{
-		InitParams params;
-		params.myType = myType;
-		params.myShape = myShape;
-		params.myEntity = anEntity;
-		params.myTranfs = glm::mat4{ 1 };
-		params.myOffset = offset;
-		params.myMass = mass;
-		CreateBody(params);
+		if (!myBody && newShape)
+		{
+			InitParams params;
+			params.myType = myType;
+			params.myShape = newShape;
+			params.myEntity = anEntity;
+			params.myTranfs = glm::mat4{ 1 };
+			params.myOffset = offset;
+			params.myMass = mass;
+			CreateBody(params);
+		}
+		else if(myBody)
+		{
+			if(updateType)
+			{
+				UpdateType(type);
+			}
+
+			if (newShape)
+			{
+				UpdateShape(newShape);
+			}
+
+			if (updateOffset)
+			{
+				SetOffset(offset);
+			}
+
+			if (updateMass)
+			{
+				UpdateMass(mass);
+			}
+		}
 	}
 }
 
@@ -362,7 +394,6 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 	ASSERT_STR((aParams.myType == Type::Dynamic) == (aParams.myMass != 0.f),
 		"Only Dynamic entities can have a mass!");
 
-	// TODO: make this work with multiple calls
 	ASSERT_STR(!myBody, "About to leak a body!");
 
 	myType = aParams.myType;
@@ -419,8 +450,35 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 	}
 	default:
 		ASSERT(false);
+		break;
 	}
 	myBody->setUserPointer(this);
+}
+
+void PhysicsEntity::UpdateType(Type aType)
+{
+	// TODO: support dynamic type changing
+	// The difficulty is that it would require deleting myBody
+	// which requires removing it from the world and readding the
+	// new body.
+}
+
+void PhysicsEntity::UpdateShape(const std::shared_ptr<PhysicsShapeBase>& aShape)
+{
+	myBody->setCollisionShape(aShape->GetShape());
+	myShape = aShape;
+}
+
+void PhysicsEntity::UpdateMass(float aMass)
+{
+	if (myType != Type::Dynamic)
+	{
+		return;
+	}
+
+	btVector3 localInertia(0, 0, 0);
+	myShape->GetShape()->calculateLocalInertia(aMass, localInertia);
+	static_cast<btRigidBody*>(myBody)->setMassProps(aMass, localInertia);
 }
 
 int PhysicsEntity::GetOverlapCount() const
