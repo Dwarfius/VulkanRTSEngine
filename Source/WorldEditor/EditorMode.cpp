@@ -84,7 +84,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime)
 	}
 
 	PhysicsWorld* physWorld = aGame.GetWorld().GetPhysicsWorld();
-	if (physWorld && Input::GetMouseBtnPressed(0))
+	if (physWorld && Input::GetMouseBtnPressed(2))
 	{
 		glm::vec3 from = camTransf.GetPos();
 		glm::vec3 dir = camTransf.GetForward();
