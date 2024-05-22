@@ -170,12 +170,12 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 	Type type = myType;
 	const Type oldType = type;
 	aSerializer.Serialize("myType", type);
-	const bool updateType = type != oldType;
+	bool updateType = type != oldType;
 
 	PhysicsShapeBase::Type shapeType = myShape ?
 		myShape->GetType() : PhysicsShapeBase::Type(PhysicsShapeBase::Type::Invalid);
 	aSerializer.Serialize("myShape", shapeType);
-	const bool createShape = aSerializer.IsReading()
+	bool createShape = aSerializer.IsReading()
 		&& (!myShape || shapeType != myShape->GetType());
 	
 	float mass = myBody && myType == Type::Dynamic 
@@ -183,12 +183,12 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 		: 0;
 	const float oldMass = mass;
 	aSerializer.Serialize("myMass", mass);
-	const bool updateMass = mass != oldMass;
+	bool updateMass = mass != oldMass;
 
 	glm::vec3 offset = myOffset;
 	const glm::vec3 oldOffset = offset;
 	aSerializer.Serialize("myOffset", offset);
-	const bool updateOffset = offset != oldOffset;
+	bool updateOffset = offset != oldOffset;
 
 	std::shared_ptr<PhysicsShapeBase> newShape;
 	if (shapeType != PhysicsShapeBase::Type::Invalid)
@@ -308,9 +308,20 @@ void PhysicsEntity::Serialize(Serializer& aSerializer, IPhysControllable* anEnti
 		}
 		else if(myBody)
 		{
-			if(updateType)
+			if(updateType && (myShape || newShape))
 			{
-				UpdateType(type);
+				// consume all changes since they'll be used in creation 
+				// of the collision object
+				if (newShape)
+				{
+					myShape = newShape;
+				}
+				myOffset = offset;
+				UpdateType(type, mass);
+
+				newShape.reset();
+				updateOffset = false;
+				updateMass = false;
 			}
 
 			if (newShape)
@@ -455,12 +466,48 @@ void PhysicsEntity::CreateBody(const InitParams& aParams)
 	myBody->setUserPointer(this);
 }
 
-void PhysicsEntity::UpdateType(Type aType)
+void PhysicsEntity::UpdateType(Type aType, float aMass)
 {
-	// TODO: support dynamic type changing
-	// The difficulty is that it would require deleting myBody
-	// which requires removing it from the world and readding the
-	// new body.
+	ASSERT(myBody);
+	ASSERT_STR(myState != State::PendingRemoval, "NYI");
+
+	const glm::mat4 transf = GetTransform();
+
+	const bool wasRididbody = myType == Type::Dynamic;
+	btCollisionObject* oldBody = myBody;
+	DEBUG_ONLY(myBody = nullptr;);
+
+	// Sanitize mass based on type - Dynamic objects must have mass
+	// while others must not
+	if (aType == Type::Dynamic)
+	{
+		aMass = aMass == 0 ? 1 : aMass;
+	}
+	else
+	{
+		aMass = 0;
+	}
+
+	InitParams params;
+	params.myType = aType;
+	params.myShape = myShape;
+	params.myEntity = myPhysController;
+	params.myTranfs = transf;
+	params.myOffset = myOffset;
+	params.myMass = aMass;
+	CreateBody(params);
+
+	if (myWorld)
+	{
+		const PhysicsCommandChangeBody* cmd = new PhysicsCommandChangeBody(this, oldBody, wasRididbody);
+		myWorld->EnqueueCommand(cmd);
+	}
+	else
+	{
+		// if we're not in the world, we're free to do what-ever
+		// so just discard it now
+		delete oldBody;
+	}
 }
 
 void PhysicsEntity::UpdateShape(const std::shared_ptr<PhysicsShapeBase>& aShape)

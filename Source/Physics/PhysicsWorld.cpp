@@ -311,6 +311,12 @@ void PhysicsWorld::ResolveCommands()
 		case PhysicsCommand::DeleteBody:
 			DeleteBodyHandler(static_cast<const PhysicsCommandDeleteBody&>(cmdRef), skippedPhysEntities);
 			break;
+		case PhysicsCommand::ChangeBody:
+			ChangeBodyHandler(static_cast<const PhysicsCommandChangeBody&>(cmdRef));
+			break;
+		default:
+			ASSERT(false);
+			break;
 		}
 		// TODO: get rid of allocs/deallocs by using an internal recycler
 		delete cmd;
@@ -424,4 +430,34 @@ void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const
 
 	// now it's safe to delete it
 	delete aCmd.myEntity;
+}
+
+void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
+{
+	if (aCmd.myIsRigidbody)
+	{
+		myWorld->removeRigidBody(static_cast<btRigidBody*>(aCmd.myOldBody));
+	}
+	else
+	{
+		myWorld->removeCollisionObject(aCmd.myOldBody);
+	}
+
+	PhysicsEntity* entity = aCmd.myEntity;
+	switch (entity->GetType())
+	{
+	case PhysicsEntity::Type::Static:
+		myWorld->addCollisionObject(entity->myBody);
+		break;
+	case PhysicsEntity::Type::Trigger:
+		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
+		break;
+	case PhysicsEntity::Type::Dynamic:
+		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
+		break;
+	default:
+		ASSERT(false);
+	}
+
+	delete aCmd.myOldBody;
 }

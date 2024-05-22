@@ -9,11 +9,13 @@ class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
 class btGhostPairCallback;
+class btCollisionObject;
 class DebugDrawer;
 struct PhysicsCommand;
 struct PhysicsCommandAddBody;
 struct PhysicsCommandRemoveBody;
 struct PhysicsCommandDeleteBody;
+struct PhysicsCommandChangeBody;
 
 class PhysicsWorld
 {
@@ -102,9 +104,11 @@ private:
 	mutable AssertRWMutex mySimulationMutex;
 #endif
 
+	// TODO: hide this in cpp
 	// all command handlers
 private:
 	void AddBodyHandler(const PhysicsCommandAddBody& aCmd, std::unordered_set<PhysicsEntity*>& aSkippedSet);
 	void RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet);
 	void DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet);
+	void ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd);
 };

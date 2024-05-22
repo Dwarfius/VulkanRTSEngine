@@ -117,7 +117,7 @@ private:
 	void UpdateTransform();
 
 	void CreateBody(const InitParams& aParams);
-	void UpdateType(Type aType);
+	void UpdateType(Type aType, float aMass);
 	void UpdateShape(const std::shared_ptr<PhysicsShapeBase>& aShape);
 	void UpdateMass(float aMass);
 
