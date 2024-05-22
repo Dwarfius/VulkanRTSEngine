@@ -63,15 +63,15 @@ struct PhysicsCommandDeleteBody : PhysicsCommand
 struct PhysicsCommandChangeBody : PhysicsCommand
 {
 	explicit PhysicsCommandChangeBody(PhysicsEntity* anEntity, 
-		btCollisionObject* anOldBody, bool anIsRigidbody)
+		btCollisionObject* anOldBody, char anOldType)
 		: PhysicsCommand(PhysicsCommand::ChangeBody)
 		, myEntity(anEntity)
 		, myOldBody(anOldBody)
-		, myIsRigidbody(anIsRigidbody)
+		, myOldType(anOldType)
 	{
 	}
 
 	PhysicsEntity* myEntity;
 	btCollisionObject* myOldBody;
-	bool myIsRigidbody;
+	char myOldType;
 };

@@ -348,32 +348,20 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd, std::unorde
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->addCollisionObject(entity->myBody);
+		myStaticEntities.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
+		myTriggers.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
+		myDynamicEntities.push_back(entity);
 		break;
 	default:
 		ASSERT(false);
 	}
 	entity->myState = PhysicsEntity::State::InWorld;
-
-	switch (entity->GetType())
-	{
-	case PhysicsEntity::Type::Static:
-		myStaticEntities.push_back(entity);
-		break;
-	case PhysicsEntity::Type::Dynamic:
-		myDynamicEntities.push_back(entity);
-		break;
-	case PhysicsEntity::Type::Trigger:
-		myTriggers.push_back(entity);
-		break;
-	default:
-		ASSERT(false);
-	}
 }
 
 void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const std::unordered_set<PhysicsEntity*>& aSkippedSet)
@@ -395,27 +383,17 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const
 	switch (entity->GetType())
 	{
 	case PhysicsEntity::Type::Static:
+		myWorld->btCollisionWorld::removeCollisionObject(entity->myBody);
+		// TODO: accelerate this by using binary search
+		std::erase(myStaticEntities, entity);
+		break;
 	case PhysicsEntity::Type::Trigger:
-		myWorld->removeCollisionObject(entity->myBody);
+		myWorld->btCollisionWorld::removeCollisionObject(entity->myBody);
+		std::erase(myTriggers, entity);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->removeRigidBody(static_cast<btRigidBody*>(entity->myBody));
-		break;
-	default:
-		ASSERT(false);
-	}
-	
-	// TODO: accelerate this by using binary search
-	switch (entity->GetType())
-	{
-	case PhysicsEntity::Type::Static:
-		std::erase(myStaticEntities, entity);
-		break;
-	case PhysicsEntity::Type::Dynamic:
 		std::erase(myDynamicEntities, entity);
-		break;
-	case PhysicsEntity::Type::Trigger:
-		std::erase(myTriggers, entity);
 		break;
 	default:
 		ASSERT(false);
@@ -434,26 +412,39 @@ void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const
 
 void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
 {
-	if (aCmd.myIsRigidbody)
+	PhysicsEntity* entity = aCmd.myEntity;
+	switch (aCmd.myOldType)
 	{
+	case PhysicsEntity::Type::Static:
+		myWorld->btCollisionWorld::removeCollisionObject(aCmd.myOldBody);
+		// TODO: accelerate this by using binary search
+		std::erase(myStaticEntities, entity);
+		break;
+	case PhysicsEntity::Type::Trigger:
+		myWorld->btCollisionWorld::removeCollisionObject(aCmd.myOldBody);
+		std::erase(myTriggers, entity);
+		break;
+	case PhysicsEntity::Type::Dynamic:
 		myWorld->removeRigidBody(static_cast<btRigidBody*>(aCmd.myOldBody));
-	}
-	else
-	{
-		myWorld->removeCollisionObject(aCmd.myOldBody);
+		std::erase(myDynamicEntities, entity);
+		break;
+	default:
+		ASSERT(false);
 	}
 
-	PhysicsEntity* entity = aCmd.myEntity;
 	switch (entity->GetType())
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->addCollisionObject(entity->myBody);
+		myStaticEntities.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
+		myTriggers.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
+		myDynamicEntities.push_back(entity);
 		break;
 	default:
 		ASSERT(false);
