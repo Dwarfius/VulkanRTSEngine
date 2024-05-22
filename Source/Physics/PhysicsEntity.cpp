@@ -8,7 +8,7 @@
 #include <Core/Utils.h>
 #include <Core/Resources/Serializer.h>
 
-struct EntityMotionState : public btMotionState
+struct EntityMotionState final : public btMotionState
 {
 private:
 	// Non-owned
@@ -22,14 +22,14 @@ public:
 	{
 	}
 
-	void setWorldTransform(const btTransform& centerOfMassWorldTrans) override final
+	void setWorldTransform(const btTransform& centerOfMassWorldTrans) override
 	{
 		glm::mat4 transf = Utils::ConvertToGLM(centerOfMassWorldTrans);
 		transf = glm::translate(transf, -myOrigin);
 		myEntity->SetPhysTransform(transf);
 	}
 
-	void getWorldTransform(btTransform& centerOfMassWorldTrans) const override final
+	void getWorldTransform(btTransform& centerOfMassWorldTrans) const override
 	{
 		glm::mat4 transf;
 		myEntity->GetPhysTransform(transf);

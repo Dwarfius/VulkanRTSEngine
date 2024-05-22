@@ -229,7 +229,7 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 		entity->ApplyForces();
 	}
 
-	// update all teh trigger positions before simulation
+	// update all the trigger positions before simulation
 	for (PhysicsEntity* trigger : myTriggers)
 	{
 		trigger->UpdateTransform();
@@ -412,6 +412,11 @@ void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const
 
 void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
 {
+	// Bug/TODO: because we store PhysicsEntities rather than underlying
+	// physics objects, it's possible we'll have a race (running PostPhysics
+	// right as we modify the type of body, but before it's scheduled command
+	// is resolved). To avoid it, store physics objects, and if PhysicsEntity
+	// is needed, it can be fetched from userPtr
 	PhysicsEntity* entity = aCmd.myEntity;
 	switch (aCmd.myOldType)
 	{
