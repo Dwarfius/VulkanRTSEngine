@@ -232,49 +232,33 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 	}
 }
 
-// TODO: Instead of this use btCollisionObject::getWorldArrayIndex() -> int
-struct EntityPair
-{
-	const void* myLeft;
-	const void* myRight;
-
-	auto operator<=>(const EntityPair&) const = default;
-};
-
-namespace std
-{
-	template<> struct hash<EntityPair>
-	{
-		size_t operator()(const EntityPair& aPair) const
-		{
-			return hash<const void*>()(aPair.myLeft) ^
-				hash<const void*>()(aPair.myRight) << 1;
-		}
-	};
-}
-
 void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 {
 	{
-		std::unordered_set<EntityPair> processedPairs;
+		std::unordered_set<uint64_t> processedPairs;
 		processedPairs.reserve(myTriggers.size());
 		for (btCollisionObject* collObj : myTriggers)
 		{
 			PhysicsEntity* triggerPhysEntity = static_cast<PhysicsEntity*>(collObj->getUserPointer());
+			const uint32_t thisInd = std::bit_cast<uint32_t>(collObj->getWorldArrayIndex());
+
 			btGhostObject* ghostObj = static_cast<btGhostObject*>(collObj);
 			const int count = ghostObj->getNumOverlappingObjects();
 			for (int i = 0; i < count; i++)
 			{
 				const btCollisionObject* other = ghostObj->getOverlappingObject(i);
+				const uint32_t otherInd = std::bit_cast<uint32_t>(other->getWorldArrayIndex());
 
-				EntityPair pair;
-				pair.myLeft = collObj < other ? collObj : other;
-				pair.myRight = collObj < other ? other : collObj;
-				if (processedPairs.contains(pair))
 				{
-					continue;
+					const uint32_t left = thisInd < otherInd ? thisInd : otherInd;
+					const uint32_t right = thisInd < otherInd ? otherInd : thisInd;
+					const uint64_t key = static_cast<uint64_t>(left) << 32 | right;
+					if (processedPairs.contains(key))
+					{
+						continue;
+					}
+					processedPairs.insert(key);
 				}
-				processedPairs.insert(pair);
 
 				PhysicsEntity* otherPhysEntity = static_cast<PhysicsEntity*>(other->getUserPointer());
 				for (ISymCallbackListener* system : myPhysSystems)
