@@ -19,6 +19,8 @@ PhysicsWorld::PhysicsWorld()
 	myBroadphase->getOverlappingPairCache()->setInternalGhostPairCallback(myGhostCallback);
 	myConfiguration = new btDefaultCollisionConfiguration();
 	myDispatcher = new btCollisionDispatcher(myConfiguration);
+	// TODO: Bullet has a multithread solver with TBB support! Need to investigate
+	// how to set it up (see BT_THREADSAFE)
 	mySolver = new btSequentialImpulseConstraintSolver();
 	myWorld = new btDiscreteDynamicsWorld(myDispatcher, myBroadphase, mySolver, myConfiguration);
 	
@@ -36,8 +38,6 @@ PhysicsWorld::PhysicsWorld()
 	myWorld->setDebugDrawer(new PhysicsDebugDrawer());
 
 	myCommands.reserve(200);
-	myStaticEntities.reserve(1000);
-	myDynamicEntities.reserve(200);
 	myTriggers.reserve(100);
 }
 
@@ -50,19 +50,12 @@ PhysicsWorld::~PhysicsWorld()
 
 	// everything that's left can be marked as outside of world
 	// if they want to be deleted later
-	for (PhysicsEntity* entity : myStaticEntities)
+	// Note: this contains rigidbodies as well!
+	btCollisionObjectArray& collObjects = myWorld->getCollisionObjectArray();
+	for (int i = 0; i < collObjects.size(); i++)
 	{
-		entity->myState = PhysicsEntity::State::NotInWorld;
-	}
-
-	for (PhysicsEntity* entity : myDynamicEntities)
-	{
-		entity->myState = PhysicsEntity::State::NotInWorld;
-	}
-
-	for (PhysicsEntity* entity : myTriggers)
-	{
-		entity->myState = PhysicsEntity::State::NotInWorld;
+		PhysicsEntity* physEntity = static_cast<PhysicsEntity*>(collObjects[i]->getUserPointer());
+		physEntity->myState = PhysicsEntity::State::NotInWorld;
 	}
 
 	delete myWorld->getDebugDrawer();
@@ -224,22 +217,26 @@ void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 		system->OnPrePhysicsStep(aDeltaTime);
 	}
 
-	for (PhysicsEntity* entity : myDynamicEntities)
+	btAlignedObjectArray<btRigidBody*>& rigidbodies = myWorld->getNonStaticRigidBodies();
+	for (int i = 0; i < rigidbodies.size(); i++)
 	{
-		entity->ApplyForces();
+		PhysicsEntity* physEntity = static_cast<PhysicsEntity*>(rigidbodies[i]->getUserPointer());
+		physEntity->ApplyForces();
 	}
 
 	// update all the trigger positions before simulation
-	for (PhysicsEntity* trigger : myTriggers)
+	for (btCollisionObject* trigger : myTriggers)
 	{
-		trigger->UpdateTransform();
+		PhysicsEntity* physEntity = static_cast<PhysicsEntity*>(trigger->getUserPointer());
+		physEntity->UpdateTransform();
 	}
 }
 
+// TODO: Instead of this use btCollisionObject::getWorldArrayIndex() -> int
 struct EntityPair
 {
-	const PhysicsEntity* myLeft;
-	const PhysicsEntity* myRight;
+	const void* myLeft;
+	const void* myRight;
 
 	auto operator<=>(const EntityPair&) const = default;
 };
@@ -261,25 +258,28 @@ void PhysicsWorld::PostPhysicsStep(float aDeltaTime)
 	{
 		std::unordered_set<EntityPair> processedPairs;
 		processedPairs.reserve(myTriggers.size());
-		for (PhysicsEntity* trigger : myTriggers)
+		for (btCollisionObject* collObj : myTriggers)
 		{
-			int count = trigger->GetOverlapCount();
+			PhysicsEntity* triggerPhysEntity = static_cast<PhysicsEntity*>(collObj->getUserPointer());
+			btGhostObject* ghostObj = static_cast<btGhostObject*>(collObj);
+			const int count = ghostObj->getNumOverlappingObjects();
 			for (int i = 0; i < count; i++)
 			{
-				const PhysicsEntity* other = trigger->GetOverlapContact(i);
+				const btCollisionObject* other = ghostObj->getOverlappingObject(i);
 
 				EntityPair pair;
-				pair.myLeft = trigger < other ? trigger : other;
-				pair.myRight = trigger < other ? other : trigger;
+				pair.myLeft = collObj < other ? collObj : other;
+				pair.myRight = collObj < other ? other : collObj;
 				if (processedPairs.contains(pair))
 				{
 					continue;
 				}
 				processedPairs.insert(pair);
 
+				PhysicsEntity* otherPhysEntity = static_cast<PhysicsEntity*>(other->getUserPointer());
 				for (ISymCallbackListener* system : myPhysSystems)
 				{
-					system->OnTriggerCallback(*trigger, *other);
+					system->OnTriggerCallback(*triggerPhysEntity, *otherPhysEntity);
 				}
 			}
 		}
@@ -348,15 +348,13 @@ void PhysicsWorld::AddBodyHandler(const PhysicsCommandAddBody& aCmd, std::unorde
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->addCollisionObject(entity->myBody);
-		myStaticEntities.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
-		myTriggers.push_back(entity);
+		myTriggers.push_back(entity->myBody);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
-		myDynamicEntities.push_back(entity);
 		break;
 	default:
 		ASSERT(false);
@@ -384,16 +382,14 @@ void PhysicsWorld::RemoveBodyHandler(const PhysicsCommandRemoveBody& aCmd, const
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->btCollisionWorld::removeCollisionObject(entity->myBody);
-		// TODO: accelerate this by using binary search
-		std::erase(myStaticEntities, entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->btCollisionWorld::removeCollisionObject(entity->myBody);
-		std::erase(myTriggers, entity);
+		// TODO: accelerate this by using binary search
+		std::erase(myTriggers, entity->myBody);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->removeRigidBody(static_cast<btRigidBody*>(entity->myBody));
-		std::erase(myDynamicEntities, entity);
 		break;
 	default:
 		ASSERT(false);
@@ -412,26 +408,19 @@ void PhysicsWorld::DeleteBodyHandler(const PhysicsCommandDeleteBody& aCmd, const
 
 void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
 {
-	// Bug/TODO: because we store PhysicsEntities rather than underlying
-	// physics objects, it's possible we'll have a race (running PostPhysics
-	// right as we modify the type of body, but before it's scheduled command
-	// is resolved). To avoid it, store physics objects, and if PhysicsEntity
-	// is needed, it can be fetched from userPtr
 	PhysicsEntity* entity = aCmd.myEntity;
 	switch (aCmd.myOldType)
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->btCollisionWorld::removeCollisionObject(aCmd.myOldBody);
-		// TODO: accelerate this by using binary search
-		std::erase(myStaticEntities, entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->btCollisionWorld::removeCollisionObject(aCmd.myOldBody);
-		std::erase(myTriggers, entity);
+		// TODO: accelerate this by using binary search
+		std::erase(myTriggers, aCmd.myOldBody);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->removeRigidBody(static_cast<btRigidBody*>(aCmd.myOldBody));
-		std::erase(myDynamicEntities, entity);
 		break;
 	default:
 		ASSERT(false);
@@ -441,15 +430,13 @@ void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
 	{
 	case PhysicsEntity::Type::Static:
 		myWorld->addCollisionObject(entity->myBody);
-		myStaticEntities.push_back(entity);
 		break;
 	case PhysicsEntity::Type::Trigger:
 		myWorld->addCollisionObject(entity->myBody, btBroadphaseProxy::SensorTrigger);
-		myTriggers.push_back(entity);
+		myTriggers.push_back(entity->myBody);
 		break;
 	case PhysicsEntity::Type::Dynamic:
 		myWorld->addRigidBody(static_cast<btRigidBody*>(entity->myBody));
-		myDynamicEntities.push_back(entity);
 		break;
 	default:
 		ASSERT(false);

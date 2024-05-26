@@ -69,9 +69,7 @@ private:
 	constexpr static int kMaxSteps = 4;
 	constexpr static float kFixedStepLength = 1.f / 30.f;
 
-	std::vector<PhysicsEntity*> myStaticEntities;
-	std::vector<PhysicsEntity*> myDynamicEntities;
-	std::vector<PhysicsEntity*> myTriggers;
+	std::vector<btCollisionObject*> myTriggers;
 	std::vector<ISymCallbackListener*> myPhysSystems;
 
 	void PrePhysicsStep(float aDeltaTime);
