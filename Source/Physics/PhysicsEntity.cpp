@@ -473,7 +473,7 @@ void PhysicsEntity::UpdateType(Type aType, float aMass)
 
 	const glm::mat4 transf = GetTransform();
 
-	const bool wasRididbody = myType == Type::Dynamic;
+	const Type oldType = myType;
 	btCollisionObject* oldBody = myBody;
 	DEBUG_ONLY(myBody = nullptr;);
 
@@ -499,7 +499,7 @@ void PhysicsEntity::UpdateType(Type aType, float aMass)
 
 	if (myWorld)
 	{
-		const PhysicsCommandChangeBody* cmd = new PhysicsCommandChangeBody(this, oldBody, wasRididbody);
+		const PhysicsCommandChangeBody* cmd = new PhysicsCommandChangeBody(this, oldBody, oldType);
 		myWorld->EnqueueCommand(cmd);
 	}
 	else
