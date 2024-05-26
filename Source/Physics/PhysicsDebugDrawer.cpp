@@ -25,10 +25,9 @@ void PhysicsDebugDrawer::drawLine(const btVector3& aFrom, const btVector3& aTo, 
 
 void PhysicsDebugDrawer::drawSphere(btScalar aRadius, const btTransform& aTransform, const btVector3& aColor)
 {
-	const float scale = aTransform.getBasis().getColumn(0).x();
 	const glm::vec3 center = Utils::ConvertToGLM(aTransform)[3];
 	const glm::vec3 color = Utils::ConvertToGLM(aColor);
-	myDebugDrawer.AddSphere(center, aRadius * scale, color);
+	myDebugDrawer.AddSphere(center, aRadius, color);
 }
 
 void PhysicsDebugDrawer::drawContactPoint(const btVector3& aPointOnB, const btVector3& aNormalOnB, btScalar aDistance, int aLifeTime, const btVector3& aColor)
