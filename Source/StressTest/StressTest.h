@@ -10,6 +10,8 @@ class Pipeline;
 class Texture;
 class Camera;
 class PhysicsEntity;
+class PhysicsShapeBox;
+class PhysicsShapeSphere;
 struct Light;
 
 // Sets up and runs the Tank stress test:
@@ -46,6 +48,7 @@ private:
 	friend class TriggersTracker;
 	TriggersTracker* myTriggersTracker;
 
+	constexpr static float kTankScale = 0.01f;
 	float myTankAccum = 0.f;
 	bool myTankSwitch;
 	struct Tank
@@ -58,8 +61,10 @@ private:
 	};
 	std::vector<Tank> myTanks;
 	std::vector<Tank> myTanksToRemove;
+	std::shared_ptr<PhysicsShapeBox> myTankShape;
 	void UpdateTanks(Game& aGame, float aDeltaTime);
 
+	constexpr static float kBallScale = 0.2f;
 	struct Ball
 	{
 		Handle<GameObject> myGO;
@@ -70,6 +75,7 @@ private:
 	};
 	std::vector<Ball> myBalls;
 	std::vector<Ball> myBallsToRemove;
+	std::shared_ptr<PhysicsShapeSphere> myBallShape;
 	void UpdateBalls(Game& aGame, float aDeltaTime);
 
 	float myRotationAngle = 0.f;

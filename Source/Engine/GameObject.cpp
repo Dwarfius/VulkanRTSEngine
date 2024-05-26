@@ -212,12 +212,19 @@ void GameObject::SetPhysTransform(const glm::mat4& aTransf)
 	Transform newTransf;
 	newTransf.SetPos(aTransf[3]);
 	newTransf.SetRotation(glm::quat_cast(aTransf));
+	// But we must reapply our scale, as we drop it when
+	// we send it to Bullet 
+	newTransf.SetScale(myWorldTransf.GetScale());
 	SetWorldTransform(newTransf);
 }
 
 void GameObject::GetPhysTransform(glm::mat4& aTransf) const
 {
-	aTransf = myWorldTransf.GetMatrix();
+	// Bullet doesn't support scale, so we have to rely on the user
+	// to scale the shape themselves
+	Transform transf = myWorldTransf;
+	transf.SetScale({ 1, 1, 1 });
+	aTransf = transf.GetMatrix();
 }
 
 void GameObject::UpdateHierarchyTransform()

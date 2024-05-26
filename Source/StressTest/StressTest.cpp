@@ -114,6 +114,13 @@ StressTest::StressTest(Game& aGame)
 		[[maybe_unused]] bool loadRes = importer.Load(path);
 		ASSERT_STR(loadRes, "Failed to load {}", path);
 		myTankModel = importer.GetModel(0);
+
+		const glm::vec3 aabbMin = myTankModel->GetAABBMin();
+		const glm::vec3 aabbMax = myTankModel->GetAABBMax();
+		const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f * kTankScale;
+		myTankShape = std::make_shared<PhysicsShapeBox>(
+			halfExtents
+		);
 	}
 
 	{
@@ -122,6 +129,13 @@ StressTest::StressTest(Game& aGame)
 		[[maybe_unused]] bool loadRes = importer.Load(path);
 		ASSERT_STR(loadRes, "Failed to load {}", path);
 		mySphereModel = importer.GetModel(0);
+
+		const glm::vec3 aabbMin = mySphereModel->GetAABBMin();
+		const glm::vec3 aabbMax = mySphereModel->GetAABBMax();
+		const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f * kBallScale;
+		myBallShape = std::make_shared<PhysicsShapeSphere>(
+			halfExtents.x
+		);
 	}
 
 	{
@@ -236,8 +250,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 			Transform tankTransf;
 			tankTransf.SetPos({ xSpawn, 0, zSpawn });
-			constexpr float kScale = 0.01f;
-			tankTransf.SetScale({ kScale, kScale, kScale }); // the model is too large
+			tankTransf.SetScale({ kTankScale, kTankScale, kTankScale }); // the model is too large
 			tankTransf.LookAt(tank.myDest);
 
 			tank.myGO = new GameObject(tankTransf);
@@ -246,15 +259,10 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetTextureCount(1);
 			visualComp->SetTexture(0, tank.myTeam ? myGreenTankTexture : myRedTankTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
-
-			const glm::vec3 aabbMin = myTankModel->GetAABBMin();
-			const glm::vec3 aabbMax = myTankModel->GetAABBMax();
-			const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f;
-			std::shared_ptr<PhysicsShapeBox> shape = std::make_shared<PhysicsShapeBox>(
-				halfExtents
-			);
+			
 			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
-			physComp->CreateTriggerEntity(shape, {0, halfExtents.y, 0});
+			const float halfHeight = myTankShape->GetHalfExtents().y / 2.f;
+			physComp->CreateTriggerEntity(myTankShape, {0, halfHeight, 0});
 			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
 			tank.myTrigger = &physComp->GetPhysicsEntity();
 
@@ -289,8 +297,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				+ transf.GetForward() * 0.2f
 				+ transf.GetUp() * 0.85f
 			);
-			constexpr float kScale = 0.2f;
-			ballTransf.SetScale({ kScale, kScale, kScale });
+			ballTransf.SetScale({ kBallScale, kBallScale, kBallScale });
 
 			Ball ball;
 			ball.myLife = myShotLife;
@@ -307,14 +314,9 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetTexture(0, myGreyTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
 
-			const glm::vec3 aabbMin = mySphereModel->GetAABBMin();
-			const glm::vec3 aabbMax = mySphereModel->GetAABBMax();
-			const glm::vec3 halfExtents = (aabbMax - aabbMin) / 2.f;
-			std::shared_ptr<PhysicsShapeSphere> shape = std::make_shared<PhysicsShapeSphere>(
-				halfExtents.x
-			);
+			const float halfHeight = myBallShape->GetRadius();
 			PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
-			physComp->CreateTriggerEntity(shape, { 0, halfExtents.x, 0 });
+			physComp->CreateTriggerEntity(myBallShape, { 0, halfHeight, 0 });
 			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
 			ball.myTrigger = &physComp->GetPhysicsEntity();
 
