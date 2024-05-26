@@ -36,13 +36,14 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
 	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
-	const uint32_t maxSize = game.GetRenderableCount() *
+	const size_t maxSize = game.GetRenderableCount() *
 		(sizeof(RenderPassJob::SetPipelineCmd) + 1 +
 			sizeof(RenderPassJob::SetModelCmd) + 1 +
 			sizeof(RenderPassJob::SetTextureCmd) + 1 +
 			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
 			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
-	cmdBuffer.Resize(maxSize); // worst case
+	ASSERT_STR(maxSize <= std::numeric_limits<uint32_t>::max(), "Overflow bellow!");
+	cmdBuffer.Resize(static_cast<uint32_t>(maxSize)); // worst case
 	cmdBuffer.Clear();
 	tbb::spin_mutex cmdLock;
 

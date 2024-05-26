@@ -340,8 +340,6 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 	while (index < bytes.size())
 	{
 		const uint8_t cmdId = static_cast<uint8_t>(bytes[index++]);
-		RenderPassJob::SetTextureCmd* textureCmd;
-		RenderPassJob::DrawIndexedCmd* drawCmd;
 		switch (cmdId)
 		{
 		case RenderPassJob::SetPipelineCmd::kId:

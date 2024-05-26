@@ -156,10 +156,10 @@ GameTasksDialog::DrawState GameTasksDialog::SplitTree(std::span<Node> aTree)
 	state.myRowsPerColumn.resize(columnsOfNodes.size());
 
 	ASSERT(columnsOfNodes.size() <= std::numeric_limits<Index>::max());
-	for (size_t column = 0; column < columnsOfNodes.size(); column++)
+	for (Index column = 0; column < columnsOfNodes.size(); column++)
 	{
 		const std::vector<Index>& nodes = columnsOfNodes[column];
-		for (size_t row = 0; row < nodes.size(); row++)
+		for (Index row = 0; row < nodes.size(); row++)
 		{
 			const Index nodeInd = nodes[row];
 			aTree[nodeInd].myRow = row;
