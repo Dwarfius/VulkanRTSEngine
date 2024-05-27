@@ -210,6 +210,34 @@ void PhysicsWorld::AddPhysSystem(ISymCallbackListener* aSystem)
 	myPhysSystems.push_back(aSystem);
 }
 
+namespace
+{
+	struct PhysicsProfile
+	{
+		std::string_view myName;
+		uint32_t myId;
+	};
+	static thread_local std::vector<PhysicsProfile> ourActiveProfile = [] {
+		std::vector<PhysicsProfile> profile;
+		profile.reserve(2048);
+		return profile;
+	} ();
+}
+
+void PhysicsWorld::EnablePhysicsProfiling()
+{
+	btSetCustomEnterProfileZoneFunc([](const char* aName) {
+		const uint32_t index = Profiler::GetInstance().StartScope(aName);
+		ourActiveProfile.push_back({ aName, index });
+	});
+
+	btSetCustomLeaveProfileZoneFunc([] {
+		PhysicsProfile lastProfile = ourActiveProfile.back();
+		ourActiveProfile.pop_back();
+		Profiler::GetInstance().EndScope(lastProfile.myId, lastProfile.myName);
+	});
+}
+
 void PhysicsWorld::PrePhysicsStep(float aDeltaTime)
 {
 	for (ISymCallbackListener* system : myPhysSystems)

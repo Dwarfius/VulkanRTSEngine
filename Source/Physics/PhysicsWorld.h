@@ -65,6 +65,8 @@ public:
 	// Not thread safe
 	void AddPhysSystem(ISymCallbackListener* aSystem);
 
+	static void EnablePhysicsProfiling();
+
 private:
 	constexpr static int kMaxSteps = 4;
 	constexpr static float kFixedStepLength = 1.f / 30.f;

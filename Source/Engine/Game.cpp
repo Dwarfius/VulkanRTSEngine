@@ -120,6 +120,8 @@ Game::Game(ReportError aReporterFunc)
 	glfwInit();
 
 	glfwSetTime(0);
+
+	PhysicsWorld::EnablePhysicsProfiling();
 	
 	//Audio::Init();
 	//Audio::SetMusicTrack(2);
