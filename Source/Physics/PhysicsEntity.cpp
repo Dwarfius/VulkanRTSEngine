@@ -53,7 +53,11 @@ PhysicsEntity::~PhysicsEntity()
 	ASSERT(myState == State::NotInWorld);
 	if (myType == Type::Dynamic)
 	{
-		delete static_cast<btRigidBody*>(myBody)->getMotionState();
+		btRigidBody* rigidbody = static_cast<btRigidBody*>(myBody);
+		if (rigidbody->getMotionState())
+		{
+			delete rigidbody->getMotionState();
+		}
 	}
 	delete myBody;
 }

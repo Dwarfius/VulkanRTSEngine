@@ -454,5 +454,13 @@ void PhysicsWorld::ChangeBodyHandler(const PhysicsCommandChangeBody& aCmd)
 		ASSERT(false);
 	}
 
+	if (aCmd.myOldType == PhysicsEntity::Type::Dynamic)
+	{
+		btRigidBody* rigidbody = static_cast<btRigidBody*>(aCmd.myOldBody);
+		if (rigidbody->getMotionState())
+		{
+			delete rigidbody->getMotionState();
+		}
+	}
 	delete aCmd.myOldBody;
 }
