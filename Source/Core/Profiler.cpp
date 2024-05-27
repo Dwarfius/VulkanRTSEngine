@@ -64,6 +64,16 @@ Profiler::Storage& Profiler::GetStorage(Profiler& aProfiler)
     return threadStorage;
 }
 
+uint32_t Profiler::StartScope(std::string_view aName)
+{
+    return GetStorage(*this).StartScope(aName);
+}
+
+void Profiler::EndScope(uint32_t anId, std::string_view aName)
+{
+    GetStorage(*this).EndScope(anId, aName);
+}
+
 Profiler::Profiler()
 {
 	myTLSStorages.reserve(std::thread::hardware_concurrency());
@@ -163,10 +173,10 @@ Profiler::ScopedMark::ScopedMark(std::string_view aName, Profiler& aProfiler)
     : myProfiler(aProfiler)
     , myName(aName)
 {
-    myId = GetStorage(myProfiler).StartScope(aName);
+    myId = myProfiler.StartScope(myName);
 }
 
 Profiler::ScopedMark::~ScopedMark()
 {
-    GetStorage(myProfiler).EndScope(myId, myName);
+    myProfiler.EndScope(myId, myName);
 }

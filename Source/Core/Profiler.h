@@ -60,6 +60,10 @@ public:
     template<class T>
     void GatherInitFrames(const T& aFunc) const;
 
+    uint32_t StartScope(std::string_view aName);
+    // TODO: find a way to get rid of aName here
+    void EndScope(uint32_t anId, std::string_view aName);
+
 private:
     class Storage;
     // Returns a thread-local storage for accumulating Marks for current frame
