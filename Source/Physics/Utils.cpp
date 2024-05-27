@@ -1,5 +1,6 @@
 #include "Precomp.h"
 
+// TODO: this is now fixed, so move conversions to Precomp.h
 // This file exists because on VS2019 (releases 16.4.3-16.4.5)
 // there's a ICE when instantiating a function template
 // (specifically DebugImpl::AssertNotify<uint>) and it dies
