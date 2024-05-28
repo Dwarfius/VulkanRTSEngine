@@ -1,12 +1,5 @@
 #include "Precomp.h"
 
-// TODO: this is now fixed, so move conversions to Precomp.h
-// This file exists because on VS2019 (releases 16.4.3-16.4.5)
-// there's a ICE when instantiating a function template
-// (specifically DebugImpl::AssertNotify<uint>) and it dies
-// Has been reported here: 
-// https://developercommunity.visualstudio.com/content/problem/856788/compiler-crash-ice-involving-precompiled-headers-a.html
-
 namespace Utils
 {
 	glm::vec3 ConvertToGLM(btVector3 aVec)
