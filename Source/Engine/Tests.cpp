@@ -232,77 +232,84 @@ void Tests::TestStableVector()
 		uint8_t myNum;
 	};
 
+	auto TestVec = [](StableVector<TestType, 2>&aVec, std::span<const int> aVals, uint8_t aPageCount)
+	{
+		int counter = 0;
+		auto CheckElem = [&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			ASSERT(aVal.myNum == aVals[counter]);
+			counter++;
+		};
+
+		aVec.ForEach(CheckElem);
+		ASSERT(counter == aVals.size());
+
+		std::atomic<uint32_t> atomicCounter = 0;
+		std::atomic<uint32_t> atomicSum = 0;
+		auto ParallelCheckElem = [&](const TestType& aVal) {
+			ASSERT(aVal.myStr == "Hello");
+			atomicSum += aVal.myNum;
+			atomicCounter++;
+		};
+		aVec.ParallelForEach(ParallelCheckElem);
+		ASSERT(atomicCounter == counter);
+		ASSERT(atomicSum == std::accumulate(std::begin(aVals), std::end(aVals), 0));
+
+		// page interface
+		/*counter = 0;
+		int pageCounter = 0;
+		aVec.ForEachPage([&](StableVector<TestType, 2>::Page& aPage) {
+			aPage.ForEach(CheckElem);
+			pageCounter++;
+		});
+		ASSERT(counter == aVals.size());
+		ASSERT(pageCounter == aPageCount);
+
+		atomicCounter = 0;
+		atomicSum = 0;
+		std::atomic<uint32_t> atomicPageCounter = 0;
+		aVec.ParallelForEachPage([&](StableVector<TestType, 2>::Page& aPage) {
+			aPage.ForEach(ParallelCheckElem);
+			atomicPageCounter++;
+		});
+		ASSERT(atomicCounter == counter);
+		ASSERT(atomicSum == std::accumulate(std::begin(aVals), std::end(aVals), 0));
+		ASSERT(atomicPageCounter == pageCounter);*/
+	};
+
 	StableVector<TestType, 2> vec;
+	{
+		// compil test
+		StableVector<TestType, 2>& refVec = vec;
+		refVec.ForEach([](TestType&) {});
+		refVec.ParallelForEach([](TestType&) {});
+		refVec.ForEach([](const TestType&) {});
+		refVec.ParallelForEach([](const TestType&) {});
+
+		const StableVector<TestType, 2>& constRefVec = vec;
+		constRefVec.ForEach([](const TestType&) {});
+		constRefVec.ParallelForEach([](const TestType&) {});
+	}
+
 	TestType& first = vec.Allocate("Hello", 0);
 	TestType& second = vec.Allocate("Hello", 1);
 	TestType& third = vec.Allocate("Hello", 2);
 	TestType& fourth = vec.Allocate("Hello", 3);
 	TestType& fifth = vec.Allocate("Hello", 4);
 
-	{
-		uint8_t numbers[]{ 0, 1, 2, 3, 4 };
-		int counter = 0;
-		vec.ForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			ASSERT(aVal.myNum == numbers[counter]);
-			counter++;
-		});
-		ASSERT(counter == std::extent_v<decltype(numbers)>);
+	// Since we never shrink, page count should always stay the same
+	const uint8_t pageCount = static_cast<uint8_t>((vec.GetCount() + 1) / 2);
 
-		std::atomic<uint32_t> atomicCounter = 0;
-		std::atomic<uint32_t> atomicSum = 0;
-		vec.ParallelForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			atomicSum += aVal.myNum;
-			atomicCounter++;
-		});
-		ASSERT(atomicCounter == counter);
-		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
-	}
+#if __cpp_lib_span_initializer_list
+	Remove double brackets for spans!;
+#endif
+	TestVec(vec, { {0, 1, 2, 3, 4} }, pageCount);
 
 	vec.Free(third);
-	{
-		uint8_t numbers[]{ 0, 1, 3, 4 };
-		int counter = 0;
-		vec.ForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			ASSERT(aVal.myNum == numbers[counter]);
-			counter++;
-		});
-		ASSERT(counter == std::extent_v<decltype(numbers)>);
-
-		std::atomic<uint32_t> atomicCounter = 0;
-		std::atomic<uint32_t> atomicSum = 0;
-		vec.ParallelForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			atomicSum += aVal.myNum;
-			atomicCounter++;
-		});
-		ASSERT(atomicCounter == counter);
-		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
-	}
+	TestVec(vec, { { 0, 1, 3, 4 } }, pageCount);
 
 	TestType& newThird = vec.Allocate("Hello", 5);
-	{
-		uint8_t numbers[]{ 0, 1, 5, 3, 4 };
-		int counter = 0;
-		vec.ForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			ASSERT(aVal.myNum == numbers[counter]);
-			counter++;
-		});
-		ASSERT(counter == std::extent_v<decltype(numbers)>);
-
-		std::atomic<uint32_t> atomicCounter = 0;
-		std::atomic<uint32_t> atomicSum = 0;
-		vec.ParallelForEach([&](const TestType& aVal) {
-			ASSERT(aVal.myStr == "Hello");
-			atomicSum += aVal.myNum;
-			atomicCounter++;
-		});
-		ASSERT(atomicCounter == counter);
-		ASSERT(atomicSum == std::accumulate(std::begin(numbers), std::end(numbers), 0));
-	}
+	TestVec(vec, { { 0, 1, 5, 3, 4 } }, pageCount);
 
 	ASSERT(vec.Contains(&newThird));
 	TestType nonExistentType;
