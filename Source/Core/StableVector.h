@@ -303,9 +303,6 @@ public:
             return;
         }
 
-        // TODO: move this to unit tests
-        DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
-
         const size_t bucketCount = aSelf.myCapacity / PageSize;
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
         const size_t threadCount = std::thread::hardware_concurrency() * 2;
@@ -325,11 +322,9 @@ public:
             while (iters-- > 0 && page)
             {
                 page->myPage.ForEach(aFunc);
-                DEBUG_ONLY(foundCount += page->myPage.myCount;);
                 page = page->myNext;
             }
         });
-        ASSERT_STR(foundCount == aSelf.myCount, "Weird behavior, failed to find all elements!");
     }
 
 private:
