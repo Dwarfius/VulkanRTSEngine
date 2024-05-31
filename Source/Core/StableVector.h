@@ -64,21 +64,13 @@ class StableVector
         }
 
         template<class TFunc>
-        void ForEach(const TFunc& aFunc)
+        void ForEach(this auto&& aSelf, const TFunc& aFunc)
         {
-            for (FreeListNode& node : myItems)
-            {
-                if (node.index() == kValueIndex)
-                {
-                    aFunc(std::get<kValueIndex>(node));
-                }
-            }
-        }
-
-        template<class TFunc>
-        void ForEach(const TFunc& aFunc) const
-        {
-            for (const FreeListNode& node : myItems)
+            // assuming StableVector::Page is never an rvalue when ForEach is invoked
+            // otherwise all extra forwarding gets ugly
+            static_assert(std::is_lvalue_reference_v<decltype(aSelf)>, 
+                "Add support for perfect forwarding!");
+            for (auto& node : aSelf.myItems)
             {
                 if (node.index() == kValueIndex)
                 {
@@ -272,14 +264,19 @@ public:
     }
 
     template<class TFunc>
-    void ForEach(const TFunc& aFunc)
+    void ForEach(this auto&& aSelf, const TFunc& aFunc)
     {
-        if (IsEmpty())
+        // assuming StableVector is never an rvalue when ForEach is invoked
+        // otherwise all extra forwarding gets ugly
+        static_assert(std::is_lvalue_reference_v<decltype(aSelf)>,
+            "Add support for perfect forwarding!");
+        
+        if (aSelf.IsEmpty())
         {
             return;
         }
 
-        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
             page.ForEach(aFunc);
@@ -287,38 +284,29 @@ public:
     }
 
     template<class TFunc>
-    void ForEach(const TFunc& aFunc) const
+    void ParallelForEach(this auto&& aSelf, const TFunc& aFunc)
     {
-        if (IsEmpty())
+        // assuming StableVector is never an rvalue when ForEach is invoked
+        // otherwise all extra forwarding gets ugly
+        static_assert(std::is_lvalue_reference_v<decltype(aSelf)>,
+            "Add support for perfect forwarding!");
+
+        if (aSelf.IsEmpty())
         {
             return;
         }
 
-        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
-        {
-            Page& page = pageNode->myPage;
-            page.ForEach(aFunc);
-        }
-    }
-
-    template<class TFunc>
-    void ParallelForEach(const TFunc& aFunc)
-    {
-        if (IsEmpty())
-        {
-            return;
-        }
-
-        if (myCapacity == PageSize)
+        if (aSelf.myCapacity == PageSize)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            myStartPage.myPage.ForEach(aFunc);
+            aSelf.myStartPage.myPage.ForEach(aFunc);
             return;
         }
 
+        // TODO: move this to unit tests
         DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
 
-        const size_t bucketCount = myCapacity / PageSize;
+        const size_t bucketCount = aSelf.myCapacity / PageSize;
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
         const size_t threadCount = std::thread::hardware_concurrency() * 2;
         const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
@@ -327,7 +315,7 @@ public:
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
             size_t startPage = aRange.begin();
-            PageNode* page = &myStartPage;
+            auto* page = &aSelf.myStartPage;
             while (startPage-- > 0)
             {
                 page = page->myNext;
@@ -341,50 +329,7 @@ public:
                 page = page->myNext;
             }
         });
-        ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
-    }
-
-    template<class TFunc>
-    void ParallelForEach(const TFunc& aFunc) const
-    {
-        if (IsEmpty())
-        {
-            return;
-        }
-
-        if (myCapacity == PageSize)
-        {
-            Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            myStartPage.myPage.ForEach(aFunc);
-            return;
-        }
-
-        DEBUG_ONLY(std::atomic<size_t> foundCount = 0;);
-
-        const size_t bucketCount = myCapacity / PageSize;
-        // Attempt to have 2 batches per thread, so that it's easier to schedule around
-        const size_t threadCount = std::thread::hardware_concurrency() * 2;
-        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
-            [&](tbb::blocked_range<size_t> aRange)
-        {
-            Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            size_t startPage = aRange.begin();
-            PageNode* page = &myStartPage;
-            while (startPage-- > 0)
-            {
-                page = page->myNext;
-            }
-
-            size_t iters = aRange.size();
-            while (iters-- > 0 && page)
-            {
-                page->myPage.ForEach(aFunc);
-                DEBUG_ONLY(foundCount += page->myPage.myCount;);
-                page = page->myNext;
-            }
-        });
-        ASSERT_STR(foundCount == myCount, "Weird behavior, failed to find all elements!");
+        ASSERT_STR(foundCount == aSelf.myCount, "Weird behavior, failed to find all elements!");
     }
 
 private:
