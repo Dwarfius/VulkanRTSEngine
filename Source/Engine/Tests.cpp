@@ -256,7 +256,7 @@ void Tests::TestStableVector()
 		ASSERT(atomicSum == std::accumulate(std::begin(aVals), std::end(aVals), 0));
 
 		// page interface
-		/*counter = 0;
+		counter = 0;
 		int pageCounter = 0;
 		aVec.ForEachPage([&](StableVector<TestType, 2>::Page& aPage) {
 			aPage.ForEach(CheckElem);
@@ -274,7 +274,7 @@ void Tests::TestStableVector()
 		});
 		ASSERT(atomicCounter == counter);
 		ASSERT(atomicSum == std::accumulate(std::begin(aVals), std::end(aVals), 0));
-		ASSERT(atomicPageCounter == pageCounter);*/
+		ASSERT(atomicPageCounter == pageCounter);
 	};
 
 	StableVector<TestType, 2> vec;
