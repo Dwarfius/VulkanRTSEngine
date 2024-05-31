@@ -6,8 +6,12 @@
 template<class T, size_t PageSize = 256>
 class StableVector
 {
-    struct Page
+public:
+    class Page
     {
+        friend class StableVector;
+        friend struct PageNode;
+
         using FreeListNode = std::variant<size_t, T>;
         constexpr static uint8_t kSlotIndex = 0;
         constexpr static uint8_t kValueIndex = 1;
@@ -63,6 +67,11 @@ class StableVector
             return pageStart <= itemAddr && itemAddr < pageEnd;
         }
 
+        FreeListNode myItems[PageSize];
+        size_t myFreeNode = 0;
+        size_t myCount = 0;
+
+    public:
         template<class TFunc>
         void ForEach(this auto& aSelf, const TFunc& aFunc)
         {
@@ -74,12 +83,9 @@ class StableVector
                 }
             }
         }
-
-        FreeListNode myItems[PageSize];
-        size_t myFreeNode = 0;
-        size_t myCount = 0;
     };
 
+private:
     struct PageNode
     {
         PageNode(uint16_t anIndex) : myIndex(anIndex) {}
@@ -269,7 +275,7 @@ public:
 
         for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
         {
-            Page& page = pageNode->myPage;
+            auto& page = pageNode->myPage;
             page.ForEach(aFunc);
         }
     }
@@ -308,6 +314,59 @@ public:
             while (iters-- > 0 && page)
             {
                 page->myPage.ForEach(aFunc);
+                page = page->myNext;
+            }
+        });
+    }
+
+    template<class TFunc>
+    void ForEachPage(this auto& aSelf, const TFunc& aFunc)
+    {
+        if (aSelf.IsEmpty())
+        {
+            return;
+        }
+
+        for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
+        {
+            aFunc(pageNode->myPage);
+        }
+    }
+
+    template<class TFunc>
+    void ParallelForEachPage(this auto& aSelf, const TFunc& aFunc)
+    {
+        if (aSelf.IsEmpty())
+        {
+            return;
+        }
+
+        if (aSelf.myCapacity == PageSize)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+            aFunc(aSelf.myStartPage.myPage);
+            return;
+        }
+
+        const size_t bucketCount = aSelf.myCapacity / PageSize;
+        // Attempt to have 2 batches per thread, so that it's easier to schedule around
+        const size_t threadCount = std::thread::hardware_concurrency() * 2;
+        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
+            [&](tbb::blocked_range<size_t> aRange)
+        {
+            Profiler::ScopedMark mark("StableVector::ForEachBatch");
+            size_t startPage = aRange.begin();
+            auto* page = &aSelf.myStartPage;
+            while (startPage-- > 0)
+            {
+                page = page->myNext;
+            }
+
+            size_t iters = aRange.size();
+            while (iters-- > 0 && page)
+            {
+                aFunc(page->myPage);
                 page = page->myNext;
             }
         });
