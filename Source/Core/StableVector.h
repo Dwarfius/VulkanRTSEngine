@@ -64,12 +64,8 @@ class StableVector
         }
 
         template<class TFunc>
-        void ForEach(this auto&& aSelf, const TFunc& aFunc)
+        void ForEach(this auto& aSelf, const TFunc& aFunc)
         {
-            // assuming StableVector::Page is never an rvalue when ForEach is invoked
-            // otherwise all extra forwarding gets ugly
-            static_assert(std::is_lvalue_reference_v<decltype(aSelf)>, 
-                "Add support for perfect forwarding!");
             for (auto& node : aSelf.myItems)
             {
                 if (node.index() == kValueIndex)
@@ -264,13 +260,8 @@ public:
     }
 
     template<class TFunc>
-    void ForEach(this auto&& aSelf, const TFunc& aFunc)
+    void ForEach(this auto& aSelf, const TFunc& aFunc)
     {
-        // assuming StableVector is never an rvalue when ForEach is invoked
-        // otherwise all extra forwarding gets ugly
-        static_assert(std::is_lvalue_reference_v<decltype(aSelf)>,
-            "Add support for perfect forwarding!");
-        
         if (aSelf.IsEmpty())
         {
             return;
@@ -284,13 +275,8 @@ public:
     }
 
     template<class TFunc>
-    void ParallelForEach(this auto&& aSelf, const TFunc& aFunc)
+    void ParallelForEach(this auto& aSelf, const TFunc& aFunc)
     {
-        // assuming StableVector is never an rvalue when ForEach is invoked
-        // otherwise all extra forwarding gets ugly
-        static_assert(std::is_lvalue_reference_v<decltype(aSelf)>,
-            "Add support for perfect forwarding!");
-
         if (aSelf.IsEmpty())
         {
             return;
