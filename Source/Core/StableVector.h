@@ -334,9 +334,10 @@ public:
             return;
         }
 
+        size_t pageIndex = 0;
         for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
         {
-            aFunc(pageNode->myPage);
+            aFunc(pageNode->myPage, pageIndex++);
         }
     }
 
@@ -351,7 +352,7 @@ public:
         if (aSelf.myCapacity == PageSize)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            aFunc(aSelf.myStartPage.myPage);
+            aFunc(aSelf.myStartPage.myPage, 0);
             return;
         }
 
@@ -371,9 +372,10 @@ public:
             }
 
             size_t iters = aRange.size();
+            size_t pageIndex = aRange.begin();
             while (iters-- > 0 && page)
             {
-                aFunc(page->myPage);
+                aFunc(page->myPage, pageIndex++);
                 page = page->myNext;
             }
         });

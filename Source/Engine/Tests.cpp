@@ -258,9 +258,10 @@ void Tests::TestStableVector()
 		// page interface
 		counter = 0;
 		int pageCounter = 0;
-		aVec.ForEachPage([&](StableVector<TestType, 2>::Page& aPage) {
+		aVec.ForEachPage([&](StableVector<TestType, 2>::Page& aPage, size_t aPageInd) {
 			aPage.ForEach(CheckElem);
 			pageCounter++;
+			ASSERT(aPageInd < aPageCount);
 		});
 		ASSERT(counter == aVals.size());
 		ASSERT(pageCounter == aPageCount);
@@ -268,9 +269,10 @@ void Tests::TestStableVector()
 		atomicCounter = 0;
 		atomicSum = 0;
 		std::atomic<uint32_t> atomicPageCounter = 0;
-		aVec.ParallelForEachPage([&](StableVector<TestType, 2>::Page& aPage) {
+		aVec.ParallelForEachPage([&](StableVector<TestType, 2>::Page& aPage, size_t aPageInd) {
 			aPage.ForEach(ParallelCheckElem);
 			atomicPageCounter++;
+			ASSERT(aPageInd < aPageCount);
 		});
 		ASSERT(atomicCounter == counter);
 		ASSERT(atomicSum == std::accumulate(std::begin(aVals), std::end(aVals), 0));
