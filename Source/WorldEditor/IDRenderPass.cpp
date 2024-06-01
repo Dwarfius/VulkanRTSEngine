@@ -181,8 +181,8 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 				return;
 			}
 
-				// assuming we'll be able to render the terrain
-				// save it for tracking
+			// assuming we'll be able to render the terrain
+			// save it for tracking
 			ObjID newID = myFrameGOs.myTerrainCounter++;
 			if (newID >= kMaxObjects)
 			{

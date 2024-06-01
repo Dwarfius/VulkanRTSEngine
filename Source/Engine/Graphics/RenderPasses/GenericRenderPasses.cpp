@@ -189,11 +189,11 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 				return;
 			}
 
-				if (visObj->GetModel().IsValid()
-					&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
-				{
-					return;
-				}
+			if (visObj->GetModel().IsValid()
+				&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
+			{
+				return;
+			}
 
 			// building a render job
 			const Terrain& terrain = *anEntity.myTerrain;
