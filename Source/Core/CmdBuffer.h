@@ -72,7 +72,7 @@ public:
 
 	void CopyFrom(const CmdBuffer& aOther)
 	{
-		myBuffer.insert(myBuffer.end(), aOther.myBuffer.begin(), aOther.myBuffer.end());
+		myBuffer.insert(myBuffer.end(), aOther.myBuffer.begin(), aOther.myBuffer.begin() + aOther.myIndex);
 		myIndex += aOther.myIndex;
 	}
 
