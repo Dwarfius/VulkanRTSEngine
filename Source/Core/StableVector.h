@@ -83,6 +83,8 @@ public:
                 }
             }
         }
+
+        size_t GetCount() const { return myCount; }
     };
 
 private:
