@@ -106,9 +106,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderP
 				return;
 			}
 
-			Handle<GPUModel>& model = vo.GetModel();
-			if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
-				[[unlikely]]
+			if (!aRenderable.myVO.IsValidForRendering()) [[unlikely]]
 			{
 				return;
 			}
@@ -142,14 +140,15 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderP
 				return;
 			}
 
+			GPUModel* gpuModel = vo.GetModel().Get();
 			RenderJob& job = aJob.AllocateJob();
 			job.SetPipeline(gpuPipeline);
-			job.SetModel(model.Get());
+			job.SetModel(gpuModel);
 			job.GetUniformSet() = uniformSet;
 
 			RenderJob::IndexedDrawParams drawParams;
 			drawParams.myOffset = 0;
-			drawParams.myCount = model->GetPrimitiveCount();
+			drawParams.myCount = gpuModel->GetPrimitiveCount();
 			job.SetDrawParams(drawParams);
 		});
 	});
