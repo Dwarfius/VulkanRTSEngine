@@ -25,8 +25,10 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 	Game& game = *Game::GetInstance();
 	const Camera& camera = *game.GetCamera();
 
-	constexpr auto IsUsable = [](const VisualObject& aVO) {
-		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) {
+	constexpr auto IsUsable = [](const VisualObject& aVO) 
+	{
+		constexpr auto CheckResource = [](const Handle<GPUResource>& aRes) 
+		{
 			return aRes.IsValid() && aRes->GetState() == GPUResource::State::Valid;
 		};
 		return CheckResource(aVO.GetModel())
@@ -34,99 +36,111 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 			&& CheckResource(aVO.GetTexture());
 	};
 
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
-	const size_t maxSize = game.GetRenderableCount() *
-		(sizeof(RenderPassJob::SetPipelineCmd) + 1 +
+	// Returns worst case size
+	constexpr auto GetMaxBufferSize = [](size_t aCount)
+	{
+		// each command needs an extra byte to identify it
+		return aCount * (sizeof(RenderPassJob::SetPipelineCmd) + 1 +
 			sizeof(RenderPassJob::SetModelCmd) + 1 +
 			sizeof(RenderPassJob::SetTextureCmd) + 1 +
 			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
 			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
-	ASSERT_STR(maxSize <= std::numeric_limits<uint32_t>::max(), "Overflow bellow!");
-	cmdBuffer.Resize(static_cast<uint32_t>(maxSize)); // worst case
-	cmdBuffer.Clear();
-	tbb::spin_mutex cmdLock;
+	};
 
+	std::vector<CmdBuffer> perPageBuffers;
 	game.AccessRenderables([&](StableVector<Renderable>& aRenderables) 
 	{
-		aRenderables.ParallelForEach([&](Renderable& aRenderable)
+		perPageBuffers.resize(aRenderables.GetPageCount());
+		aRenderables.ForEachPage([&](const StableVector<Renderable>::Page& aPage, size_t aPageInd)
 		{
-			VisualObject& visObj = aRenderable.myVO;
+			const size_t maxSize = GetMaxBufferSize(aPage.GetCount());
+			ASSERT_STR(maxSize <= std::numeric_limits<uint32_t>::max(), "Overflow bellow!");
+			perPageBuffers[aPageInd].Resize(static_cast<uint32_t>(maxSize));
+		});
 
+		aRenderables.ParallelForEachPage([&](StableVector<Renderable>::Page& aPage, size_t aPageInd)
+		{
+			CmdBuffer& cmdBuffer = perPageBuffers[aPageInd];
+			aPage.ForEach([&](Renderable& aRenderable)
 			{
-				Profiler::ScopedMark earlyChecks("EarlyChecks");
-				if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+				VisualObject& visObj = aRenderable.myVO;
+
 				{
-					return;
+					Profiler::ScopedMark earlyChecks("EarlyChecks");
+					if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+					{
+						return;
+					}
+
+					// Default Pass handling
+					if (!visObj.IsValidForRendering()) [[unlikely]]
+					{
+						visObj.SetIsValidForRendering(IsUsable(visObj));
+						return;
+					}
 				}
 
-				// Default Pass handling
-				if (!visObj.IsValidForRendering()) [[unlikely]]
+				const GameObject* gameObject = aRenderable.myGO;
+
+				// Before building a render-job, we need to try to 
+				// pre-allocate all the the UBOs - since if we can't, 
+				// we need to early out without spawning a job
+				GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
+
+				RenderJob::UniformSet uniformSet;
 				{
-					visObj.SetIsValidForRendering(IsUsable(visObj));
-					return;
+					Profiler::ScopedMark earlyChecks("FillUBO");
+					// updating the uniforms - grabbing game state!
+					UniformAdapterSource source{
+						aGraphics,
+						camera,
+						gameObject,
+						visObj
+					};
+					if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+						[[unlikely]]
+					{
+						return;
+					}
 				}
-			}
-
-			const GameObject* gameObject = aRenderable.myGO;
-
-			// Before building a render-job, we need to try to 
-			// pre-allocate all the the UBOs - since if we can't, 
-			// we need to early out without spawning a job
-			GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
-
-			RenderJob::UniformSet uniformSet;
-			{
-				Profiler::ScopedMark earlyChecks("FillUBO");
-				// updating the uniforms - grabbing game state!
-				UniformAdapterSource source{
-					aGraphics,
-					camera,
-					gameObject,
-					visObj
-				};
-				if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-					[[unlikely]]
-				{
-					return;
-				}
-			}
-
-			{
-				Profiler::ScopedMark earlyChecks("BuildRenderJob");
-				// Building a render job
-				RenderPassJob::SetPipelineCmd* pipelineCmd;
-				RenderPassJob::SetModelCmd* modelCmd;
-				RenderPassJob::SetTextureCmd* textureCmd;
-				RenderPassJob::SetUniformBufferCmd* uboCmd[4];
-				RenderPassJob::DrawIndexedCmd* drawCmd;
 
 				{
-					tbb::spin_mutex::scoped_lock lock(cmdLock);
-					pipelineCmd = &cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
-					modelCmd = &cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
-					textureCmd = &cmdBuffer.Write<RenderPassJob::SetTextureCmd, false>();
+					Profiler::ScopedMark earlyChecks("BuildRenderJob");
+					// Building a render job
+					RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
+					pipelineCmd.myPipeline = gpuPipeline;
+
+					RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
+					modelCmd.myModel = visObj.GetModel().Get();
+
+					RenderPassJob::SetTextureCmd& textureCmd = cmdBuffer.Write<RenderPassJob::SetTextureCmd, false>();
+					textureCmd.mySlot = 0;
+					textureCmd.myTexture = visObj.GetTexture().Get();
+
 					for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 					{
-						uboCmd[i] = &cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+						RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<
+							RenderPassJob::SetUniformBufferCmd, false>();
+						uboCmd.mySlot = i;
+						uboCmd.myUniformBuffer = uniformSet[i];
 					}
-					drawCmd = &cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+					RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+					drawCmd.myOffset = 0;
+					drawCmd.myCount = visObj.GetModel().Get()->GetPrimitiveCount();
 				}
-
-				pipelineCmd->myPipeline = gpuPipeline;
-				modelCmd->myModel = visObj.GetModel().Get();
-				textureCmd->mySlot = 0;
-				textureCmd->myTexture = visObj.GetTexture().Get();
-				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-				{
-					uboCmd[i]->mySlot = i;
-					uboCmd[i]->myUniformBuffer = uniformSet[i];
-				}
-				drawCmd->myOffset = 0;
-				drawCmd->myCount = visObj.GetModel().Get()->GetPrimitiveCount();
-			}
+			});
 		});
 	});
+
+	Profiler::ScopedMark earlyChecks("AgreggateCmds");
+	// aggregate all 
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	CmdBuffer& passCmdBuffer = passJob.GetCmdBuffer();
+	passCmdBuffer.Clear();
+	for (const CmdBuffer& cmdBuffer : perPageBuffers)
+	{
+		passCmdBuffer.CopyFrom(cmdBuffer);
+	}
 }
 
 RenderContext DefaultRenderPass::CreateContext(Graphics& aGraphics) const
