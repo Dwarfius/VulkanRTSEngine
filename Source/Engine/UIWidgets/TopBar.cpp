@@ -30,11 +30,6 @@ void TopBar::Draw()
 
 	if (!myIsVisible)
 	{
-		std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
-		ImGui::SetNextWindowPos({ 0,0 });
-		ImGui::Begin("Info");
-		ImGui::Text("Press F1 to bring the Main Bar");
-		ImGui::End();
 		return;
 	}
 

@@ -27,5 +27,5 @@ private:
 	static std::string_view GetMenuName(std::string_view aPath);
 
 	std::vector<MenuItem> myMenuItems;
-	bool myIsVisible;
+	bool myIsVisible = false;
 };
