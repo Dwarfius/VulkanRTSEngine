@@ -150,6 +150,7 @@ void AssetTracker::RemoveResource(const Resource* aRes)
 void AssetTracker::AssignDynamicId(Resource& aResource)
 {
 	aResource.myId = ++myCounter;
+	aResource.myOnDestroyCB = [=](const Resource* aRes) { RemoveResource(aRes); };
 
 	{
 		tbb::spin_mutex::scoped_lock assetsLock(myAssetMutex);
