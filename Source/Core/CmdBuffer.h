@@ -72,7 +72,11 @@ public:
 
 	void CopyFrom(const CmdBuffer& aOther)
 	{
-		myBuffer.insert(myBuffer.end(), aOther.myBuffer.begin(), aOther.myBuffer.begin() + aOther.myIndex);
+		if (myIndex + aOther.myIndex > myBuffer.size())
+		{
+			myBuffer.resize(myIndex + aOther.myIndex);
+		}
+		std::memcpy(myBuffer.data() + myIndex, aOther.myBuffer.data(), aOther.myIndex);
 		myIndex += aOther.myIndex;
 	}
 
