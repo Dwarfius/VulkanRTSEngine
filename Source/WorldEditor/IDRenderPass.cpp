@@ -96,59 +96,62 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderP
 	}
 
 	const Camera& camera = *aGame.GetCamera();
-	aGame.ForEachRenderable([&](Renderable& aRenderable) {
-		VisualObject& vo = aRenderable.myVO;
-
-		if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
+	aGame.AccessRenderables([&](StableVector<Renderable>& aRenderables)
+	{
+		aRenderables.ParallelForEach([&](Renderable& aRenderable)
 		{
-			return;
-		}
+			VisualObject& vo = aRenderable.myVO;
+			if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
+			{
+				return;
+			}
 
-		Handle<GPUModel>& model = vo.GetModel();
-		if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
-			[[unlikely]]
-		{
-			return;
-		}
+			Handle<GPUModel>& model = vo.GetModel();
+			if (!model.IsValid() || model->GetState() != GPUResource::State::Valid)
+				[[unlikely]]
+			{
+				return;
+			}
 
-		// assuming we'll be able to render the GO
-		// save it for tracking
-		ObjID newID = myFrameGOs.myGOCounter++;
-		if (newID >= kMaxObjects)
-		{
-			return;
-		}
-		myFrameGOs.myGOs[newID] = aRenderable.myGO;
+			// assuming we'll be able to render the GO
+			// save it for tracking
+			ObjID newID = myFrameGOs.myGOCounter++;
+			if (newID >= kMaxObjects)
+			{
+				return;
+			}
+			myFrameGOs.myGOs[newID] = aRenderable.myGO;
 
-		// updating the uniforms - grabbing game state!
-		IDGOAdapterSourceData source{
-			aGraphics,
-			camera,
-			aRenderable.myGO,
-			vo,
-			newID + 1
-		};
+			// updating the uniforms - grabbing game state!
+			IDGOAdapterSourceData source{
+				aGraphics,
+				camera,
+				aRenderable.myGO,
+				vo,
+				newID + 1
+			};
 
-		const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
-		GPUPipeline* gpuPipeline = isSkinned ?
-			mySkinningPipeline.Get() :
-			myDefaultPipeline.Get();
-		RenderJob::UniformSet uniformSet;
-		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-			[[unlikely]]
-		{
-			return;
-		}
+			const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
+			GPUPipeline* gpuPipeline = isSkinned ?
+				mySkinningPipeline.Get() :
+				myDefaultPipeline.Get();
+			RenderJob::UniformSet uniformSet;
+			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+				[[unlikely]]
+			{
+				return;
+			}
 
-		RenderJob& job = aJob.AllocateJob();
-		job.SetPipeline(gpuPipeline);
-		job.SetModel(model.Get());
-		job.GetUniformSet() = uniformSet;
+			RenderJob& job = aJob.AllocateJob();
+			job.SetPipeline(gpuPipeline);
+			job.SetModel(model.Get());
+			job.GetUniformSet() = uniformSet;
 
-		RenderJob::IndexedDrawParams drawParams;
-		drawParams.myOffset = 0;
-		drawParams.myCount = model->GetPrimitiveCount();
-		job.SetDrawParams(drawParams);
+			RenderJob::IndexedDrawParams drawParams;
+			drawParams.myOffset = 0;
+			drawParams.myCount = model->GetPrimitiveCount();
+			job.SetDrawParams(drawParams);
+		});
 	});
 }
 
@@ -161,57 +164,61 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 	}
 
 	const Camera& camera = *aGame.GetCamera();
-	aGame.ForEachTerrain([&](const Game::TerrainEntity& anEntity) {
-		VisualObject* visObj = anEntity.myVisualObject;
-		if (!visObj)
+	aGame.AccessTerrains([&](std::span<Game::TerrainEntity> aTerrains)
+	{
+		for (Game::TerrainEntity& anEntity : aTerrains)
 		{
-			return;
+			VisualObject* visObj = anEntity.myVisualObject;
+			if (!visObj)
+			{
+				return;
+			}
+
+			Handle<GPUTexture>& texture = visObj->GetTexture();
+			if (!texture.IsValid() || texture->GetState() != GPUResource::State::Valid)
+				[[unlikely]]
+			{
+				return;
+			}
+
+				// assuming we'll be able to render the terrain
+				// save it for tracking
+			ObjID newID = myFrameGOs.myTerrainCounter++;
+			if (newID >= kMaxObjects)
+			{
+				return;
+			}
+			Terrain& terrain = *anEntity.myTerrain;
+			myFrameGOs.myTerrains[newID] = &terrain;
+
+			// updating the uniforms - grabbing game state!
+			IDTerrainAdapterSourceData source{
+				aGraphics,
+				camera,
+				nullptr,
+				*visObj,
+				terrain,
+				newID | kTerrainBit
+			};
+
+			GPUPipeline* gpuPipeline = myTerrainPipeline.Get();
+			RenderJob::UniformSet uniformSet;
+			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+				[[unlikely]]
+			{
+				return;
+			}
+
+			RenderJob& job = aJob.AllocateJob();
+			job.SetPipeline(gpuPipeline);
+			job.GetTextures().PushBack(texture.Get());
+			job.GetUniformSet() = uniformSet;
+
+			RenderJob::TesselationDrawParams drawParams;
+			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+			drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+			job.SetDrawParams(drawParams);
 		}
-
-		Handle<GPUTexture>& texture = visObj->GetTexture();
-		if (!texture.IsValid() || texture->GetState() != GPUResource::State::Valid)
-			[[unlikely]]
-		{
-			return;
-		}
-
-		// assuming we'll be able to render the terrain
-		// save it for tracking
-		ObjID newID = myFrameGOs.myTerrainCounter++;
-		if (newID >= kMaxObjects)
-		{
-			return;
-		}
-		Terrain& terrain = *anEntity.myTerrain;
-		myFrameGOs.myTerrains[newID] = &terrain;
-
-		// updating the uniforms - grabbing game state!
-		IDTerrainAdapterSourceData source{
-			aGraphics,
-			camera,
-			nullptr,
-			*visObj,
-			terrain,
-			newID | kTerrainBit
-		};
-
-		GPUPipeline* gpuPipeline = myTerrainPipeline.Get();
-		RenderJob::UniformSet uniformSet;
-		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-			[[unlikely]]
-		{
-			return;
-		}
-
-		RenderJob& job = aJob.AllocateJob();
-		job.SetPipeline(gpuPipeline);
-		job.GetTextures().PushBack(texture.Get());
-		job.GetUniformSet() = uniformSet;
-
-		RenderJob::TesselationDrawParams drawParams;
-		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-		job.SetDrawParams(drawParams);
 	});
 }
 

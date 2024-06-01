@@ -47,81 +47,85 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 	cmdBuffer.Clear();
 	tbb::spin_mutex cmdLock;
 
-	game.ForEachRenderable([&](Renderable& aRenderable) {
-		VisualObject& visObj = aRenderable.myVO;
-
+	game.AccessRenderables([&](StableVector<Renderable>& aRenderables) 
+	{
+		aRenderables.ParallelForEach([&](Renderable& aRenderable)
 		{
-			Profiler::ScopedMark earlyChecks("EarlyChecks");
-			if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+			VisualObject& visObj = aRenderable.myVO;
+
 			{
-				return;
+				Profiler::ScopedMark earlyChecks("EarlyChecks");
+				if (!camera.CheckSphere(visObj.GetCenter(), visObj.GetRadius()))
+				{
+					return;
+				}
+
+				// Default Pass handling
+				if (!visObj.IsValidForRendering()) [[unlikely]]
+				{
+					visObj.SetIsValidForRendering(IsUsable(visObj));
+					return;
+				}
 			}
 
-			// Default Pass handling
-			if (!visObj.IsValidForRendering()) [[unlikely]]
+			const GameObject* gameObject = aRenderable.myGO;
+
+			// Before building a render-job, we need to try to 
+			// pre-allocate all the the UBOs - since if we can't, 
+			// we need to early out without spawning a job
+			GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
+
+			RenderJob::UniformSet uniformSet;
 			{
-				visObj.SetIsValidForRendering(IsUsable(visObj));
-				return;
+				Profiler::ScopedMark earlyChecks("FillUBO");
+				// updating the uniforms - grabbing game state!
+				UniformAdapterSource source{
+					aGraphics,
+					camera,
+					gameObject,
+					visObj
+				};
+				if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+					[[unlikely]]
+				{
+					return;
+				}
 			}
-		}
-
-		const GameObject* gameObject = aRenderable.myGO;
-
-		// Before building a render-job, we need to try to 
-		// pre-allocate all the the UBOs - since if we can't, 
-		// we need to early out without spawning a job
-		GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
-		
-		RenderJob::UniformSet uniformSet;
-		{
-			Profiler::ScopedMark earlyChecks("FillUBO");
-			// updating the uniforms - grabbing game state!
-			UniformAdapterSource source{
-				aGraphics,
-				camera,
-				gameObject,
-				visObj
-			};
-			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-				[[unlikely]]
-			{
-				return;
-			}
-		}
-		
-		{
-			Profiler::ScopedMark earlyChecks("BuildRenderJob");
-			// Building a render job
-			RenderPassJob::SetPipelineCmd* pipelineCmd;
-			RenderPassJob::SetModelCmd* modelCmd;
-			RenderPassJob::SetTextureCmd* textureCmd;
-			RenderPassJob::SetUniformBufferCmd* uboCmd[4];
-			RenderPassJob::DrawIndexedCmd* drawCmd;
 
 			{
-				tbb::spin_mutex::scoped_lock lock(cmdLock);
-				pipelineCmd = &cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
-				modelCmd = &cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
-				textureCmd = &cmdBuffer.Write<RenderPassJob::SetTextureCmd, false>();
+				Profiler::ScopedMark earlyChecks("BuildRenderJob");
+				// Building a render job
+				RenderPassJob::SetPipelineCmd* pipelineCmd;
+				RenderPassJob::SetModelCmd* modelCmd;
+				RenderPassJob::SetTextureCmd* textureCmd;
+				RenderPassJob::SetUniformBufferCmd* uboCmd[4];
+				RenderPassJob::DrawIndexedCmd* drawCmd;
+
+				{
+					tbb::spin_mutex::scoped_lock lock(cmdLock);
+					pipelineCmd = &cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
+					modelCmd = &cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
+					textureCmd = &cmdBuffer.Write<RenderPassJob::SetTextureCmd, false>();
+					for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+					{
+						uboCmd[i] = &cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+					}
+					drawCmd = &cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+				}
+
+				pipelineCmd->myPipeline = gpuPipeline;
+				modelCmd->myModel = visObj.GetModel().Get();
+				textureCmd->mySlot = 0;
+				textureCmd->myTexture = visObj.GetTexture().Get();
 				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 				{
-					uboCmd[i] = &cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+					uboCmd[i]->mySlot = i;
+					uboCmd[i]->myUniformBuffer = uniformSet[i];
 				}
-				drawCmd = &cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+				drawCmd->myOffset = 0;
+				drawCmd->myCount = visObj.GetModel().Get()->GetPrimitiveCount();
 			}
-
-			pipelineCmd->myPipeline = gpuPipeline;
-			modelCmd->myModel = visObj.GetModel().Get();
-			textureCmd->mySlot = 0;
-			textureCmd->myTexture = visObj.GetTexture().Get();
-			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-			{
-				uboCmd[i]->mySlot = i;
-				uboCmd[i]->myUniformBuffer = uniformSet[i];
-			}
-			drawCmd->myOffset = 0;
-			drawCmd->myCount = visObj.GetModel().Get()->GetPrimitiveCount();
-		}
+		});
 	});
 }
 
@@ -168,56 +172,60 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 	};
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-	game.ForEachTerrain([&](Game::TerrainEntity& anEntity) {
-		VisualObject* visObj = anEntity.myVisualObject;
-		if (!visObj)
-			[[unlikely]]
+	game.AccessTerrains([&](std::span<Game::TerrainEntity> aTerrains)
+	{
+		for (Game::TerrainEntity& anEntity : aTerrains)
 		{
-			return;
+			VisualObject* visObj = anEntity.myVisualObject;
+			if (!visObj)
+				[[unlikely]]
+			{
+				return;
+			}
+
+			if (!IsUsable(*visObj))
+				[[unlikely]]
+			{
+				return;
+			}
+
+				if (visObj->GetModel().IsValid()
+					&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
+				{
+					return;
+				}
+
+			// building a render job
+			const Terrain& terrain = *anEntity.myTerrain;
+
+			GPUPipeline* gpuPipeline = visObj->GetPipeline().Get();
+
+			// updating the uniforms - grabbing game state!
+			TerrainAdapter::Source source{
+				aGraphics,
+				camera,
+				nullptr,
+				*visObj,
+				terrain
+			};
+			RenderJob::UniformSet uniformSet;
+			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+				[[unlikely]]
+			{
+				return;
+			}
+
+			RenderJob& renderJob = passJob.AllocateJob();
+			renderJob.SetModel(visObj->GetModel().Get());
+			renderJob.SetPipeline(gpuPipeline);
+			renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
+			renderJob.GetUniformSet() = uniformSet;
+
+			RenderJob::TesselationDrawParams drawParams;
+			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
+			drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
+			renderJob.SetDrawParams(drawParams);
 		}
-
-		if (!IsUsable(*visObj))
-			[[unlikely]]
-		{
-			return;
-		}
-
-		if (visObj->GetModel().IsValid()
-			&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
-		{
-			return;
-		}
-
-		// building a render job
-		const Terrain& terrain = *anEntity.myTerrain;
-
-		GPUPipeline* gpuPipeline = visObj->GetPipeline().Get();
-
-		// updating the uniforms - grabbing game state!
-		TerrainAdapter::Source source{
-			aGraphics,
-			camera,
-			nullptr,
-			*visObj,
-			terrain
-		};
-		RenderJob::UniformSet uniformSet;
-		if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-			[[unlikely]]
-		{
-			return;
-		}
-
-		RenderJob& renderJob = passJob.AllocateJob();
-		renderJob.SetModel(visObj->GetModel().Get());
-		renderJob.SetPipeline(gpuPipeline);
-		renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
-		renderJob.GetUniformSet() = uniformSet;
-
-		RenderJob::TesselationDrawParams drawParams;
-		const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-		drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-		renderJob.SetDrawParams(drawParams);
 	});
 }
 

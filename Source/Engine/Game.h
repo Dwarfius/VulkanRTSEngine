@@ -48,7 +48,6 @@ public:
 	typedef void (*ReportError)(int, const char*);
 
 	using DebugDrawerCallback = std::function<void(const DebugDrawer&)>;
-
 	struct TerrainEntity
 	{
 		Terrain* myTerrain; // owning
@@ -88,9 +87,9 @@ public:
 	World& GetWorld() { return myWorld; }
 	const World& GetWorld() const { return myWorld; }
 	template<class TFunc>
-	void ForEachRenderable(const TFunc& aFunc);
+	void AccessRenderables(TFunc&& aFunc);
 	template<class TFunc>
-	void ForEachTerrain(const TFunc& aFunc);
+	void AccessTerrains(TFunc&& aFunc);
 	void ForEachDebugDrawer(const DebugDrawerCallback& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
@@ -175,21 +174,18 @@ private:
 };
 
 template<class TFunc>
-void Game::ForEachRenderable(const TFunc& aFunc)
+void Game::AccessRenderables(TFunc&& aFunc)
 {
 	// TODO: replace with a read-only lock
 	std::lock_guard lock(myRenderablesMutex);
-	myRenderables.ParallelForEach(aFunc);
+	aFunc(myRenderables);
 }
 
 template<class TFunc>
-void Game::ForEachTerrain(const TFunc& aFunc)
+void Game::AccessTerrains(TFunc&& aFunc)
 {
 #ifdef ASSERT_MUTEX
 	AssertLock assertLock(myTerrainsMutex);
 #endif
-	for (TerrainEntity& entity : myTerrains)
-	{
-		aFunc(entity);
-	}
+	aFunc(myTerrains);
 }
