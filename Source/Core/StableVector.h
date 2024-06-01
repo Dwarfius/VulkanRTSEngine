@@ -211,6 +211,11 @@ public:
         return myCount;
     }
 
+    size_t GetPageCount() const
+    {
+        return myCapacity / PageSize;
+    }
+
     bool Contains(const T* anItem) const
     {
         if (IsEmpty())
@@ -297,11 +302,11 @@ public:
             return;
         }
 
-        const size_t bucketCount = aSelf.myCapacity / PageSize;
+        const size_t pageCount = aSelf.GetPageCount();
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
         const size_t threadCount = std::thread::hardware_concurrency() * 2;
-        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
+        const size_t batchSize = std::max((pageCount + threadCount - 1) / threadCount, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, pageCount, batchSize),
             [&](tbb::blocked_range<size_t> aRange)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
@@ -350,11 +355,11 @@ public:
             return;
         }
 
-        const size_t bucketCount = aSelf.myCapacity / PageSize;
+        const size_t pageCount = aSelf.GetPageCount();
         // Attempt to have 2 batches per thread, so that it's easier to schedule around
         const size_t threadCount = std::thread::hardware_concurrency() * 2;
-        const size_t batchSize = std::max((bucketCount + threadCount - 1) / threadCount, 1ull);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, bucketCount, batchSize),
+        const size_t batchSize = std::max((pageCount + threadCount - 1) / threadCount, 1ull);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, pageCount, batchSize),
             [&](tbb::blocked_range<size_t> aRange)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
