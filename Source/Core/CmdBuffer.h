@@ -70,6 +70,12 @@ public:
 		return myIndex == 0;
 	}
 
+	void CopyFrom(const CmdBuffer& aOther)
+	{
+		myBuffer.insert(myBuffer.end(), aOther.myBuffer.begin(), aOther.myBuffer.end());
+		myIndex += aOther.myIndex;
+	}
+
 private:
 	std::vector<std::byte> myBuffer;
 	uint32_t myIndex = 0;
