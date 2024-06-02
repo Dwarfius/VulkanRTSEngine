@@ -312,7 +312,6 @@ void ProfilerUI::DrawScopesView()
 		ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
 		if (sortSpecs && sortSpecs->SpecsDirty)
 		{
-			int count = sortSpecs->SpecsCount;
 			for (int i = 0; i < sortSpecs->SpecsCount; i++)
 			{
 				const ImGuiTableColumnSortSpecs& sortSpec = sortSpecs->Specs[i];
