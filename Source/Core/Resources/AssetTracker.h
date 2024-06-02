@@ -18,6 +18,15 @@ private:
 	using StringToIdMap = std::unordered_map<std::string, Resource::Id, StringHash, std::equal_to<>>;
 
 public:
+	struct DebugAccess
+	{
+		// Returns a snapshot of all resources
+		// Note: Not thread safe! If a user discards last handle on a resource
+		// then we'll try to spawn a new handle, which is illegal!
+		static std::vector<Handle<Resource>> AccessResources(AssetTracker& aTracker);
+	};
+
+public:
 	AssetTracker();
 
 	// Saves an asset to the disk. Tracks it for future use

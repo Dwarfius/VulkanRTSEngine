@@ -17,6 +17,7 @@
 #include "Light.h"
 #include "RenderThread.h"
 #include "Resources/FileWatcher.h"
+#include "UIWidgets/AssetTrackerDialog.h"
 #include "UIWidgets/EntitiesWidget.h"
 #include "UIWidgets/ObjImportDialog.h"
 #include "UIWidgets/GltfImportDialog.h"
@@ -242,6 +243,7 @@ void Game::Init(bool aUseDefaultCompositePass)
 		myTaskManager->AddTask(task);
 	}
 
+	myTopBar.Register("Widgets/Asset Tracker", &AssetTrackerDialog::Draw);
 	myTopBar.Register("Widgets/Demo", [](bool& aIsVisible) {
 		ImGui::ShowDemoWindow(&aIsVisible);
 	});

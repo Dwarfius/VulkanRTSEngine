@@ -6,6 +6,18 @@
 #include "../Profiler.h"
 #include "BinarySerializer.h"
 
+std::vector<Handle<Resource>> AssetTracker::DebugAccess::AccessResources(AssetTracker& aTracker)
+{
+	std::vector<Handle<Resource>> resources;
+	tbb::spin_mutex::scoped_lock lock(aTracker.myAssetMutex);
+	resources.reserve(aTracker.myAssets.size());
+	for (auto& [id, res] : aTracker.myAssets)
+	{
+		resources.emplace_back(res);
+	}
+	return resources;
+}
+
 AssetTracker::AssetTracker()
 	: myCounter(Resource::InvalidId)
 {
