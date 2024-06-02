@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Core/RefCounted.h>
-#include <Core/Resources/Resource.h>
 
 class Graphics;
+class Resource;
 
 // Base class for resources on the GPU. 
 // Operations with it aren't thread safe - requires external sync
@@ -11,6 +11,8 @@ class Graphics;
 class GPUResource : public RefCounted
 {
 public:
+	using ResourceId = uint32_t;
+
 	enum class State
 	{
 		Invalid,
@@ -82,7 +84,7 @@ public:
 
 protected:
 	Handle<Resource> myResHandle;
-	Resource::Id myResId;
+	ResourceId myResId;
 	State myState;
 	Graphics* myGraphics; // non owning ptr
 

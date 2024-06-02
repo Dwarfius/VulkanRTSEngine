@@ -7,6 +7,8 @@
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
 
+static_assert(std::is_same_v<GPUResource::ResourceId, Resource::Id>, "Update to match!");
+
 GPUResource::GPUResource()
 	: myResId(Resource::InvalidId)
 	, myState(State::Invalid)
