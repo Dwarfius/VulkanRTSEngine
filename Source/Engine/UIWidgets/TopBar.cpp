@@ -5,20 +5,16 @@
 #include "../Input.h"
 #include "../Systems/ImGUI/ImGUISystem.h"
 
-void TopBar::Register(std::string_view aPath, DrawCallback aCallback)
+TopBar::TopBar()
 {
-	myMenuItems.push_back({ GetMenuStack(aPath), aPath, aCallback, false });
-	std::sort(myMenuItems.begin(), myMenuItems.end(), [](const MenuItem& aLeft, const MenuItem& aRight) {
-		return aLeft.myPath.compare(aRight.myPath) < 0;
-	});
+	// we always have an empty root node
+	myMenuNodes.emplace_back();
 }
 
-void TopBar::Unregister(std::string_view aPath)
+void TopBar::Register(std::string_view aPath, DrawCallback aCallback)
 {
-	std::string_view item = GetMenuName(aPath);
-	myMenuItems.erase(std::remove_if(myMenuItems.begin(), myMenuItems.end(), [&](const MenuItem& aMenu) {
-		return aMenu.myPath == aPath;
-	}));
+	myMenuItems.push_back({ GetMenuName(aPath), aCallback, false });
+	InsertMenuNode(0, aPath);
 }
 
 void TopBar::Draw()
@@ -28,7 +24,7 @@ void TopBar::Draw()
 		myIsVisible = !myIsVisible;
 	}
 
-	if (!myIsVisible)
+	if (!myIsVisible || myMenuNodes.empty())
 	{
 		return;
 	}
@@ -36,20 +32,9 @@ void TopBar::Draw()
 	std::lock_guard lock(Game::GetInstance()->GetImGUISystem().GetMutex());
 	if (ImGui::BeginMainMenuBar())
 	{
-		constexpr size_t kMaxPath = 250;
-		char currentMenu[kMaxPath]{};
-		char menuCount = 0;
-		for (MenuItem& item : myMenuItems)
+		for (uint16_t childInd : myMenuNodes[0].myChildren)
 		{
-			if (DrawMenu(item, currentMenu, menuCount))
-			{
-				item.myIsVisible = true;
-			}
-		}
-		while (menuCount)
-		{
-			ImGui::EndMenu();
-			menuCount--;
+			DrawMenuNode(myMenuNodes[childInd]);
 		}
 		ImGui::EndMainMenuBar();
 	}
@@ -63,90 +48,6 @@ void TopBar::Draw()
 	}
 }
 
-bool TopBar::DrawMenu(const MenuItem& anItem, char* aCurrentMenu, char& aMenuCount) const
-{
-	// check if we need to start a new menu
-	size_t offset = 0;
-	char menusOpened = 0;
-	bool foundMissmatch = false;
-	for(char depth = 0; depth < anItem.myMenuStack.size(); depth++)
-	{
-		const std::string& menu = anItem.myMenuStack[depth];
-		bool isOpen = false;
-		if (!foundMissmatch)
-		{
-			foundMissmatch = std::memcmp(menu.data(), aCurrentMenu + offset, menu.size()) != 0;
-			if (foundMissmatch)
-			{
-				// destroy all menu stack
-				for (char menuInd = depth; menuInd < aMenuCount; menuInd++)
-				{
-					ImGui::EndMenu();
-				}
-
-				// push current menu on top - the rest will be handled on next iters
-				isOpen = ImGui::BeginMenu(menu.c_str());
-				if (isOpen)
-				{
-					std::memcpy(aCurrentMenu + offset, menu.data(), menu.size());
-				}
-				else
-				{
-					// user doesn't have the menu open
-					// so there's no point in going deeper
-					break;
-				}
-			}
-			else
-			{
-				// there's a match for the menu stack,
-				// so it's open from a previous menu item
-				isOpen = true;
-			}
-		}
-		else
-		{
-			// Last iteration we found a match, meaning we need
-			// continue populating the hierarchy stack
-			// and open relevant submenus
-			isOpen = ImGui::BeginMenu(menu.c_str());
-			if (isOpen)
-			{
-				std::memcpy(aCurrentMenu + offset, menu.data(), menu.size());
-			}
-			else
-			{
-				break;
-			}
-		}
-		offset += menu.size();
-		if (isOpen)
-		{
-			menusOpened++;
-		}
-	}
-	aMenuCount = menusOpened;
-
-	// draw out current item
-	std::string_view name = GetMenuName(anItem.myPath);
-	return aMenuCount == anItem.myMenuStack.size() && ImGui::MenuItem(name.data());
-}
-
-std::vector<std::string> TopBar::GetMenuStack(std::string_view aPath)
-{
-	constexpr char kSeparator = '/';
-	std::vector<std::string> stack;
-	size_t offset = 0;
-	size_t pos;
-	while ((pos = aPath.find(kSeparator, offset)) != std::string_view::npos)
-	{
-		std::string menu(&aPath[offset], &aPath[pos]);
-		stack.push_back(std::move(menu));
-		offset = pos + 1;
-	}
-	return stack;
-}
-
 std::string_view TopBar::GetMenuName(std::string_view aPath)
 {
 	constexpr char kSeparator = '/';
@@ -158,5 +59,56 @@ std::string_view TopBar::GetMenuName(std::string_view aPath)
 	else
 	{
 		return std::string_view{};
+	}
+}
+
+void TopBar::InsertMenuNode(uint16_t aRootInd, std::string_view aPath)
+{
+	constexpr char kSeparator = '/';
+	const size_t pos = aPath.find(kSeparator);
+	if (pos != std::string_view::npos)
+	{
+		std::string_view pathNode = aPath.substr(0, pos);
+		bool wasInserted = false;
+		for (uint16_t childInd : myMenuNodes[aRootInd].myChildren)
+		{
+			if (myMenuNodes[childInd].myName == pathNode)
+			{
+				InsertMenuNode(childInd, aPath.substr(pos + 1)); // skip '/'
+				wasInserted = true;
+				break;
+			}
+		}
+		if (!wasInserted)
+		{
+			const uint16_t newNodeInd = static_cast<uint16_t>(myMenuNodes.size());
+			myMenuNodes.push_back({ std::string(pathNode.data(), pathNode.size()) });
+			myMenuNodes[aRootInd].myChildren.push_back(newNodeInd);
+			InsertMenuNode(newNodeInd, aPath.substr(pos + 1)); // skip '/'
+		}
+	}
+	else
+	{
+		myMenuNodes[aRootInd].myItems.push_back(static_cast<uint16_t>(myMenuItems.size() - 1));
+	}
+}
+
+void TopBar::DrawMenuNode(const MenuNode& aNode)
+{
+	if (ImGui::BeginMenu(aNode.myName.c_str()))
+	{
+		for (uint16_t childNode : aNode.myChildren)
+		{
+			DrawMenuNode(myMenuNodes[childNode]);
+		}
+
+		for (uint16_t menuItem : aNode.myItems)
+		{
+			if (ImGui::MenuItem(myMenuItems[menuItem].myName.data()))
+			{
+				myMenuItems[menuItem].myIsVisible = true;
+			}
+		}
+		ImGui::EndMenu();
 	}
 }
