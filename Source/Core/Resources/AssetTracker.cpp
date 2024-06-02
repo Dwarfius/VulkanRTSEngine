@@ -11,7 +11,7 @@ std::vector<Handle<Resource>> AssetTracker::DebugAccess::AccessResources(AssetTr
 	std::vector<Handle<Resource>> resources;
 	tbb::spin_mutex::scoped_lock lock(aTracker.myAssetMutex);
 	resources.reserve(aTracker.myAssets.size());
-	for (auto& [id, res] : aTracker.myAssets)
+	for (const auto& [id, res] : aTracker.myAssets)
 	{
 		resources.emplace_back(res);
 	}
