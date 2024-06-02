@@ -32,7 +32,7 @@ void GPUResource::Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShoul
 
 	if (myResHandle.IsValid())
 	{
-		// Remember ressource ID so we can track GPUResource=>Resource
+		// Remember resource ID so we can track GPUResource=>Resource
 		myResId = myResHandle->GetId();
 	}
 
