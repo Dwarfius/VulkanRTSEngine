@@ -11,7 +11,6 @@ void AssetTrackerDialog::Draw(bool& aIsOpen)
 	{
 		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
 		std::vector<Handle<Resource>> resources = AssetTracker::DebugAccess::AccessResources(assetTracker);
-		char buffer[128];
 		if (ImGui::BeginTable("Resources", 4, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 		{
 			ImGui::TableSetupColumn("Id");
@@ -74,6 +73,7 @@ void AssetTrackerDialog::Draw(bool& aIsOpen)
 				// current sorting info.
 			}
 
+			char buffer[128];
 			for (const Handle<Resource>& resHandle : resources)
 			{
 				ImGui::TableNextRow();
