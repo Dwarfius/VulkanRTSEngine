@@ -12,6 +12,7 @@ class GPUResource : public RefCounted
 {
 public:
 	using ResourceId = uint32_t;
+	constexpr static ResourceId kInvalidId = 0;
 
 	enum class State
 	{
@@ -36,7 +37,8 @@ public:
 	};
 
 public:
-	GPUResource();
+	GPUResource() = default;
+
 	GPUResource(const GPUResource& anOther) = delete;
 	GPUResource& operator=(const GPUResource& anOther) = delete;
 
@@ -85,9 +87,9 @@ public:
 
 protected:
 	Handle<Resource> myResHandle;
-	ResourceId myResId;
-	State myState;
-	Graphics* myGraphics; // non owning ptr
+	ResourceId myResId = kInvalidId;
+	State myState = State::Invalid;
+	Graphics* myGraphics = nullptr; // non owning ptr
 
 	// A convinience wrapper to set the error message in debug builds.
 	// Sets the state to Error
@@ -112,5 +114,5 @@ private:
 #if ASSERT_MUTEX
 	mutable AssertRWMutex myDependentsMutex;
 #endif
-	bool myKeepResHandle;
+	bool myKeepResHandle = false;
 };
