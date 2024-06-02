@@ -16,6 +16,18 @@
 
 #include <Core/Profiler.h>
 
+std::vector<const GPUResource*> Graphics::DebugAccess::GetResources(Graphics& aGraphics)
+{
+	tbb::spin_mutex::scoped_lock lock(aGraphics.myResourceMutex);
+	std::vector<const GPUResource*> resources;
+	resources.reserve(aGraphics.myResources.size());
+	for (const auto& [id, res] : aGraphics.myResources)
+	{
+		resources.emplace_back(res);
+	}
+	return resources;
+}
+
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 {

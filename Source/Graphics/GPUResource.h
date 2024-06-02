@@ -63,6 +63,7 @@ public:
 	// Note: To retain handle, when creating GPUResource specifiy to
 	// keep the resource handle
 	Handle<Resource> GetResource() const { return myResHandle; }
+	ResourceId GetResourceId() const { return myResId; }
 
 	// Adds a dependent for hot reload tracking. The dependents will
 	// be reloaded if this GPUResource is reloaded. Asserts on duplicates. 

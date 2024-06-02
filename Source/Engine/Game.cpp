@@ -19,6 +19,7 @@
 #include "Resources/FileWatcher.h"
 #include "UIWidgets/AssetTrackerDialog.h"
 #include "UIWidgets/EntitiesWidget.h"
+#include "UIWidgets/GraphicsDialog.h"
 #include "UIWidgets/ObjImportDialog.h"
 #include "UIWidgets/GltfImportDialog.h"
 #include "UIWidgets/TerrainOptionsDialog.h"
@@ -244,6 +245,7 @@ void Game::Init(bool aUseDefaultCompositePass)
 	}
 
 	myTopBar.Register("Engine/Debug/Asset Tracker", &AssetTrackerDialog::Draw);
+	myTopBar.Register("Engine/Debug/Graphics Tracker", &GraphicsDialog::Draw);
 	myTopBar.Register("Engine/Debug/Game Tasks", &GameTasksDialog::Draw);
 	myTopBar.Register("Engine/Debug/Entities View",
 		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {

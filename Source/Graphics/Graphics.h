@@ -25,6 +25,14 @@ class UniformBuffer;
 class Graphics
 {
 public:
+	struct DebugAccess
+	{
+		// Returns a snapshot of all resources
+		// Note: not thread safe if called during Graphics queue processing!
+		static std::vector<const GPUResource*> GetResources(Graphics& aGraphics);
+	};
+
+public:
 	Graphics(AssetTracker& anAssetTracker);
 	virtual ~Graphics() = default;
 
