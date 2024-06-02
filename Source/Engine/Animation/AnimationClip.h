@@ -78,6 +78,8 @@ public:
 	const std::vector<BoneTrack>& GetTracks() const { return myTracks; }
 	Mark GetMark(size_t anIndex) const { return myMarks[anIndex]; }
 
+	std::string_view GetTypeName() const override { return "AnimationClip"; }
+
 private:
 	void Serialize(Serializer& aSerializer) final;
 

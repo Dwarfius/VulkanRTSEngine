@@ -50,6 +50,8 @@ public:
 		aFunc(myGameObjects);
 	}
 
+	std::string_view GetTypeName() const override { return "World"; }
+
 private:
 	void Serialize(Serializer& aSerializer) final;
 

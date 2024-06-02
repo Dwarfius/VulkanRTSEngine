@@ -26,6 +26,8 @@ public:
 	size_t GetShaderCount() const { return myShaders.size(); }
 	const std::string& GetShader(size_t anInd) const { return myShaders[anInd]; }
 
+	std::string_view GetTypeName() const override { return "Pipeline"; }
+
 private:
 	void Serialize(Serializer& aSerializer) override;
 

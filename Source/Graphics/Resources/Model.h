@@ -122,6 +122,8 @@ public:
 	template<class T>
 	void Update(const UploadDescriptor<T>& aDescChain);
 
+	std::string_view GetTypeName() const override { return "Model"; }
+
 private:
 	bool PrefersBinarySerialization() const final { return true; }
 	void Serialize(Serializer& aSerializer) final;

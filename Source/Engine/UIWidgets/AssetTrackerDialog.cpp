@@ -12,10 +12,11 @@ void AssetTrackerDialog::Draw(bool& aIsOpen)
 		AssetTracker& assetTracker = Game::GetInstance()->GetAssetTracker();
 		std::vector<Handle<Resource>> resources = AssetTracker::DebugAccess::AccessResources(assetTracker);
 		char buffer[128];
-		if (ImGui::BeginTable("Resources", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+		if (ImGui::BeginTable("Resources", 4, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 		{
 			ImGui::TableSetupColumn("Id");
 			ImGui::TableSetupColumn("Status");
+			ImGui::TableSetupColumn("Type");
 			ImGui::TableSetupColumn("Path");
 			ImGui::TableHeadersRow();
 			
@@ -47,6 +48,15 @@ void AssetTrackerDialog::Draw(bool& aIsOpen)
 						});
 						break;
 					case 2:
+						std::sort(resources.begin(), resources.end(),
+							[isAscending](const auto& aLeft, const auto& aRight)
+						{
+							return isAscending
+								? aLeft->GetTypeName() < aRight->GetTypeName()
+								: aLeft->GetTypeName() > aRight->GetTypeName();
+						});
+						break;
+					case 3:
 						std::sort(resources.begin(), resources.end(),
 							[isAscending](const auto& aLeft, const auto& aRight)
 						{
@@ -94,6 +104,11 @@ void AssetTrackerDialog::Draw(bool& aIsOpen)
 					default:
 						ASSERT(false);
 					}
+				}
+
+				if (ImGui::TableNextColumn())
+				{
+					ImGui::Text(res->GetTypeName().data());
 				}
 
 				if (ImGui::TableNextColumn())

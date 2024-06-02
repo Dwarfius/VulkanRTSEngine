@@ -18,6 +18,9 @@ public:
 	const std::vector<char>& GetBuffer() const { return myFileContents; }
 
 	void Upload(const char* aData, size_t aSize);
+
+	std::string_view GetTypeName() const override { return "Shader"; }
+
 protected:
 	IShader::Type myType;
 	std::vector<char> myFileContents;

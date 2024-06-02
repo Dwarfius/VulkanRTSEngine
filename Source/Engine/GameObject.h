@@ -71,11 +71,12 @@ public:
 	const World* GetWorld() const { return myWorld; }
 
 	void Serialize(Serializer& aSerializer) final;
+	std::string_view GetTypeName() const override { return "GameObject"; }
 
 	// IPhysControllable impl
 private:
-	void SetPhysTransform(const glm::mat4& aTransf) override final;
-	void GetPhysTransform(glm::mat4& aTranfs) const override final;
+	void SetPhysTransform(const glm::mat4& aTransf) final;
+	void GetPhysTransform(glm::mat4& aTranfs) const final;
 
 private:
 	friend class HierarchyAccess;

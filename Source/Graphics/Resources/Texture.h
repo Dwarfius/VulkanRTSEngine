@@ -40,6 +40,8 @@ public:
 	unsigned char* GetPixels() const { return myPixels; }
 	void SetPixels(unsigned char* aPixels, bool aShouldOwn = true);
 
+	std::string_view GetTypeName() const override { return "Texture"; }
+
 private:
 	void FreePixels();
 
