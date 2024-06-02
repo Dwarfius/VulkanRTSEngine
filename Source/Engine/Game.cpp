@@ -243,23 +243,20 @@ void Game::Init(bool aUseDefaultCompositePass)
 		myTaskManager->AddTask(task);
 	}
 
-	myTopBar.Register("Widgets/Asset Tracker", &AssetTrackerDialog::Draw);
-	myTopBar.Register("Widgets/Demo", [](bool& aIsVisible) {
-		ImGui::ShowDemoWindow(&aIsVisible);
-	});
-	myTopBar.Register("Widgets/Camera Info", [&](bool& aIsVisible) {
-		UIWidgets::DrawCameraInfo(*this, aIsVisible);
-	});
-	myTopBar.Register("Widgets/Profiler", &UIWidgets::DrawProfilerUI);
-	myTopBar.Register("Widgets/Game Tasks", &GameTasksDialog::Draw);
-	myTopBar.Register("Widgets/Entities View",
+	myTopBar.Register("Engine/Debug/Asset Tracker", &AssetTrackerDialog::Draw);
+	myTopBar.Register("Engine/Debug/Game Tasks", &GameTasksDialog::Draw);
+	myTopBar.Register("Engine/Debug/Entities View",
 		[&, entitiesWidget = EntitiesWidget()](bool& aIsVisible) mutable {
 		entitiesWidget.DrawDialog(*this, aIsVisible);
 	});
-	myTopBar.Register("Widgets/Engine Settings", [&](bool& aIsVisible) {
+	myTopBar.Register("Engine/Camera Info", [&](bool& aIsVisible) {
+		UIWidgets::DrawCameraInfo(*this, aIsVisible);
+	});
+	myTopBar.Register("Engine/Profiler", &UIWidgets::DrawProfilerUI);
+	myTopBar.Register("Engine/Engine Settings", [&](bool& aIsVisible) {
 		UIWidgets::DrawEngineSettings(*this, aIsVisible);
 	});
-	myTopBar.Register("Widgets/Terrain Options",
+	myTopBar.Register("Engine/Terrain Options",
 		[&, terrainOptions = TerrainOptionsDialog()](bool& aIsVisible) mutable {
 		terrainOptions.Draw(*this, aIsVisible);
 	});
@@ -282,6 +279,9 @@ void Game::Init(bool aUseDefaultCompositePass)
 	myTopBar.Register("File/Create Pipeline",
 		[pipelineCreateDialog = PipelineCreateDialog()](bool& aIsVisible) mutable {
 		pipelineCreateDialog.Draw(aIsVisible);
+	});
+	myTopBar.Register("ImGui/Demo", [](bool& aIsVisible) {
+		ImGui::ShowDemoWindow(&aIsVisible);
 	});
 
 	// TODO: need to add functionality to draw out the task tree ingame
