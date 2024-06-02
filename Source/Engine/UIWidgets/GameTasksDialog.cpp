@@ -7,7 +7,7 @@
 
 void GameTasksDialog::Draw(bool& aIsOpen)
 {
-	if (ImGui::Begin("Game Tasks"), &aIsOpen)
+	if (ImGui::Begin("Game Tasks", &aIsOpen))
 	{
 		const GameTaskManager& taskManager = Game::GetInstance()->GetTaskManager();
 		const TaskMap& tasks = taskManager.GetTasks();
