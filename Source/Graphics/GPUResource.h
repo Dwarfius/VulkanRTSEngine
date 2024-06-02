@@ -40,8 +40,9 @@ public:
 
 	void Cleanup() override;
 
-	// You can specify for the GPU resource to retain it's source resource
-	// That means it'll retain it during the entire duration of it's runtime
+	// You can specify that the GPU resource will retain it's source resource
+	// For the entire duration of it's lifetime. Can be useful if there are planned
+	// updates-from-source.
 	void Create(Graphics& aGraphics, Handle<Resource> aRes, bool aShouldKeepRes = false);
 	// Marks that the resource must be updated during next frame prep
 	// Note: prefer UpdateRegions to avoid multiple resource upload schedules
