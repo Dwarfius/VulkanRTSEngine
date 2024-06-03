@@ -11,7 +11,10 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 	{
 		Graphics& graphics = *Game::GetInstance()->GetGraphics();
 		std::vector<const GPUResource*> resources = Graphics::DebugAccess::GetResources(graphics);
-		// TODO: add which renderer in use (even though I have GL only)
+		
+		char buffer[64];
+		Utils::StringFormat(buffer, "Renderer: {}", graphics.GetTypeName());
+		ImGui::Text(buffer);
 		// TODO: add FrameBuffer table
 		// TODO: add RenderPass table
 		if (ImGui::BeginTable("Resources", 4, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))

@@ -91,6 +91,8 @@ public:
 
 	void FileChanged(std::string_view aFile);
 
+	virtual std::string_view GetTypeName() const = 0;
+
 protected:
 	void TriggerUpload(GPUResource* aGPUResource);
 	void TriggerUnload(GPUResource* aGPUResource);

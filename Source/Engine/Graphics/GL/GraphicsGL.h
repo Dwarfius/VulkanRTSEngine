@@ -40,6 +40,8 @@ public:
 
 	void CleanUpUBO(UniformBuffer* aUBO) override;
 
+	std::string_view GetTypeName() const override { return "GraphicsGL"; }
+
 private:
 	static void OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight);
 	void OnResize(int aWidth, int aHeight) override;
