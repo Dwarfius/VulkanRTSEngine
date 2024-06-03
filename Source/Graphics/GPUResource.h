@@ -85,6 +85,8 @@ public:
 		}
 	}
 
+	virtual std::string_view GetTypeName() const = 0;
+
 protected:
 	Handle<Resource> myResHandle;
 	ResourceId myResId = kInvalidId;

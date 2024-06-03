@@ -14,12 +14,12 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 		// TODO: add which renderer in use (even though I have GL only)
 		// TODO: add FrameBuffer table
 		// TODO: add RenderPass table
-		if (ImGui::BeginTable("Resources", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+		if (ImGui::BeginTable("Resources", 4, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 		{
 			ImGui::TableSetupColumn("Id");
+			ImGui::TableSetupColumn("Type");
 			ImGui::TableSetupColumn("Status");
 			ImGui::TableSetupColumn("Resource Discarded");
-			// TODO: add type
 			ImGui::TableHeadersRow();
 
 			ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
@@ -45,11 +45,20 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 							[isAscending](const GPUResource* aLeft, const GPUResource* aRight)
 						{
 							return isAscending
+								? aLeft->GetTypeName() < aRight->GetTypeName()
+								: aLeft->GetTypeName() > aRight->GetTypeName();
+						});
+						break;
+					case 2:
+						std::sort(resources.begin(), resources.end(),
+							[isAscending](const GPUResource* aLeft, const GPUResource* aRight)
+						{
+							return isAscending
 								? aLeft->GetState() < aRight->GetState()
 								: aLeft->GetState() > aRight->GetState();
 						});
 						break;
-					case 2:
+					case 3:
 						std::sort(resources.begin(), resources.end(),
 							[isAscending](const GPUResource* aLeft, const GPUResource* aRight)
 						{
@@ -76,6 +85,11 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 				{
 					Utils::StringFormat(buffer, "{}", res->GetResourceId());
 					ImGui::Text(buffer);
+				}
+
+				if (ImGui::TableNextColumn())
+				{
+					ImGui::Text(res->GetTypeName().data());
 				}
 
 				if (ImGui::TableNextColumn())

@@ -33,6 +33,8 @@ public:
 		}
 	}
 
+	std::string_view GetTypeName() const final { return "UniformBuffer"; }
+
 protected:
 	static constexpr uint8_t kMaxFrames = GraphicsConfig::kMaxFramesScheduled + 1;
 
