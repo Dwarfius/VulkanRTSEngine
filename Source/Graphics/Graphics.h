@@ -30,6 +30,8 @@ public:
 		// Returns a snapshot of all resources
 		// Note: not thread safe if called during Graphics queue processing!
 		static std::vector<const GPUResource*> GetResources(Graphics& aGraphics);
+		// Note: Not thread safe
+		static std::vector<std::pair<std::string_view, FrameBuffer>> GetFrameBuffers(Graphics& aGraphics);
 	};
 
 public:

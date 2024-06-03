@@ -28,6 +28,17 @@ std::vector<const GPUResource*> Graphics::DebugAccess::GetResources(Graphics& aG
 	return resources;
 }
 
+std::vector<std::pair<std::string_view, FrameBuffer>> Graphics::DebugAccess::GetFrameBuffers(Graphics& aGraphics)
+{
+	std::vector<std::pair<std::string_view, FrameBuffer>> frameBuffers;
+	frameBuffers.reserve(aGraphics.myNamedFrameBuffers.size());
+	for (const auto& [name, buffer] : aGraphics.myNamedFrameBuffers)
+	{
+		frameBuffers.emplace_back(name, buffer);
+	}
+	return frameBuffers;
+}
+
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 {
