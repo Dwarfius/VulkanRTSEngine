@@ -13,6 +13,8 @@ public:
 
 	FinalCompositeRenderPass(Graphics& aGraphics, Handle<Pipeline> aPipeline);
 
+	std::string_view GetTypeName() const override { return "FinalCompositeRenderPass"; }
+
 private:
 	void Execute(Graphics& aGraphics) override;
 	Id GetId() const override { return kId; }

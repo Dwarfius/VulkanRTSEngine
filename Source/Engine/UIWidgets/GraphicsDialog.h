@@ -9,5 +9,6 @@ public:
 
 private:
 	static void DrawFrameBuffers(Graphics& aGraphics);
+	static void DrawRenderPasses(Graphics& aGraphics);
 	static void DrawResources(Graphics& aGraphics);
 };

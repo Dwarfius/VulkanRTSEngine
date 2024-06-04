@@ -39,6 +39,11 @@ std::vector<std::pair<std::string_view, FrameBuffer>> Graphics::DebugAccess::Get
 	return frameBuffers;
 }
 
+std::vector<RenderPass*> Graphics::DebugAccess::GetRenderPasses(Graphics& aGraphics)
+{
+	return aGraphics.myRenderPasses;
+}
+
 Graphics::Graphics(AssetTracker& anAssetTracker)
 	: myAssetTracker(anAssetTracker)
 {

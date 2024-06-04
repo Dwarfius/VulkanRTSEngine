@@ -32,6 +32,8 @@ public:
 		static std::vector<const GPUResource*> GetResources(Graphics& aGraphics);
 		// Note: Not thread safe
 		static std::vector<std::pair<std::string_view, FrameBuffer>> GetFrameBuffers(Graphics& aGraphics);
+		// Note: Not thread safe
+		static std::vector<RenderPass*> GetRenderPasses(Graphics& aGraphics);
 	};
 
 public:

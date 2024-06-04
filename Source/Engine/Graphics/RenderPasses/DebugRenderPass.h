@@ -20,6 +20,8 @@ public:
 	DebugRenderPass(Graphics& aGraphics, Handle<Pipeline> aPipeline);
 	~DebugRenderPass();
 
+	std::string_view GetTypeName() const override { return "DebugRenderPass"; }
+
 private:
 	Id GetId() const override { return kId; };
 	void Execute(Graphics& aGraphics) override;

@@ -15,7 +15,7 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 		Utils::StringFormat(buffer, "Renderer: {}", graphics.GetTypeName());
 		ImGui::Text(buffer);
 		DrawFrameBuffers(graphics);
-		// TODO: add RenderPass table
+		DrawRenderPasses(graphics);
 		DrawResources(graphics);
 	}
 	ImGui::End();
@@ -55,6 +55,9 @@ void GraphicsDialog::DrawFrameBuffers(Graphics& aGraphics)
 					// Sorting only makes sense for the name, so skip the rest
 				}
 			}
+			// Note: not resetting the SpecsDirty flag because we don't cache
+			// sort results between frames. So every frame we need to maintain
+			// current sorting info.
 		}
 
 		auto PrintIndexedAttachment = [](const FrameBuffer::Attachment& anAttachment, uint8_t anIndex)
@@ -141,6 +144,101 @@ void GraphicsDialog::DrawFrameBuffers(Graphics& aGraphics)
 					Utils::StringFormat(buffer, "[{},{}]", frameBuffer.mySize.x, frameBuffer.mySize.y);
 					ImGui::Text(buffer);
 				}
+			}
+		}
+		ImGui::EndTable();
+	}
+}
+
+void GraphicsDialog::DrawRenderPasses(Graphics& aGraphics)
+{
+	if (ImGui::BeginTable("Render Passes", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+	{
+		ImGui::TableSetupColumn("Name");
+		ImGui::TableSetupColumn("UBO Count");
+		ImGui::TableSetupColumn("Total UBO Size");
+		ImGui::TableHeadersRow();
+
+		std::vector<RenderPass*> renderPasses = Graphics::DebugAccess::GetRenderPasses(aGraphics);
+		struct RenderPassInfo
+		{
+			const RenderPass* myPass;
+			size_t myCount;
+			size_t myTotalSize;
+		};
+		std::vector<RenderPassInfo> renderPassInfos;
+		renderPassInfos.reserve(renderPasses.size());
+		std::ranges::transform(renderPasses, std::back_inserter(renderPassInfos), 
+			[](const RenderPass* aPass) 
+		{
+			return RenderPassInfo{ aPass, aPass->GetUBOCount(), aPass->GetUBOTotalSize() };
+		});
+
+		ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
+		if (sortSpecs && sortSpecs->SpecsDirty)
+		{
+			for (int i = 0; i < sortSpecs->SpecsCount; i++)
+			{
+				const ImGuiTableColumnSortSpecs& sortSpec = sortSpecs->Specs[i];
+				const bool isAscending = sortSpec.SortDirection == ImGuiSortDirection_Ascending;
+				switch (sortSpec.ColumnIndex)
+				{
+				case 0:
+					std::sort(renderPassInfos.begin(), renderPassInfos.end(),
+						[isAscending](const auto& aLeft, const auto& aRight)
+					{
+						return isAscending
+							? aLeft.myPass->GetTypeName() < aRight.myPass->GetTypeName()
+							: aLeft.myPass->GetTypeName() > aRight.myPass->GetTypeName();
+					});
+					break;
+				case 1:
+					std::sort(renderPassInfos.begin(), renderPassInfos.end(),
+						[isAscending](const auto& aLeft, const auto& aRight)
+					{
+						return isAscending
+							? aLeft.myCount < aRight.myCount
+							: aLeft.myCount > aRight.myCount;
+					});
+					break;
+				case 2:
+					std::sort(renderPassInfos.begin(), renderPassInfos.end(),
+						[isAscending](const auto& aLeft, const auto& aRight)
+					{
+						return isAscending
+							? aLeft.myTotalSize < aRight.myTotalSize
+							: aLeft.myTotalSize > aRight.myTotalSize;
+					});
+					break;
+				default:
+					ASSERT(false);
+				}
+			}
+			// Note: not resetting the SpecsDirty flag because we don't cache
+			// sort results between frames. So every frame we need to maintain
+			// current sorting info.
+		}
+
+		char buffer[64];
+		for (const RenderPassInfo& info : renderPassInfos)
+		{
+			ImGui::TableNextRow();
+
+			if (ImGui::TableNextColumn())
+			{
+				ImGui::Text(info.myPass->GetTypeName().data());
+			}
+
+			if (ImGui::TableNextColumn())
+			{
+				Utils::StringFormat(buffer, "{}", info.myCount);
+				ImGui::Text(buffer);
+			}
+
+			if (ImGui::TableNextColumn())
+			{
+				Utils::StringFormat(buffer, "{}", info.myTotalSize);
+				ImGui::Text(buffer);
 			}
 		}
 		ImGui::EndTable();

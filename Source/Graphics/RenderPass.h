@@ -32,11 +32,17 @@ public:
 	// Returns false if ran out of allocated UBOs this frame, otherwise true
 	bool FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
 
+	size_t GetUBOCount() const;
+	size_t GetUBOTotalSize() const;
+
 	virtual void Execute(Graphics& aGraphics);
 
 	virtual Id GetId() const = 0;
 	void AddDependency(Id aOtherPassId) { myDependencies.push_back(aOtherPassId); }
 	const std::vector<Id>& GetDependencies() const { return myDependencies; }
+
+	
+	virtual std::string_view GetTypeName() const = 0;
 
 protected:
 	void PreallocateUBOs(size_t aSize);

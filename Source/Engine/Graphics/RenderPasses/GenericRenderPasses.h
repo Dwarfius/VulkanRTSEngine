@@ -17,6 +17,8 @@ public:
 
 	void Execute(Graphics& aGraphics) override;
 
+	std::string_view GetTypeName() const override { return "DefaultRenderPass"; }
+
 private:
 	RenderContext CreateContext(Graphics& aGraphics) const;
 };
@@ -36,6 +38,8 @@ public:
 	Id GetId() const override { return kId; }
 
 	void Execute(Graphics& aGraphics) override;
+
+	std::string_view GetTypeName() const override { return "TerrainRenderPass"; }
 
 private:
 	RenderContext CreateContext(Graphics& aGraphics) const;

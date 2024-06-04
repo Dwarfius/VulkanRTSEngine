@@ -75,6 +75,8 @@ public:
 		Handle<Pipeline> aDisplayPipeline, Graphics& aGraphics);
 	void SetParams(const PaintParams& aParams);
 
+	std::string_view GetTypeName() const override { return "PaintingRenderPass"; }
+
 private:
 	std::string_view GetWriteBuffer() const;
 	std::string_view GetReadBuffer() const;

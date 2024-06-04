@@ -56,6 +56,27 @@ bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics,
 	return true;
 }
 
+size_t RenderPass::GetUBOCount() const
+{
+	size_t count = 0;
+	for (const UBOBucket& bucket : myUBOBuckets)
+	{
+		count += bucket.myUBOs.size();
+	}
+	return count;
+}
+
+size_t RenderPass::GetUBOTotalSize() const
+{
+	size_t totalSize = 0;
+	for (const UBOBucket& bucket : myUBOBuckets)
+	{
+		totalSize += GraphicsConfig::kMaxFramesScheduled * 
+			bucket.mySize * bucket.myUBOs.size();
+	}
+	return totalSize;
+}
+
 void RenderPass::Execute(Graphics& aGraphics)
 {
 	Profiler::ScopedMark mark("RenderPass::Execute");

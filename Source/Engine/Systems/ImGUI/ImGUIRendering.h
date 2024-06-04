@@ -98,6 +98,8 @@ public:
 	bool IsReady() const;
 	void SetDestFrameBuffer(std::string_view aFrameBuffer) { myDestFrameBuffer = aFrameBuffer; }
 
+	std::string_view GetTypeName() const override { return "ImGUIRenderPass"; }
+
 private:
 	RenderContext CreateContext(Graphics& aGraphics) const;
 

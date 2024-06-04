@@ -42,6 +42,8 @@ public:
 	// The callback will be invoked at the end of next frame
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
 
+	std::string_view GetTypeName() const override { return "IDRenderPass"; }
+
 private:
 	RenderContext CreateContext(Graphics& aGraphics) const;
 	void ResolveClick();
