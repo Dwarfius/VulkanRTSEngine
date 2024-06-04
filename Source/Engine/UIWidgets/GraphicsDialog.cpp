@@ -14,9 +14,25 @@ void GraphicsDialog::Draw(bool& aIsOpen)
 		char buffer[64];
 		Utils::StringFormat(buffer, "Renderer: {}", graphics.GetTypeName());
 		ImGui::Text(buffer);
-		DrawFrameBuffers(graphics);
-		DrawRenderPasses(graphics);
-		DrawResources(graphics);
+		if (ImGui::BeginTabBar("TabBar"))
+		{
+			if (ImGui::BeginTabItem("FrameBuffers"))
+			{
+				DrawFrameBuffers(graphics);
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("RenderPasses"))
+			{
+				DrawRenderPasses(graphics);
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("Resources"))
+			{
+				DrawResources(graphics);
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+		}
 	}
 	ImGui::End();
 }
