@@ -92,7 +92,12 @@ private:
 	bool myShowSkeletonUI = false;
 	AnimationTest* myAnimTest = nullptr;
 
-	Handle<GameObject> myGO;
+	struct KeepAlive
+	{
+		Handle<GameObject> myGO;
+		Handle<AnimationClip> myAnimClip;
+	};
+	std::vector<KeepAlive> myKeepAlives;
 
 	HexSolver solver;
 	GameProto myProto;

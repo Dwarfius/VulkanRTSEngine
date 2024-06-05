@@ -129,31 +129,82 @@ void EditorMode::CreateBigWorld(Game& aGame)
 {
 	solver.Init(aGame);
 
-	/*StaticString resPath = Resource::kAssetsFolder + "AnimTest/whale.gltf";
-	StaticString resPath = Resource::kAssetsFolder + "AnimTest/riggedFigure.gltf";
-	StaticString resPath = Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf";*/
-	StaticString resPath = Resource::kAssetsFolder + "Boombox/BoomBox.gltf";
-	//StaticString resPath = Resource::kAssetsFolder + "sparse.gltf";
-
-	GLTFImporter gltfImporter;
-	bool res = gltfImporter.Load(resPath.CStr());
-	ASSERT(res);
-	
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
-	myGO = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
+	auto LoadAndAddGLTF = [&](std::string_view aFileName, glm::vec3 aPos, glm::vec3 aScale) 
+	{
+		File file(aFileName);
+		bool res = file.Read();
+		ASSERT(res);
 
-	Handle<Model> model = gltfImporter.GetModel(0);
-	Handle<Texture> texture = gltfImporter.GetTexture(0);
-	myGO->ExecLambdaOnLoad([&, model, texture](Resource* aRes) {
-		myGO->GetComponent<VisualComponent>()->SetModel(model);
-		myGO->GetComponent<VisualComponent>()->SetTexture(0, texture);
-		Transform transf = myGO->GetWorldTransform();
-		transf.SetScale({ 100, 100, 100 });
-		myGO->SetWorldTransform(transf);
+		GLTFImporter gltfImporter;
+		res = gltfImporter.Load(file);
+		ASSERT(res);
 
+		Handle<Model> model = gltfImporter.GetModel(0);
+		Handle<Texture> texture = gltfImporter.GetTextureCount()
+			? gltfImporter.GetTexture(0) : myDefAssets.GetUVTexture();
+
+		KeepAlive result;
+		result.myGO = new GameObject({ aPos, glm::vec3(0.f), aScale });
+		
+		GameObject* go = result.myGO.Get();
+		VisualComponent* visComp = go->AddComponent<VisualComponent>();
+		visComp->SetModel(model);
+		visComp->SetTextureCount(1);
+		visComp->SetTexture(0, texture);
+		
+		if (gltfImporter.GetSkeletonCount())
+		{
+			visComp->SetPipeline(assetTracker.GetOrCreate<Pipeline>("AnimTest/skinned.ppl"));
+			PoolPtr<Skeleton> skeleton = aGame.GetAnimationSystem().AllocateSkeleton(0);
+			*skeleton.Get() = gltfImporter.GetSkeleton(0);
+			
+			if (gltfImporter.GetClipCount())
+			{
+				result.myAnimClip = gltfImporter.GetAnimClip(0);
+				PoolPtr<AnimationController> controller = aGame.GetAnimationSystem().AllocateController(skeleton);
+				controller.Get()->PlayClip(result.myAnimClip.Get());
+				go->SetAnimController(std::move(controller));
+			}
+
+			go->SetSkeleton(std::move(skeleton));
+		}
+		else
+		{
+			visComp->SetPipeline(assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl"));
+		}
+
+		aGame.AddGameObject(result.myGO);
+		return result;
+	};
+
+	constexpr glm::vec3 scales[]{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+		{100, 100, 100},
+		{1, 1, 1}
+	};
+	constexpr StaticString<128> files[]{
+		Resource::kAssetsFolder + "AnimTest/whale.gltf",
+		Resource::kAssetsFolder + "AnimTest/riggedFigure.gltf",
+		Resource::kAssetsFolder + "AnimTest/RiggedSimple.gltf",
+		Resource::kAssetsFolder + "Boombox/BoomBox.gltf",
+		Resource::kAssetsFolder + "sparse.gltf"
+	};
+
+	for (uint8_t i = 0; i < std::extent_v<decltype(scales)>; i++)
+	{
+		glm::vec3 pos(i * -5 - 5, 0, 0);
+		myKeepAlives.emplace_back(LoadAndAddGLTF(files[i], pos, scales[i]));
+	}
+	
+	Handle<GameObject> testGo = assetTracker.GetOrCreate<GameObject>("TestGameObject/testGO.go");
+	testGo->ExecLambdaOnLoad([&](Resource* aRes) {
 		GameObject* go = static_cast<GameObject*>(aRes);
 		aGame.AddGameObject(go);
 	});
+	myKeepAlives.push_back({ testGo });
 
 	{
 		constexpr float kTerrSize = 18000; // meters

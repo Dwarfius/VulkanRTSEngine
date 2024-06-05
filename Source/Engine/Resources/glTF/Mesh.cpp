@@ -270,7 +270,8 @@ namespace glTF
 			}
 			break;
 		default:
-			ASSERT_STR(false, "Semantic attribute NYI!");
+			//ASSERT_STR(false, "Semantic attribute NYI!");
+			break;
 		}
 	}
 }
