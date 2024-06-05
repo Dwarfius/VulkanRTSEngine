@@ -44,15 +44,6 @@ namespace glTF
 
 					const bool decomposed = glm::decompose(matrix, scale, rot, pos, skew, perspective);
 					ASSERT_STR(decomposed, "According to glTF spec, matrix must be decomposable!");
-#if GLM_VERSION < 999
-					// https://github.com/g-truc/glm/pull/1012
-					//rot = glm::conjugate(rot);
-					// Despite above issue, I don't need to do it - weird
-					// In 9.9.9 GLM it gets fixed internally, 
-					// which might break existing logic!
-#else
-#error Check this logic!
-#endif
 					aNode.myTransform.SetPos(pos);
 					aNode.myTransform.SetRotation(rot);
 					aNode.myTransform.SetScale(scale);
