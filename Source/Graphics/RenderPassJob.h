@@ -132,6 +132,18 @@ public:
 		int32_t myRect[4];
 	};
 
+	struct DrawTesselatedCmd : RenderPassJobCmd<6>
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
+		uint32_t myInstanceCount;
+	};
+
+	struct SetTesselationPatchCPs : RenderPassJobCmd<7>
+	{
+		int32_t myControlPointCount;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 

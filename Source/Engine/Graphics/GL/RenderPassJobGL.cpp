@@ -453,6 +453,24 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			);
 			break;
 		}
+		case RenderPassJob::DrawTesselatedCmd::kId:
+		{
+			RenderPassJob::DrawTesselatedCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+			
+			glDrawArraysInstanced(GL_PATCHES, cmd.myOffset, cmd.myCount, cmd.myInstanceCount);
+			break;
+		}
+		case RenderPassJob::SetTesselationPatchCPs::kId:
+		{
+			RenderPassJob::SetTesselationPatchCPs cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			glPatchParameteri(GL_PATCH_VERTICES, cmd.myControlPointCount);
+			break;
+		}
 		default:
 			ASSERT_STR(false, "Unknown command!");
 		}
