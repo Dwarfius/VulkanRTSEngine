@@ -115,7 +115,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 		{
 			const size_t maxSize = GetMaxBufferSize(aPage.GetCount());
 			ASSERT_STR(maxSize <= std::numeric_limits<uint32_t>::max(), "Overflow bellow!");
-			perPageBuffers.emplace_back(GetMaxBufferSize(maxSize));
+			perPageBuffers.emplace_back(static_cast<uint32_t>(maxSize));
 		});
 
 		const Camera& camera = *aGame.GetCamera();
