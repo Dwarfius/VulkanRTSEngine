@@ -31,13 +31,14 @@ public:
 	}
 
 	template<CmdType T, bool CanGrow = true>
-	T& Write()
+	[[nodiscard]] T& Write()
 	{
 		if constexpr (CanGrow)
 		{
 			if (myIndex + 1 + sizeof(T) > myBuffer.size())
 			{
-				myBuffer.resize(myBuffer.size() * 2);
+				const size_t extraSize = 1 + sizeof(T);
+				myBuffer.resize((myBuffer.size() + extraSize) * 2);
 			}
 		}
 
