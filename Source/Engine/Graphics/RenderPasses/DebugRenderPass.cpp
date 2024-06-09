@@ -81,6 +81,12 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		"DebugRenderPass needs a pipeline with Camera adapter only!");
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	cmdBuffer.Clear();
+
+	RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+	pipelineCmd.myPipeline = myPipeline.Get();
+
 	const UniformAdapter& adapter = myPipeline->GetAdapter(0);
 	for (PerCameraModel& perCamModel : myCameraModels)
 	{
@@ -91,27 +97,30 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		}
 
 		// upload the entire chain
-		Model* model = perCamModel.myModel->GetResource().Get<Model>();
+		GPUModel* gpuModel = perCamModel.myModel.Get();
+		Model* model = gpuModel->GetResource().Get<Model>();
 		model->Update(perCamModel.myDesc);
 
 		// schedule an update on the GPU
-		perCamModel.myModel->UpdateRegion({ 0, 0 });
+		gpuModel->UpdateRegion({ 0, 0 });
 
 		// Generate job
-		RenderJob& job = passJob.AllocateJob();
-		job.SetPipeline(myPipeline.Get());
-		job.SetModel(perCamModel.myModel.Get());
+		RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
+		modelCmd.myModel = gpuModel;
 
-		RenderJob::ArrayDrawParams params;
-		params.myOffset = 0;
-		params.myCount = static_cast<uint32_t>(model->GetVertexCount());
-		job.SetDrawParams(params);
-
+		UniformBuffer* ubo = perCamModel.myBuffer.Get();
+		UniformBlock block(*ubo);
 		CameraAdapterSourceData source{ aGraphics, perCamModel.myCamera };
-
-		UniformBlock block(*perCamModel.myBuffer.Get());
 		adapter.Fill(source, block);
-		job.GetUniformSet().PushBack(perCamModel.myBuffer.Get());
+		
+		RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+		uboCmd.mySlot = 0;
+		uboCmd.myUniformBuffer = ubo;
+
+		RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
+		drawCmd.myDrawMode = IModel::PrimitiveType::Lines;
+		drawCmd.myOffset = 0;
+		drawCmd.myCount = static_cast<uint32_t>(model->GetVertexCount());
 	}
 }
 
