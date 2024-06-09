@@ -3,7 +3,6 @@
 #include "RenderContext.h"
 
 #include <Core/StaticVector.h>
-#include <Core/StableVector.h>
 #include <Core/CmdBuffer.h>
 
 class GPUPipeline;
@@ -12,79 +11,6 @@ class GPUModel;
 class UniformBuffer;
 class Graphics;
 
-struct RenderJob
-{
-	using TextureSet = StaticVector<GPUTexture*, 4>;
-	using UniformSet = StaticVector<UniformBuffer*, 4>;
-
-	enum class DrawMode : char
-	{
-		Array,
-		Indexed,
-		Tesselated // currently implemented as instanced tesselation
-	};
-
-	struct ArrayDrawParams
-	{
-		uint32_t myOffset;
-		uint32_t myCount;
-	};
-
-	struct IndexedDrawParams
-	{
-		uint32_t myOffset;
-		uint32_t myCount;
-	};
-
-	struct TesselationDrawParams
-	{
-		int myInstanceCount;
-	};
-
-	union DrawParams
-	{
-		ArrayDrawParams myArrayParams;
-		TesselationDrawParams myTessParams;
-		IndexedDrawParams myIndexedParams;
-	};
-
-public:
-	void SetDrawParams(const IndexedDrawParams& aParams);
-	void SetDrawParams(const TesselationDrawParams& aParams);
-	void SetDrawParams(const ArrayDrawParams& aParams);
-	const DrawParams& GetDrawParams() const { return myDrawParams; }
-	DrawMode GetDrawMode() const { return myDrawMode; }
-
-	GPUPipeline* GetPipeline() { return myPipeline; }
-	const GPUPipeline* GetPipeline() const { return myPipeline; }
-	void SetPipeline(GPUPipeline* aPipeline) { myPipeline = aPipeline; }
-
-	GPUModel* GetModel() { return myModel; }
-	const GPUModel* GetModel() const { return myModel; }
-	void SetModel(GPUModel* aModel) { myModel = aModel; }
-
-	TextureSet& GetTextures() { return myTextures; }
-	const TextureSet& GetTextures() const { return myTextures; }
-
-	UniformSet& GetUniformSet() { return myUniforms; }
-	const UniformSet& GetUniformSet() const { return myUniforms; }
-
-	glm::ivec4 GetScissorRect() const { return  { myScissorRect[0], myScissorRect[1], myScissorRect[2], myScissorRect[3] }; }
-	void SetScissorRect(int aIndex, int aValue) { myScissorRect[aIndex] = aValue; }
-
-private:
-	// Note - keeping as ptr to have trivial constructor of RenderJob
-	GPUPipeline* myPipeline; // non-owning
-	GPUModel* myModel; // non-owning
-
-	TextureSet myTextures;
-	UniformSet myUniforms;
-
-	int myScissorRect[4]{0, 0, 0, 0};
-	DrawMode myDrawMode = DrawMode::Indexed;
-	DrawParams myDrawParams;
-};
-
 // A basic class encapsulating a set of render commands
 // with a specific context for the next frame. Needs to be specialized for
 // different rendering backends!
@@ -92,6 +18,9 @@ class RenderPassJob
 {
 public:
 	using DrawMode = uint8_t; // IMode::PrimitiveType
+
+	using TextureSet = StaticVector<GPUTexture*, 4>;
+	using UniformSet = StaticVector<UniformBuffer*, 4>;
 
 	template<uint8_t Id>
 	struct RenderPassJobCmd
@@ -156,10 +85,6 @@ public:
 public:
 	virtual ~RenderPassJob() = default;
 
-	// Allocate a job to be filled out
-	// Thread safe
-	RenderJob& AllocateJob();
-
 	// Not thread safe
 	CmdBuffer& GetCmdBuffer() { return myCmdBuffer; }
 
@@ -179,15 +104,12 @@ private:
 	virtual void Clear(const RenderContext& aContext) = 0;
 	// called just before executing the jobs
 	virtual void SetupContext(Graphics& aGraphics, const RenderContext& aContext) = 0;
-	// called last to submit render jobs
-	virtual void RunJobs(StableVector<RenderJob>& aJobs) = 0;
 	virtual void RunCommands(const CmdBuffer& aCmdBuffer) = 0;
 	// called if the user has requested the result of rendering to the framebuffer
 	// to be downloaded back to CPU
 	virtual void DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture) = 0;
 
 	RenderContext myContext;
-	StableVector<RenderJob> myJobs;
 	tbb::spin_mutex myJobsMutex;
 	CmdBuffer myCmdBuffer;
 };

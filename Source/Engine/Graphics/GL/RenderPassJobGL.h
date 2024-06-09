@@ -12,7 +12,6 @@ class RenderPassJobGL final : public RenderPassJob
 	void BindFrameBuffer(Graphics& aGraphics, const RenderContext& aContext) override;
 	void Clear(const RenderContext& aContext) override;
 	void SetupContext(Graphics& aGraphics, const RenderContext& aContext) override;
-	void RunJobs(StableVector<RenderJob>& aJobs) override;
 	void RunCommands(const CmdBuffer& aCmdBuffer) override;
 	void DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture) override;
 

@@ -87,7 +87,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 				// we need to early out without spawning a job
 				GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
 
-				RenderJob::UniformSet uniformSet;
+				RenderPassJob::UniformSet uniformSet;
 				{
 					Profiler::ScopedMark earlyChecks("FillUBO");
 					// updating the uniforms - grabbing game state!
@@ -225,7 +225,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 				*visObj,
 				terrain
 			};
-			RenderJob::UniformSet uniformSet;
+			RenderPassJob::UniformSet uniformSet;
 			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{

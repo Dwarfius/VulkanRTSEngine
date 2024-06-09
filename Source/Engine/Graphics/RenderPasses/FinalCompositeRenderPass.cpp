@@ -1,13 +1,15 @@
 #include "Precomp.h"
 #include "FinalCompositeRenderPass.h"
 
+#include "Graphics/NamedFrameBuffers.h"
+#include "Graphics/RenderPasses/DebugRenderPass.h"
+
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Model.h>
 
-#include "Graphics/NamedFrameBuffers.h"
-#include "Graphics/RenderPasses/DebugRenderPass.h"
+#include <Core/Profiler.h>
 
 FinalCompositeRenderPass::FinalCompositeRenderPass(
 	Graphics& aGraphics, Handle<Pipeline> aPipeline

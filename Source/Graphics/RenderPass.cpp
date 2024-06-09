@@ -23,7 +23,7 @@ UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	return nullptr;
 }
 
-bool RenderPass::FillUBOs(RenderJob::UniformSet& aSet, Graphics& aGraphics, 
+bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics, 
 	const AdapterSourceData& aSource, const GPUPipeline& aPipeline)
 {
 	const size_t uboCount = aPipeline.GetAdapterCount();

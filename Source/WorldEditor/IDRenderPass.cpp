@@ -157,7 +157,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 				GPUPipeline* gpuPipeline = isSkinned ?
 					mySkinningPipeline.Get() :
 					myDefaultPipeline.Get();
-				RenderJob::UniformSet uniformSet;
+				RenderPassJob::UniformSet uniformSet;
 				if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
 					[[unlikely]]
 				{
@@ -241,7 +241,7 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 				terrain,
 				newID | kTerrainBit
 			};
-			RenderJob::UniformSet uniformSet;
+			RenderPassJob::UniformSet uniformSet;
 			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{
