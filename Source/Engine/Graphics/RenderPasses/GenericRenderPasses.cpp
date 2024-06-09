@@ -186,8 +186,17 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 	};
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	cmdBuffer.Clear();
+	
 	game.AccessTerrains([&](std::span<Game::TerrainEntity> aTerrains)
 	{
+		if (!aTerrains.empty())
+		{
+			RenderPassJob::SetTesselationPatchCPs& patchCmd = cmdBuffer.Write<RenderPassJob::SetTesselationPatchCPs>();
+			patchCmd.myControlPointCount = 1;
+		}
+
 		for (Game::TerrainEntity& anEntity : aTerrains)
 		{
 			VisualObject* visObj = anEntity.myVisualObject;
@@ -199,12 +208,6 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 
 			if (!IsUsable(*visObj))
 				[[unlikely]]
-			{
-				return;
-			}
-
-			if (visObj->GetModel().IsValid()
-				&& !camera.CheckSphere(visObj->GetTransform().GetPos(), visObj->GetRadius()))
 			{
 				return;
 			}
@@ -229,16 +232,25 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 				return;
 			}
 
-			RenderJob& renderJob = passJob.AllocateJob();
-			renderJob.SetModel(visObj->GetModel().Get());
-			renderJob.SetPipeline(gpuPipeline);
-			renderJob.GetTextures().PushBack(visObj->GetTexture().Get());
-			renderJob.GetUniformSet() = uniformSet;
+			RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+			pipelineCmd.myPipeline = gpuPipeline;
 
-			RenderJob::TesselationDrawParams drawParams;
+			RenderPassJob::SetTextureCmd& textureCmd = cmdBuffer.Write<RenderPassJob::SetTextureCmd>();
+			textureCmd.mySlot = 0;
+			textureCmd.myTexture = visObj->GetTexture().Get();
+
+			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+			{
+				RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+				uboCmd.mySlot = i;
+				uboCmd.myUniformBuffer = uniformSet[i];
+			}
+
+			RenderPassJob::DrawTesselatedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();
+			drawCmd.myOffset = 0;
+			drawCmd.myCount = 1; // we'll create quads from points
 			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-			drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-			renderJob.SetDrawParams(drawParams);
+			drawCmd.myInstanceCount = gridTiles.x * gridTiles.y;
 		}
 	});
 }
