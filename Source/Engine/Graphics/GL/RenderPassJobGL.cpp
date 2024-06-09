@@ -331,6 +331,18 @@ void RenderPassJobGL::RunJobs(StableVector<RenderJob>& aJobs)
 	});
 }
 
+namespace
+{
+	template<class T>
+	T GetCommand(std::span<const std::byte> aBytes, uint32_t& anIndex)
+	{
+		T cmd;
+		std::memcpy(&cmd, &aBytes[anIndex], sizeof(T));
+		anIndex += sizeof(T);
+		return cmd;
+	}
+}
+
 void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 {
 	Profiler::ScopedMark profile("RenderPassJobGL::RunCmdBuffer");
@@ -344,10 +356,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		{
 		case RenderPassJob::SetPipelineCmd::kId:
 		{
-			// TODO: factor this blurb out
-			RenderPassJob::SetPipelineCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetPipelineCmd>(bytes, index);
 
 			PipelineGL* pipeline = static_cast<PipelineGL*>(cmd.myPipeline);
 			ASSERT_STR(pipeline->GetState() == GPUResource::State::Valid
@@ -363,9 +372,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			
 		case RenderPassJob::SetModelCmd::kId:
 		{
-			RenderPassJob::SetModelCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetModelCmd>(bytes, index);
 
 			ModelGL* model = static_cast<ModelGL*>(cmd.myModel);
 			ASSERT_STR(model->GetState() == GPUResource::State::Valid
@@ -380,15 +387,12 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		}
 		case RenderPassJob::SetTextureCmd::kId:
 		{
-			RenderPassJob::SetTextureCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetTextureCmd>(bytes, index);
 
 			// TODO: Can we avoid this if? It's "lifting" myTextureSlotsUsed to user-space
 			const int slotToUse = myTextureSlotsToUse[cmd.mySlot];
 			if (slotToUse == -1)
 			{
-				
 				continue;
 			}
 
@@ -407,9 +411,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			
 		case RenderPassJob::SetUniformBufferCmd::kId:
 		{
-			RenderPassJob::SetUniformBufferCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetUniformBufferCmd>(bytes, index);
 
 			// Now we can update the uniform blocks
 			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(cmd.myUniformBuffer);
@@ -425,9 +427,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		}
 		case RenderPassJob::DrawIndexedCmd::kId:
 		{
-			RenderPassJob::DrawIndexedCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::DrawIndexedCmd>(bytes, index);
 
 			// TODO: bake it into cmd!
 			const uint32_t drawMode = myCurrentModel->GetDrawMode();
@@ -442,9 +442,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		}
 		case RenderPassJob::SetScissorRectCmd::kId:
 		{
-			RenderPassJob::SetScissorRectCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetScissorRectCmd>(bytes, index);
 
 			glScissor(static_cast<GLsizei>(cmd.myRect[0]),
 				static_cast<GLsizei>(cmd.myRect[1]),
@@ -455,18 +453,14 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		}
 		case RenderPassJob::DrawTesselatedCmd::kId:
 		{
-			RenderPassJob::DrawTesselatedCmd cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::DrawTesselatedCmd>(bytes, index);
 			
 			glDrawArraysInstanced(GL_PATCHES, cmd.myOffset, cmd.myCount, cmd.myInstanceCount);
 			break;
 		}
 		case RenderPassJob::SetTesselationPatchCPs::kId:
 		{
-			RenderPassJob::SetTesselationPatchCPs cmd;
-			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
-			index += sizeof(cmd);
+			auto cmd = GetCommand<RenderPassJob::SetTesselationPatchCPs>(bytes, index);
 
 			glPatchParameteri(GL_PATCH_VERTICES, cmd.myControlPointCount);
 			break;
