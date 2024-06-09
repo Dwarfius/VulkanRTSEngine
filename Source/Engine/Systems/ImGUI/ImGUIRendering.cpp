@@ -82,6 +82,8 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
+	// TODO: Get rid of ImGUIFrame concept - just inline bellow logic with
+	// engine's draw commands
 	ImGUIFrame frame = PrepareFrame();
 	if (frame.myParams.empty())
 		[[unlikely]]
@@ -92,36 +94,53 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	UniformBlock block(*myUniformBuffer.Get());
 	block.SetUniform(0, frame.myMatrix);
 
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-	for (Params& params : frame.myParams)
-	{
-		GPUTexture* texture = myFontAtlas.Get();
-		if (params.myTexture.IsValid())
-		{
-			texture = params.myTexture.Get();
-		}
-
-		RenderJob& job = passJob.AllocateJob();
-		job.SetPipeline(myPipeline.Get());
-		job.SetModel(myModel.Get());
-		job.GetTextures().PushBack(texture);
-		job.GetUniformSet().PushBack(myUniformBuffer.Get());
-
-		for (uint8_t i = 0; i < 4; i++)
-		{
-			job.SetScissorRect(i, params.myScissorRect[i]);
-		}
-
-		RenderJob::IndexedDrawParams drawParams;
-		drawParams.myOffset = params.myOffset;
-		drawParams.myCount = params.myCount;
-		job.SetDrawParams(drawParams);
-	}
-
 	if (frame.myDesc.myIndCount > 0)
 	{
 		myModel->GetResource().Get<Model>()->Update(frame.myDesc);
 		myModel->UpdateRegion({});
+	}
+
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
+	CmdBuffer& buffer = passJob.GetCmdBuffer();
+	buffer.Clear();
+	const size_t expectedSize = (1 + sizeof(RenderPassJob::SetPipelineCmd)
+		+ 1 + sizeof(RenderPassJob::SetModelCmd)
+		+ 1 + sizeof(RenderPassJob::SetUniformBufferCmd)
+		+ frame.myParams.size() * (1 + sizeof(RenderPassJob::SetTextureCmd)
+			+ 1 + sizeof(RenderPassJob::SetScissorRectCmd)
+			+ 1 + sizeof(RenderPassJob::DrawIndexedCmd)));
+	ASSERT_STR(expectedSize < std::numeric_limits<uint32_t>::max(), "Won't fit in cmd buffer!");
+	buffer.Resize(static_cast<uint32_t>(expectedSize));
+
+	// We use the same pipeline, model and UBO to draw out everything
+	RenderPassJob::SetPipelineCmd& pipelineCmd = buffer.Write<RenderPassJob::SetPipelineCmd, false>();
+	pipelineCmd.myPipeline = myPipeline.Get();
+
+	RenderPassJob::SetModelCmd& modelCmd = buffer.Write<RenderPassJob::SetModelCmd, false>();
+	modelCmd.myModel = myModel.Get();
+
+	RenderPassJob::SetUniformBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+	uboCmd.myUniformBuffer = myUniformBuffer.Get();
+
+	// Only things that change between render calls are:
+	// * the textures (either the ImGUI atlas or user texture)
+	// * scissor rects
+	GPUTexture* fontAtlas = myFontAtlas.Get();
+	for (Params& params : frame.myParams)
+	{
+		RenderPassJob::SetTextureCmd& textureCmd = buffer.Write<RenderPassJob::SetTextureCmd, false>();
+		textureCmd.mySlot = 0;
+		textureCmd.myTexture = params.myTexture.IsValid() ? params.myTexture.Get() : fontAtlas;
+
+		RenderPassJob::SetScissorRectCmd& scissorCmd = buffer.Write<RenderPassJob::SetScissorRectCmd, false>();
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			scissorCmd.myRect[i] = params.myScissorRect[i];
+		}
+
+		RenderPassJob::DrawIndexedCmd& drawIndexedCmd = buffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+		drawIndexedCmd.myOffset = params.myOffset;
+		drawIndexedCmd.myCount = params.myCount;
 	}
 }
 
