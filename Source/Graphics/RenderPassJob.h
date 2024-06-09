@@ -91,6 +91,8 @@ private:
 class RenderPassJob
 {
 public:
+	using DrawMode = uint8_t; // IMode::PrimitiveType
+
 	template<uint8_t Id>
 	struct RenderPassJobCmd
 	{
@@ -142,6 +144,13 @@ public:
 	struct SetTesselationPatchCPs : RenderPassJobCmd<7>
 	{
 		uint32_t myControlPointCount;
+	};
+
+	struct DrawArrayCmd : RenderPassJobCmd<8>
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
+		uint8_t myDrawMode;
 	};
 
 public:

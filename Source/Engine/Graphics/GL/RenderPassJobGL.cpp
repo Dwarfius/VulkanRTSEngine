@@ -341,6 +341,19 @@ namespace
 		anIndex += sizeof(T);
 		return cmd;
 	}
+
+	uint32_t TranslatePrimitiveType(uint8_t aType)
+	{
+		switch (aType)
+		{
+		case IModel::PrimitiveType::Lines:
+			return GL_LINES;
+		case IModel::PrimitiveType::Triangles:
+			return GL_TRIANGLES;
+		}
+		ASSERT(false);
+		return GL_LINES;
+	}
 }
 
 void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
@@ -443,7 +456,6 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		case RenderPassJob::SetScissorRectCmd::kId:
 		{
 			auto cmd = GetCommand<RenderPassJob::SetScissorRectCmd>(bytes, index);
-
 			glScissor(static_cast<GLsizei>(cmd.myRect[0]),
 				static_cast<GLsizei>(cmd.myRect[1]),
 				static_cast<GLsizei>(cmd.myRect[2]),
@@ -454,15 +466,19 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		case RenderPassJob::DrawTesselatedCmd::kId:
 		{
 			auto cmd = GetCommand<RenderPassJob::DrawTesselatedCmd>(bytes, index);
-			
 			glDrawArraysInstanced(GL_PATCHES, cmd.myOffset, cmd.myCount, cmd.myInstanceCount);
 			break;
 		}
 		case RenderPassJob::SetTesselationPatchCPs::kId:
 		{
 			auto cmd = GetCommand<RenderPassJob::SetTesselationPatchCPs>(bytes, index);
-
 			glPatchParameteri(GL_PATCH_VERTICES, cmd.myControlPointCount);
+			break;
+		}
+		case RenderPassJob::DrawArrayCmd::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::DrawArrayCmd>(bytes, index);
+			glDrawArrays(TranslatePrimitiveType(cmd.myDrawMode), cmd.myOffset, cmd.myCount);
 			break;
 		}
 		default:
