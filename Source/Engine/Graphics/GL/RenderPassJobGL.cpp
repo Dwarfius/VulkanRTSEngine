@@ -344,6 +344,7 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		{
 		case RenderPassJob::SetPipelineCmd::kId:
 		{
+			// TODO: factor this blurb out
 			RenderPassJob::SetPipelineCmd cmd;
 			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
 			index += sizeof(cmd);
@@ -436,6 +437,19 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 				static_cast<GLsizei>(primitiveCount),
 				GL_UNSIGNED_INT,
 				reinterpret_cast<void*>(indexOffset)
+			);
+			break;
+		}
+		case RenderPassJob::SetScissorRectCmd::kId:
+		{
+			RenderPassJob::SetScissorRectCmd cmd;
+			std::memcpy(&cmd, &bytes[index], sizeof(cmd));
+			index += sizeof(cmd);
+
+			glScissor(static_cast<GLsizei>(cmd.myRect[0]),
+				static_cast<GLsizei>(cmd.myRect[1]),
+				static_cast<GLsizei>(cmd.myRect[2]),
+				static_cast<GLsizei>(cmd.myRect[3])
 			);
 			break;
 		}

@@ -125,6 +125,13 @@ public:
 		uint32_t myCount;
 	};
 
+	// TODO: remove scissor rect from context
+	struct SetScissorRectCmd : RenderPassJobCmd<5>
+	{
+		// X, Y, Width, Height
+		int32_t myRect[4];
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 
