@@ -86,24 +86,25 @@ void PaintingRenderPass::Execute(Graphics& aGraphics)
 
 void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 {
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreatePaintContext(aGraphics));
 	PaintParams paintParams = GetParams();
-	RenderJob& job = passJob.AllocateJob();
-	job.SetPipeline(myPaintPipeline.Get());
-	job.SetModel(aGraphics.GetFullScreenQuad().Get());
-	if (paintParams.myPaintTexture.IsValid())
-	{
-		job.GetTextures().PushBack(paintParams.myPaintTexture.Get());
-	}
-	RenderJob::ArrayDrawParams params;
-	params.myOffset = 0;
-	params.myCount = 6;
-	job.SetDrawParams(params);
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreatePaintContext(aGraphics));
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	cmdBuffer.Clear();
+
+	RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+	pipelineCmd.myPipeline = myPaintPipeline.Get();
+
+	RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
+	modelCmd.myModel = aGraphics.GetFullScreenQuad().Get();
 
 	glm::vec2 scaledSize(1.f);
 	if (paintParams.myPaintTexture.IsValid())
 	{
-		glm::vec2 size = paintParams.myPaintTexture->GetSize();
+		RenderPassJob::SetTextureCmd& textureCmd = cmdBuffer.Write<RenderPassJob::SetTextureCmd>();
+		textureCmd.mySlot = 0;
+		textureCmd.myTexture = paintParams.myPaintTexture.Get();
+
+		const glm::vec2 size = paintParams.myPaintTexture->GetSize();
 		scaledSize = size / paintParams.myPaintInverseScale;
 	}
 
@@ -122,23 +123,30 @@ void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 	PainterAdapter adapter;
 	UniformBlock block(*myPaintBuffer.Get());
 	adapter.FillUniformBlock(source, block);
-	job.GetUniformSet().PushBack(myPaintBuffer.Get());
+
+	RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+	uboCmd.mySlot = 0;
+	uboCmd.myUniformBuffer = myPaintBuffer.Get();
+
+	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
+	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;
+	drawCmd.myOffset = 0;
+	drawCmd.myCount = 6;
 }
 
 void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 {
-	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateDisplayContext(aGraphics));
-
-	RenderJob& job = passJob.AllocateJob();
-	job.SetPipeline(myDisplayPipeline.Get());
-	job.SetModel(aGraphics.GetFullScreenQuad().Get());
-
-	RenderJob::ArrayDrawParams params;
-	params.myOffset = 0;
-	params.myCount = 6;
-	job.SetDrawParams(params);
-
 	const PaintParams paintParams = GetParams();
+	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateDisplayContext(aGraphics));
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	cmdBuffer.Clear();
+
+	RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+	pipelineCmd.myPipeline = myDisplayPipeline.Get();
+
+	RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
+	modelCmd.myModel = aGraphics.GetFullScreenQuad().Get();
+
 	PainterAdapter::Source source{
 		aGraphics,
 		paintParams.myCamera,
@@ -154,7 +162,14 @@ void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 	PainterAdapter adapter;
 	UniformBlock block(*myDisplayBuffer.Get());
 	adapter.FillUniformBlock(source, block);
-	job.GetUniformSet().PushBack(myDisplayBuffer.Get());
+	RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+	uboCmd.mySlot = 0;
+	uboCmd.myUniformBuffer = myDisplayBuffer.Get();
+
+	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
+	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;
+	drawCmd.myOffset = 0;
+	drawCmd.myCount = 6;
 }
 
 RenderContext PaintingRenderPass::CreatePaintContext(Graphics& aGraphics) const
