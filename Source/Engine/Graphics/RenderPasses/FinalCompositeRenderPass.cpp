@@ -20,7 +20,7 @@ FinalCompositeRenderPass::FinalCompositeRenderPass(
 
 void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 {
-	Profiler::ScopedMark mark("IDRenderPass::Execute");
+	Profiler::ScopedMark mark("FinalCompositeRenderPass::Execute");
 	RenderPass::Execute(aGraphics);
 
 	if (myPipeline->GetState() != GPUResource::State::Valid
@@ -30,14 +30,20 @@ void FinalCompositeRenderPass::Execute(Graphics& aGraphics)
 	}
 
 	RenderPassJob& passJob = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-	RenderJob& job = passJob.AllocateJob();
-	job.SetPipeline(myPipeline.Get());
-	job.SetModel(aGraphics.GetFullScreenQuad().Get());
-	
-	RenderJob::ArrayDrawParams params;
-	params.myOffset = 0;
-	params.myCount = 6;
-	job.SetDrawParams(params);
+	CmdBuffer& cmdBuffer = passJob.GetCmdBuffer();
+	// it can be reused, but it's such a small job anyway
+	cmdBuffer.Clear();
+
+	RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+	pipelineCmd.myPipeline = myPipeline.Get();
+
+	RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
+	modelCmd.myModel = aGraphics.GetFullScreenQuad().Get();
+
+	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
+	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;
+	drawCmd.myOffset = 0;
+	drawCmd.myCount = 6;
 }
 
 RenderContext FinalCompositeRenderPass::CreateContext(Graphics& aGraphics) const
