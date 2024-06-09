@@ -120,6 +120,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	modelCmd.myModel = myModel.Get();
 
 	RenderPassJob::SetUniformBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+	uboCmd.mySlot = 0;
 	uboCmd.myUniformBuffer = myUniformBuffer.Get();
 
 	// Only things that change between render calls are:
