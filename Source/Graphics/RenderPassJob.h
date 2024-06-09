@@ -141,7 +141,7 @@ public:
 
 	struct SetTesselationPatchCPs : RenderPassJobCmd<7>
 	{
-		int32_t myControlPointCount;
+		uint32_t myControlPointCount;
 	};
 
 public:
