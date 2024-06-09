@@ -82,11 +82,14 @@ void IDRenderPass::Execute(Graphics& aGraphics)
 	// TODO: get rid of singleton access here - pass from Game/Graphics
 	Game& game = *Game::GetInstance();
 	RenderPassJob& job = aGraphics.CreateRenderPassJob(CreateContext(aGraphics));
-	ScheduleGameObjects(aGraphics, game, job);
-	ScheduleTerrain(aGraphics, game, job);
+	CmdBuffer& cmdBuffer = job.GetCmdBuffer();
+	cmdBuffer.Clear();
+
+	ScheduleGameObjects(aGraphics, game, cmdBuffer);
+	ScheduleTerrain(aGraphics, game, cmdBuffer);
 }
 
-void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob)
+void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuffer& aCmdBuffer)
 {
 	if (myDefaultPipeline->GetState() != GPUResource::State::Valid
 		|| mySkinningPipeline->GetState() != GPUResource::State::Valid)
@@ -95,66 +98,100 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderP
 		return;
 	}
 
-	const Camera& camera = *aGame.GetCamera();
+	// Returns worst case size
+	constexpr auto GetMaxBufferSize = [](size_t aCount)
+	{
+		// each command needs an extra byte to identify it
+		return aCount * (sizeof(RenderPassJob::SetPipelineCmd) + 1 +
+			sizeof(RenderPassJob::SetModelCmd) + 1 +
+			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
+			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
+	};
+
+	std::vector<CmdBuffer> perPageBuffers;
 	aGame.AccessRenderables([&](StableVector<Renderable>& aRenderables)
 	{
-		aRenderables.ParallelForEach([&](Renderable& aRenderable)
+		aRenderables.ForEachPage([&](StableVector<Renderable>::Page& aPage, size_t anIndex) 
 		{
-			VisualObject& vo = aRenderable.myVO;
-			if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
+			const size_t maxSize = GetMaxBufferSize(aPage.GetCount());
+			ASSERT_STR(maxSize <= std::numeric_limits<uint32_t>::max(), "Overflow bellow!");
+			perPageBuffers.emplace_back(GetMaxBufferSize(maxSize));
+		});
+
+		const Camera& camera = *aGame.GetCamera();
+		aRenderables.ParallelForEachPage([&](StableVector<Renderable>::Page& aPage, size_t anIndex) 
+		{
+			CmdBuffer& cmdBuffer = perPageBuffers[anIndex];
+			aPage.ForEach([&](Renderable& aRenderable)
 			{
-				return;
-			}
+				VisualObject& vo = aRenderable.myVO;
+				if (!camera.CheckSphere(vo.GetCenter(), vo.GetRadius()))
+				{
+					return;
+				}
 
-			if (!aRenderable.myVO.IsValidForRendering()) [[unlikely]]
-			{
-				return;
-			}
+				if (!aRenderable.myVO.IsValidForRendering()) [[unlikely]]
+				{
+					return;
+				}
 
-			// assuming we'll be able to render the GO
-			// save it for tracking
-			ObjID newID = myFrameGOs.myGOCounter++;
-			if (newID >= kMaxObjects)
-			{
-				return;
-			}
-			myFrameGOs.myGOs[newID] = aRenderable.myGO;
+				// assuming we'll be able to render the GO
+				// save it for tracking
+				ObjID newID = myFrameGOs.myGOCounter++;
+				if (newID >= kMaxObjects)
+				{
+					return;
+				}
+				myFrameGOs.myGOs[newID] = aRenderable.myGO;
 
-			// updating the uniforms - grabbing game state!
-			IDGOAdapterSourceData source{
-				aGraphics,
-				camera,
-				aRenderable.myGO,
-				vo,
-				newID + 1
-			};
+				// updating the uniforms - grabbing game state!
+				IDGOAdapterSourceData source{
+					aGraphics,
+					camera,
+					aRenderable.myGO,
+					vo,
+					newID + 1
+				};
 
-			const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
-			GPUPipeline* gpuPipeline = isSkinned ?
-				mySkinningPipeline.Get() :
-				myDefaultPipeline.Get();
-			RenderJob::UniformSet uniformSet;
-			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
-				[[unlikely]]
-			{
-				return;
-			}
+				const bool isSkinned = aRenderable.myGO->GetSkeleton().IsValid();
+				GPUPipeline* gpuPipeline = isSkinned ?
+					mySkinningPipeline.Get() :
+					myDefaultPipeline.Get();
+				RenderJob::UniformSet uniformSet;
+				if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+					[[unlikely]]
+				{
+					return;
+				}
 
-			GPUModel* gpuModel = vo.GetModel().Get();
-			RenderJob& job = aJob.AllocateJob();
-			job.SetPipeline(gpuPipeline);
-			job.SetModel(gpuModel);
-			job.GetUniformSet() = uniformSet;
+				RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd, false>();
+				pipelineCmd.myPipeline = gpuPipeline;
 
-			RenderJob::IndexedDrawParams drawParams;
-			drawParams.myOffset = 0;
-			drawParams.myCount = gpuModel->GetPrimitiveCount();
-			job.SetDrawParams(drawParams);
+				GPUModel* gpuModel = vo.GetModel().Get();
+				RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
+				modelCmd.myModel = gpuModel;
+
+				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+				{
+					RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+					uboCmd.mySlot = i;
+					uboCmd.myUniformBuffer = uniformSet[i];
+				}
+
+				RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
+				drawCmd.myOffset = 0;
+				drawCmd.myCount = gpuModel->GetPrimitiveCount();
+			});
 		});
 	});
+
+	for (const CmdBuffer& pageBuffer : perPageBuffers)
+	{
+		aCmdBuffer.CopyFrom(pageBuffer);
+	}
 }
 
-void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob)
+void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& aCmdBuffer)
 {
 	if (myTerrainPipeline->GetState() != GPUResource::State::Valid)
 		[[unlikely]]
@@ -165,6 +202,11 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 	const Camera& camera = *aGame.GetCamera();
 	aGame.AccessTerrains([&](std::span<Game::TerrainEntity> aTerrains)
 	{
+		GPUPipeline* gpuPipeline = myTerrainPipeline.Get();
+
+		RenderPassJob::SetPipelineCmd& pipelineCmd = aCmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
+		pipelineCmd.myPipeline = gpuPipeline;
+
 		for (Game::TerrainEntity& anEntity : aTerrains)
 		{
 			VisualObject* visObj = anEntity.myVisualObject;
@@ -199,8 +241,6 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 				terrain,
 				newID | kTerrainBit
 			};
-
-			GPUPipeline* gpuPipeline = myTerrainPipeline.Get();
 			RenderJob::UniformSet uniformSet;
 			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
@@ -208,15 +248,22 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJ
 				return;
 			}
 
-			RenderJob& job = aJob.AllocateJob();
-			job.SetPipeline(gpuPipeline);
-			job.GetTextures().PushBack(texture.Get());
-			job.GetUniformSet() = uniformSet;
+			RenderPassJob::SetTextureCmd& textureCmd = aCmdBuffer.Write<RenderPassJob::SetTextureCmd>();
+			textureCmd.mySlot = 0;
+			textureCmd.myTexture = texture.Get();
 
-			RenderJob::TesselationDrawParams drawParams;
+			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
+			{
+				RenderPassJob::SetUniformBufferCmd& uboCmd = aCmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+				uboCmd.mySlot = i;
+				uboCmd.myUniformBuffer = uniformSet[i];
+			}
+
+			RenderPassJob::DrawTesselatedCmd& drawCmd = aCmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();
+			drawCmd.myOffset = 0;
+			drawCmd.myCount = 1; // we'll create quads from points
 			const glm::ivec2 gridTiles = TerrainAdapter::GetTileCount(terrain);
-			drawParams.myInstanceCount = gridTiles.x * gridTiles.y;
-			job.SetDrawParams(drawParams);
+			drawCmd.myInstanceCount = gridTiles.x * gridTiles.y;
 		}
 	});
 }

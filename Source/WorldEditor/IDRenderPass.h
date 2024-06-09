@@ -36,8 +36,8 @@ public:
 	Id GetId() const final { return kId; }
 
 	void Execute(Graphics& aGraphics) override;
-	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob);
-	void ScheduleTerrain(Graphics& aGraphics, Game& aGame, RenderPassJob& aJob);
+	void ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuffer& aCmdBuffer);
+	void ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& aCmdBuffer);
 
 	// The callback will be invoked at the end of next frame
 	void GetPickedEntity(glm::uvec2 aMousePos, Callback aCallback);
