@@ -9,9 +9,9 @@ This is a hobby project to practice developing a mutltithreaded engine. The engi
 * Physics driven by Bullet
 * a standalone benchmarking executable using Google Benchmark
 
-It is currently written using C++20 in Visual Studio 16.10.3 and tested on Windows.
+It is currently written using C++23 in Visual Studio 17.10.1 and tested on Windows.
 
-Project uses CMake(3.17.3). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
+Project uses CMake(3.23.0). I'm moving as many dependencies as I can to be auto-fetched by CMake's Fetch Content. 
 * CMake will fetch and configure for you:
 	* [JSON for Modern C++ by Niels Lohmann](https://github.com/nlohmann/json)
 	* [GLM](https://glm.g-truc.net)
