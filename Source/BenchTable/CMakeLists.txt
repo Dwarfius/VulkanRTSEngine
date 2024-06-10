@@ -16,7 +16,7 @@ SET(BENCHTABLE_RenderJob FALSE CACHE BOOL "Should BenchTable include RenderJob t
 FetchContent_Declare(
 	googleBench
 	GIT_REPOSITORY https://github.com/google/benchmark
-	GIT_TAG        v1.5.5
+	GIT_TAG        v1.8.4
 )
 FetchContent_GetProperties(googleBench)
 if(NOT googlebench_POPULATED)
