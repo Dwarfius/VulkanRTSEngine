@@ -98,7 +98,7 @@ endif()
 FetchContent_Declare(
 	nlohmann_json
 	GIT_REPOSITORY	https://github.com/nlohmann/json
-	GIT_TAG			v3.11.2
+	GIT_TAG			v3.11.3
 )
 
 FetchContent_GetProperties(nlohmann_json)
