@@ -24,6 +24,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/hash.hpp>
+#include <glm/gtx/bit.hpp>
 
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>

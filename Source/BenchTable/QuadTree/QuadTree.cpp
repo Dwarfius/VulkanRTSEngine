@@ -1,17 +1,23 @@
 #include "Precomp.h"
 
-// TODO: move to cmake
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/bit.hpp>
-
 #include "QuadTreeNaive.h"
-#include "QuadTree.h"
+
+#include <Core/QuadTree.h>
 
 struct Item
 {
 	glm::vec2 myMin;
 	glm::vec2 myMax;
 	uint64_t myInfo; // for QuadTree::Info variations
+};
+
+struct UnitTestAccess
+{
+	template<class T>
+	static void Test()
+	{
+		T::UnitTest();
+	}
 };
 
 std::vector<Item> GenerateItems(size_t aNum, float aSize, float aMinSize)
@@ -69,7 +75,7 @@ void QuadTreeAdd(benchmark::State& aState)
 {
 	using Tree = TQuadTree<Item>;
 	using Info = Tree::Info;
-	Tree::UnitTest();
+	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
 	for (auto _ : aState)
@@ -88,7 +94,7 @@ void QuadTreeAddReserved(benchmark::State& aState)
 {
 	using Tree = TQuadTree<Item>;
 	using Info = Tree::Info;
-	Tree::UnitTest();
+	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
 	for (auto _ : aState)
@@ -108,7 +114,7 @@ void QuadTreeTestSingle(benchmark::State& aState)
 {
 	using Tree = TQuadTree<Item>;
 	using Info = Tree::Info;
-	Tree::UnitTest();
+	UnitTestAccess::Test<Tree>();
 	
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
 	Tree tree(glm::vec2(-kSize / 2), glm::vec2(kSize / 2), kMaxDepth);
@@ -139,7 +145,7 @@ void QuadTreeTestAll(benchmark::State& aState)
 {
 	using Tree = TQuadTree<Item>;
 	using Info = Tree::Info;
-	Tree::UnitTest();
+	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
 	Tree tree(glm::vec2(-kSize / 2), glm::vec2(kSize / 2), kMaxDepth);
@@ -173,7 +179,7 @@ void QuadTreeMoveAll(benchmark::State& aState)
 {
 	using Tree = TQuadTree<Item>;
 	using Info = Tree::Info;
-	Tree::UnitTest();
+	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
 	Tree tree(glm::vec2(-kSize / 2), glm::vec2(kSize / 2), kMaxDepth);

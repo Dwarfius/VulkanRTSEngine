@@ -12,8 +12,12 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/bit.hpp>
+
 #include <benchmark/benchmark.h>
+
 #include <nlohmann/json.hpp>
+
 #include "Extra/fifo_map.hpp"
 #include <tbb/tbb.h>
 

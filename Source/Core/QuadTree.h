@@ -1,11 +1,13 @@
 #pragma once
 
 template<class TItem>
-struct QuadTree
+class QuadTree
 {
     using Quad = uint32_t;
-    using Info = Quad;
     static constexpr Quad kInvalidInd = static_cast<Quad>(-1);
+
+public:
+    using Info = uint32_t;
 
     QuadTree(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
         : myRootMin(aMin)
@@ -126,6 +128,7 @@ struct QuadTree
         myMinSize = (myRootMax.x - myRootMin.x) / (1 << depth);
     }
 
+private:
     static std::pair<uint32_t, uint8_t> GetIndexAndDepthForQuad(glm::vec2 aMin, glm::vec2 aMax, glm::vec2 aRootMin, glm::vec2 aRootMax, uint8_t aMaxDepth)
     {
         // bounds check
@@ -260,6 +263,7 @@ struct QuadTree
     float myMinSize;
     uint8_t myMaxDepth;
 
+    friend struct UnitTestAccess;
     static void UnitTest()
     {
         ASSERT(GetQuadCount(0) == 0);
