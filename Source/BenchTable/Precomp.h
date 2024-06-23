@@ -12,7 +12,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/bit.hpp>
+#include <glm/gtc/bitfield.hpp>
 
 #include <benchmark/benchmark.h>
 
