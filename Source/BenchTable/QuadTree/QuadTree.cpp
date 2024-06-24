@@ -73,7 +73,7 @@ volatile void* ptr;
 template<template<class> class TQuadTree>
 void QuadTreeAdd(benchmark::State& aState)
 {
-	using Tree = TQuadTree<Item>;
+	using Tree = TQuadTree<Item*>;
 	using Info = Tree::Info;
 	UnitTestAccess::Test<Tree>();
 
@@ -92,7 +92,7 @@ void QuadTreeAdd(benchmark::State& aState)
 template<template<class> class TQuadTree>
 void QuadTreeAddReserved(benchmark::State& aState)
 {
-	using Tree = TQuadTree<Item>;
+	using Tree = TQuadTree<Item*>;
 	using Info = Tree::Info;
 	UnitTestAccess::Test<Tree>();
 
@@ -112,7 +112,7 @@ void QuadTreeAddReserved(benchmark::State& aState)
 template<template<class> class TQuadTree>
 void QuadTreeTestSingle(benchmark::State& aState)
 {
-	using Tree = TQuadTree<Item>;
+	using Tree = TQuadTree<Item*>;
 	using Info = Tree::Info;
 	UnitTestAccess::Test<Tree>();
 	
@@ -143,7 +143,7 @@ void QuadTreeTestSingle(benchmark::State& aState)
 template<template<class> class TQuadTree>
 void QuadTreeTestAll(benchmark::State& aState)
 {
-	using Tree = TQuadTree<Item>;
+	using Tree = TQuadTree<Item*>;
 	using Info = Tree::Info;
 	UnitTestAccess::Test<Tree>();
 
@@ -177,7 +177,7 @@ void QuadTreeTestAll(benchmark::State& aState)
 template<template<class> class TQuadTree>
 void QuadTreeMoveAll(benchmark::State& aState)
 {
-	using Tree = TQuadTree<Item>;
+	using Tree = TQuadTree<Item*>;
 	using Info = Tree::Info;
 	UnitTestAccess::Test<Tree>();
 

@@ -29,7 +29,7 @@ private:
 	};
 
 	StableVector<Point> myPoints;
-	QuadTree<Point> myPointsQuadTree;
+	QuadTree<Point*> myPointsQuadTree;
 	QuadTreeMode myQuadTreeMode = QuadTreeMode::None;
 	float myCreateSize = 1.f;
 };

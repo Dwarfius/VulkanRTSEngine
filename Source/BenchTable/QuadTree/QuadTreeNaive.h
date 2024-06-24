@@ -14,7 +14,7 @@ struct QuadTreeNaive
         uint8_t myMaxDepth;
 
         Quad* myQuads[4]{};
-        std::vector<TItem*> myItems;
+        std::vector<TItem> myItems;
 
         Quad(glm::vec2 aMin, glm::vec2 aMax, uint8_t aDepth, uint8_t aMaxDepth)
             : myMin(aMin)
@@ -30,7 +30,7 @@ struct QuadTreeNaive
         }
 
         template<bool CanGrow>
-        Quad* Add(glm::vec2 aMin, glm::vec2 aMax, TItem* anItem)
+        Quad* Add(glm::vec2 aMin, glm::vec2 aMax, TItem anItem)
         {
             if (myDepth == myMaxDepth)
             {
@@ -133,7 +133,7 @@ struct QuadTreeNaive
         template<class TFunc>
         void Test(glm::vec2 aMin, glm::vec2 aMax, TFunc&& aFunc)
         {
-            for (TItem* item : myItems)
+            for (TItem item : myItems)
             {
                 if (!aFunc(item))
                 {
@@ -176,14 +176,14 @@ struct QuadTreeNaive
     }
 
     template<bool CanGrow = true>
-    Info Add(glm::vec2 aMin, glm::vec2 aMax, TItem* anItem)
+    Info Add(glm::vec2 aMin, glm::vec2 aMax, TItem anItem)
     {
         return myRoot.Add<CanGrow>(aMin, aMax, anItem);
     }
 
-    void Remove(Info anInfo, TItem* anItem)
+    void Remove(Info anInfo, TItem anItem)
     {
-        std::vector<TItem*>& cache = anInfo->myItems;
+        std::vector<TItem>& cache = anInfo->myItems;
         auto cacheIter = std::ranges::find(cache, anItem);
         ASSERT(cacheIter != cache.end());
         const size_t cacheSize = cache.size();
@@ -191,7 +191,7 @@ struct QuadTreeNaive
         cache.resize(cacheSize - 1);
     }
 
-    Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem* anItem)
+    Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
     {
         Remove(anInfo, anItem);
         return Add(aMin, aMax, anItem);

@@ -1,5 +1,7 @@
 #pragma once
 
+// Be warned, TItem should be a trivial type, 
+// as everything internally is passed around by copy
 template<class TItem>
 class QuadTree
 {
@@ -20,7 +22,7 @@ public:
     }
 
     template<bool CanGrow = true>
-    [[nodiscard]] Info Add(glm::vec2 aMin, glm::vec2 aMax, TItem* anItem)
+    [[nodiscard]] Info Add(glm::vec2 aMin, glm::vec2 aMax, TItem anItem)
     {
         if constexpr (CanGrow)
         {
@@ -44,9 +46,9 @@ public:
         return itemsIndex;
     }
 
-    void Remove(Info anInfo, TItem* anItem)
+    void Remove(Info anInfo, TItem anItem)
     {
-        std::vector<TItem*>& cache = myItems[anInfo];
+        std::vector<TItem>& cache = myItems[anInfo];
         auto cacheIter = std::ranges::find(cache, anItem);
         ASSERT(cacheIter != cache.end());
         const size_t cacheSize = cache.size();
@@ -54,7 +56,7 @@ public:
         cache.resize(cacheSize - 1);
     }
 
-    Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem* anItem)
+    Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
     {
         Remove(anInfo, anItem);
         // Note on false for CanGrow:
@@ -96,7 +98,7 @@ public:
             const uint32_t itemsIndex = myQuads[index];
             if (itemsIndex != kInvalidInd)
             {
-                for (TItem* item : myItems[itemsIndex])
+                for (TItem item : myItems[itemsIndex])
                 {
                     if (!aFunc(item))
                     {
@@ -114,7 +116,7 @@ public:
         // above loop skips root, so wrap it up properly
         if (myQuads[0] != kInvalidInd)
         {
-            for (TItem* item : myItems[myQuads[0]])
+            for (TItem item : myItems[myQuads[0]])
             {
                 if (!aFunc(item))
                 {
@@ -152,7 +154,7 @@ public:
                             continue;
                         }
 
-                        for (TItem* item : myItems[itemsIndex])
+                        for (TItem item : myItems[itemsIndex])
                         {
                             if (!aFunc(item))
                             {
@@ -344,7 +346,7 @@ private:
     }
 
     std::vector<Quad> myQuads;
-    std::vector<std::vector<TItem*>> myItems;
+    std::vector<std::vector<TItem>> myItems;
     glm::vec2 myRootMin;
     glm::vec2 myRootMax;
     // Smallest size we can fit without creating new quads
