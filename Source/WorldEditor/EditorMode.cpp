@@ -75,6 +75,8 @@ EditorMode::~EditorMode()
 
 void EditorMode::Update(Game& aGame, float aDeltaTime)
 {
+	Profiler::ScopedMark scope("EditorMode::Update");
+
 	Camera* cam = aGame.GetCamera();
 	Transform& camTransf = cam->GetTransform();
 
@@ -123,6 +125,8 @@ void EditorMode::Update(Game& aGame, float aDeltaTime)
 	{
 		myNavMesh->DebugDraw(debugDrawer);
 	}
+
+	myQuadTreeTest.DrawTree(aGame);
 }
 
 void EditorMode::CreateBigWorld(Game& aGame)
@@ -461,6 +465,9 @@ void EditorMode::DrawMenu(Game& aGame)
 
 				ImGui::EndTabItem();
 			}
+
+			myQuadTreeTest.DrawTab();
+
 			ImGui::EndTabBar();
 		}
 	}
@@ -892,3 +899,4 @@ void EditorMode::DrawBoneInfo(int aSkeletonIndex)
 		ImGui::TreePop();
 	}
 }
+

@@ -4,6 +4,7 @@
 #include <Engine/Animation/AnimationController.h>
 #include <Engine/Animation/AnimationClip.h>
 #include <Core/Pool.h>
+
 #include <Engine/Resources/GLTFImporter.h>
 #include <Engine/UIWidgets/FileDialog.h>
 
@@ -11,6 +12,7 @@
 #include "DefaultAssets.h"
 #include "Gizmos.h"
 #include "GameProto.h"
+#include "QuadTreeTest.h"
 
 class GameObject;
 class Transform;
@@ -101,4 +103,5 @@ private:
 
 	HexSolver solver;
 	GameProto myProto;
+	QuadTreeTest myQuadTreeTest;
 };
