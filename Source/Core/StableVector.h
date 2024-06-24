@@ -101,12 +101,12 @@ public:
     StableVector() = default;
     ~StableVector()
     {
-        PageNode* node = myStartPage.myNext;
-        while (node)
+        PageNode* currNode = myStartPage;
+        while (currNode)
         {
-            PageNode* currNode = node;
-            node = currNode->myNext;
+            PageNode* node = currNode->myNext;
             delete currNode;
+            currNode = node;
         }
     }
 
@@ -152,12 +152,11 @@ public:
 
                 if (!page)
                 {
-                    page = &myStartPage;
+                    page = myStartPage;
                     // Note about warning of nullptr-deref: since we haven't found it 
                     // in the latter part and we know we're not full 
                     // to capacity, we must find it in the earlier part - 
                     // so no additional checks needed
-#pragma warning(suppress:6011)
                     while (!page->myPage.HasSpace())
                     {
                         page = page->myNext;
@@ -172,7 +171,7 @@ public:
 
     void Free(T& anItem)
     {
-        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (PageNode* pageNode = myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
             if (page.Contains(&anItem))
@@ -193,7 +192,7 @@ public:
 
     void Clear()
     {
-        for (PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (PageNode* pageNode = myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             Page& page = pageNode->myPage;
             page.Clear();
@@ -223,7 +222,7 @@ public:
             return false;
         }
 
-        for (const PageNode* pageNode = &myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (const PageNode* pageNode = myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             const Page& page = pageNode->myPage;
             if (page.Contains(anItem))
@@ -236,12 +235,20 @@ public:
 
     void Reserve(size_t aSize)
     {
-        if (aSize < myCapacity)
+        if (aSize <= myCapacity)
         {
             return;
         }
 
-        PageNode* pageNode = &myStartPage;
+        if (!myStartPage) [[unlikely]]
+        {
+            myStartPage = new PageNode(0);
+            myFreePage = myStartPage;
+            myCapacity = PageSize;
+            return;
+        }
+
+        PageNode* pageNode = myStartPage;
         while (pageNode->myNext)
         {
             pageNode = pageNode->myNext;
@@ -280,7 +287,7 @@ public:
             return;
         }
 
-        for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (auto* pageNode = aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             auto& page = pageNode->myPage;
             page.ForEach(aFunc);
@@ -298,7 +305,7 @@ public:
         if (aSelf.myCapacity == PageSize)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            aSelf.myStartPage.myPage.ForEach(aFunc);
+            aSelf.myStartPage->myPage.ForEach(aFunc);
             return;
         }
 
@@ -311,7 +318,7 @@ public:
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
             size_t startPage = aRange.begin();
-            auto* page = &aSelf.myStartPage;
+            auto* page = aSelf.myStartPage;
             while (startPage-- > 0)
             {
                 page = page->myNext;
@@ -335,7 +342,7 @@ public:
         }
 
         size_t pageIndex = 0;
-        for (auto* pageNode = &aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
+        for (auto* pageNode = aSelf.myStartPage; pageNode; pageNode = pageNode->myNext)
         {
             aFunc(pageNode->myPage, pageIndex++);
         }
@@ -352,7 +359,7 @@ public:
         if (aSelf.myCapacity == PageSize)
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
-            aFunc(aSelf.myStartPage.myPage, 0);
+            aFunc(aSelf.myStartPage->myPage, 0);
             return;
         }
 
@@ -365,7 +372,7 @@ public:
         {
             Profiler::ScopedMark mark("StableVector::ForEachBatch");
             size_t startPage = aRange.begin();
-            auto* page = &aSelf.myStartPage;
+            auto* page = aSelf.myStartPage;
             while (startPage-- > 0)
             {
                 page = page->myNext;
@@ -382,8 +389,8 @@ public:
     }
 
 private:
-    PageNode myStartPage{ 0 };
-    PageNode* myFreePage = &myStartPage;
+    PageNode* myStartPage = nullptr;
+    PageNode* myFreePage = nullptr;
     size_t myCount = 0;
-    size_t myCapacity = PageSize;
+    size_t myCapacity = 0;
 };
