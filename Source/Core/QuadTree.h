@@ -98,11 +98,11 @@ public:
             {
                 for (TItem* item : myItems[itemsIndex])
                 {
-                if (!aFunc(item))
-                {
-                    return;
+                    if (!aFunc(item))
+                    {
+                        return;
+                    }
                 }
-            }
             }
             // go up a level
             const uint32_t parentCount = GetQuadCount(depth);
@@ -114,14 +114,14 @@ public:
         // above loop skips root, so wrap it up properly
         if (myQuads[0] != kInvalidInd)
         {
-        for (TItem* item : myItems[myQuads[0]])
-        {
-            if (!aFunc(item))
+            for (TItem* item : myItems[myQuads[0]])
             {
-                return;
+                if (!aFunc(item))
+                {
+                    return;
+                }
             }
         }
-    }
 
         // slow path - if we got here either we're interested in all overlaps 
         // (aFunc returns true), or we somehow didn't find same-or-larger objects
@@ -150,7 +150,7 @@ public:
                         if (itemsIndex == kInvalidInd)
                         {
                             continue;
-    }
+                        }
 
                         for (TItem* item : myItems[itemsIndex])
                         {
@@ -183,6 +183,37 @@ public:
         myQuads.resize(quadCount, kInvalidInd);
         myMinSize = (myRootMax.x - myRootMin.x) / (1 << depth);
         myDepth = depth;
+    }
+
+    template<class TFunc>
+    void ForEachQuad(TFunc&& aFunc)
+    {
+        float size = myRootMax.x - myRootMin.x;
+        for (uint8_t depth = 0; depth <= myMaxDepth; depth++)
+        {
+            const uint32_t indexStart = GetQuadCount(depth);
+            const uint32_t indexEnd = GetQuadCount(depth + 1);
+            for (uint32_t index = indexStart; index < indexEnd; index++)
+            {
+                if (index == myQuads.size())
+                {
+                    return;
+                }
+
+                const uint32_t itemsIndex = myQuads[index];
+                if (itemsIndex == kInvalidInd
+                    || myItems[itemsIndex].empty())
+                {
+                    continue;
+                }
+
+                const glm::u16vec2 coords = glm::bitfieldDeinterleave(index - indexStart);
+                const glm::vec2 min = myRootMin + glm::vec2{ coords.x * size, coords.y * size };
+                const glm::vec2 max = myRootMin + glm::vec2{ (coords.x + 1) * size, (coords.y + 1) * size };
+                aFunc(min, max, depth, myItems[itemsIndex]);
+            }
+            size /= 2.f;
+        }
     }
 
 private:
