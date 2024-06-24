@@ -87,6 +87,10 @@ public:
         // pick which strategy to use (since we can't guess which way would be better
         // without knowing the data).
         auto [index, depth] = GetIndexAndDepthForQuad(aMin, aMax, myRootMin, myRootMax, myMaxDepth);
+        const uint8_t originalDepth = depth; // saving for slow path bellow
+
+        // fast path - there's a good chance we can find soemthing (and early out)
+        // a tthe perfect fit level (or above)
         while (depth)
         {
             const uint32_t itemsIndex = myQuads[index];
@@ -118,6 +122,48 @@ public:
             }
         }
     }
+
+        // slow path - if we got here either we're interested in all overlaps 
+        // (aFunc returns true), or we somehow didn't find same-or-larger objects
+        // to overlap with. We have to start checking for smaller ones that are on
+        // lower grid levels
+        if (originalDepth + 1 <= myDepth)
+        {
+            // We have a bounding volume that covers multiple quads from lower levels
+            // so have to go through them all
+            float size = (myRootMax.x - myRootMin.x) / (1 << (originalDepth + 1));
+            const glm::vec2 localMin = aMin - myRootMin;
+            const glm::vec2 localMax = aMax - myRootMin;
+            for (uint8_t depthInd = originalDepth + 1; depthInd <= myDepth; depthInd++)
+            {
+                const glm::uvec2 min = static_cast<glm::uvec2>(localMin / size);
+                const glm::uvec2 max = static_cast<glm::uvec2>(localMax / size);
+                ASSERT(max.x <= std::numeric_limits<uint16_t>::max()
+                    && max.y <= std::numeric_limits<uint16_t>::max());
+                const uint32_t indexOffset = GetQuadCount(depthInd);
+                for (uint16_t y = static_cast<uint16_t>(min.y); y <= max.y; y++)
+                {
+                    for(uint16_t x = static_cast<uint16_t>(min.x); x <= max.x; x++)
+                    {
+                        const uint32_t quadIndex = glm::bitfieldInterleave(x, y);
+                        const uint32_t itemsIndex = myQuads[indexOffset + quadIndex];
+                        if (itemsIndex == kInvalidInd)
+                        {
+                            continue;
+    }
+
+                        for (TItem* item : myItems[itemsIndex])
+                        {
+                            if (!aFunc(item))
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+                size /= 2;
+            }
+        }
     }
 
     void ResizeForMinSize(float aSize)
@@ -136,6 +182,7 @@ public:
 
         myQuads.resize(quadCount, kInvalidInd);
         myMinSize = (myRootMax.x - myRootMin.x) / (1 << depth);
+        myDepth = depth;
     }
 
 private:
@@ -179,8 +226,8 @@ private:
 
             // Sanity checking we don't have values that will force us past uint32_t
             // capacity
-            ASSERT(anIndices.x < std::numeric_limits<uint16_t>::max());
-            ASSERT(anIndices.y < std::numeric_limits<uint16_t>::max());
+            ASSERT(anIndices.x <= std::numeric_limits<uint16_t>::max());
+            ASSERT(anIndices.y <= std::numeric_limits<uint16_t>::max());
             const uint32_t index = glm::bitfieldInterleave(
                 static_cast<uint16_t>(anIndices.x), static_cast<uint16_t>(anIndices.y)
             );
@@ -271,6 +318,7 @@ private:
     glm::vec2 myRootMax;
     // Smallest size we can fit without creating new quads
     float myMinSize;
+    uint8_t myDepth = 0;
     uint8_t myMaxDepth;
 
     friend struct UnitTestAccess;
