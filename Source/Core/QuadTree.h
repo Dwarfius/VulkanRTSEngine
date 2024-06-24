@@ -15,6 +15,8 @@ public:
         , myMinSize((aMax.x - aMin.x) / 2.f)
         , myMaxDepth(aMaxDepth)
     {
+        ASSERT_STR(glm::epsilonEqual(aMax.x - aMin.x, aMax.y - aMin.y, glm::epsilon<float>()), 
+            "Expecting a square!");
     }
 
     template<bool CanGrow = true>
@@ -87,12 +89,16 @@ public:
         auto [index, depth] = GetIndexAndDepthForQuad(aMin, aMax, myRootMin, myRootMax, myMaxDepth);
         while (depth)
         {
-            for (TItem* item : myItems[myQuads[index]])
+            const uint32_t itemsIndex = myQuads[index];
+            if (itemsIndex != kInvalidInd)
             {
+                for (TItem* item : myItems[itemsIndex])
+                {
                 if (!aFunc(item))
                 {
                     return;
                 }
+            }
             }
             // go up a level
             const uint32_t parentCount = GetQuadCount(depth);
@@ -100,7 +106,10 @@ public:
             index = grandParentCount + (index - parentCount) / 4;
             depth--;
         }
+
         // above loop skips root, so wrap it up properly
+        if (myQuads[0] != kInvalidInd)
+        {
         for (TItem* item : myItems[myQuads[0]])
         {
             if (!aFunc(item))
@@ -108,6 +117,7 @@ public:
                 return;
             }
         }
+    }
     }
 
     void ResizeForMinSize(float aSize)
