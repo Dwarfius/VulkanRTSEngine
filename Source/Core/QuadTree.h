@@ -128,13 +128,23 @@ public:
         // (aFunc returns true), or we somehow didn't find same-or-larger objects
         // to overlap with. We have to start checking for smaller ones that are on
         // lower grid levels
-        if (originalDepth + 1 <= myDepth)
+        if (originalDepth + 1 <= myDepth
+            // don't check deeper for cases outside of root
+            && aMin.x < myRootMax.x && aMin.y < myRootMax.y 
+            && aMax.x > myRootMin.x && aMax.y > myRootMin.y)
         {
             // We have a bounding volume that covers multiple quads from lower levels
             // so have to go through them all
             float size = (myRootMax.x - myRootMin.x) / (1 << (originalDepth + 1));
-            const glm::vec2 localMin = aMin - myRootMin;
-            const glm::vec2 localMax = aMax - myRootMin;
+            glm::vec2 localMin = aMin - myRootMin;
+            localMin.x = glm::max(localMin.x, 0.f);
+            localMin.y = glm::max(localMin.y, 0.f);
+            
+            glm::vec2 localMax = aMax - myRootMin;
+            // subtracting minSize allows to avoid clamps/max in the bellow loop
+            localMax.x = glm::min(localMax.x, myRootMax.x - myRootMin.x - myMinSize);
+            localMax.y = glm::min(localMax.y, myRootMax.y - myRootMin.y - myMinSize);
+            
             for (uint8_t depthInd = originalDepth + 1; depthInd <= myDepth; depthInd++)
             {
                 const glm::uvec2 min = static_cast<glm::uvec2>(localMin / size);
@@ -393,41 +403,41 @@ public:
         ASSERT(GetChildIndexFromIndex(1, 3) == 8);
 
         {
-        const glm::vec2 quadMin(0);
-        const glm::vec2 quadMax(4);
-        // larger things should fit in root
-        constexpr static uint8_t kMaxDepth = 5;
-        ASSERT(GetIndexForQuad(quadMin, quadMax, quadMin, quadMax, kMaxDepth) == 0); 
+            const glm::vec2 quadMin(0);
+            const glm::vec2 quadMax(4);
+            // larger things should fit in root
+            constexpr static uint8_t kMaxDepth = 5;
+            ASSERT(GetIndexForQuad(quadMin, quadMax, quadMin, quadMax, kMaxDepth) == 0);
 
-        // fitting within quad
-        ASSERT(GetIndexForQuad({ 0.5f, 0.5f }, { 3.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 0.5f, 0.5f }, { 1.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 1);
-        ASSERT(GetIndexForQuad({ 2.5f, 0.5f }, { 3.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 2);
-        ASSERT(GetIndexForQuad({ 0.5f, 2.5f }, { 1.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 3);
-        ASSERT(GetIndexForQuad({ 2.5f, 2.5f }, { 3.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 4);
+            // fitting within quad
+            ASSERT(GetIndexForQuad({ 0.5f, 0.5f }, { 3.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 0.5f, 0.5f }, { 1.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 1);
+            ASSERT(GetIndexForQuad({ 2.5f, 0.5f }, { 3.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 2);
+            ASSERT(GetIndexForQuad({ 0.5f, 2.5f }, { 1.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 3);
+            ASSERT(GetIndexForQuad({ 2.5f, 2.5f }, { 3.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 4);
 
-        // crossing sub quad boundary
-        ASSERT(GetIndexForQuad({ 1.5f, 1.5f }, { 2.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 0.5f, 1.5f }, { 1.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 1.5f, 0.5f }, { 2.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 2.5f, 1.5f }, { 3.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 1.5f, 2.5f }, { 2.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            // crossing sub quad boundary
+            ASSERT(GetIndexForQuad({ 1.5f, 1.5f }, { 2.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 0.5f, 1.5f }, { 1.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 1.5f, 0.5f }, { 2.5f, 1.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 2.5f, 1.5f }, { 3.5f, 2.5f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 1.5f, 2.5f }, { 2.5f, 3.5f }, quadMin, quadMax, kMaxDepth) == 0);
 
-        // crossing quad edge
-        ASSERT(GetIndexForQuad({ 1.75f, 1.25f }, { 2.25f, 1.75f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 1.75f, 3.25f }, { 2.25f, 3.75f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 1.25f, 1.75f }, { 1.75f, 2.25f }, quadMin, quadMax, kMaxDepth) == 0);
-        ASSERT(GetIndexForQuad({ 3.25f, 1.75f }, { 3.75f, 2.25f }, quadMin, quadMax, kMaxDepth) == 0);
+            // crossing quad edge
+            ASSERT(GetIndexForQuad({ 1.75f, 1.25f }, { 2.25f, 1.75f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 1.75f, 3.25f }, { 2.25f, 3.75f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 1.25f, 1.75f }, { 1.75f, 2.25f }, quadMin, quadMax, kMaxDepth) == 0);
+            ASSERT(GetIndexForQuad({ 3.25f, 1.75f }, { 3.75f, 2.25f }, quadMin, quadMax, kMaxDepth) == 0);
 
-        // center overlap (worst case)
-        const glm::vec2 quadCenter = quadMin + (quadMax - quadMin) / 2.f;
-        for (uint8_t i = 0; i < 5; i++)
-        {
-            const float size = 8.f / (1 << i);
-            const glm::vec2 offset(size);
-            ASSERT(GetIndexForQuad(quadCenter - offset, quadCenter + offset, quadMin, quadMax, kMaxDepth) == 0);
+            // center overlap (worst case)
+            const glm::vec2 quadCenter = quadMin + (quadMax - quadMin) / 2.f;
+            for (uint8_t i = 0; i < 5; i++)
+            {
+                const float size = 8.f / (1 << i);
+                const glm::vec2 offset(size);
+                ASSERT(GetIndexForQuad(quadCenter - offset, quadCenter + offset, quadMin, quadMax, kMaxDepth) == 0);
+            }
         }
-    }
 
         struct BV 
         { 
