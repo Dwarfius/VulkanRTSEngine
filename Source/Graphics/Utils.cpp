@@ -185,6 +185,15 @@ namespace Utils
 		return aRayT <= tMax;
 	}
 
+	bool Intersects(glm::vec3 aSpherePos, float aRadius, const AABB& aBox)
+	{
+		// clamp sphere to the box
+		const glm::vec3 pos = glm::clamp(aSpherePos, aBox.myMin, aBox.myMax);
+		// point-in-sphere check
+		const float sqrDist = glm::distance2(pos, aSpherePos);
+		return sqrDist <= aRadius * aRadius;
+	}
+
 	// TODO: implement "Fast 3D Triangle-Box Overlap Testing" version and test it
 	// https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/code/tribox_tam.pdf
 	bool Intersects(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const AABB& aBox)

@@ -51,6 +51,6 @@ namespace Utils
 	};
 	bool Intersects(const AABB& aLeft, const AABB& aRight);
 	bool Intersects(const Ray& aRay, const AABB& aBox, float& aRayT);
-
+	bool Intersects(glm::vec3 aSpherePos, float aRadius, const AABB& aBox);
 	bool Intersects(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, const AABB& aBox);
 }
