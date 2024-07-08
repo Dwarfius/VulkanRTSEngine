@@ -14,7 +14,6 @@ public:
     QuadTree(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
         : myRootMin(aMin)
         , myRootMax(aMax)
-        , myMinSize((aMax.x - aMin.x) / 2.f)
         , myMaxDepth(aMaxDepth)
     {
         ASSERT_STR(glm::epsilonEqual(aMax.x - aMin.x, aMax.y - aMin.y, glm::epsilon<float>()), 
@@ -350,7 +349,7 @@ private:
     glm::vec2 myRootMin;
     glm::vec2 myRootMax;
     // Smallest size we can fit without creating new quads
-    float myMinSize;
+    float myMinSize = std::numeric_limits<float>::max();
     uint8_t myDepth = 0;
     uint8_t myMaxDepth;
 
