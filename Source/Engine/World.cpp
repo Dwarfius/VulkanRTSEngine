@@ -18,9 +18,13 @@ void World::Add(Handle<GameObject>& aGameObject)
 #ifdef ASSERT_MUTEX
 	AssertWriteLock lock(myObjectsMutex);
 #endif
+
+	GameObject* objPtr = aGameObject.Get();
+	ASSERT(!myGameObjIndices.contains(objPtr));
+
 	const size_t newIndex = myGameObjects.size();
 	myGameObjects.push_back(aGameObject);
-	myGameObjIndices.insert({ aGameObject.Get(), newIndex });
+	myGameObjIndices.insert({ objPtr, newIndex });
 
 	aGameObject->SetWorld(this);
 }
