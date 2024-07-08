@@ -44,6 +44,7 @@
 #include <tbb/concurrent_unordered_set.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/bitfield.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/norm.hpp>

@@ -353,7 +353,7 @@ private:
     uint8_t myDepth = 0;
     uint8_t myMaxDepth;
 
-    friend struct UnitTestAccess;
+public:
     static void UnitTest()
     {
         ASSERT(GetQuadCount(0) == 0);
@@ -392,6 +392,7 @@ private:
         ASSERT(GetChildIndexFromIndex(1, 2) == 7);
         ASSERT(GetChildIndexFromIndex(1, 3) == 8);
 
+        {
         const glm::vec2 quadMin(0);
         const glm::vec2 quadMax(4);
         // larger things should fit in root
@@ -425,6 +426,53 @@ private:
             const float size = 8.f / (1 << i);
             const glm::vec2 offset(size);
             ASSERT(GetIndexForQuad(quadCenter - offset, quadCenter + offset, quadMin, quadMax, kMaxDepth) == 0);
+        }
+    }
+
+        struct BV 
+        { 
+            glm::vec2 myMin, myMax; 
+        };
+        BV items[]
+        {
+#define SQUARE(pos, size) { {pos, pos}, {pos + size, pos + size} }
+            // depth 0
+            SQUARE(-10, 20),
+            SQUARE(-5, 10),
+            SQUARE(-4.9f, 9.8f),
+            SQUARE(-2.5f, 5),
+            SQUARE(-1.25f, 2.5f),
+            SQUARE(-1.24f, 2.48f),
+            SQUARE(-1.24f, 2.48f),
+
+            // bottom left corner
+            SQUARE(-4.9f, 1.25f), // max-depth - 1
+            SQUARE(-4.9f, 0.625f), // max-depth
+
+            // top right corner
+            SQUARE(4.74f, 1.25f), // max-depth - 1
+            SQUARE(4.74f, 0.625f) // max-depth
+#undef SQUARE
+        };
+        constexpr uint8_t kMaxDepth = 2;
+        QuadTree<uint8_t> tree({ -5, -5 }, { 5, 5 }, kMaxDepth);
+        QuadTree<uint8_t>::Info infos[std::size(items)];
+        for (uint8_t i = 0; i < std::size(items); i++)
+        {
+            infos[i] = tree.Add(items[i].myMin, items[i].myMax, i);
+        }
+        for (float y = -6; y <= 6; y += 0.5f)
+        {
+            for (float x = -6; x <= 6; x += 0.5f)
+            {
+                uint8_t found = 0;
+                tree.Test({ x, y }, { x + 0.05f, y + 0.05f }, [&](uint8_t anIndex) 
+                {
+                    found++;
+                    return true;
+                });
+                ASSERT(found);
+            }
         }
     }
 };
