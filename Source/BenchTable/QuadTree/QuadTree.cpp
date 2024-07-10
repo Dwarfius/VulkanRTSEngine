@@ -132,7 +132,6 @@ void QuadTreeTestSingle(benchmark::State& aState)
 			if (anItem == item)
 			{
 				benchmark::DoNotOptimize(found = true);
-				return false;
 			}
 			return true;
 		});
@@ -165,7 +164,6 @@ void QuadTreeTestAll(benchmark::State& aState)
 				if (anItem == item)
 				{
 					benchmark::DoNotOptimize(found = true);
-					return false;
 				}
 				return true;
 			});
@@ -244,4 +242,3 @@ BENCHMARK(QuadTreeMoveAll<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 
 // * Nope, StableVector can potentially reduce the ::Move time, but everything
 // else immediatelly degreaded to QuadTreeNaive's level - not worth
 BENCHMARK(QuadTreeMoveAll<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
-
