@@ -14,6 +14,7 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Camera.h>
+#include <Graphics/Utils.h>
 
 #include <Physics/PhysicsWorld.h>
 #include <Physics/PhysicsEntity.h>
@@ -33,6 +34,7 @@ private:
 
 	void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) override
 	{
+#ifndef ST_QTREE
 		// TODO: this is (probably)horribly inefficient, but other than
 		// keeping track of indices on PhysicsEntity (which I 
 		// can't do - no stability guarantee) I got no ideas
@@ -82,12 +84,17 @@ private:
 			}
 			myOwner.myBalls.erase(lastBallIter);
 		}
+#endif
 	}
 
 	StressTest& myOwner;
 };
 
 StressTest::StressTest(Game& aGame)
+#ifdef ST_QTREE
+	: myTanksTree({ -200, -200 }, {200, 200}, 8) // maxDepth is arbitrary
+	// TODO: add support for resizing
+#endif
 {
 	std::random_device randDevice;
 	myRandEngine = std::default_random_engine(randDevice());
@@ -152,7 +159,9 @@ StressTest::StressTest(Game& aGame)
 	myRedTankTexture = assetTracker.GetOrCreate<Texture>("Tank/enemyTank.img");
 	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
 
+#ifndef ST_QTREE
 	myTanks.reserve(500);
+#endif
 	myBalls.reserve(500);
 
 	myTriggersTracker = new TriggersTracker(*this);
@@ -176,6 +185,28 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 {
 	Profiler::ScopedMark mark("StressTest::Update");
 	DrawUI(aGame, aDeltaTime);
+#ifdef ST_QTREE
+	if (myDrawQuadTree)
+	{
+		DebugDrawer& debugDrawer = aGame.GetDebugDrawer();
+		constexpr glm::vec3 kDepthColors[]{
+			{1, 0, 0},
+			{0, 1, 0},
+			{0, 0, 1}
+		};
+		myTanksTree.ForEachQuad([&](glm::vec2 aMin, glm::vec2 aMax, uint8_t aDepth, std::span<Tank*>)
+		{
+			const glm::vec3 min{ aMin.x, 0, aMin.y };
+			const glm::vec3 max{ aMax.x, 0, aMax.y };
+			// TODO: make a AddRect call
+			const glm::vec3 color = kDepthColors[aDepth % std::size(kDepthColors)];
+			debugDrawer.AddLine(min, { min.x, 0, max.z }, color);
+			debugDrawer.AddLine(min, { max.x, 0, min.z }, color);
+			debugDrawer.AddLine({ min.x, 0, max.z }, max, color);
+			debugDrawer.AddLine({ max.x, 0, min.z }, max, color);
+		});
+	}
+#endif
 	if (aGame.IsPaused())
 	{
 		return;
@@ -195,7 +226,13 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 		ImGui::InputFloat("Spawn Square Side", &mySpawnSquareSide);
 		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1.f);
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
+#ifdef ST_QTREE
+		ImGui::Text("Tanks alive: %llu", myTanks.GetCount());
+		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
+		ImGui::Checkbox("Draw QuadTree", &myDrawQuadTree);
+#else
 		ImGui::Text("Tanks alive: %llu", myTanks.size());
+#endif
 
 		ImGui::Separator();
 
@@ -224,21 +261,38 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 	}
 	myTanksToRemove.clear();
 
+	const float halfHeight = myTankShape->GetHalfExtents().y;
+
 	myTankAccum += mySpawnRate * aDeltaTime;
+#ifdef ST_QTREE
+	if (myTankAccum >= myTanks.GetCount() + 1)
+#else
 	if (myTankAccum >= myTanks.size() + 1)
+#endif
 	{
+		Profiler::ScopedMark scope("SpawnTanks");
 		std::uniform_real_distribution<float> filter(
 			-mySpawnSquareSide / 2.f,
 			mySpawnSquareSide / 2.f
 		);
 		const uint32_t newCount = static_cast<uint32_t>(myTankAccum);
+#ifdef ST_QTREE
+		const uint32_t toSpawnCount = static_cast<uint32_t>(newCount - myTanks.GetCount());
+		myTanks.Reserve(newCount);
+#else
 		const uint32_t toSpawnCount = static_cast<uint32_t>(newCount - myTanks.size());
 		myTanks.resize(newCount);
+#endif
 		for (uint32_t i = 0; i < toSpawnCount; i++)
 		{
 			myTankSwitch = !myTankSwitch;
 
+#ifdef ST_QTREE
+			Tank& tank = myTanks.Allocate();
+#else
 			Tank& tank = myTanks[newCount - i - 1];
+#endif
+
 			tank.myTeam = myTankSwitch;
 			tank.myCooldown = myShootCD;
 
@@ -259,79 +313,140 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetTextureCount(1);
 			visualComp->SetTexture(0, tank.myTeam ? myGreenTankTexture : myRedTankTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
-			
+
+#ifndef ST_QTREE
 			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
 			const float halfHeight = myTankShape->GetHalfExtents().y / 2.f;
-			physComp->CreateTriggerEntity(myTankShape, {0, halfHeight, 0});
+			physComp->CreateTriggerEntity(myTankShape, { 0, halfHeight, 0 });
 			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
 			tank.myTrigger = &physComp->GetPhysicsEntity();
+#else
+			tankTransf.SetScale({ 1, 1, 1 }); // tank has already scaled collider
+			AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
+			tank.myTreeInfo = myTanksTree.Add(
+				{ bounds.myMin.x, bounds.myMin.z },
+				{ bounds.myMax.x, bounds.myMax.z },
+				&tank
+			);
+#endif
 
 			aGame.AddGameObject(tank.myGO);
 		}
 	}
 
-	for (Tank& tank : myTanks)
 	{
-		Transform transf = tank.myGO->GetWorldTransform();
-		glm::vec3 dist = tank.myDest - transf.GetPos();
-		dist.y = 0;
-		const float sqrlength = glm::length2(dist);
+		Profiler::ScopedMark scope("MoveTanks");
 
-		if (sqrlength <= 1.f)
+#ifdef ST_QTREE
+		size_t removed = 0;
+		myTanks.ForEach([&](Tank& tank) // TODO: fix the naming!
+#else
+		for (Tank& tank : myTanks)
+#endif
 		{
-			aGame.RemoveGameObject(tank.myGO);
-			tank.myGO = Handle<GameObject>();
-			continue;
-		}
+#ifdef ST_QTREE
+			if (!tank.myGO.IsValid())
+			{
+				myTanksTree.Remove(tank.myTreeInfo, &tank);
+				myTanks.Free(tank);
+				removed++;
+				return;
+			}
+#endif
 
-		transf.Translate(transf.GetForward() * myTankSpeed * aDeltaTime);
-		tank.myGO->SetWorldTransform(transf);
+			Transform transf = tank.myGO->GetWorldTransform();
+			glm::vec3 dist = tank.myDest - transf.GetPos();
+			dist.y = 0;
+			const float sqrlength = glm::length2(dist);
 
-		tank.myCooldown -= aDeltaTime;
-		if (tank.myCooldown < 0)
-		{
-			tank.myCooldown += myShootCD;
+			if (sqrlength <= 1.f)
+			{
+				// DEBUG
+				ASSERT(tank.myGO->GetWorld());
+				aGame.RemoveGameObject(tank.myGO);
 
-			Transform ballTransf;
-			ballTransf.SetPos(transf.GetPos()
-				+ transf.GetForward() * 0.2f
-				+ transf.GetUp() * 0.85f
+#ifdef ST_QTREE
+				myTanksTree.Remove(tank.myTreeInfo, &tank);
+				myTanks.Free(tank);
+				removed++;
+				return;
+#else
+				tank.myGO = Handle<GameObject>();
+				continue;
+#endif
+			}
+
+			transf.Translate(transf.GetForward() * myTankSpeed * aDeltaTime);
+			tank.myGO->SetWorldTransform(transf);
+
+#ifdef ST_QTREE
+			transf.Translate({ 0, halfHeight, 0 });
+			transf.SetScale({ 1, 1, 1 });
+			AABB tankAABB = myTankShape->GetAABB(transf.GetMatrix());
+			if (myDrawShapes)
+			{
+				aGame.GetDebugDrawer().AddAABB(tankAABB.myMin, tankAABB.myMax, { 0, 1, 0 });
+			}
+			tank.myTreeInfo = myTanksTree.Move(
+				{ tankAABB.myMin.x, tankAABB.myMin.z },
+				{ tankAABB.myMax.x, tankAABB.myMax.z },
+				tank.myTreeInfo, &tank
 			);
-			ballTransf.SetScale({ kBallScale, kBallScale, kBallScale });
+#endif
 
-			Ball ball;
-			ball.myLife = myShotLife;
-			ball.myTeam = tank.myTeam;
+			tank.myCooldown -= aDeltaTime;
+			if (tank.myCooldown < 0)
+			{
+				tank.myCooldown += myShootCD;
 
-			glm::vec3 initVelocity = transf.GetForward();
-			initVelocity.y += 0.5f;
-			ball.myVel = glm::normalize(initVelocity) * myShotSpeed;
+				Transform ballTransf;
+				ballTransf.SetPos(transf.GetPos()
+					+ transf.GetForward() * 0.2f
+					+ transf.GetUp() * 0.85f
+				);
+				ballTransf.SetScale({ kBallScale, kBallScale, kBallScale });
 
-			ball.myGO = new GameObject(ballTransf);
-			VisualComponent* visualComp = ball.myGO->AddComponent<VisualComponent>();
-			visualComp->SetModel(mySphereModel);
-			visualComp->SetTextureCount(1);
-			visualComp->SetTexture(0, myGreyTexture);
-			visualComp->SetPipeline(myDefaultPipeline);
+				Ball ball;
+				ball.myLife = myShotLife;
+				ball.myTeam = tank.myTeam;
 
-			const float halfHeight = myBallShape->GetRadius();
-			PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
-			physComp->CreateTriggerEntity(myBallShape, { 0, halfHeight, 0 });
-			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
-			ball.myTrigger = &physComp->GetPhysicsEntity();
+				glm::vec3 initVelocity = transf.GetForward();
+				initVelocity.y += 0.5f;
+				ball.myVel = glm::normalize(initVelocity) * myShotSpeed;
 
-			aGame.AddGameObject(ball.myGO);
+				ball.myGO = new GameObject(ballTransf);
+				VisualComponent* visualComp = ball.myGO->AddComponent<VisualComponent>();
+				visualComp->SetModel(mySphereModel);
+				visualComp->SetTextureCount(1);
+				visualComp->SetTexture(0, myGreyTexture);
+				visualComp->SetPipeline(myDefaultPipeline);
 
-			myBalls.push_back(ball);
+#ifndef ST_QTREE
+				const float halfHeight = myBallShape->GetRadius();
+				PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
+				physComp->CreateTriggerEntity(myBallShape, { 0, halfHeight, 0 });
+				physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
+				ball.myTrigger = &physComp->GetPhysicsEntity();
+#endif
+
+				aGame.AddGameObject(ball.myGO);
+
+				myBalls.push_back(ball);
+			}
 		}
+#ifdef ST_QTREE
+			);
+#endif
+
+#ifndef ST_QTREE
+			const size_t removed = std::erase_if(myTanks,
+				[](const Tank& aTank) {
+				return !aTank.myGO.IsValid();
+			}
+			);
+#endif
+			myTankAccum -= removed;
 	}
-
-	const size_t removed = std::erase_if(myTanks, 
-		[](const Tank& aTank) {
-			return !aTank.myGO.IsValid();
-		}
-	);
-	myTankAccum -= removed;
 }
 
 void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
@@ -342,25 +457,85 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 	}
 	myBallsToRemove.clear();
 
-	constexpr static float kGravity = 9.8f;
-	for (Ball& ball : myBalls)
+	const float halfHeight = myTankShape->GetHalfExtents().y;
+
 	{
-		ball.myLife -= aDeltaTime;
-		if (ball.myLife < 0)
+		Profiler::ScopedMark scope("MoveBalls");
+		constexpr static float kGravity = 9.8f;
+		for (Ball& ball : myBalls)
 		{
-			aGame.RemoveGameObject(ball.myGO);
-			ball.myGO = Handle<GameObject>();
-			continue;
+			ball.myLife -= aDeltaTime;
+			if (ball.myLife < 0)
+			{
+				aGame.RemoveGameObject(ball.myGO);
+				ball.myGO = Handle<GameObject>();
+				continue;
+			}
+
+
+			ball.myVel.y -= kGravity * aDeltaTime;
+
+			Transform transf = ball.myGO->GetWorldTransform();
+			transf.Translate(ball.myVel * aDeltaTime);
+			ball.myGO->SetWorldTransform(transf);
+
+#ifdef ST_QTREE
+			if (!ball.myGO->GetWorld())
+			{
+				continue;
+			}
+
+			// Doing manual collision resolution
+			transf.SetScale({ 1, 1, 1 });
+			AABB aabb = myBallShape->GetAABB(transf.GetMatrix());
+			if (myDrawShapes)
+			{
+				aGame.GetDebugDrawer().AddAABB(aabb.myMin, aabb.myMax, { 1, 0, 0 });
+			}
+			Utils::AABB translatedAABB{ aabb.myMin, aabb.myMax };
+			Profiler::ScopedMark scope("TestBall");
+			myTanksTree.Test(
+				{ aabb.myMin.x, aabb.myMin.z },
+				{ aabb.myMax.x, aabb.myMax.z },
+				[&](Tank* aTank)
+			{
+				if (ball.myTeam == aTank->myTeam)
+				{
+					return true;
+				}
+
+				if (!aTank->myGO.IsValid()
+					|| !aTank->myGO->GetWorld()) [[unlikely]]
+				{
+					return true;
+				}
+
+				Transform tankTransf = aTank->myGO->GetWorldTransform();
+				tankTransf.SetScale({ 1, 1, 1 });
+				tankTransf.Translate({ 0, halfHeight, 0 });
+				AABB tankAABB = myTankShape->GetAABB(tankTransf.GetMatrix());
+				// coarse check
+				Utils::AABB translatedTankAABB{ tankAABB.myMin, tankAABB.myMax };
+				if (!Utils::Intersects(translatedAABB, translatedTankAABB))
+				{
+					return true;
+				}
+
+				// TODO: fine check
+
+				// found it - destroy it and self
+				ASSERT(aTank->myGO->GetWorld());
+				aGame.RemoveGameObject(aTank->myGO);
+				aGame.RemoveGameObject(ball.myGO);
+				aTank->myGO = {};
+				ball.myGO = {};
+				return false;
+			});
+#endif
 		}
-
-		
-		ball.myVel.y -= kGravity * aDeltaTime;
-
-		Transform transf = ball.myGO->GetWorldTransform();
-		transf.Translate(ball.myVel * aDeltaTime);
-		ball.myGO->SetWorldTransform(transf);
 	}
 
+	Profiler::ScopedMark scope("RemoveBalls");
 	std::erase_if(myBalls,
 		[](const Ball& aBall) {
 			return !aBall.myGO.IsValid();

@@ -1,7 +1,17 @@
 #pragma once
 
+// TODO: This replaces Bullet's broadphase logic with our own QuadTree + game resolution.
+// The results aren't improving yet (moving is fast, testing is too slow).
+// Sidenote, I just discovered btDbvtBroadphase has m_deferedcollide, which disables 
+// collision checks during AABB move - that'll help reduce Bullet overhead, I should test it.
+//#define ST_QTREE
+
 #include <Core/RefCounted.h>
 #include <Core/Pool.h>
+#ifdef ST_QTREE
+#include <Core/QuadTree.h>
+#include <Core/StableVector.h>
+#endif
 
 class Game;
 class GameObject;
@@ -42,6 +52,8 @@ private:
 
 	constexpr static uint8_t kHistorySize = 100;
 	float myDeltaHistory[kHistorySize]{0};
+	bool myDrawShapes = false;
+	bool myDrawQuadTree = false;
 	void DrawUI(Game& aGame, float aDeltaTime);
 
 	std::default_random_engine myRandEngine;
@@ -56,12 +68,23 @@ private:
 		Handle<GameObject> myGO;
 		glm::vec3 myDest;
 		float myCooldown;
+#ifdef ST_QTREE
+		QuadTree<Tank*>::Info myTreeInfo;
+#else
 		PhysicsEntity* myTrigger;
+#endif
 		bool myTeam;
 	};
+#ifdef ST_QTREE
+	StableVector<Tank, 1024> myTanks;
+#else
 	std::vector<Tank> myTanks;
+#endif
 	std::vector<Tank> myTanksToRemove;
 	std::shared_ptr<PhysicsShapeBox> myTankShape;
+#ifdef ST_QTREE
+	QuadTree<Tank*> myTanksTree;
+#endif
 	void UpdateTanks(Game& aGame, float aDeltaTime);
 
 	constexpr static float kBallScale = 0.2f;
