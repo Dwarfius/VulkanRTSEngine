@@ -71,7 +71,7 @@ public:
             quad = kInvalidInd;
         }
         myItems.clear();
-        myMinSize = (myRootMax.x - myRootMin.x) / 2.f;
+        myMinSize = std::numeric_limits<float>::max();
     }
 
     template<class TFunc>
