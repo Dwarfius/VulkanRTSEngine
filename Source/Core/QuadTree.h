@@ -1,5 +1,19 @@
 #pragma once
 
+// This define controls whether QuadTree has support for sparse quads.
+// The benefit is that we save memory, but it comes with a drawback - upredictable
+// quad filling pattern (root quad might be filler 3rd), which can cause cache thrashing.
+// I haven't seen a noticeable effect in BenchTable
+#define QT_SPARSE
+// Assuming QuadCount is GetQuadCount(maxDepth), AKA how many quads do we need to 
+// store all Ts at all levels of tree
+// Non-Sparse: 
+//      QuadCount * sizeof(std::vector<T>)
+// Sparse(LF - load factor, how many quads, in %,do we need to fit all items): 
+//      QuadCount * sizeof(uint32_t) + LF * QuadCount * sizeof(std::vector<T>)
+// Solving for LF, we get LF < 83.[4]%. As long as we don't cross this barrier over
+// entire lifetime(or calls to Clear), we should see memory savings.
+
 // Be warned, TItem should be a trivial type, 
 // as everything internally is passed around by copy
 template<class TItem>
@@ -34,13 +48,16 @@ public:
         }
         
         const uint32_t index = GetIndexForQuad(aMin, aMax, myRootMin, myRootMax, myMaxDepth);
-        uint32_t itemsIndex = myQuads[index];
+#ifdef QT_SPARSE
+        uint32_t& itemsIndex = myQuads[index];
         if (itemsIndex == kInvalidInd) [[unlikely]]
         {
             itemsIndex = static_cast<uint32_t>(myItems.size());
-            myQuads[index] = itemsIndex;
             myItems.emplace_back();
         }
+#else
+        const uint32_t itemsIndex = index;
+#endif
         myItems[itemsIndex].push_back(anItem);
         return itemsIndex;
     }
@@ -57,6 +74,17 @@ public:
 
     Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
     {
+        // check to see if it'll actually move
+        const uint32_t index = GetIndexForQuad(aMin, aMax, myRootMin, myRootMax, myMaxDepth);
+#ifdef QT_SPARSE
+        if (myQuads[index] == anInfo)
+#else
+        if (index == anInfo)
+#endif
+        {
+            return anInfo;
+        }
+
         Remove(anInfo, anItem);
         // Note on false for CanGrow:
         // If we previously inserted the item, then we should've grown
@@ -66,10 +94,12 @@ public:
 
     void Clear()
     {
+#ifdef QT_SPARSE
         for (Quad& quad : myQuads)
         {
             quad = kInvalidInd;
         }
+#endif
         myItems.clear();
         myMinSize = std::numeric_limits<float>::max();
     }
@@ -94,9 +124,14 @@ public:
         // a tthe perfect fit level (or above)
         while (depth)
         {
+#ifdef QT_SPARSE
             const uint32_t itemsIndex = myQuads[index];
             if (itemsIndex != kInvalidInd)
             {
+#else
+            const uint32_t itemsIndex = index;
+            {
+#endif
                 for (TItem item : myItems[itemsIndex])
                 {
                     if (!aFunc(item))
@@ -113,9 +148,14 @@ public:
         }
 
         // above loop skips root, so wrap it up properly
+#ifdef QT_SPARSE
         if (myQuads[0] != kInvalidInd)
         {
             for (TItem item : myItems[myQuads[0]])
+#else
+        {
+            for (TItem item : myItems[0])
+#endif
             {
                 if (!aFunc(item))
                 {
@@ -157,11 +197,15 @@ public:
                     for(uint16_t x = static_cast<uint16_t>(min.x); x <= max.x; x++)
                     {
                         const uint32_t quadIndex = glm::bitfieldInterleave(x, y);
+#ifdef QT_SPARSE
                         const uint32_t itemsIndex = myQuads[indexOffset + quadIndex];
                         if (itemsIndex == kInvalidInd)
                         {
                             continue;
                         }
+#else
+                        const uint32_t itemsIndex = indexOffset + quadIndex;
+#endif
 
                         for (TItem item : myItems[itemsIndex])
                         {
@@ -183,7 +227,11 @@ public:
         // fit something of aSize size into one of it's 4 Quads
         uint8_t depth = glm::min(myMaxDepth, GetDepthForSize(aSize, myRootMax.x - myRootMin.x));
         const uint32_t quadCount = GetQuadCount(depth + 1);
+#ifdef QT_SPARSE
         const uint32_t oldCount = static_cast<uint32_t>(myQuads.size());
+#else
+        const uint32_t oldCount = static_cast<uint32_t>(myItems.size());
+#endif
         if (quadCount == oldCount)
         {
             // can't grow deeper, so fall out of here
@@ -191,7 +239,11 @@ public:
             return;
         }
 
+#ifdef QT_SPARSE
         myQuads.resize(quadCount, kInvalidInd);
+#else
+        myItems.resize(quadCount);
+#endif
         myMinSize = (myRootMax.x - myRootMin.x) / (1 << depth);
         myDepth = depth;
     }
@@ -206,13 +258,19 @@ public:
             const uint32_t indexEnd = GetQuadCount(depth + 1);
             for (uint32_t index = indexStart; index < indexEnd; index++)
             {
-
+#ifdef QT_SPARSE
                 const uint32_t itemsIndex = myQuads[index];
-                if (itemsIndex == kInvalidInd
-                    || myItems[itemsIndex].empty())
+                if (itemsIndex == kInvalidInd || myItems[itemsIndex].empty())
                 {
                     continue;
                 }
+#else
+                const uint32_t itemsIndex = index;
+                if(myItems[itemsIndex].empty())
+                {
+                    continue;
+                }
+#endif
 
                 const glm::u16vec2 coords = glm::bitfieldDeinterleave(index - indexStart);
                 const glm::vec2 min = myRootMin + glm::vec2{ coords.x * size, coords.y * size };
@@ -350,7 +408,9 @@ private:
         return depth;
     }
 
+#ifdef QT_SPARSE
     std::vector<Quad> myQuads;
+#endif
     std::vector<std::vector<TItem>> myItems;
     glm::vec2 myRootMin;
     glm::vec2 myRootMax;
