@@ -206,10 +206,6 @@ public:
             const uint32_t indexEnd = GetQuadCount(depth + 1);
             for (uint32_t index = indexStart; index < indexEnd; index++)
             {
-                if (index == myQuads.size())
-                {
-                    return;
-                }
 
                 const uint32_t itemsIndex = myQuads[index];
                 if (itemsIndex == kInvalidInd
