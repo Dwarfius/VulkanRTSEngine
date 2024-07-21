@@ -95,13 +95,11 @@ public:
     void Clear()
     {
 #ifdef QT_SPARSE
-        for (Quad& quad : myQuads)
-        {
-            quad = kInvalidInd;
-        }
+        myQuads.clear();
 #endif
         myItems.clear();
         myMinSize = std::numeric_limits<float>::max();
+        myDepth = 0;
     }
 
     template<class TFunc>
@@ -120,8 +118,8 @@ public:
         auto [index, depth] = GetIndexAndDepthForQuad(aMin, aMax, myRootMin, myRootMax, myMaxDepth);
         const uint8_t originalDepth = depth; // saving for slow path bellow
 
-        // fast path - there's a good chance we can find soemthing (and early out)
-        // a tthe perfect fit level (or above)
+        // fast path - there's a good chance we can find something (and early out)
+        // at the perfect fit level (or above)
         while (depth)
         {
 #ifdef QT_SPARSE
@@ -542,3 +540,5 @@ public:
         }
     }
 };
+
+#undef QT_SPARSE
