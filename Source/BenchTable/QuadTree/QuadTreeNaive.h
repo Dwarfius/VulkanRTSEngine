@@ -1,10 +1,17 @@
 #pragma once
 
+#ifdef QT_TELEMETRY
+#define QT_TELEM(x) x
+#else
+#define QT_TELEM(x)
+#endif
+
 template<class TItem>
 struct QuadTreeNaive
 {
     struct Quad;
     using Info = Quad*;
+    QT_TELEM(struct Telemetry);
 
     struct Quad
     {
@@ -15,6 +22,7 @@ struct QuadTreeNaive
 
         Quad* myQuads[4]{};
         std::vector<TItem> myItems;
+        QT_TELEM(Telemetry* myTelem);
 
         Quad(glm::vec2 aMin, glm::vec2 aMax, uint8_t aDepth, uint8_t aMaxDepth)
             : myMin(aMin)
@@ -32,8 +40,10 @@ struct QuadTreeNaive
         template<bool CanGrow>
         Quad* Add(glm::vec2 aMin, glm::vec2 aMax, TItem anItem)
         {
+            QT_TELEM(myTelem->myDepthAccesses++);
             if (myDepth == myMaxDepth)
             {
+                QT_TELEM(myTelem->myItemsAccesses++);
                 myItems.push_back(anItem);
                 return this;
             }
@@ -55,6 +65,7 @@ struct QuadTreeNaive
 
             if (minIndex != maxIndex)
             {
+                QT_TELEM(myTelem->myItemsAccesses++);
                 myItems.push_back(anItem);
                 return this;
             }
@@ -81,6 +92,7 @@ struct QuadTreeNaive
                         }
                     }
                 }
+                QT_TELEM(myQuads[minIndex]->myTelem = myTelem);
                 return myQuads[minIndex]->Add<CanGrow>(aMin, aMax, anItem);
             }
         }
@@ -113,6 +125,7 @@ struct QuadTreeNaive
                         break;
                     }
                 }
+                QT_TELEM(myQuads[i]->myTelem = myTelem);
                 myQuads[i]->Expand(aMaxDepth);
             }
         }
@@ -160,10 +173,12 @@ struct QuadTreeNaive
             const uint8_t maxIndex = indexLUT[maxIndices.y] * 2 + indexLUT[maxIndices.x];
             ASSERT(minIndex < 4 && maxIndex < 4);
 
+            QT_TELEM(myTelem->myDepthAccesses++);
             for (uint8_t index = minIndex; index <= maxIndex; index++)
             {
                 if (myQuads[index])
                 {
+                    QT_TELEM(myTelem->myItemsAccesses++);
                     myQuads[index]->Test(aMin, aMax, std::forward<TFunc>(aFunc));
                 }
             }
@@ -173,6 +188,7 @@ struct QuadTreeNaive
     QuadTreeNaive(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
         : myRoot(aMin, aMax, 0, aMaxDepth)
     {
+        QT_TELEM(myRoot.myTelem = &myTelem);
     }
 
     template<bool CanGrow = true>
@@ -189,6 +205,9 @@ struct QuadTreeNaive
         const size_t cacheSize = cache.size();
         std::swap(*cacheIter, cache[cacheSize - 1]);
         cache.resize(cacheSize - 1);
+
+        QT_TELEM(myTelem.myDepthAccesses++);
+        QT_TELEM(myTelem.myItemsAccesses++);
     }
 
     Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
@@ -228,4 +247,16 @@ struct QuadTreeNaive
     }
 
     Quad myRoot;
+#ifdef QT_TELEMETRY
+public:
+    struct Telemetry
+    {
+        uint32_t myItemsAccesses = 0;
+        uint32_t myDepthAccesses = 0;
+    };
+    Telemetry myTelem;
+private:
+#endif
 };
+
+#undef QT_TELEM

@@ -14,6 +14,13 @@
 // Solving for LF, we get LF < 83.[4]%. As long as we don't cross this barrier over
 // entire lifetime(or calls to Clear), we should see memory savings.
 
+#ifdef QT_TELEMETRY
+#define QT_TELEM(x) x
+
+#else
+#define QT_TELEM(x)
+#endif
+
 // Be warned, TItem should be a trivial type, 
 // as everything internally is passed around by copy
 template<class TItem>
@@ -59,6 +66,8 @@ public:
         const uint32_t itemsIndex = index;
 #endif
         myItems[itemsIndex].push_back(anItem);
+        QT_TELEM(myTelem.myItemsAccesses++);
+        QT_TELEM(myTelem.myDepthAccesses++);
         return itemsIndex;
     }
 
@@ -70,6 +79,8 @@ public:
         const size_t cacheSize = cache.size();
         std::swap(*cacheIter, cache[cacheSize - 1]);
         cache.resize(cacheSize - 1);
+        QT_TELEM(myTelem.myItemsAccesses++);
+        QT_TELEM(myTelem.myDepthAccesses++);
     }
 
     Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
@@ -122,6 +133,7 @@ public:
         // at the perfect fit level (or above)
         while (depth)
         {
+            QT_TELEM(myTelem.myDepthAccesses++);
 #ifdef QT_SPARSE
             const uint32_t itemsIndex = myQuads[index];
             if (itemsIndex != kInvalidInd)
@@ -132,6 +144,7 @@ public:
 #endif
                 for (TItem item : myItems[itemsIndex])
                 {
+                    QT_TELEM(myTelem.myItemsAccesses++);
                     if (!aFunc(item))
                     {
                         return;
@@ -146,6 +159,7 @@ public:
         }
 
         // above loop skips root, so wrap it up properly
+        QT_TELEM(myTelem.myDepthAccesses++);
 #ifdef QT_SPARSE
         if (myQuads[0] != kInvalidInd)
         {
@@ -155,6 +169,7 @@ public:
             for (TItem item : myItems[0])
 #endif
             {
+                QT_TELEM(myTelem.myItemsAccesses++);
                 if (!aFunc(item))
                 {
                     return;
@@ -185,6 +200,7 @@ public:
             
             for (uint8_t depthInd = originalDepth + 1; depthInd <= myDepth; depthInd++)
             {
+                QT_TELEM(myTelem.myDepthAccesses++);
                 const glm::uvec2 min = static_cast<glm::uvec2>(localMin / size);
                 const glm::uvec2 max = static_cast<glm::uvec2>(localMax / size);
                 ASSERT(max.x <= std::numeric_limits<uint16_t>::max()
@@ -207,6 +223,7 @@ public:
 
                         for (TItem item : myItems[itemsIndex])
                         {
+                            QT_TELEM(myTelem.myItemsAccesses++);
                             if (!aFunc(item))
                             {
                                 return;
@@ -416,6 +433,16 @@ private:
     float myMinSize = std::numeric_limits<float>::max();
     uint8_t myDepth = 0;
     uint8_t myMaxDepth;
+#ifdef QT_TELEMETRY
+public:
+    struct Telemetry
+    {
+        uint32_t myItemsAccesses = 0;
+        uint32_t myDepthAccesses = 0;
+    };
+    Telemetry myTelem;
+private:
+#endif
 
 public:
     static void UnitTest()
@@ -541,4 +568,5 @@ public:
     }
 };
 
+#undef QT_TELEM
 #undef QT_SPARSE

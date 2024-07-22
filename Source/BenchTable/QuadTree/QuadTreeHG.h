@@ -3,16 +3,14 @@
 // This define controls whether QuadTree has support for sparse quads.
 // The benefit is that we save memory, but it comes with a drawback - upredictable
 // quad filling pattern (root quad might be filler 3rd), which can cause cache thrashing.
-// I haven't seen a noticeable effect in BenchTable
-#define QT_SPARSE
-// Assuming QuadCount is GetQuadCount(maxDepth), AKA how many quads do we need to 
-// store all Ts at all levels of tree
-// Non-Sparse: 
-//      QuadCount * sizeof(std::vector<T>)
-// Sparse(LF - load factor, how many quads, in %,do we need to fit all items): 
-//      QuadCount * sizeof(uint32_t) + LF * QuadCount * sizeof(std::vector<T>)
-// Solving for LF, we get LF < 83.[4]%. As long as we don't cross this barrier over
-// entire lifetime(or calls to Clear), we should see memory savings.
+// Benchtable shows perf impact for all tests(~5%)
+//#define QT_SPARSE
+
+#ifdef QT_TELEMETRY
+#define QT_TELEM(x) x
+#else
+#define QT_TELEM(x)
+#endif
 
 // Be warned, TItem should be a trivial type, 
 // as everything internally is passed around by copy
@@ -99,11 +97,13 @@ public:
                 const uint32_t itemsIndex = index;
 #endif
                 myItems[itemsIndex].push_back(anItem);
+                QT_TELEM(myTelem.myItemsAccesses++);
             }
         }
 
         // lastly, mark that particular depth level has items
         myDepthSet |= 1 << rect.myDepth;
+        QT_TELEM(myTelem.myDepthAccesses++);
 
         return QRect::Pack(rect);
     }
@@ -130,8 +130,10 @@ public:
                 const size_t cacheSize = cache.size();
                 std::swap(*cacheIter, cache[cacheSize - 1]);
                 cache.resize(cacheSize - 1);
+                QT_TELEM(myTelem.myItemsAccesses++);
             }
         }
+        QT_TELEM(myTelem.myDepthAccesses++);
     }
 
     Info Move(glm::vec2 aMin, glm::vec2 aMax, Info anInfo, TItem anItem)
@@ -175,6 +177,7 @@ public:
                 continue;
             }
 
+            QT_TELEM(myTelem.myDepthAccesses++);
             const QRect rect = GetRectForQuadAtDepth(aMin, aMax, myRootMin, myRootMax, depth);
             const uint32_t depthOffset = GetQuadCount(depth);
             const uint16_t sideLength = 1 << depth;
@@ -194,6 +197,7 @@ public:
 #endif
                         for (TItem item : myItems[itemsIndex])
                         {
+                            QT_TELEM(myTelem.myItemsAccesses++);
                             if (!aFunc(item))
                             {
                                 return;
@@ -409,6 +413,16 @@ private:
     float myMinSize = std::numeric_limits<float>::max();
     uint16_t myDepthSet = 0;
     uint8_t myMaxDepth;
+#ifdef QT_TELEMETRY
+public:
+    struct Telemetry
+    {
+        uint32_t myItemsAccesses = 0;
+        uint32_t myDepthAccesses = 0;
+    };
+    Telemetry myTelem;
+private:
+#endif
 
 public:
     static void UnitTest()
@@ -534,4 +548,5 @@ public:
     }
 };
 
+#undef QT_TELEM
 #undef QT_SPARSE

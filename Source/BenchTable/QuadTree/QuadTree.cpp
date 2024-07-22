@@ -1,5 +1,7 @@
 #include "Precomp.h"
 
+#define QT_TELEMETRY
+
 #include "QuadTreeNaive.h"
 #include "QuadTreeHG.h"
 
@@ -71,6 +73,12 @@ constexpr uint8_t kMaxDepth = 5;
 
 volatile void* ptr;
 
+#ifdef QT_TELEMETRY
+#define QT_TELEM(x) x
+#else
+#define QT_TELEM(x)
+#endif
+
 template<template<class> class TQuadTree>
 void QuadTreeAdd(benchmark::State& aState)
 {
@@ -79,6 +87,7 @@ void QuadTreeAdd(benchmark::State& aState)
 	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
+	QT_TELEM(typename Tree::Telemetry telem);
 	for (auto _ : aState)
 	{
 		Tree tree(glm::vec2(-kSize / 2), glm::vec2(kSize / 2), kMaxDepth);
@@ -86,8 +95,14 @@ void QuadTreeAdd(benchmark::State& aState)
 		{
 			[[maybe_unused]] Info info = tree.Add(item.myMin, item.myMax, &item);
 		}
+		QT_TELEM(telem.myItemsAccesses += tree.myTelem.myItemsAccesses);
+		QT_TELEM(telem.myDepthAccesses += tree.myTelem.myDepthAccesses);
 		ptr = &tree;
 	}
+	QT_TELEM(aState.counters.insert({
+		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)},
+		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)}
+	}));
 }
 
 template<template<class> class TQuadTree>
@@ -98,6 +113,7 @@ void QuadTreeAddReserved(benchmark::State& aState)
 	UnitTestAccess::Test<Tree>();
 
 	std::vector<Item> items = GenerateItems(aState.range(), kSize, kMinSize);
+	QT_TELEM(typename Tree::Telemetry telem);
 	for (auto _ : aState)
 	{
 		Tree tree(glm::vec2(-kSize / 2), glm::vec2(kSize / 2), kMaxDepth);
@@ -106,8 +122,14 @@ void QuadTreeAddReserved(benchmark::State& aState)
 		{
 			[[maybe_unused]] Info info = tree.Add<false>(item.myMin, item.myMax, &item);
 		}
+		QT_TELEM(telem.myItemsAccesses += tree.myTelem.myItemsAccesses);
+		QT_TELEM(telem.myDepthAccesses += tree.myTelem.myDepthAccesses);
 		ptr = &tree;
 	}
+	QT_TELEM(aState.counters.insert({
+		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)},
+		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)}
+	}));
 }
 
 template<template<class> class TQuadTree>
@@ -125,6 +147,7 @@ void QuadTreeTestSingle(benchmark::State& aState)
 		[[maybe_unused]] Info info = tree.Add(item.myMin, item.myMax, &item);
 	}
 	Item* item = &items[items.size() - 1];
+	QT_TELEM(typename Tree::Telemetry telem);
 	for (auto _ : aState)
 	{
 		bool found = false;
@@ -137,7 +160,14 @@ void QuadTreeTestSingle(benchmark::State& aState)
 			return true;
 		});
 		ASSERT(found);
+		QT_TELEM(telem.myItemsAccesses += tree.myTelem.myItemsAccesses);
+		QT_TELEM(telem.myDepthAccesses += tree.myTelem.myDepthAccesses);
+		QT_TELEM(tree.myTelem = {});
 	}
+	QT_TELEM(aState.counters.insert({
+		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)},
+		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)}
+	}));
 }
 
 template<template<class> class TQuadTree>
@@ -155,6 +185,7 @@ void QuadTreeTestAll(benchmark::State& aState)
 		[[maybe_unused]] Info info = tree.Add(item.myMin, item.myMax, &item);
 	}
 	
+	QT_TELEM(typename Tree::Telemetry telem);
 	for (auto _ : aState)
 	{
 		for (Item& item : items)
@@ -170,7 +201,14 @@ void QuadTreeTestAll(benchmark::State& aState)
 			});
 			ASSERT(found);
 		}
+		QT_TELEM(telem.myItemsAccesses += tree.myTelem.myItemsAccesses);
+		QT_TELEM(telem.myDepthAccesses += tree.myTelem.myDepthAccesses);
+		QT_TELEM(tree.myTelem = {});
 	}
+	QT_TELEM(aState.counters.insert({
+		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)},
+		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)}
+	}));
 }
 
 template<template<class> class TQuadTree>
@@ -203,6 +241,7 @@ void QuadTreeMoveAll(benchmark::State& aState)
 	};
 
 	size_t iterNum = 0;
+	QT_TELEM(typename Tree::Telemetry telem);
 	for (auto _ : aState)
 	{
 		aState.PauseTiming();
@@ -222,11 +261,19 @@ void QuadTreeMoveAll(benchmark::State& aState)
 			Info info = tree.Move(item.myMin, item.myMax, oldInfo, &item);
 			std::memcpy(&item.myInfo, &info, sizeof(info));
 		}
+		QT_TELEM(telem.myItemsAccesses += tree.myTelem.myItemsAccesses);
+		QT_TELEM(telem.myDepthAccesses += tree.myTelem.myDepthAccesses);
+		QT_TELEM(tree.myTelem = {});
 	}
+	QT_TELEM(aState.counters.insert({ 
+		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)}, 
+		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)} 
+	}));
 }
+#undef QT_TELEM
 
-//#define TEST_NAIVE
-//#define TEST_CORE
+#define TEST_NAIVE
+#define TEST_CORE
 #define TEST_HG
 
 #ifdef TEST_NAIVE
