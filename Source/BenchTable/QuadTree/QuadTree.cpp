@@ -1,6 +1,7 @@
 #include "Precomp.h"
 
 #include "QuadTreeNaive.h"
+#include "QuadTreeHG.h"
 
 #include <Core/QuadTree.h>
 
@@ -224,21 +225,64 @@ void QuadTreeMoveAll(benchmark::State& aState)
 	}
 }
 
+//#define TEST_NAIVE
+//#define TEST_CORE
+#define TEST_HG
+
+#ifdef TEST_NAIVE
 BENCHMARK(QuadTreeAdd<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_CORE
 BENCHMARK(QuadTreeAdd<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_HG
+BENCHMARK(QuadTreeAdd<QuadTreeHG>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
 
+#ifdef TEST_NAIVE
 BENCHMARK(QuadTreeAddReserved<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_CORE
 BENCHMARK(QuadTreeAddReserved<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_HG
+BENCHMARK(QuadTreeAddReserved<QuadTreeHG>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
 
+#ifdef TEST_NAIVE
 BENCHMARK(QuadTreeTestSingle<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
+#ifdef TEST_CORE
 BENCHMARK(QuadTreeTestSingle<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
+#ifdef TEST_HG
+BENCHMARK(QuadTreeTestSingle<QuadTreeHG>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
 
+#ifdef TEST_NAIVE
 BENCHMARK(QuadTreeTestAll<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
+#ifdef TEST_CORE
 BENCHMARK(QuadTreeTestAll<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
+#ifdef TEST_HG
+BENCHMARK(QuadTreeTestAll<QuadTreeHG>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14);
+#endif
 
+#ifdef TEST_NAIVE
 BENCHMARK(QuadTreeMoveAll<QuadTreeNaive>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_CORE
 // Note: surprisingly, 1<<17 is slightly worse than Naive's - need to think about reasons
 // Reason 1: double jump to resolve quad (vs 1 for Naive) - try StableVector?
 // * Nope, StableVector can potentially reduce the ::Move time, but everything
 // else immediatelly degreaded to QuadTreeNaive's level - not worth
 BENCHMARK(QuadTreeMoveAll<QuadTree>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+#ifdef TEST_HG
+BENCHMARK(QuadTreeMoveAll<QuadTreeHG>)->Arg(1 << 10)->Arg(1 << 12)->Arg(1 << 14)->Arg(1 << 17);
+#endif
+
+#undef TEST_NAIVE
+#undef TEST_CORE
+#undef TEST_HG
