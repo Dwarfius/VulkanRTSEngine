@@ -1,5 +1,8 @@
 #pragma once
 
+// disabled for now since I removed my quadtree, since my impl is limited
+#ifdef WE_QUADTREE
+
 #include <Core/QuadTree.h>
 #include <Core/StableVector.h>
 
@@ -33,3 +36,5 @@ private:
 	QuadTreeMode myQuadTreeMode = QuadTreeMode::None;
 	float myCreateSize = 1.f;
 };
+
+#endif

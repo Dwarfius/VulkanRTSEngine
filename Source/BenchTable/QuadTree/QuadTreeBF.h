@@ -1,6 +1,6 @@
 #pragma once
 
-// This define controls whether QuadTreeBF has support for sparse quads.
+// This define controls whether QuadTree has support for sparse quads.
 // The benefit is that we save memory, but it comes with a drawback - upredictable
 // quad filling pattern (root quad might be filler 3rd), which can cause cache thrashing.
 // I haven't seen a noticeable effect in BenchTable
@@ -24,7 +24,7 @@
 // Be warned, TItem should be a trivial type, 
 // as everything internally is passed around by copy
 template<class TItem>
-class QuadTreeBF
+class QuadTree
 {
     using Quad = uint32_t;
     static constexpr Quad kInvalidInd = static_cast<Quad>(-1);
@@ -32,7 +32,7 @@ class QuadTreeBF
 public:
     using Info = uint32_t;
 
-    QuadTreeBF(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
+    QuadTree(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
         : myRootMin(aMin)
         , myRootMax(aMax)
         , myMaxDepth(aMaxDepth)
@@ -121,7 +121,7 @@ public:
         // non-uniformly sized sizes (which prevents us to test against largest overlaps
         // at depth-0 first). But going the opposite way would cause us to jump around in
         // memory much more if everything is uniform and fits at perfect depth.
-        // I need to profile both cases to see if my guess holds remit(QuadTreeBFNaive
+        // I need to profile both cases to see if my guess holds remit(QuadTreeNaive
         // has shallowest-to-deepest impl, and it is 80% slower)
         // That said, it should be possible to provide 2 implementations and let user
         // pick which strategy to use (since we can't guess which way would be better
@@ -546,8 +546,8 @@ public:
 #undef SQUARE
         };
         constexpr uint8_t kMaxDepth = 2;
-        QuadTreeBF<uint8_t> tree({ -5, -5 }, { 5, 5 }, kMaxDepth);
-        QuadTreeBF<uint8_t>::Info infos[std::size(items)];
+        QuadTree<uint8_t> tree({ -5, -5 }, { 5, 5 }, kMaxDepth);
+        QuadTree<uint8_t>::Info infos[std::size(items)];
         for (uint8_t i = 0; i < std::size(items); i++)
         {
             infos[i] = tree.Add(items[i].myMin, items[i].myMax, i);

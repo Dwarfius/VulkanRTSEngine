@@ -125,8 +125,6 @@ void EditorMode::Update(Game& aGame, float aDeltaTime)
 	{
 		myNavMesh->DebugDraw(debugDrawer);
 	}
-
-	myQuadTreeTest.DrawTree(aGame);
 }
 
 void EditorMode::CreateBigWorld(Game& aGame)
@@ -465,8 +463,6 @@ void EditorMode::DrawMenu(Game& aGame)
 
 				ImGui::EndTabItem();
 			}
-
-			myQuadTreeTest.DrawTab();
 
 			ImGui::EndTabBar();
 		}

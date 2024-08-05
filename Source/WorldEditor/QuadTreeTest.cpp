@@ -1,6 +1,9 @@
 #include "Precomp.h"
 #include "QuadTreeTest.h"
 
+// see note in .h
+#ifdef WE_QUADTREE
+
 #include <Engine/Game.h>
 #include <Engine/Input.h>
 
@@ -132,3 +135,5 @@ void QuadTreeTest::DrawTree(Game& aGame)
 		}
 	});
 }
+
+#endif

@@ -103,5 +103,4 @@ private:
 
 	HexSolver solver;
 	GameProto myProto;
-	QuadTreeTest myQuadTreeTest;
 };

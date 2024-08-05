@@ -11,7 +11,6 @@
 #include <Core/StableVector.h>
 #include <Core/StaticVector.h>
 #include <Core/Utils.h>
-#include <Core/QuadTree.h>
 
 void Tests::RunTests()
 {
@@ -23,7 +22,6 @@ void Tests::RunTests()
 	TestStableVector();
 	TestStaticVector();
 	TestIntersects();
-	QuadTree<bool>::UnitTest();
 }
 
 void Tests::TestBase64()

@@ -7,7 +7,7 @@
 #endif
 
 template<class TItem>
-struct QuadTreeNaive
+struct QuadTreeBFNaive
 {
     struct Quad;
     using Info = Quad*;
@@ -185,7 +185,7 @@ struct QuadTreeNaive
         }
     };
 
-    QuadTreeNaive(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
+    QuadTreeBFNaive(glm::vec2 aMin, glm::vec2 aMax, uint8_t aMaxDepth)
         : myRoot(aMin, aMax, 0, aMaxDepth)
     {
         QT_TELEM(myRoot.myTelem = &myTelem);
