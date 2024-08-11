@@ -13,6 +13,7 @@
 #include "Gizmos.h"
 #include "GameProto.h"
 #include "QuadTreeTest.h"
+#include "GridTest.h"
 
 class GameObject;
 class Transform;
@@ -103,4 +104,6 @@ private:
 
 	HexSolver solver;
 	GameProto myProto;
+
+	GridTest myGridTest;
 };

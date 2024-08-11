@@ -116,6 +116,7 @@ void EditorMode::Update(Game& aGame, float aDeltaTime)
 
 	solver.Update(aGame, aDeltaTime);
 	myProto.Update(aGame, myDefAssets, aDeltaTime);
+	myGridTest.DrawGrid(aGame);
 
 	DrawMenu(aGame);
 
@@ -463,6 +464,8 @@ void EditorMode::DrawMenu(Game& aGame)
 
 				ImGui::EndTabItem();
 			}
+
+			myGridTest.DrawTab();
 
 			ImGui::EndTabBar();
 		}
