@@ -34,7 +34,7 @@ private:
 
 	void OnTriggerCallback(const PhysicsEntity& aLeft, const PhysicsEntity& aRight) override
 	{
-#ifndef ST_QTREE
+#if !defined(ST_QTREE) && !defined(ST_GRID)
 		// TODO: this is (probably)horribly inefficient, but other than
 		// keeping track of indices on PhysicsEntity (which I 
 		// can't do - no stability guarantee) I got no ideas
@@ -94,6 +94,8 @@ StressTest::StressTest(Game& aGame)
 #ifdef ST_QTREE
 	: myTanksTree({ -200, -200 }, {200, 200}, 8) // maxDepth is arbitrary
 	// TODO: add support for resizing
+#elif defined(ST_GRID)
+	: myGrid({ -200, -200 }, 400, 50)
 #endif
 {
 	std::random_device randDevice;
@@ -159,10 +161,10 @@ StressTest::StressTest(Game& aGame)
 	myRedTankTexture = assetTracker.GetOrCreate<Texture>("Tank/enemyTank.img");
 	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
 
-#ifndef ST_QTREE
+#ifndef ST_STABLE
 	myTanks.reserve(500);
-#endif
 	myBalls.reserve(500);
+#endif
 
 	myTriggersTracker = new TriggersTracker(*this);
 	aGame.GetWorld().CreatePhysWorld();
@@ -215,6 +217,7 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 	UpdateCamera(*aGame.GetCamera(), aDeltaTime);
 	UpdateTanks(aGame, aDeltaTime);
 	UpdateBalls(aGame, aDeltaTime);
+	CheckCollisions(aGame);
 }
 
 void StressTest::DrawUI(Game& aGame, float aDeltaTime)
@@ -226,12 +229,14 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 		ImGui::InputFloat("Spawn Square Side", &mySpawnSquareSide);
 		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1.f);
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
-#ifdef ST_QTREE
+#ifdef ST_STABLE
 		ImGui::Text("Tanks alive: %llu", myTanks.GetCount());
-		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
-		ImGui::Checkbox("Draw QuadTree", &myDrawQuadTree);
 #else
 		ImGui::Text("Tanks alive: %llu", myTanks.size());
+#endif
+		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
+#ifdef ST_QTREE
+		ImGui::Checkbox("Draw QuadTree", &myDrawQuadTree);
 #endif
 
 		ImGui::Separator();
@@ -239,7 +244,11 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 		ImGui::InputFloat("Shoot Cooldown", &myShootCD);
 		ImGui::InputFloat("Shot Life", &myShotLife);
 		ImGui::InputFloat("Shot Speed", &myShotSpeed);
+#ifdef ST_STABLE
+		ImGui::Text("Cannonballs: %llu", myBalls.GetCount());
+#else
 		ImGui::Text("Cannonballs: %llu", myBalls.size());
+#endif
 
 		std::rotate(
 			std::begin(myDeltaHistory), 
@@ -264,7 +273,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 	const float halfHeight = myTankShape->GetHalfExtents().y;
 
 	myTankAccum += mySpawnRate * aDeltaTime;
-#ifdef ST_QTREE
+#ifdef ST_STABLE
 	if (myTankAccum >= myTanks.GetCount() + 1)
 #else
 	if (myTankAccum >= myTanks.size() + 1)
@@ -276,7 +285,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			mySpawnSquareSide / 2.f
 		);
 		const uint32_t newCount = static_cast<uint32_t>(myTankAccum);
-#ifdef ST_QTREE
+#ifdef ST_STABLE
 		const uint32_t toSpawnCount = static_cast<uint32_t>(newCount - myTanks.GetCount());
 		myTanks.Reserve(newCount);
 #else
@@ -287,7 +296,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 		{
 			myTankSwitch = !myTankSwitch;
 
-#ifdef ST_QTREE
+#ifdef ST_STABLE
 			Tank& tank = myTanks.Allocate();
 #else
 			Tank& tank = myTanks[newCount - i - 1];
@@ -314,13 +323,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetTexture(0, tank.myTeam ? myGreenTankTexture : myRedTankTexture);
 			visualComp->SetPipeline(myDefaultPipeline);
 
-#ifndef ST_QTREE
-			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
-			const float halfHeight = myTankShape->GetHalfExtents().y / 2.f;
-			physComp->CreateTriggerEntity(myTankShape, { 0, halfHeight, 0 });
-			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
-			tank.myTrigger = &physComp->GetPhysicsEntity();
-#else
+#ifdef ST_QTREE
 			tankTransf.SetScale({ 1, 1, 1 }); // tank has already scaled collider
 			AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
 			tank.myTreeInfo = myTanksTree.Add(
@@ -328,6 +331,20 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				{ bounds.myMax.x, bounds.myMax.z },
 				&tank
 			);
+#elif defined(ST_GRID)
+			tankTransf.SetScale({ 1, 1, 1 }); // tank has already scaled collider
+			AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
+			myGrid.Add(
+				{ bounds.myMin.x, bounds.myMin.z },
+				{ bounds.myMax.x, bounds.myMax.z },
+				{ &tank, true }
+			);
+#else
+			PhysicsComponent* physComp = tank.myGO->AddComponent<PhysicsComponent>();
+			const float halfHeight = myTankShape->GetHalfExtents().y / 2.f;
+			physComp->CreateTriggerEntity(myTankShape, { 0, halfHeight, 0 });
+			physComp->RequestAddToWorld(*aGame.GetWorld().GetPhysicsWorld());
+			tank.myTrigger = &physComp->GetPhysicsEntity();
 #endif
 
 			aGame.AddGameObject(tank.myGO);
@@ -337,7 +354,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 	{
 		Profiler::ScopedMark scope("MoveTanks");
 
-#ifdef ST_QTREE
+#ifdef ST_STABLE
 		size_t removed = 0;
 		myTanks.ForEach([&](Tank& tank) // TODO: fix the naming!
 #else
@@ -355,6 +372,11 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 #endif
 
 			Transform transf = tank.myGO->GetWorldTransform();
+#ifdef ST_GRID
+			Transform unscaled = transf;
+			unscaled.SetScale({ 1, 1, 1 });
+			const AABB origTankAABB = myTankShape->GetAABB(unscaled.GetMatrix());
+#endif
 			glm::vec3 dist = tank.myDest - transf.GetPos();
 			dist.y = 0;
 			const float sqrlength = glm::length2(dist);
@@ -365,8 +387,16 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				ASSERT(tank.myGO->GetWorld());
 				aGame.RemoveGameObject(tank.myGO);
 
+#ifdef ST_STABLE
 #ifdef ST_QTREE
 				myTanksTree.Remove(tank.myTreeInfo, &tank);
+#elif defined(ST_GRID)
+				myGrid.Remove(
+					{ origTankAABB.myMin.x, origTankAABB.myMin.z },
+					{ origTankAABB.myMax.x, origTankAABB.myMax.z },
+					{ &tank, true }
+				);
+#endif
 				myTanks.Free(tank);
 				removed++;
 				return;
@@ -392,6 +422,20 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				{ tankAABB.myMax.x, tankAABB.myMax.z },
 				tank.myTreeInfo, &tank
 			);
+#elif defined(ST_GRID)
+			transf.SetScale({ 1, 1, 1 });
+			const AABB newTankAABB = myTankShape->GetAABB(transf.GetMatrix());
+			if (myDrawShapes)
+			{
+				aGame.GetDebugDrawer().AddAABB(newTankAABB.myMin, newTankAABB.myMax, { 0, 1, 0 });
+			}
+			myGrid.Move(
+				{ origTankAABB.myMin.x, origTankAABB.myMin.z },
+				{ origTankAABB.myMax.x, origTankAABB.myMax.z },
+				{ newTankAABB.myMin.x, newTankAABB.myMin.z },
+				{ newTankAABB.myMax.x, newTankAABB.myMax.z },
+				{ &tank, true }
+			);
 #endif
 
 			tank.myCooldown -= aDeltaTime;
@@ -406,7 +450,11 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				);
 				ballTransf.SetScale({ kBallScale, kBallScale, kBallScale });
 
+#ifdef ST_STABLE
+				Ball& ball = myBalls.Allocate();
+#else
 				Ball ball;
+#endif
 				ball.myLife = myShotLife;
 				ball.myTeam = tank.myTeam;
 
@@ -421,7 +469,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				visualComp->SetTexture(0, myGreyTexture);
 				visualComp->SetPipeline(myDefaultPipeline);
 
-#ifndef ST_QTREE
+#if !defined(ST_QTREE) && !defined(ST_GRID)
 				const float halfHeight = myBallShape->GetRadius();
 				PhysicsComponent* physComp = ball.myGO->AddComponent<PhysicsComponent>();
 				physComp->CreateTriggerEntity(myBallShape, { 0, halfHeight, 0 });
@@ -429,23 +477,35 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				ball.myTrigger = &physComp->GetPhysicsEntity();
 #endif
 
+#ifdef ST_GRID
+				ballTransf.SetScale({ 1, 1, 1 });
+				AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
+				myGrid.Add(
+					{ ballAABB.myMin.x, ballAABB.myMin.z },
+					{ ballAABB.myMax.x, ballAABB.myMax.z },
+					{ &ball, false }
+				);
+#endif
 				aGame.AddGameObject(ball.myGO);
 
+#ifndef ST_STABLE
 				myBalls.push_back(ball);
+#endif
 			}
 		}
-#ifdef ST_QTREE
-			);
+#ifdef ST_STABLE
+		);
 #endif
 
-#ifndef ST_QTREE
-			const size_t removed = std::erase_if(myTanks,
-				[](const Tank& aTank) {
-				return !aTank.myGO.IsValid();
-			}
-			);
+		// CleanUp
+#ifndef ST_STABLE
+		const size_t removed = std::erase_if(myTanks,
+			[](const Tank& aTank) {
+			return !aTank.myGO.IsValid();
+		}
+		);
 #endif
-			myTankAccum -= removed;
+		myTankAccum -= removed;	
 	}
 }
 
@@ -462,22 +522,60 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 	{
 		Profiler::ScopedMark scope("MoveBalls");
 		constexpr static float kGravity = 9.8f;
+#ifdef ST_STABLE
+		myBalls.ForEach([aDeltaTime, &aGame, this](Ball& ball)
+#else
 		for (Ball& ball : myBalls)
+#endif
 		{
+			Transform transf = ball.myGO->GetWorldTransform();
+#ifdef ST_GRID
+			Transform unscaled = transf;
+			unscaled.SetScale({ 1, 1, 1 });
+			AABB originalAABB = myBallShape->GetAABB(transf.GetMatrix());
+#endif
+
 			ball.myLife -= aDeltaTime;
 			if (ball.myLife < 0)
 			{
+#ifdef ST_GRID
+				myGrid.Remove(
+					{ originalAABB.myMin.x, originalAABB.myMin.z },
+					{ originalAABB.myMax.x, originalAABB.myMax.z },
+					{ &ball, false }
+				);
+#endif
+
 				aGame.RemoveGameObject(ball.myGO);
 				ball.myGO = Handle<GameObject>();
+#ifdef ST_STABLE
+				myBalls.Free(ball);
+				return;
+#else
 				continue;
+#endif
 			}
 
 
 			ball.myVel.y -= kGravity * aDeltaTime;
-
-			Transform transf = ball.myGO->GetWorldTransform();
 			transf.Translate(ball.myVel * aDeltaTime);
 			ball.myGO->SetWorldTransform(transf);
+
+#ifdef ST_GRID
+			transf.SetScale({ 1, 1, 1 });
+			AABB newAABB = myBallShape->GetAABB(transf.GetMatrix());
+			if (myDrawShapes)
+			{
+				aGame.GetDebugDrawer().AddAABB(newAABB.myMin, newAABB.myMax, { 1, 0, 0 });
+			}
+			myGrid.Move(
+				{ originalAABB.myMin.x, originalAABB.myMin.z },
+				{ originalAABB.myMax.x, originalAABB.myMax.z },
+				{ newAABB.myMin.x, newAABB.myMin.z },
+				{ newAABB.myMax.x, newAABB.myMax.z },
+				{ &ball, false }
+			);
+#endif
 
 #ifdef ST_QTREE
 			if (!ball.myGO->GetWorld())
@@ -533,14 +631,19 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 			});
 #endif
 		}
+#ifdef ST_STABLE
+			);
+#endif
 	}
 
+#ifndef ST_STABLE
 	Profiler::ScopedMark scope("RemoveBalls");
 	std::erase_if(myBalls,
 		[](const Ball& aBall) {
 			return !aBall.myGO.IsValid();
 		}
 	);
+#endif
 }
 
 void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)
@@ -563,4 +666,113 @@ void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)
 	Transform& camTransf = aCam.GetTransform();
 	camTransf.SetPos(pos);
 	camTransf.LookAt(kTargetPos);
+}
+
+void StressTest::CheckCollisions(Game& aGame)
+{
+	Profiler::ScopedMark scope("CheckCollisions");
+	uint16_t tanksRemoved = 0;
+
+#ifdef ST_GRID
+	struct ToRemove
+	{
+		AABB myAABB;
+		void* myPtr;
+		bool myIsTank;
+	};
+	std::vector<ToRemove> removeQueue;
+	removeQueue.reserve(512);
+
+	const float halfHeight = myTankShape->GetHalfExtents().y;
+	myGrid.ForEachCell([this, halfHeight, &removeQueue, &aGame](std::vector<TankOrBall>& aCell) 
+	{
+		if (aCell.size() <= 2)
+		{
+			return; // nothing to do
+		}
+		for (uint32_t ballInd = 0; ballInd < aCell.size() - 1; ballInd++)
+		{
+			if (aCell[ballInd].myIsTank)
+			{
+				continue;
+			}
+			Ball* ball = static_cast<Ball*>(aCell[ballInd].myPtr);
+			if (!ball->myGO.IsValid() || !ball->myGO->GetWorld())
+			{
+				continue;
+			}
+
+			Transform ballTransf = ball->myGO->GetWorldTransform();
+			ballTransf.SetScale({ 1, 1, 1 });
+			AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
+			const Utils::AABB translatedBallAABB{ ballAABB.myMin, ballAABB.myMax };
+			for (uint32_t tankInd = ballInd + 1; tankInd < aCell.size(); tankInd++)
+			{
+				if (!aCell[tankInd].myIsTank)
+				{
+					continue;
+				}
+				Tank* tank = static_cast<Tank*>(aCell[tankInd].myPtr);
+				if (!tank->myGO.IsValid() || !tank->myGO->GetWorld())
+				{
+					continue;
+				}
+
+				if (ball->myTeam == tank->myTeam)
+				{
+					continue;
+				}
+
+				Transform tankTransf = tank->myGO->GetWorldTransform();
+				tankTransf.SetScale({ 1, 1, 1 });
+				tankTransf.Translate({ 0, halfHeight, 0 });
+				AABB tankAABB = myTankShape->GetAABB(tankTransf.GetMatrix());
+
+				const Utils::AABB translatedTankAABB{ tankAABB.myMin, tankAABB.myMax };
+				// coarse check
+				if (Utils::Intersects(translatedBallAABB, translatedTankAABB))
+				{
+					// found it - schedule removal
+					// TODO: use vec2!
+					removeQueue.push_back({ tankAABB, tank, true });
+					removeQueue.push_back({ ballAABB, ball, false });
+
+					// remove from world
+					aGame.RemoveGameObject(tank->myGO);
+					aGame.RemoveGameObject(ball->myGO);
+
+					// also mark they're dead
+					tank->myGO = {};
+					ball->myGO = {};
+
+					// this ball got consumed, so go for next one
+					break;
+				}
+			}
+		}
+	});
+
+	{
+		Profiler::ScopedMark scope("RemoveObjects");
+		for (const ToRemove& toRemove : removeQueue)
+		{
+			myGrid.Remove(
+				{ toRemove.myAABB.myMin.x, toRemove.myAABB.myMin.z },
+				{ toRemove.myAABB.myMax.x, toRemove.myAABB.myMax.z },
+				{ toRemove.myPtr, toRemove.myIsTank }
+			);
+			if (toRemove.myIsTank)
+			{
+				tanksRemoved++;
+				myTanks.Free(*static_cast<Tank*>(toRemove.myPtr));
+			}
+			else
+			{
+				myBalls.Free(*static_cast<Ball*>(toRemove.myPtr));
+			}
+		}
+	}
+#endif
+	
+	myTankAccum -= tanksRemoved;
 }
