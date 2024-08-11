@@ -299,7 +299,7 @@ void QuadTreeTestAllNoInfo(benchmark::State& aState)
 	QT_TELEM(aState.counters.insert({
 		{"Items", benchmark::Counter(telem.myItemsAccesses, benchmark::Counter::kAvgIterations)},
 		{"Depth", benchmark::Counter(telem.myDepthAccesses, benchmark::Counter::kAvgIterations)}
-		}));
+	}));
 }
 
 template<template<class> class TQuadTree>
