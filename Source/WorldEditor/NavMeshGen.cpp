@@ -660,13 +660,9 @@ void NavMeshGen::Region::Draw(DebugDrawer& aDrawer) const
 			span.myPos.y * kVoxelSize
 		};
 		const glm::vec3 p2 = p1 + glm::vec3{ kVoxelSize, 0, 0 };
-		const glm::vec3 p3 = p1 + glm::vec3{ 0, 0, kVoxelSize };
-		const glm::vec3 p4 = p2 + glm::vec3{ 0, 0, kVoxelSize };
-
-		aDrawer.AddLine(p1, p2, color);
-		aDrawer.AddLine(p2, p4, color);
-		aDrawer.AddLine(p4, p3, color);
-		aDrawer.AddLine(p3, p1, color);
+		const glm::vec3 p3 = p2 + glm::vec3{ 0, 0, kVoxelSize };
+		const glm::vec3 p4 = p1 + glm::vec3{ 0, 0, kVoxelSize };
+		aDrawer.AddRect(p1, p2, p3, p4, color);
 	}
 }
 

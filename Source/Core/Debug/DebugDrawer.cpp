@@ -91,6 +91,14 @@ void DebugDrawer::AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, 
 	AddCircle(aCenter, glm::vec3{ 0, 0, 1 }, aRadius, aColor, aFramesToLive);
 }
 
+void DebugDrawer::AddRect(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, glm::vec3 aV4, glm::vec3 aColor, uint32_t aFramesToLive /* = 1 */)
+{
+	AddLine(aV1, aV2, aColor, aFramesToLive);
+	AddLine(aV2, aV3, aColor, aFramesToLive);
+	AddLine(aV3, aV4, aColor, aFramesToLive);
+	AddLine(aV4, aV1, aColor, aFramesToLive);
+}
+
 void DebugDrawer::AddAABB(glm::vec3 aMin, glm::vec3 aMax, glm::vec3 aColor, uint32_t aFramesToLive /* = 1 */)
 {
 	// bottom square

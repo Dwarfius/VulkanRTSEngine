@@ -56,10 +56,9 @@ void QuadTreeTest::DrawTree(Game& aGame)
 
 	const glm::vec3 rootMin{ 10, 0, 10 };
 	const glm::vec3 rootMax{ 110, 0, 110 };
-	debugDrawer.AddLine(rootMin, { rootMin.x, 0, rootMax.z }, { 1, 1, 0 });
-	debugDrawer.AddLine(rootMin, { rootMax.x, 0, rootMin.z }, { 1, 1, 0 });
-	debugDrawer.AddLine({ rootMin.x, 0, rootMax.z }, rootMax, { 1, 1, 0 });
-	debugDrawer.AddLine({ rootMax.x, 0, rootMin.z }, rootMax, { 1, 1, 0 });
+	const glm::vec3 color{ 1, 1, 0 };
+	debugDrawer.AddRect(rootMin, { rootMin.x, 0, rootMax.z }, 
+		rootMax, { rootMax.x, 0, rootMin.z }, color);
 
 	Camera& cam = *aGame.GetCamera();
 	Utils::Ray mouseRay{ cam.GetTransform().GetPos(), cam.GetTransform().GetForward() };
@@ -122,12 +121,8 @@ void QuadTreeTest::DrawTree(Game& aGame)
 	{
 		const glm::vec3 min{ aMin.x, 0, aMin.y };
 		const glm::vec3 max{ aMax.x, 0, aMax.y };
-		// TODO: make a AddRect call
 		const glm::vec3 color = kDepthColors[aDepth % std::size(kDepthColors)];
-		debugDrawer.AddLine(min, { min.x, 0, max.z }, color);
-		debugDrawer.AddLine(min, { max.x, 0, min.z }, color);
-		debugDrawer.AddLine({ min.x, 0, max.z }, max, color);
-		debugDrawer.AddLine({ max.x, 0, min.z }, max, color);
+		debugDrawer.AddRect(min, { min.x, 0, max.z }, max, { max.x, 0, min.z }, color);
 
 		for (Point* p : aPoints)
 		{

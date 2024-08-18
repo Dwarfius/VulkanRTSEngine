@@ -26,6 +26,9 @@ public:
 
 	void AddSphere(glm::vec3 aCenter, float aRadius, glm::vec3 aColor, uint32_t aFramesToLive = 1);
 
+	// Rect is drawn in a circular fashion (aV1 -> aV2 -> aV3 -> aV4 -> aV1)
+	void AddRect(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3, glm::vec3 aV4, glm::vec3 aColor, uint32_t aFramesToLive = 1);
+
 	void AddAABB(glm::vec3 aMin, glm::vec3 aMax, glm::vec3 aColor, uint32_t aFramesToLive = 1);
 
 	const PosColorVertex* GetCurrentVertices() const;

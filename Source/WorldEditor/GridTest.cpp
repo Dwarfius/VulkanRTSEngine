@@ -125,12 +125,8 @@ void GridTest::DrawGrid(Game& aGame)
 	{
 		const glm::vec3 min{ aMin.x, 0, aMin.y };
 		const glm::vec3 max{ aMax.x, 0, aMax.y };
-		// TODO: make a AddRect call
 		const glm::vec3 color = kDepthColors[0];
-		debugDrawer.AddLine(min, { min.x, 0, max.z }, color);
-		debugDrawer.AddLine(min, { max.x, 0, min.z }, color);
-		debugDrawer.AddLine({ min.x, 0, max.z }, max, color);
-		debugDrawer.AddLine({ max.x, 0, min.z }, max, color);
+		debugDrawer.AddRect(min, { min.x, 0, max.z }, max, { max.x, 0, min.z }, color);
 
 		for (Point* p : aPoints)
 		{
