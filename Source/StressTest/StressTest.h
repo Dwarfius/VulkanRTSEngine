@@ -11,7 +11,6 @@ class Model;
 class Pipeline;
 class Texture;
 class Camera;
-class PhysicsEntity;
 class PhysicsShapeBox;
 class PhysicsShapeSphere;
 struct Light;
@@ -81,7 +80,6 @@ private:
 		Handle<GameObject> myGO;
 		glm::vec3 myVel;
 		float myLife;
-		PhysicsEntity* myTrigger;
 		bool myTeam;
 	};
 	StableVector<Ball, 1024> myBalls;

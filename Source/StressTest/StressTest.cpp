@@ -16,8 +16,6 @@
 #include <Graphics/Camera.h>
 #include <Graphics/Utils.h>
 
-#include <Physics/PhysicsWorld.h>
-#include <Physics/PhysicsEntity.h>
 #include <Physics/PhysicsShapes.h>
 
 #include <Core/Resources/AssetTracker.h>
@@ -88,8 +86,6 @@ StressTest::StressTest(Game& aGame)
 	myGreenTankTexture = assetTracker.GetOrCreate<Texture>("Tank/playerTank.img");
 	myRedTankTexture = assetTracker.GetOrCreate<Texture>("Tank/enemyTank.img");
 	myDefaultPipeline = assetTracker.GetOrCreate<Pipeline>("Engine/default.ppl");
-
-	aGame.GetWorld().CreatePhysWorld();
 
 	myLight = aGame.GetLightSystem().AllocateLight();
 	Light& light = *myLight.Get();
