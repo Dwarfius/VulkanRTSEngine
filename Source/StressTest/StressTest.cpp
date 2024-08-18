@@ -240,7 +240,10 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			const AABB newTankAABB = myTankShape->GetAABB(transf.GetMatrix());
 			if (myDrawShapes)
 			{
-				aGame.GetDebugDrawer().AddAABB(newTankAABB.myMin, newTankAABB.myMax, { 0, 1, 0 });
+				const float halfHeight = myTankShape->GetHalfExtents().y;
+				const glm::vec3 tankMin = newTankAABB.myMin + glm::vec3{ 0, halfHeight, 0 };
+				const glm::vec3 tankMax = newTankAABB.myMax + glm::vec3{ 0, halfHeight, 0 };
+				aGame.GetDebugDrawer().AddAABB(tankMin, tankMax, { 0, 1, 0 });
 			}
 			myGrid.Move(
 				{ origTankAABB.myMin.x, origTankAABB.myMin.z },
