@@ -5,21 +5,11 @@
 class btCollisionShape;
 class Serializer;
 
-// TODO: move them to common module
-// ====================
-// Utility structs
-struct AABB
+namespace Shapes
 {
-	glm::vec3 myMin, myMax;
-};
-
-struct Sphere
-{
-	glm::vec3 myCenter;
-	float myRadius;
-};
-// ====================
-
+	struct AABB;
+	struct Sphere;
+}
 // utility struct - ref-counting base of shapes
 class PhysicsShapeBase
 {
@@ -38,8 +28,8 @@ public:
 	PhysicsShapeBase();
 	~PhysicsShapeBase();
 
-	AABB GetAABB(const glm::mat4& aTransform) const;
-	Sphere GetBoundingSphereLS() const;
+	Shapes::AABB GetAABB(const glm::mat4& aTransform) const;
+	Shapes::Sphere GetBoundingSphereLS() const;
 	Type GetType() const { return myType; }
 
 	void SetScale(glm::vec3 aScale);

@@ -6,11 +6,11 @@
 #include <Engine/Components/VisualComponent.h>
 
 #include <Graphics/Resources/Model.h>
-#include <Graphics/Utils.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Profiler.h>
+#include <Core/Shapes.h>
 
 void NavMeshGen::Generate(const Input& anInput, const Settings& aSettings, Game& aGame)
 {
@@ -256,9 +256,9 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 		myAABBMin.y + mySize.y * kVoxelHeight,
 		myAABBMin.z + mySize.z * kVoxelSize,
 	};
-	if (!Utils::Intersects(
-		Utils::AABB{ minBVWS, maxBVWS },
-		Utils::AABB{ myAABBMin, aabbMax }))
+	if (!Shapes::Intersects(
+		Shapes::AABB{ minBVWS, maxBVWS },
+		Shapes::AABB{ myAABBMin, aabbMax }))
 	{
 		return;
 	}
@@ -307,7 +307,7 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 	const glm::vec3 v2TS = aV2 - myAABBMin;
 	const glm::vec3 v3TS = aV3 - myAABBMin;
 
-	constexpr Utils::AABB voxelAABB{
+	constexpr Shapes::AABB voxelAABB{
 		{ 0, 0, 0 },
 		{ kVoxelSize, kVoxelHeight, kVoxelSize }
 	};
@@ -327,7 +327,7 @@ void NavMeshGen::Tile::Insert(glm::vec3 aV1, glm::vec3 aV2, glm::vec3 aV3)
 				const glm::vec3 v2VS = v2TS - voxelMin;
 				const glm::vec3 v3VS = v3TS - voxelMin;
 
-				const bool intersects = Utils::Intersects(v1VS, v2VS, v3VS, voxelAABB);
+				const bool intersects = Shapes::Intersects(v1VS, v2VS, v3VS, voxelAABB);
 				if (intersects)
 				{
 					// TODO: track top and bottom!
@@ -466,12 +466,12 @@ void NavMeshGen::GatherTriangles(AssetTracker& anAssetTracker)
 
 			// AABB early model rejection
 			{
-				const Utils::AABB modelAABB{
+				const Shapes::AABB modelAABB{
 					model->GetAABBMin(),
 					model->GetAABBMax()
 				};
-				const Utils::AABB transfAABB = modelAABB.Transform(transf);
-				if (!Utils::Intersects(transfAABB, { aTile.myAABBMin, tileMax }))
+				const Shapes::AABB transfAABB = modelAABB.Transform(transf);
+				if (!Shapes::Intersects(transfAABB, { aTile.myAABBMin, tileMax }))
 				{
 					continue;
 				}

@@ -10,6 +10,7 @@
 #include <Graphics/Camera.h>
 
 #include <Core/Transform.h>
+#include <Core/Shapes.h>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -173,7 +174,7 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 		ends[2] = origin + kNormals[2] * kGizmoRange;
 	}
 	
-	const Utils::Ray cameraRay = GetCameraRay(aGame);
+	const Shapes::Ray cameraRay = GetCameraRay(aGame);
 
 	DebugDrawer& drawer = aGame.GetDebugDrawer();
 	for (uint8_t i = 0; i < 3; i++)
@@ -183,17 +184,17 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 
 		float t;
 		const bool isHighlighted = !ImGui::GetIO().WantCaptureMouse
-			&& (Utils::Intersects(cameraRay, ends[i], arrowVertices[0], arrowVertices[1], t)
-				|| Utils::Intersects(cameraRay, ends[i], arrowVertices[1], arrowVertices[2], t)
-				|| Utils::Intersects(cameraRay, ends[i], arrowVertices[2], arrowVertices[0], t)
+			&& (Shapes::Intersects(cameraRay, ends[i], arrowVertices[0], arrowVertices[1], t)
+				|| Shapes::Intersects(cameraRay, ends[i], arrowVertices[1], arrowVertices[2], t)
+				|| Shapes::Intersects(cameraRay, ends[i], arrowVertices[2], arrowVertices[0], t)
 				);
 		if (isHighlighted && myPickedAxis == Axis::None)
 		{
 			myPickedAxis = static_cast<Axis>(i);
 
-			const Utils::Ray axisRay{ origin, glm::normalize(ends[i] - origin) };
+			const Shapes::Ray axisRay{ origin, glm::normalize(ends[i] - origin) };
 			float ignore;
-			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+			Shapes::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
 		}
 
@@ -205,12 +206,12 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 
 	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
 	{
-		const Utils::Ray axisRay{ 
+		const Shapes::Ray axisRay{ 
 			origin, 
 			glm::normalize(ends[static_cast<uint8_t>(myPickedAxis)] - origin) 
 		};
 		float ignore, t;
-		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+		Shapes::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
 
 		const glm::vec3 mouseDeltaWS = newMappedMouseWS - myOldMousePosOrDir;
@@ -224,7 +225,7 @@ bool Gizmos::DrawTranslation(Transform& aTransf, Game& aGame)
 bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 {
 	const glm::vec3& center = aTransf.GetPos();
-	const Utils::Ray cameraRay = GetCameraRay(aGame);
+	const Shapes::Ray cameraRay = GetCameraRay(aGame);
 
 	glm::vec3 ends[3];
 	if (mySpace == Space::Local)
@@ -264,7 +265,7 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 		// going to recheck the plane intersection to get new coordinates
 		const glm::vec3 circleNormal = ends[static_cast<uint8_t>(myPickedAxis)];
 		float rayT;
-		Utils::Intersects(cameraRay, Utils::Plane{ center, circleNormal }, rayT);
+		Shapes::Intersects(cameraRay, Shapes::Plane{ center, circleNormal }, rayT);
 		const glm::vec3 newIntersection = cameraRay.myOrigin + rayT * cameraRay.myDir;
 		const glm::vec3 dirNormalized = glm::normalize(newIntersection - center);
 
@@ -306,21 +307,21 @@ bool Gizmos::DrawRotation(Transform& aTransf, Game& aGame)
 bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 {
 	const glm::vec3 center = aTransf.GetPos();
-	const Utils::Ray cameraRay = GetCameraRay(aGame);
+	const Shapes::Ray cameraRay = GetCameraRay(aGame);
 
 	constexpr glm::vec3 kBoxExtents{ 0.1f };
 	DebugDrawer& drawer = aGame.GetDebugDrawer();
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		const glm::vec3 endPoint = center + kNormals[i] * kGizmoRange;
-		const Utils::AABB box{ 
+		const Shapes::AABB box{ 
 			endPoint - kBoxExtents, 
 			endPoint + kBoxExtents 
 		};
 
 		float t;
 		const bool isHighlighted = !ImGui::GetIO().WantCaptureMouse
-			&& Utils::Intersects(cameraRay, box, t);
+			&& Shapes::Intersects(cameraRay, box, t);
 		if (isHighlighted && myPickedAxis == Axis::None)
 		{
 			myPickedAxis = static_cast<Axis>(i);
@@ -329,9 +330,9 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 			// face of AABB doesn't lie on the plane containing the
 			// picked axis (it'll be slightly out of it), so to avoid jumps
 			// we need to remap it onto the axis
-			const Utils::Ray axisRay{ center, kNormals[i] };
+			const Shapes::Ray axisRay{ center, kNormals[i] };
 			float ignore;
-			Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+			Shapes::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 			myOldMousePosOrDir = axisRay.myOrigin + axisRay.myDir * t;
 		}
 
@@ -342,10 +343,10 @@ bool Gizmos::DrawScale(Transform& aTransf, Game& aGame)
 
 	if (Input::GetMouseBtn(0) && myPickedAxis != Axis::None)
 	{
-		const Utils::Ray axisRay{ center, kNormals[static_cast<uint32_t>(myPickedAxis)] };
+		const Shapes::Ray axisRay{ center, kNormals[static_cast<uint32_t>(myPickedAxis)] };
 
 		float ignore, t;
-		Utils::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
+		Shapes::GetClosestTBetweenRays(cameraRay, axisRay, ignore, t);
 
 		const glm::vec3 newMappedMouseWS = axisRay.myOrigin + axisRay.myDir * t;
 		const glm::vec3 delta = newMappedMouseWS - myOldMousePosOrDir;
@@ -397,11 +398,11 @@ void Gizmos::DrawArrow(DebugDrawer& aDrawer, glm::vec3 aStart, glm::vec3 anEnd, 
 }
 
 bool Gizmos::CheckCircle(glm::vec3 aCenter, glm::vec3 aNormal, float aRadius,
-	const Utils::Ray& aRay, glm::vec3& anIntersectPoint)
+	const Shapes::Ray& aRay, glm::vec3& anIntersectPoint)
 {
-	const Utils::Plane circlePlane{ aCenter, aNormal };
+	const Shapes::Plane circlePlane{ aCenter, aNormal };
 	float rayT;
-	if (Utils::Intersects(aRay, circlePlane, rayT))
+	if (Shapes::Intersects(aRay, circlePlane, rayT))
 	{
 		anIntersectPoint = aRay.myOrigin + rayT * aRay.myDir;
 		const float distance = glm::distance(aCenter, anIntersectPoint);
@@ -410,7 +411,7 @@ bool Gizmos::CheckCircle(glm::vec3 aCenter, glm::vec3 aNormal, float aRadius,
 	return false;
 }
 
-Utils::Ray Gizmos::GetCameraRay(const Game& aGame)
+Shapes::Ray Gizmos::GetCameraRay(const Game& aGame)
 {
 	const glm::vec2 mousePos = Input::GetMousePos();
 	const glm::vec2 screenSize{
@@ -420,5 +421,5 @@ Utils::Ray Gizmos::GetCameraRay(const Game& aGame)
 	const Camera& camera = *aGame.GetCamera();
 	const glm::vec3 start = Utils::ScreenToWorld(mousePos, 0, screenSize, camera.Get());
 	const glm::vec3 end = Utils::ScreenToWorld(mousePos, 1, screenSize, camera.Get());
-	return Utils::Ray{ start, glm::normalize(end - start) };
+	return Shapes::Ray{ start, glm::normalize(end - start) };
 }

@@ -2,6 +2,7 @@
 #include "PhysicsShapes.h"
 
 #include <Core/Resources/Serializer.h>
+#include <Core/Shapes.h>
 
 // ====================================================
 PhysicsShapeBase::PhysicsShapeBase()
@@ -16,7 +17,7 @@ PhysicsShapeBase::~PhysicsShapeBase()
 	delete myShape;
 }
 
-AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
+Shapes::AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
 {
 	ASSERT(myShape);
 
@@ -27,17 +28,17 @@ AABB PhysicsShapeBase::GetAABB(const glm::mat4& aTransform) const
 	myShape->getAabb(btTransf, btMin, btMax);
 
 	// copy them in one go
-	AABB aabb;
+	Shapes::AABB aabb;
 	aabb.myMin = Utils::ConvertToGLM(btMin);
 	aabb.myMax = Utils::ConvertToGLM(btMax);
 	return aabb;
 }
 
-Sphere PhysicsShapeBase::GetBoundingSphereLS() const
+Shapes::Sphere PhysicsShapeBase::GetBoundingSphereLS() const
 {
 	ASSERT(myShape);
 
-	Sphere sphere;
+	Shapes::Sphere sphere;
 	btVector3 btCenter;
 	myShape->getBoundingSphere(btCenter, sphere.myRadius);
 	sphere.myCenter = Utils::ConvertToGLM(btCenter);

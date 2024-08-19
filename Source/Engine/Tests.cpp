@@ -1,8 +1,6 @@
 #include "Precomp.h"
 #include "Tests.h"
 
-#include <Graphics/Utils.h>
-
 #include <Core/Profiler.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Resources/BinarySerializer.h>
@@ -10,6 +8,7 @@
 #include <Core/Pool.h>
 #include <Core/StableVector.h>
 #include <Core/StaticVector.h>
+#include <Core/Shapes.h>
 #include <Core/Utils.h>
 
 void Tests::RunTests()
@@ -357,7 +356,7 @@ void Tests::TestStaticVector()
 
 void Tests::TestIntersects()
 {
-	const Utils::AABB aabb{ {0, 0, 0}, {1, 1, 1} };
+	const Shapes::AABB aabb{ {0, 0, 0}, {1, 1, 1} };
 
 	// intersecting
 	{
@@ -365,78 +364,78 @@ void Tests::TestIntersects()
 		const glm::vec3 b{ 0.9f, 0.9f, 0.9f };
 		const glm::vec3 c{ 0.9f, 0.1f, 0.9f };
 		// completelly inside
-		ASSERT(Utils::Intersects(a, b, c, aabb));
-		ASSERT(Utils::Intersects(b, c, a, aabb));
-		ASSERT(Utils::Intersects(c, a, b, aabb));
+		ASSERT(Shapes::Intersects(a, b, c, aabb));
+		ASSERT(Shapes::Intersects(b, c, a, aabb));
+		ASSERT(Shapes::Intersects(c, a, b, aabb));
 
 		// Inside with 0 length edge
-		ASSERT(Utils::Intersects(a, a, c, aabb));
-		ASSERT(Utils::Intersects(a, c, a, aabb));
-		ASSERT(Utils::Intersects(c, a, a, aabb));
-		ASSERT(Utils::Intersects(b, b, c, aabb));
-		ASSERT(Utils::Intersects(b, c, b, aabb));
-		ASSERT(Utils::Intersects(c, b, b, aabb));
-		ASSERT(Utils::Intersects(b, c, c, aabb));
-		ASSERT(Utils::Intersects(c, c, b, aabb));
-		ASSERT(Utils::Intersects(c, b, c, aabb));
+		ASSERT(Shapes::Intersects(a, a, c, aabb));
+		ASSERT(Shapes::Intersects(a, c, a, aabb));
+		ASSERT(Shapes::Intersects(c, a, a, aabb));
+		ASSERT(Shapes::Intersects(b, b, c, aabb));
+		ASSERT(Shapes::Intersects(b, c, b, aabb));
+		ASSERT(Shapes::Intersects(c, b, b, aabb));
+		ASSERT(Shapes::Intersects(b, c, c, aabb));
+		ASSERT(Shapes::Intersects(c, c, b, aabb));
+		ASSERT(Shapes::Intersects(c, b, c, aabb));
 
 		// touching AABB edge, inside
 		const glm::vec3 d{ 0.f, 0.f, 0.f };
 		const glm::vec3 e{ 0.f, 1.f, 0.f };
-		ASSERT(Utils::Intersects(d, e, a, aabb));
-		ASSERT(Utils::Intersects(d, e, b, aabb));
-		ASSERT(Utils::Intersects(d, e, c, aabb));
+		ASSERT(Shapes::Intersects(d, e, a, aabb));
+		ASSERT(Shapes::Intersects(d, e, b, aabb));
+		ASSERT(Shapes::Intersects(d, e, c, aabb));
 
 		// toucing AABB edge, outside
 		const glm::vec3 f{ -1.f, 0.f, 0.f };
-		ASSERT(Utils::Intersects(d, e, f, aabb));
+		ASSERT(Shapes::Intersects(d, e, f, aabb));
 
 		// touching point
 		const glm::vec3 g{ -1.f, 1.f, 0.f };
-		ASSERT(Utils::Intersects(f, g, a, aabb));
+		ASSERT(Shapes::Intersects(f, g, a, aabb));
 
 		// cutting the AABB
 		// parallel to x
-		ASSERT(Utils::Intersects({ 0.5f, -1.f, -1.f }, { 0.5f, 2.f, -1.f }, { 0.5f, 2.f, 2.f }, aabb));
+		ASSERT(Shapes::Intersects({ 0.5f, -1.f, -1.f }, { 0.5f, 2.f, -1.f }, { 0.5f, 2.f, 2.f }, aabb));
 		// parallel to y
-		ASSERT(Utils::Intersects({ -1.f, 0.5f, -1.f }, { 2.f, 0.5f, -1.f }, { 2.f, 0.5f, 2.f }, aabb));
+		ASSERT(Shapes::Intersects({ -1.f, 0.5f, -1.f }, { 2.f, 0.5f, -1.f }, { 2.f, 0.5f, 2.f }, aabb));
 		// parallel to z
-		ASSERT(Utils::Intersects({ -1.f, -1.f, 0.5f }, { 2.f, -1.f, 0.5f }, { 2.f, 2.f, 0.5f }, aabb));
+		ASSERT(Shapes::Intersects({ -1.f, -1.f, 0.5f }, { 2.f, -1.f, 0.5f }, { 2.f, 2.f, 0.5f }, aabb));
 	}
 
 	// not intersecting
 	{
 		// left
-		ASSERT(!Utils::Intersects({ -1, 0, 0 }, { -1, 1, 0 }, { -1, 1, -1 }, aabb));
+		ASSERT(!Shapes::Intersects({ -1, 0, 0 }, { -1, 1, 0 }, { -1, 1, -1 }, aabb));
 		// right
-		ASSERT(!Utils::Intersects({ 2, 0, 0 }, { 2, 1, 0 }, { 2, 1, -1 }, aabb));
+		ASSERT(!Shapes::Intersects({ 2, 0, 0 }, { 2, 1, 0 }, { 2, 1, -1 }, aabb));
 		// up
-		ASSERT(!Utils::Intersects({ 0, 2, 0, }, { 1, 2, 0 }, { 1, 2, 1 }, aabb));
+		ASSERT(!Shapes::Intersects({ 0, 2, 0, }, { 1, 2, 0 }, { 1, 2, 1 }, aabb));
 		// down
-		ASSERT(!Utils::Intersects({ 0, -1, 0, }, { 1, -1, 0 }, { 1, -1, 1 }, aabb));
+		ASSERT(!Shapes::Intersects({ 0, -1, 0, }, { 1, -1, 0 }, { 1, -1, 1 }, aabb));
 		// behind
-		ASSERT(!Utils::Intersects({ 0, 0, -1 }, { 0, 1, -1 }, { -1, 1, -1 }, aabb));
+		ASSERT(!Shapes::Intersects({ 0, 0, -1 }, { 0, 1, -1 }, { -1, 1, -1 }, aabb));
 		// in front
-		ASSERT(!Utils::Intersects({ 0, 0, 2 }, { 0, 1, 2 }, { -1, 1, 2 }, aabb));
+		ASSERT(!Shapes::Intersects({ 0, 0, 2 }, { 0, 1, 2 }, { -1, 1, 2 }, aabb));
 	}
 
 	// extra
 	{
-		ASSERT(Utils::Intersects(
+		ASSERT(Shapes::Intersects(
 			{ -0.1f, 1.1f, 0.5f },
 			{ -0.1f, 0.0f, 0.5f },
 			{ 0.5f, 1.1f, 0.5f },
 			aabb
 		));
 
-		ASSERT(Utils::Intersects(
+		ASSERT(Shapes::Intersects(
 			{ -0.1f, 1.1f, 0.5f },
 			{ -0.1f, 0.9f, 0.5f },
 			{ 0.5f, 1.1f, 0.5f },
 			aabb
 		));
 
-		ASSERT(Utils::Intersects(
+		ASSERT(Shapes::Intersects(
 			{ -0.1f, 1.1f, 0.5f },
 			{ -0.1f, 0.9f, 0.4f },
 			{ 0.5f, 1.1f, 0.5f },
@@ -446,10 +445,10 @@ void Tests::TestIntersects()
 		const glm::vec3 v1{ -0.5f, 0.501086235f, -0.0375837348f };
 		const glm::vec3 v2{ 0.5f, 0.501086235f, -0.0375837348f };
 		const glm::vec3 v3{ 0.5f, 0.483721435f, -0.136064500f };
-		const Utils::AABB aabbNew{
+		const Shapes::AABB aabbNew{
 			{ -0.5f, 0.400000095f, -0.5f },
 			{ 0.f, 0.5f, 0.f }
 		};
-		ASSERT(Utils::Intersects(v1, v2, v3, aabbNew));
+		ASSERT(Shapes::Intersects(v1, v2, v3, aabbNew));
 	}
 }

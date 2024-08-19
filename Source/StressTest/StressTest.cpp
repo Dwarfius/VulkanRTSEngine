@@ -14,12 +14,12 @@
 #include <Graphics/Resources/Texture.h>
 #include <Graphics/Resources/Model.h>
 #include <Graphics/Camera.h>
-#include <Graphics/Utils.h>
 
 #include <Physics/PhysicsShapes.h>
 
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
+#include <Core/Shapes.h>
 
 StressTest::StressTest(Game& aGame)
 	: myGrid({ -200, -200 }, 400, 50) // TODO: add support for resizing
@@ -190,7 +190,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			visualComp->SetPipeline(myDefaultPipeline);
 
 			tankTransf.SetScale({ 1, 1, 1 }); // tank has already scaled collider
-			AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
+			Shapes::AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
 			myGrid.Add(
 				{ bounds.myMin.x, bounds.myMin.z },
 				{ bounds.myMax.x, bounds.myMax.z },
@@ -211,7 +211,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			Transform unscaled = transf;
 			unscaled.SetScale({ 1, 1, 1 });
 
-			const AABB origTankAABB = myTankShape->GetAABB(unscaled.GetMatrix());
+			const Shapes::AABB origTankAABB = myTankShape->GetAABB(unscaled.GetMatrix());
 
 			glm::vec3 dist = tank.myDest - transf.GetPos();
 			dist.y = 0;
@@ -237,7 +237,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			tank.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
-			const AABB newTankAABB = myTankShape->GetAABB(transf.GetMatrix());
+			const Shapes::AABB newTankAABB = myTankShape->GetAABB(transf.GetMatrix());
 			if (myDrawShapes)
 			{
 				const float halfHeight = myTankShape->GetHalfExtents().y;
@@ -281,7 +281,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				visualComp->SetPipeline(myDefaultPipeline);
 
 				ballTransf.SetScale({ 1, 1, 1 });
-				AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
+				Shapes::AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
 				myGrid.Add(
 					{ ballAABB.myMin.x, ballAABB.myMin.z },
 					{ ballAABB.myMax.x, ballAABB.myMax.z },
@@ -313,7 +313,7 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 			Transform transf = ball.myGO->GetWorldTransform();
 			Transform unscaled = transf;
 			unscaled.SetScale({ 1, 1, 1 });
-			AABB originalAABB = myBallShape->GetAABB(transf.GetMatrix());
+			Shapes::AABB originalAABB = myBallShape->GetAABB(transf.GetMatrix());
 
 			ball.myLife -= aDeltaTime;
 			if (ball.myLife < 0)
@@ -335,7 +335,7 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 			ball.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
-			AABB newAABB = myBallShape->GetAABB(transf.GetMatrix());
+			Shapes::AABB newAABB = myBallShape->GetAABB(transf.GetMatrix());
 			if (myDrawShapes)
 			{
 				aGame.GetDebugDrawer().AddAABB(newAABB.myMin, newAABB.myMax, { 1, 0, 0 });
@@ -380,7 +380,7 @@ void StressTest::CheckCollisions(Game& aGame)
 
 	struct ToRemove
 	{
-		AABB myAABB;
+		Shapes::AABB myAABB;
 		void* myPtr;
 		bool myIsTank;
 	};
@@ -408,8 +408,7 @@ void StressTest::CheckCollisions(Game& aGame)
 
 			Transform ballTransf = ball->myGO->GetWorldTransform();
 			ballTransf.SetScale({ 1, 1, 1 });
-			AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
-			const Utils::AABB translatedBallAABB{ ballAABB.myMin, ballAABB.myMax };
+			Shapes::AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
 			for (uint32_t tankInd = ballInd + 1; tankInd < aCell.size(); tankInd++)
 			{
 				if (!aCell[tankInd].myIsTank)
@@ -430,11 +429,10 @@ void StressTest::CheckCollisions(Game& aGame)
 				Transform tankTransf = tank->myGO->GetWorldTransform();
 				tankTransf.SetScale({ 1, 1, 1 });
 				tankTransf.Translate({ 0, halfHeight, 0 });
-				AABB tankAABB = myTankShape->GetAABB(tankTransf.GetMatrix());
+				Shapes::AABB tankAABB = myTankShape->GetAABB(tankTransf.GetMatrix());
 
-				const Utils::AABB translatedTankAABB{ tankAABB.myMin, tankAABB.myMax };
 				// coarse check
-				if (Utils::Intersects(translatedBallAABB, translatedTankAABB))
+				if (Shapes::Intersects(ballAABB, tankAABB))
 				{
 					// found it - schedule removal
 					// TODO: use vec2!

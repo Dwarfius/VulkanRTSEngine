@@ -5,7 +5,7 @@ class Transform;
 class Game;
 class DebugDrawer;
 
-namespace Utils
+namespace Shapes
 {
 	struct Ray;
 };
@@ -50,8 +50,8 @@ private:
 	static void GenerateArrow(glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3]);
 	static void DrawArrow(DebugDrawer& aDrawer, glm::vec3 aStart, glm::vec3 anEnd, glm::vec3(&aVerts)[3], glm::vec3 aColor);
 	static bool CheckCircle(glm::vec3 aCenter, glm::vec3 aNormal, float aRadius,
-		const Utils::Ray& aRay, glm::vec3& anIntersectPoint);
-	static Utils::Ray GetCameraRay(const Game& aGame);
+		const Shapes::Ray& aRay, glm::vec3& anIntersectPoint);
+	static Shapes::Ray GetCameraRay(const Game& aGame);
 
 	glm::vec3 myOldMousePosOrDir;
 	glm::vec3 myRotationDirStart;

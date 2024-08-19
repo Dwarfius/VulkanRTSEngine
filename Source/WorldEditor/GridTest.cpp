@@ -5,7 +5,8 @@
 #include <Engine/Input.h>
 
 #include <Graphics/Camera.h>
-#include <Graphics/Utils.h>
+
+#include <Core/Shapes.h>
 
 GridTest::GridTest()
 	: myGrid({ 10, 10 }, 100, 5)
@@ -55,10 +56,10 @@ void GridTest::DrawGrid(Game& aGame)
 	const glm::vec3 rootMax{ 110, 0, 110 };
 
 	Camera& cam = *aGame.GetCamera();
-	Utils::Ray mouseRay{ cam.GetTransform().GetPos(), cam.GetTransform().GetForward() };
-	Utils::Plane gridPlane{ rootMin, {0, 1, 0} };
+	Shapes::Ray mouseRay{ cam.GetTransform().GetPos(), cam.GetTransform().GetForward() };
+	Shapes::Plane gridPlane{ rootMin, {0, 1, 0} };
 	float dist = 0;
-	if (Utils::Intersects(mouseRay, gridPlane, dist))
+	if (Shapes::Intersects(mouseRay, gridPlane, dist))
 	{
 		const glm::vec3 intersectPoint = mouseRay.myOrigin + mouseRay.myDir * dist;
 		debugDrawer.AddCircle(intersectPoint, { 0, 1, 0 }, myCreateSize, { 1, 0, 1 });
