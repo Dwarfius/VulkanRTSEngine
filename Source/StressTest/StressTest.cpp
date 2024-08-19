@@ -380,7 +380,7 @@ void StressTest::CheckCollisions(Game& aGame)
 
 	struct ToRemove
 	{
-		Shapes::AABB myAABB;
+		Shapes::Rect myRect;
 		void* myPtr;
 		bool myIsTank;
 	};
@@ -435,9 +435,12 @@ void StressTest::CheckCollisions(Game& aGame)
 				if (Shapes::Intersects(ballAABB, tankAABB))
 				{
 					// found it - schedule removal
-					// TODO: use vec2!
-					removeQueue.push_back({ tankAABB, tank, true });
-					removeQueue.push_back({ ballAABB, ball, false });
+					const glm::vec2 tankMin{ tankAABB.myMin.x, tankAABB.myMin.z };
+					const glm::vec2 tankMax{ tankAABB.myMax.x, tankAABB.myMax.z };
+					removeQueue.push_back({ { tankMin, tankMax }, tank, true });
+					const glm::vec2 ballMin{ ballAABB.myMin.x, ballAABB.myMin.z };
+					const glm::vec2 ballMax{ ballAABB.myMax.x, ballAABB.myMax.z };
+					removeQueue.push_back({ { ballMin, ballMax }, ball, false });
 
 					// remove from world
 					aGame.RemoveGameObject(tank->myGO);
@@ -459,8 +462,7 @@ void StressTest::CheckCollisions(Game& aGame)
 		for (const ToRemove& toRemove : removeQueue)
 		{
 			myGrid.Remove(
-				{ toRemove.myAABB.myMin.x, toRemove.myAABB.myMin.z },
-				{ toRemove.myAABB.myMax.x, toRemove.myAABB.myMax.z },
+				toRemove.myRect.myMin, toRemove.myRect.myMax,
 				{ toRemove.myPtr, toRemove.myIsTank }
 			);
 			if (toRemove.myIsTank)
