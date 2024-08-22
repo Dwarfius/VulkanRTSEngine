@@ -34,7 +34,7 @@ private:
 	Handle<Model> mySphereModel;
 
 	float mySpawnRate = 10.f;
-	uint32_t mySpawnSquareSide = 32;
+	uint32_t mySpawnSquareSide = 64;
 	float myTankSpeed = 5.f;
 	float myShootCD = 2.f;
 	float myShotLife = 10.f;

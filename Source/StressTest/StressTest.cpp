@@ -490,11 +490,12 @@ void StressTest::WipeEverything(Game& aGame)
 void StressTest::CreateTerrain(Game& aGame, uint32_t aSize)
 {
 	Terrain* terrain = new Terrain();
-	terrain->Generate({ aSize, aSize }, 1, 1);
+	terrain->Generate({ aSize, aSize }, 1, 3);
 
 	terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
-	terrain->PushHeightLevelColor(0.5f, { 0, 1, 1 });
-	terrain->PushHeightLevelColor(1.f, { 1, 0, 1 });
+	terrain->PushHeightLevelColor(1.f, { 0, 1, 1 });
+	terrain->PushHeightLevelColor(2.f, { 1, 0, 1 });
+	terrain->PushHeightLevelColor(3.f, { 1, 1, 1 });
 
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 	Handle<Pipeline> terrainPipeline = assetTracker.GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
