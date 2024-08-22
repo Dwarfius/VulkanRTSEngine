@@ -20,7 +20,7 @@ public:
 	void Generate(glm::uvec2 aSize, float aStep, float anYScale);
 	
 	// pos is in local space
-	float GetHeight(glm::vec3 aLocalPos) const;
+	float GetHeight(glm::vec2 aLocalPos) const;
 
 	Handle<Texture> GetTextureHandle() const { return myTexture; }
 

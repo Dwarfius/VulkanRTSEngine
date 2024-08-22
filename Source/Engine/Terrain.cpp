@@ -94,13 +94,13 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
 
-float Terrain::GetHeight(glm::vec3 aLocalPos) const
+float Terrain::GetHeight(glm::vec2 aLocalPos) const
 {
-	ASSERT_STR(!myHeightfield, "Terrain hasn't finished initalizing!");
+	ASSERT_STR(myHeightfield, "Terrain hasn't finished initalizing!");
 
 	// finding the relative position
 	float x = aLocalPos.x / myStep;
-	float z = aLocalPos.z / myStep;
+	float z = aLocalPos.y / myStep;
 
 	ASSERT_STR(x >= 0 && x < myWidth && z >= 0 && z < myHeight, 
 		"Incorrect coords passed! Were they world space?");

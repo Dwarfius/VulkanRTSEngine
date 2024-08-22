@@ -149,14 +149,16 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 {
 	const float halfHeight = myTankShape->GetHalfExtents().y;
+	const Terrain& terrain = *aGame.GetTerrain(0);
+	const glm::vec2 halfTerrainSize{ terrain.GetWidth() / 2.f };
 
 	myTankAccum += mySpawnRate * aDeltaTime;
 	if (myTankAccum >= myTanks.GetCount() + 1)
 	{
 		Profiler::ScopedMark scope("SpawnTanks");
 		std::uniform_real_distribution<float> filter(
-			mySpawnSquareSide / -2.f,
-			mySpawnSquareSide / 2.f
+			mySpawnSquareSide / -2.f + 1, // avoid spawning on terrain border
+			mySpawnSquareSide / 2.f - 1
 		);
 		const uint32_t newCount = static_cast<uint32_t>(myTankAccum);
 		const uint32_t toSpawnCount = static_cast<uint32_t>(newCount - myTanks.GetCount());
@@ -170,14 +172,18 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			tank.myTeam = myTankSwitch;
 			tank.myCooldown = myShootCD;
 
-			const float xSpawn = mySpawnSquareSide / 2.f * (tank.myTeam ? 1 : -1);
+			const float xSpawn = (mySpawnSquareSide - 1) / 2.f * (tank.myTeam ? 1 : -1);
 			const float zSpawn = filter(myRandEngine);
 			const float xTarget = -xSpawn;
 			const float zTarget = filter(myRandEngine);
 			tank.myDest = glm::vec3(xTarget, 0, zTarget);
 
+			glm::vec2 terrainPos{ xSpawn, zSpawn };
+			terrainPos += halfTerrainSize;
+			const float terrainHeight = terrain.GetHeight(terrainPos);
+
 			Transform tankTransf;
-			tankTransf.SetPos({ xSpawn, 0, zSpawn });
+			tankTransf.SetPos({ xSpawn, terrainHeight, zSpawn });
 			tankTransf.SetScale({ kTankScale, kTankScale, kTankScale }); // the model is too large
 			tankTransf.LookAt(tank.myDest);
 
@@ -230,7 +236,14 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				return;
 			}
 
-			transf.Translate(transf.GetForward() * myTankSpeed * aDeltaTime);
+			glm::vec3 tankPos = transf.GetPos();
+			tankPos += transf.GetForward() * myTankSpeed * aDeltaTime;
+
+			glm::vec2 terrainPos{ tankPos.x, tankPos.z };
+			terrainPos += halfTerrainSize;
+			tankPos.y = terrain.GetHeight(terrainPos);
+			transf.SetPos(tankPos);
+			
 			aTank.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
