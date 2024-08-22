@@ -117,7 +117,7 @@ public:
 	void DeleteRenderable(Renderable& aRenderable);
 
 	void AddTerrain(Terrain* aTerrain /* owning */, Handle<Pipeline> aPipeline);
-	void RemoveTerrain(size_t anIndex) { myTerrains.erase(myTerrains.begin() + anIndex); }
+	void RemoveTerrain(size_t anIndex);
 	Terrain* GetTerrain(size_t anIndex) { return myTerrains[anIndex].myTerrain; }
 	size_t GetTerrainCount() const { return myTerrains.size(); }
 

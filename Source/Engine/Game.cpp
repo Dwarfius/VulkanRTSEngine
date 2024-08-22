@@ -555,6 +555,18 @@ void Game::AddTerrain(Terrain* aTerrain, Handle<Pipeline> aPipeline)
 	});
 }
 
+void Game::RemoveTerrain(size_t anIndex)
+{
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myTerrainsMutex);
+#endif
+
+	delete myTerrains[anIndex].myTerrain;
+	delete myTerrains[anIndex].myVisualObject;
+	delete myTerrains[anIndex].myPhysComponent;
+	myTerrains.erase(myTerrains.begin() + anIndex);
+}
+
 void Game::AddGameObjects()
 {
 #ifdef ASSERT_MUTEX
