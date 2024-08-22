@@ -34,7 +34,7 @@ private:
 	Handle<Model> mySphereModel;
 
 	float mySpawnRate = 10.f;
-	float mySpawnSquareSide = 20.f;
+	uint32_t mySpawnSquareSide = 32;
 	float myTankSpeed = 5.f;
 	float myShootCD = 2.f;
 	float myShotLife = 10.f;
@@ -43,6 +43,7 @@ private:
 	constexpr static uint8_t kHistorySize = 100;
 	float myDeltaHistory[kHistorySize]{0};
 	bool myDrawShapes = false;
+	bool myWipeEverything = false;
 	void DrawUI(Game& aGame, float aDeltaTime);
 
 	std::default_random_engine myRandEngine;
@@ -91,4 +92,5 @@ private:
 	PoolPtr<Light> myLight;
 
 	void CheckCollisions(Game& aGame);
+	void WipeEverything(Game& aGame);
 };

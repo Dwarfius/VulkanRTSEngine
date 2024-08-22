@@ -30,10 +30,8 @@ StressTest::StressTest(Game& aGame)
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 
 	{
-		constexpr uint32_t kTerrCells = 64;
-		
 		Terrain* terrain = new Terrain();
-		terrain->Generate(glm::ivec2(kTerrCells, kTerrCells), 1, 1);
+		terrain->Generate({ mySpawnSquareSide, mySpawnSquareSide }, 1, 1);
 
 		terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
 		terrain->PushHeightLevelColor(0.5f, { 0, 1, 1 });
@@ -104,6 +102,12 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 		return;
 	}
 
+	if (myWipeEverything)
+	{
+		WipeEverything(aGame);
+		myWipeEverything = false;
+	}
+
 	UpdateCamera(*aGame.GetCamera(), aDeltaTime);
 	UpdateTanks(aGame, aDeltaTime);
 	UpdateBalls(aGame, aDeltaTime);
@@ -116,8 +120,8 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 	if (ImGui::Begin("Stress Test"))
 	{
 		ImGui::InputFloat("Spawn Rate", &mySpawnRate);
-		ImGui::InputFloat("Spawn Square Side", &mySpawnSquareSide);
-		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1.f);
+		myWipeEverything = ImGui::InputScalar("Spawn Square Side", ImGuiDataType_U32, &mySpawnSquareSide);
+		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1u);
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
 		ImGui::Text("Tanks alive: %llu", myTanks.GetCount());
 		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
@@ -150,7 +154,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 	{
 		Profiler::ScopedMark scope("SpawnTanks");
 		std::uniform_real_distribution<float> filter(
-			-mySpawnSquareSide / 2.f,
+			mySpawnSquareSide / -2.f,
 			mySpawnSquareSide / 2.f
 		);
 		const uint32_t newCount = static_cast<uint32_t>(myTankAccum);
@@ -349,7 +353,7 @@ void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)
 	}
 
 	constexpr glm::vec3 kTargetPos { 0, 0, 0 };
-	const glm::vec3 initPos { mySpawnSquareSide, mySpawnSquareSide / 2, 0 };
+	const glm::vec3 initPos { mySpawnSquareSide, mySpawnSquareSide / 2.f, 0 };
 	const glm::vec3 pos = Transform::RotateAround(
 		initPos,
 		{0, 0, 0},
@@ -466,4 +470,18 @@ void StressTest::CheckCollisions(Game& aGame)
 	}
 	
 	myTankAccum -= tanksRemoved;
+}
+
+void StressTest::WipeEverything(Game& aGame)
+{
+	myGrid.Clear();
+	myTanks.ForEach([&](Tank& aTank) {
+		aGame.RemoveGameObject(aTank.myGO);
+	});
+	myTanks.Clear();
+	myBalls.ForEach([&](Ball& aBall) {
+		aGame.RemoveGameObject(aBall.myGO);
+	});
+	myBalls.Clear();
+	myTankAccum = 0;
 }
