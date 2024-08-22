@@ -204,36 +204,34 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 		Profiler::ScopedMark scope("MoveTanks");
 
 		size_t removed = 0;
-		myTanks.ForEach([&](Tank& tank) // TODO: fix the naming!
+		myTanks.ForEach([&](Tank& aTank)
 		{
-			Transform transf = tank.myGO->GetWorldTransform();
+			Transform transf = aTank.myGO->GetWorldTransform();
 			Transform unscaled = transf;
 			unscaled.SetScale({ 1, 1, 1 });
 
 			const Shapes::AABB origTankAABB = myTankShape->GetAABB(unscaled.GetMatrix());
 
-			glm::vec3 dist = tank.myDest - transf.GetPos();
+			glm::vec3 dist = aTank.myDest - transf.GetPos();
 			dist.y = 0;
 			const float sqrlength = glm::length2(dist);
 
 			if (sqrlength <= 1.f)
 			{
-				// DEBUG
-				ASSERT(tank.myGO->GetWorld());
-				aGame.RemoveGameObject(tank.myGO);
+				aGame.RemoveGameObject(aTank.myGO);
 
 				myGrid.Remove(
 					{ origTankAABB.myMin.x, origTankAABB.myMin.z },
 					{ origTankAABB.myMax.x, origTankAABB.myMax.z },
-					{ &tank, true }
+					{ &aTank, true }
 				);
-				myTanks.Free(tank);
+				myTanks.Free(aTank);
 				removed++;
 				return;
 			}
 
 			transf.Translate(transf.GetForward() * myTankSpeed * aDeltaTime);
-			tank.myGO->SetWorldTransform(transf);
+			aTank.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
 			const Shapes::AABB newTankAABB = myTankShape->GetAABB(transf.GetMatrix());
@@ -249,13 +247,13 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				{ origTankAABB.myMax.x, origTankAABB.myMax.z },
 				{ newTankAABB.myMin.x, newTankAABB.myMin.z },
 				{ newTankAABB.myMax.x, newTankAABB.myMax.z },
-				{ &tank, true }
+				{ &aTank, true }
 			);
 
-			tank.myCooldown -= aDeltaTime;
-			if (tank.myCooldown < 0)
+			aTank.myCooldown -= aDeltaTime;
+			if (aTank.myCooldown < 0)
 			{
-				tank.myCooldown += myShootCD;
+				aTank.myCooldown += myShootCD;
 
 				Transform ballTransf;
 				ballTransf.SetPos(transf.GetPos()
@@ -266,7 +264,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 				Ball& ball = myBalls.Allocate();
 				ball.myLife = myShotLife;
-				ball.myTeam = tank.myTeam;
+				ball.myTeam = aTank.myTeam;
 
 				glm::vec3 initVelocity = transf.GetForward();
 				initVelocity.y += 0.5f;
@@ -301,31 +299,31 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 	{
 		Profiler::ScopedMark scope("MoveBalls");
 		constexpr static float kGravity = 9.8f;
-		myBalls.ForEach([aDeltaTime, &aGame, this](Ball& ball)
+		myBalls.ForEach([aDeltaTime, &aGame, this](Ball& aBall)
 		{
-			Transform transf = ball.myGO->GetWorldTransform();
+			Transform transf = aBall.myGO->GetWorldTransform();
 			Transform unscaled = transf;
 			unscaled.SetScale({ 1, 1, 1 });
 			Shapes::AABB originalAABB = myBallShape->GetAABB(transf.GetMatrix());
 
-			ball.myLife -= aDeltaTime;
-			if (ball.myLife < 0)
+			aBall.myLife -= aDeltaTime;
+			if (aBall.myLife < 0)
 			{
 				myGrid.Remove(
 					{ originalAABB.myMin.x, originalAABB.myMin.z },
 					{ originalAABB.myMax.x, originalAABB.myMax.z },
-					{ &ball, false }
+					{ &aBall, false }
 				);
 
-				aGame.RemoveGameObject(ball.myGO);
-				ball.myGO = Handle<GameObject>();
-				myBalls.Free(ball);
+				aGame.RemoveGameObject(aBall.myGO);
+				aBall.myGO = Handle<GameObject>();
+				myBalls.Free(aBall);
 				return;
 			}
 
-			ball.myVel.y -= kGravity * aDeltaTime;
-			transf.Translate(ball.myVel * aDeltaTime);
-			ball.myGO->SetWorldTransform(transf);
+			aBall.myVel.y -= kGravity * aDeltaTime;
+			transf.Translate(aBall.myVel * aDeltaTime);
+			aBall.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
 			Shapes::AABB newAABB = myBallShape->GetAABB(transf.GetMatrix());
@@ -338,7 +336,7 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 				{ originalAABB.myMax.x, originalAABB.myMax.z },
 				{ newAABB.myMin.x, newAABB.myMin.z },
 				{ newAABB.myMax.x, newAABB.myMax.z },
-				{ &ball, false }
+				{ &aBall, false }
 			);
 		});
 	}
