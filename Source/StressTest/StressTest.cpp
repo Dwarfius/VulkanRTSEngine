@@ -29,17 +29,7 @@ StressTest::StressTest(Game& aGame)
 
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 
-	{
-		Terrain* terrain = new Terrain();
-		terrain->Generate({ mySpawnSquareSide, mySpawnSquareSide }, 1, 1);
-
-		terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
-		terrain->PushHeightLevelColor(0.5f, { 0, 1, 1 });
-		terrain->PushHeightLevelColor(1.f, { 1, 0, 1 });
-
-		Handle<Pipeline> terrainPipeline = assetTracker.GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
-		aGame.AddTerrain(terrain, terrainPipeline);
-	}
+	CreateTerrain(aGame, mySpawnSquareSide);
 
 	{
 		OBJImporter importer;
@@ -106,6 +96,17 @@ void StressTest::Update(Game& aGame, float aDeltaTime)
 	{
 		WipeEverything(aGame);
 		myWipeEverything = false;
+
+		uint32_t nextPOT = 1;
+		while (mySpawnSquareSide > nextPOT)
+		{
+			nextPOT <<= 1;
+		}
+		if (aGame.GetTerrain(0)->GetWidth() != nextPOT)
+		{
+			aGame.RemoveTerrain(0);
+			CreateTerrain(aGame, nextPOT);
+		}
 	}
 
 	UpdateCamera(*aGame.GetCamera(), aDeltaTime);
@@ -484,4 +485,18 @@ void StressTest::WipeEverything(Game& aGame)
 	});
 	myBalls.Clear();
 	myTankAccum = 0;
+}
+
+void StressTest::CreateTerrain(Game& aGame, uint32_t aSize)
+{
+	Terrain* terrain = new Terrain();
+	terrain->Generate({ aSize, aSize }, 1, 1);
+
+	terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
+	terrain->PushHeightLevelColor(0.5f, { 0, 1, 1 });
+	terrain->PushHeightLevelColor(1.f, { 1, 0, 1 });
+
+	AssetTracker& assetTracker = aGame.GetAssetTracker();
+	Handle<Pipeline> terrainPipeline = assetTracker.GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");
+	aGame.AddTerrain(terrain, terrainPipeline);
 }

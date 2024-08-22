@@ -93,4 +93,5 @@ private:
 
 	void CheckCollisions(Game& aGame);
 	void WipeEverything(Game& aGame);
+	void CreateTerrain(Game& aGame, uint32_t aSize);
 };
