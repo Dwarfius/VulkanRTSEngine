@@ -58,7 +58,6 @@ private:
 		bool myTeam;
 	};
 	StableVector<Tank, 1024> myTanks;
-	std::vector<Tank> myTanksToRemove;
 	std::shared_ptr<PhysicsShapeBox> myTankShape;
 	struct TankOrBall // TODO: this is nasty :/ explore variant impact
 	{
@@ -83,7 +82,6 @@ private:
 		bool myTeam;
 	};
 	StableVector<Ball, 1024> myBalls;
-	std::vector<Ball> myBallsToRemove;
 	std::shared_ptr<PhysicsShapeSphere> myBallShape;
 	void UpdateBalls(Game& aGame, float aDeltaTime);
 

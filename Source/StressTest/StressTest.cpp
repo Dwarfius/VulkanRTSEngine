@@ -143,12 +143,6 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 
 void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 {
-	for (Tank& tank : myTanksToRemove)
-	{
-		aGame.RemoveGameObject(tank.myGO);
-	}
-	myTanksToRemove.clear();
-
 	const float halfHeight = myTankShape->GetHalfExtents().y;
 
 	myTankAccum += mySpawnRate * aDeltaTime;
@@ -297,12 +291,6 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 {
-	for (Ball& ball : myBallsToRemove)
-	{
-		aGame.RemoveGameObject(ball.myGO);
-	}
-	myBallsToRemove.clear();
-
 	const float halfHeight = myTankShape->GetHalfExtents().y;
 
 	{
