@@ -126,6 +126,14 @@ public:
 		}
 	}
 
+	void Clear()
+	{
+		for (std::vector<T>& cell : myGridCells)
+		{
+			cell.clear();
+		}
+	}
+
 private:
 	// TODO: implement simd to do both min and max in 1 go
 	glm::u16vec2 GetCellIndices(glm::vec2 aPos) const 
