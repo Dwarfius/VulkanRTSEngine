@@ -109,59 +109,6 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
 
-void Terrain::GenerateTest(glm::uvec2 aSize, float aStep, float anYScale)
-{
-	ASSERT_STR(Utils::CountSetBits(aSize.x) == 1
-		&& Utils::CountSetBits(aSize.y) == 1, "Size must be power of 2!");
-	ASSERT_STR(aSize.x > 2 && aSize.y > 2, "Small sizes aren't supported by the texture!");
-	myWidth = aSize.x;
-	myHeight = aSize.y;
-
-	myYScale = anYScale;
-	myStep = aStep;
-
-	const size_t gridSize = std::max<size_t>(myWidth, myHeight) + 1;
-	std::vector<float> heights;
-	heights.resize(gridSize * gridSize);
-
-	for (uint32_t i = 0; i < heights.size(); i++)
-	{
-		heights[i] = i * (myYScale / heights.size());
-	}
-
-
-	{
-		myTexture = new Texture();
-		myTexture->SetWidth(myWidth);
-		myTexture->SetHeight(myHeight);
-		// TODO: this isn't the most efficient, but ah well
-		// because we store single bytes, we need to 
-		// downscale/quantize floats to chars
-		myTexture->SetFormat(Texture::Format::UNorm_R);
-
-		using PixelType = unsigned char;
-		constexpr float kMaxPixelVal = std::numeric_limits<typename PixelType>::max();
-		PixelType* pixels = new PixelType[myWidth * myHeight];
-		for (uint32_t y = 0; y < myHeight; y++)
-		{
-			for (uint32_t x = 0; x < myWidth; x++)
-			{
-				const float floatHeight = heights[y * gridSize + x];
-				myMinHeight = glm::min(floatHeight, myMinHeight);
-				myMaxHeight = glm::max(floatHeight, myMaxHeight);
-				const PixelType charHeight = static_cast<PixelType>(
-					floatHeight / myYScale * kMaxPixelVal
-				);
-				pixels[y * myWidth + x] = charHeight;
-			}
-		}
-		myTexture->SetPixels(pixels);
-	}
-
-	myHeightfield = std::make_shared<PhysicsShapeHeightfield>
-		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
-}
-
 float Terrain::GetHeight(glm::vec2 aLocalPos) const
 {
 	ASSERT_STR(myHeightfield, "Terrain hasn't finished initalizing!");
