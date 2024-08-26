@@ -17,12 +17,12 @@
 
 #include <Physics/PhysicsShapes.h>
 
+#include <Core/Grid.h>
 #include <Core/Resources/AssetTracker.h>
 #include <Core/Debug/DebugDrawer.h>
 #include <Core/Shapes.h>
 
 StressTest::StressTest(Game& aGame)
-	: myGrid({ -200, -200 }, 400, 50) // TODO: add support for resizing
 {
 	std::random_device randDevice;
 	myRandEngine = std::default_random_engine(randDevice());
@@ -30,6 +30,7 @@ StressTest::StressTest(Game& aGame)
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 
 	CreateTerrain(aGame, mySpawnSquareSide);
+	CreateGrid(mySpawnSquareSide);
 
 	{
 		OBJImporter importer;
@@ -81,6 +82,11 @@ StressTest::StressTest(Game& aGame)
 	light.myColor = { 1, 1, 1 };
 	light.myAmbientIntensity = 0.9f;
 	light.myTransform.LookAt({ 0, -10, 0 });
+}
+
+StressTest::~StressTest()
+{
+	delete myGrid;
 }
 
 void StressTest::Update(Game& aGame, float aDeltaTime)
@@ -197,7 +203,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 			tankTransf.SetScale({ 1, 1, 1 }); // tank has already scaled collider
 			Shapes::AABB bounds = myTankShape->GetAABB(tankTransf.GetMatrix());
-			myGrid.Add(
+			myGrid->Add(
 				{ bounds.myMin.x, bounds.myMin.z },
 				{ bounds.myMax.x, bounds.myMax.z },
 				{ &tank, true }
@@ -227,7 +233,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			{
 				aGame.RemoveGameObject(aTank.myGO);
 
-				myGrid.Remove(
+				myGrid->Remove(
 					{ origTankAABB.myMin.x, origTankAABB.myMin.z },
 					{ origTankAABB.myMax.x, origTankAABB.myMax.z },
 					{ &aTank, true }
@@ -256,7 +262,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 				const glm::vec3 tankMax = newTankAABB.myMax + glm::vec3{ 0, halfHeight, 0 };
 				aGame.GetDebugDrawer().AddAABB(tankMin, tankMax, { 0, 1, 0 });
 			}
-			myGrid.Move(
+			myGrid->Move(
 				{ origTankAABB.myMin.x, origTankAABB.myMin.z },
 				{ origTankAABB.myMax.x, origTankAABB.myMax.z },
 				{ newTankAABB.myMin.x, newTankAABB.myMin.z },
@@ -293,7 +299,7 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 				ballTransf.SetScale({ 1, 1, 1 });
 				Shapes::AABB ballAABB = myBallShape->GetAABB(ballTransf.GetMatrix());
-				myGrid.Add(
+				myGrid->Add(
 					{ ballAABB.myMin.x, ballAABB.myMin.z },
 					{ ballAABB.myMax.x, ballAABB.myMax.z },
 					{ &ball, false }
@@ -323,7 +329,7 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 			aBall.myLife -= aDeltaTime;
 			if (aBall.myLife < 0)
 			{
-				myGrid.Remove(
+				myGrid->Remove(
 					{ originalAABB.myMin.x, originalAABB.myMin.z },
 					{ originalAABB.myMax.x, originalAABB.myMax.z },
 					{ &aBall, false }
@@ -345,7 +351,7 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 			{
 				aGame.GetDebugDrawer().AddAABB(newAABB.myMin, newAABB.myMax, { 1, 0, 0 });
 			}
-			myGrid.Move(
+			myGrid->Move(
 				{ originalAABB.myMin.x, originalAABB.myMin.z },
 				{ originalAABB.myMax.x, originalAABB.myMax.z },
 				{ newAABB.myMin.x, newAABB.myMin.z },
@@ -455,7 +461,7 @@ void StressTest::CheckCollisions(Game& aGame)
 	removeQueue.reserve(512);
 
 	const float halfHeight = myTankShape->GetHalfExtents().y;
-	myGrid.ForEachCell([this, halfHeight, &removeQueue, &aGame](std::vector<TankOrBall>& aCell) 
+	myGrid->ForEachCell([this, halfHeight, &removeQueue, &aGame](std::vector<TankOrBall>& aCell) 
 	{
 		if (aCell.size() <= 2)
 		{
@@ -528,7 +534,7 @@ void StressTest::CheckCollisions(Game& aGame)
 		Profiler::ScopedMark scope("RemoveObjects");
 		for (const ToRemove& toRemove : removeQueue)
 		{
-			myGrid.Remove(
+			myGrid->Remove(
 				toRemove.myRect.myMin, toRemove.myRect.myMax,
 				{ toRemove.myPtr, toRemove.myIsTank }
 			);
@@ -549,7 +555,7 @@ void StressTest::CheckCollisions(Game& aGame)
 
 void StressTest::WipeEverything(Game& aGame)
 {
-	myGrid.Clear();
+	CreateGrid(mySpawnSquareSide);
 	myTanks.ForEach([&](Tank& aTank) {
 		aGame.RemoveGameObject(aTank.myGO);
 	});
@@ -559,6 +565,19 @@ void StressTest::WipeEverything(Game& aGame)
 	});
 	myBalls.Clear();
 	myTankAccum = 0;
+}
+
+void StressTest::CreateGrid(uint32_t aSize)
+{
+	if (myGrid)
+	{
+		delete myGrid;
+	}
+
+	constexpr uint16_t kCellCount = 50;
+	const float cellSize = glm::max(static_cast<float>(aSize) / kCellCount, 4.f);
+	const uint16_t cellCount = static_cast<uint16_t>(glm::ceil(aSize / cellSize));
+	myGrid = new Grid<TankOrBall>(glm::vec2{ aSize / -2.f }, static_cast<float>(aSize), cellCount);
 }
 
 void StressTest::CreateTerrain(Game& aGame, uint32_t aSize)

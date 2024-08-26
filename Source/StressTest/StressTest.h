@@ -2,11 +2,11 @@
 
 #include <Core/RefCounted.h>
 #include <Core/Pool.h>
-#include <Core/Grid.h>
 #include <Core/StableVector.h>
 
 class Game;
 class GameObject;
+template<class T> class Grid;
 class Model;
 class Pipeline;
 class Texture;
@@ -22,6 +22,7 @@ class StressTest
 {
 public:
 	StressTest(Game& aGame);
+	~StressTest();
 
 	void Update(Game& aGame, float aDeltaTime);
 
@@ -70,7 +71,7 @@ private:
 			return myPtr == aOther.myPtr;
 		}
 	};
-	Grid<TankOrBall> myGrid;
+	Grid<TankOrBall>* myGrid = nullptr;
 
 	void UpdateTanks(Game& aGame, float aDeltaTime);
 
@@ -95,5 +96,6 @@ private:
 
 	void CheckCollisions(Game& aGame);
 	void WipeEverything(Game& aGame);
+	void CreateGrid(uint32_t aSize);
 	void CreateTerrain(Game& aGame, uint32_t aSize);
 };
