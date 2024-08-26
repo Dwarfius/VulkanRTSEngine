@@ -87,6 +87,8 @@ private:
 	void UpdateBalls(Game& aGame, float aDeltaTime);
 
 	float myRotationAngle = 0.f;
+	float myFlightSpeed = 1.f;
+	bool myControlCamera = false;
 	void UpdateCamera(Camera& aCam, float aDeltaTime);
 
 	PoolPtr<Light> myLight;

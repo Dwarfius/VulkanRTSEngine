@@ -126,6 +126,7 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
 		ImGui::Text("Tanks alive: %llu", myTanks.GetCount());
 		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
+		ImGui::Checkbox("Control Camera", &myControlCamera);
 
 		ImGui::Separator();
 
@@ -357,24 +358,86 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 
 void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)
 {
-	constexpr float kSpeed = glm::radians(10.f);
-	myRotationAngle += kSpeed * aDeltaTime;
-	if (myRotationAngle > glm::two_pi<float>())
-	{
-		myRotationAngle -= glm::two_pi<float>();
-	}
-
-	constexpr glm::vec3 kTargetPos { 0, 0, 0 };
-	const glm::vec3 initPos { mySpawnSquareSide, mySpawnSquareSide / 2.f, 0 };
-	const glm::vec3 pos = Transform::RotateAround(
-		initPos,
-		{0, 0, 0},
-		{ 0, myRotationAngle, 0 }
-	);
-
 	Transform& camTransf = aCam.GetTransform();
-	camTransf.SetPos(pos);
-	camTransf.LookAt(kTargetPos);
+
+	if (!myControlCamera)
+	{
+		constexpr float kSpeed = glm::radians(10.f);
+		myRotationAngle += kSpeed * aDeltaTime;
+		if (myRotationAngle > glm::two_pi<float>())
+		{
+			myRotationAngle -= glm::two_pi<float>();
+		}
+
+		constexpr glm::vec3 kTargetPos{ 0, 0, 0 };
+		const glm::vec3 initPos{ mySpawnSquareSide, mySpawnSquareSide / 2.f, 0 };
+		const glm::vec3 pos = Transform::RotateAround(
+			initPos,
+			{ 0, 0, 0 },
+			{ 0, myRotationAngle, 0 }
+		);
+
+		camTransf.SetPos(pos);
+		camTransf.LookAt(kTargetPos);
+	}
+	else
+	{
+		// TODO: consolidate with EditorMode
+		glm::vec3 pos = camTransf.GetPos();
+		glm::vec3 forward = camTransf.GetForward();
+		glm::vec3 right = camTransf.GetRight();
+		glm::vec3 up = camTransf.GetUp();
+		if (Input::GetKey(Input::Keys::W))
+		{
+			pos += forward * myFlightSpeed * aDeltaTime;
+		}
+		if (Input::GetKey(Input::Keys::S))
+		{
+			pos -= forward * myFlightSpeed * aDeltaTime;
+		}
+		if (Input::GetKey(Input::Keys::D))
+		{
+			pos += right * myFlightSpeed * aDeltaTime;
+		}
+		if (Input::GetKey(Input::Keys::A))
+		{
+			pos -= right * myFlightSpeed * aDeltaTime;
+		}
+		if (Input::GetKey(Input::Keys::R))
+		{
+			pos += up * myFlightSpeed * aDeltaTime;
+		}
+		if (Input::GetKey(Input::Keys::F))
+		{
+			pos -= up * myFlightSpeed * aDeltaTime;
+		}
+		camTransf.SetPos(pos);
+
+		// General controls
+		const float mouseWheelDelta = Input::GetMouseWheelDelta();
+		if (Input::GetKeyPressed(Input::Keys::U) || mouseWheelDelta > 0.f)
+		{
+			myFlightSpeed *= 2;
+		}
+		if (Input::GetKeyPressed(Input::Keys::J) || mouseWheelDelta < 0.f)
+		{
+			myFlightSpeed /= 2;
+		}
+
+		// to avoid accumulating roll from quaternion applications, have to apply then separately
+		const glm::vec2 mouseDelta = Input::GetMouseDelta();
+		constexpr float mouseSens = 0.1f;
+
+		glm::vec3 pitchDelta(mouseDelta.y, 0.f, 0.f);
+		pitchDelta *= mouseSens;
+		const glm::quat pitchRot(glm::radians(pitchDelta));
+
+		glm::vec3 yawDelta(0.f, -mouseDelta.x, 0.f);
+		yawDelta *= mouseSens;
+		const glm::quat yawRot(glm::radians(yawDelta));
+
+		camTransf.SetRotation(yawRot * camTransf.GetRotation() * pitchRot);
+	}
 }
 
 void StressTest::CheckCollisions(Game& aGame)
