@@ -122,7 +122,7 @@ void StressTest::DrawUI(Game& aGame, float aDeltaTime)
 	{
 		ImGui::InputFloat("Spawn Rate", &mySpawnRate);
 		myWipeEverything = ImGui::InputScalar("Spawn Square Side", ImGuiDataType_U32, &mySpawnSquareSide);
-		mySpawnSquareSide = glm::max(mySpawnSquareSide, 1u);
+		mySpawnSquareSide = glm::max(mySpawnSquareSide, 3u);
 		ImGui::InputFloat("Tank Speed", &myTankSpeed);
 		ImGui::Text("Tanks alive: %llu", myTanks.GetCount());
 		ImGui::Checkbox("Draw Shapes", &myDrawShapes);
