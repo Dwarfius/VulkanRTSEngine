@@ -140,7 +140,7 @@ private:
 	{  
 		const glm::vec2 offset = aPos - myMin;
 		glm::i32vec2 coords = static_cast<glm::i32vec2>(offset / myCellSize);
-		coords = glm::clamp(coords, glm::i32vec2{ 0 }, glm::i32vec2{ myCellCount }); 
+		coords = glm::clamp(coords, glm::i32vec2{ 0 }, glm::i32vec2{ myCellCount - 1 }); 
 		return static_cast<glm::u16vec2>(coords);
 	}
 
