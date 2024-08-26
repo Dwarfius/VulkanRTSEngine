@@ -321,12 +321,14 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 
 void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 {
-	const float halfHeight = myTankShape->GetHalfExtents().y;
+	const float ballRadius = myBallShape->GetRadius();
+	const Terrain& terrain = *aGame.GetTerrain(0);
+	const glm::vec2 halfTerrainSize{ terrain.GetWidth() / 2.f };
 
 	{
 		Profiler::ScopedMark scope("MoveBalls");
 		constexpr static float kGravity = 9.8f;
-		myBalls.ForEach([aDeltaTime, &aGame, this](Ball& aBall)
+		myBalls.ForEach([aDeltaTime, &aGame, halfTerrainSize, &terrain, ballRadius, this](Ball& aBall)
 		{
 			Transform transf = aBall.myGO->GetWorldTransform();
 			Transform unscaled = transf;
@@ -350,6 +352,27 @@ void StressTest::UpdateBalls(Game& aGame, float aDeltaTime)
 
 			aBall.myVel.y -= kGravity * aDeltaTime;
 			transf.Translate(aBall.myVel * aDeltaTime);
+
+			// do we collide with terrain?
+			const glm::vec3 pos = transf.GetPos();
+			glm::vec2 terrainPos{ pos.x, pos.z};
+			terrainPos += halfTerrainSize;
+			const bool outOfBounds = terrainPos.x < 0 || terrainPos.x >= terrain.GetWidth()
+				|| terrainPos.y < 0 || terrainPos.y >= terrain.GetDepth();
+			if (outOfBounds || (pos.y - terrain.GetHeight(terrainPos) < ballRadius))
+			{
+				myGrid->Remove(
+					{ originalAABB.myMin.x, originalAABB.myMin.z },
+					{ originalAABB.myMax.x, originalAABB.myMax.z },
+					{ &aBall, false }
+				);
+
+				aGame.RemoveGameObject(aBall.myGO);
+				aBall.myGO = Handle<GameObject>();
+				myBalls.Free(aBall);
+				return;
+			}
+
 			aBall.myGO->SetWorldTransform(transf);
 
 			transf.SetScale({ 1, 1, 1 });
