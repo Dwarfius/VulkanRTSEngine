@@ -104,7 +104,6 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		myTexture->SetPixels(pixels);
 	}
 
-	// bug - this shouldn't be a heights array, as it has missmatching dimensions
 	myHeightfield = std::make_shared<PhysicsShapeHeightfield>
 		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
