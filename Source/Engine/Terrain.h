@@ -18,9 +18,12 @@ public:
 
 	void Load(Handle<Texture> aTexture, float aStep, float anYScale);
 	void Generate(glm::uvec2 aSize, float aStep, float anYScale);
+
+	void GenerateNormals();
 	
 	// pos is in local space
 	float GetHeight(glm::vec2 aLocalPos) const;
+	glm::vec3 GetNormal(glm::vec2 aLocalPos) const;
 
 	Handle<Texture> GetTextureHandle() const { return myTexture; }
 
@@ -40,6 +43,7 @@ private:
 	float GetHeightAtVert(uint32_t aX, uint32_t aY) const;
 
 	Handle<Texture> myTexture;
+	std::vector<glm::vec3> myNormals;
 
 	// dimensions of the heightmap texture used
 	uint32_t myWidth = 0, myHeight = 0;

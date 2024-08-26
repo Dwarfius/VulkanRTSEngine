@@ -108,6 +108,55 @@ void Terrain::Generate(glm::uvec2 aSize, float aStep, float anYScale)
 		(myWidth, myHeight, std::move(heights), myMinHeight, myMaxHeight);
 }
 
+void Terrain::GenerateNormals()
+{
+	ASSERT_STR(myHeightfield, "No data to generate normals from!");
+
+	struct NormalSum
+	{
+		glm::vec3 myNormal;
+		uint8_t myCount = 0;
+	};
+	std::vector<NormalSum> normals;
+	normals.resize(myWidth * myHeight);
+	for (uint32_t y = 0; y < myHeight - 1; y++)
+	{
+		for (uint32_t x = 0; x < myWidth - 1; x++)
+		{
+			const uint32_t v1Ind = y * myWidth + x;
+			const uint32_t v2Ind = y * myWidth + x + 1;
+			const uint32_t v3Ind = (y + 1) * myWidth + x;
+			const uint32_t v4Ind = (y + 1) * myWidth + x + 1;
+
+			const glm::vec3 a{ x, myHeightfield->GetHeights()[v1Ind], y };
+			const glm::vec3 b{ x + 1, myHeightfield->GetHeights()[v2Ind], y };
+			const glm::vec3 c{ x, myHeightfield->GetHeights()[v3Ind], y + 1 };
+			const glm::vec3 d{ x + 1, myHeightfield->GetHeights()[v4Ind], y + 1 };
+
+			const glm::vec3 n1 = glm::normalize(glm::cross(c - a, b - a));
+			const glm::vec3 n2 = glm::normalize(glm::cross(d - c, b - c));
+
+			normals[v1Ind].myNormal += n1;
+			normals[v1Ind].myCount += 1;
+
+			normals[v2Ind].myNormal += n1 + n2;
+			normals[v2Ind].myCount += 2;
+
+			normals[v3Ind].myNormal += n1 + n2;
+			normals[v3Ind].myCount += 2;
+
+			normals[v4Ind].myNormal += n2;
+			normals[v4Ind].myCount += 1;
+		}
+	}
+
+	myNormals.resize(normals.size());
+	for(uint32_t i=0; i<normals.size(); i++)
+	{
+		myNormals[i] = normals[i].myNormal / static_cast<float>(normals[i].myCount);
+	}
+}
+
 float Terrain::GetHeight(glm::vec2 aLocalPos) const
 {
 	ASSERT_STR(myHeightfield, "Terrain hasn't finished initalizing!");
@@ -126,10 +175,10 @@ float Terrain::GetHeight(glm::vec2 aLocalPos) const
 	const uint32_t zMax = glm::min(zMin + 1, myHeight - 1);
 
 	// getting vertices for lerping
-	float v0 = GetHeightAtVert(xMin, zMin);
-	float v1 = GetHeightAtVert(xMin, zMax);
-	float v2 = GetHeightAtVert(xMax, zMin);
-	float v3 = GetHeightAtVert(xMax, zMax);
+	const float v0 = GetHeightAtVert(xMin, zMin);
+	const float v1 = GetHeightAtVert(xMin, zMax);
+	const float v2 = GetHeightAtVert(xMax, zMin);
+	const float v3 = GetHeightAtVert(xMax, zMax);
 
 	// getting the height
 	x -= xMin;
@@ -137,6 +186,37 @@ float Terrain::GetHeight(glm::vec2 aLocalPos) const
 	const float botHeight = glm::mix(v0, v2, x);
 	const float topHeight = glm::mix(v1, v3, x);
 	return glm::mix(botHeight, topHeight, z);
+}
+
+glm::vec3 Terrain::GetNormal(glm::vec2 aLocalPos) const
+{
+	ASSERT_STR(myHeightfield, "Terrain hasn't finished initalizing!");
+
+	// finding the relative position
+	float x = aLocalPos.x / myStep;
+	float z = aLocalPos.y / myStep;
+
+	ASSERT_STR(x >= 0 && x < myWidth && z >= 0 && z < myHeight,
+		"Incorrect coords passed! Were they world space?");
+
+	// getting the actual vert indices
+	const uint32_t xMin = static_cast<uint32_t>(glm::floor(x));
+	const uint32_t xMax = glm::min(xMin + 1, myWidth - 1);
+	const uint32_t zMin = static_cast<uint32_t>(glm::floor(z));
+	const uint32_t zMax = glm::min(zMin + 1, myHeight - 1);
+
+	// getting vertices for lerping
+	const glm::vec3 n0 = myNormals[zMin * myWidth + xMin];
+	const glm::vec3 n1 = myNormals[zMax * myWidth + xMin];
+	const glm::vec3 n2 = myNormals[zMin * myWidth + xMax];
+	const glm::vec3 n3 = myNormals[zMax * myWidth + xMax];
+
+	// getting the height
+	x -= xMin;
+	z -= zMin;
+	const glm::vec3 botNorm = glm::mix(n0, n2, x);
+	const glm::vec3 topNorm = glm::mix(n1, n3, x);
+	return glm::mix(botNorm, topNorm, z);
 }
 
 void Terrain::PushHeightLevelColor(float aHeightLevel, glm::vec3 aColor)
