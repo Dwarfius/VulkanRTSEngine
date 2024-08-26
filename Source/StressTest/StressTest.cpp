@@ -564,12 +564,15 @@ void StressTest::WipeEverything(Game& aGame)
 void StressTest::CreateTerrain(Game& aGame, uint32_t aSize)
 {
 	Terrain* terrain = new Terrain();
-	terrain->Generate({ aSize, aSize }, 1, 3);
+	const float power = glm::log2(static_cast<float>(aSize));
+	const float powerScale = glm::mix(1.f, 1.5f, glm::smoothstep(5.f, 7.f, power));
+	const float yScale = glm::pow(power, powerScale);
+	terrain->Generate({ aSize, aSize }, 1, yScale);
 
-	terrain->PushHeightLevelColor(0.f, { 0, 0, 1 });
-	terrain->PushHeightLevelColor(1.f, { 0, 1, 1 });
-	terrain->PushHeightLevelColor(2.f, { 1, 0, 1 });
-	terrain->PushHeightLevelColor(3.f, { 1, 1, 1 });
+	terrain->PushHeightLevelColor(0.f, { 0.5f, 0.2f, 0 });
+	terrain->PushHeightLevelColor(yScale / 3, { 0.125f, 0.5f, 0 });
+	terrain->PushHeightLevelColor(2 * yScale / 3, { 0.3f, 1, 0 });
+	terrain->PushHeightLevelColor(yScale, { 0.5f, 0.5f, 0.5f });
 
 	AssetTracker& assetTracker = aGame.GetAssetTracker();
 	Handle<Pipeline> terrainPipeline = assetTracker.GetOrCreate<Pipeline>("TestTerrain/terrain.ppl");

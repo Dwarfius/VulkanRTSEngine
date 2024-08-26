@@ -28,6 +28,7 @@ public:
 	float GetDepth() const { return (myHeight - 1) * myStep; }
 	float GetYScale() const { return myYScale; }
 
+	// TODO: move this out of Engine (let individual apps do their own thing)
 	uint8_t GetHeightLevelCount() const { return myLevelsCount; }
 	HeightLevelColor GetHeightLevelColor(uint8_t anInd) const { return myHeightLevelColors[anInd]; }
 	void PushHeightLevelColor(float aHeightLevel, glm::vec3 aColor);
