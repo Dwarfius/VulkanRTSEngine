@@ -192,7 +192,10 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			Transform tankTransf;
 			tankTransf.SetPos({ xSpawn, terrainHeight, zSpawn });
 			tankTransf.SetScale({ kTankScale, kTankScale, kTankScale }); // the model is too large
+			
 			tankTransf.LookAt(tank.myDest);
+			const glm::quat rot(tankTransf.GetUp(), terrain.GetNormal(terrainPos));
+			tankTransf.SetRotation(rot * tankTransf.GetRotation());
 
 			tank.myGO = new GameObject(tankTransf);
 			VisualComponent* visualComp = tank.myGO->AddComponent<VisualComponent>();
@@ -244,12 +247,16 @@ void StressTest::UpdateTanks(Game& aGame, float aDeltaTime)
 			}
 
 			glm::vec3 tankPos = transf.GetPos();
-			tankPos += transf.GetForward() * myTankSpeed * aDeltaTime;
+			tankPos += glm::normalize(aTank.myDest - tankPos) * myTankSpeed * aDeltaTime;
 
 			glm::vec2 terrainPos{ tankPos.x, tankPos.z };
 			terrainPos += halfTerrainSize;
 			tankPos.y = terrain.GetHeight(terrainPos);
 			transf.SetPos(tankPos);
+			
+			transf.LookAt(aTank.myDest);
+			const glm::quat rot(transf.GetUp(), terrain.GetNormal(terrainPos));
+			transf.SetRotation(rot * transf.GetRotation());
 			
 			aTank.myGO->SetWorldTransform(transf);
 
@@ -587,6 +594,7 @@ void StressTest::CreateTerrain(Game& aGame, uint32_t aSize)
 	const float powerScale = glm::mix(1.f, 1.5f, glm::smoothstep(5.f, 7.f, power));
 	const float yScale = glm::pow(power, powerScale);
 	terrain->Generate({ aSize, aSize }, 1, yScale);
+	terrain->GenerateNormals();
 
 	terrain->PushHeightLevelColor(0.f, { 0.5f, 0.2f, 0 });
 	terrain->PushHeightLevelColor(yScale / 3, { 0.125f, 0.5f, 0 });
