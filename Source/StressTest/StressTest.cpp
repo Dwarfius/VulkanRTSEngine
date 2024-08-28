@@ -418,6 +418,11 @@ void StressTest::UpdateCamera(Camera& aCam, float aDeltaTime)
 	}
 	else
 	{
+		if (!Input::GetMouseBtn(1))
+		{
+			return;
+		}
+
 		// TODO: consolidate with EditorMode
 		glm::vec3 pos = camTransf.GetPos();
 		glm::vec3 forward = camTransf.GetForward();
