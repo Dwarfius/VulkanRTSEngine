@@ -12,6 +12,7 @@ public:
 		Geometry,
 		TessControl,
 		TessEval,
-		Compute
+		Compute,
+		Include
 	);
 };

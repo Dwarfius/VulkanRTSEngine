@@ -6,7 +6,7 @@ template<class T> class Handle;
 class PipelineCreateDialog
 {
 	// we use our own constant instead of pulling in entire Shader header
-	static constexpr uint8_t kShaderTypes = 6;
+	static constexpr uint8_t kShaderTypes = 7;
 public:
 	void Draw(bool& aIsOpen);
 private:

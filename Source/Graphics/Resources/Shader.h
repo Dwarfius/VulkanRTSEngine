@@ -27,4 +27,6 @@ protected:
 
 private:
 	void Serialize(Serializer& aSerializer) final;
+
+	void PreprocessIncludes(Serializer& aSerializer);
 };
