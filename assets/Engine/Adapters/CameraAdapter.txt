@@ -1,0 +1,9 @@
+#define CameraAdapter CameraAdapter \
+{ \
+    mat4 CamViewProj; \
+    mat4 CamView; \
+    mat4 CamProj; \
+    vec4 FrustumPlane[6]; /* left, right, down, up, far, near */ \
+    vec4 CamPos; \
+    vec2 Viewport; \
+}

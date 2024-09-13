@@ -1,0 +1,130 @@
+#define MAX_LIGHTS 64
+#define LightAdapter LightAdapter \
+{ \
+    vec4 PosAndAmbientIntensity[MAX_LIGHTS]; \
+    vec4 DirAndInnerLimit[MAX_LIGHTS]; \
+    vec4 ColorType[MAX_LIGHTS]; \
+    vec4 AttenuationAndOuterLimit[MAX_LIGHTS]; \
+    int Count; \
+}
+
+struct DirectLight
+{
+    vec4 ColorAndIntensity;
+    vec3 Dir;
+};
+
+#define GetDirLight(index) DirectLight( \
+        vec4(ColorType[index].xyz, PosAndAmbientIntensity[index].w), \
+        DirAndInnerLimit[index].xyz)
+
+vec3 CalcDirLight(DirectLight aLight, vec3 aNormal, vec3 aViewDir, vec2 aUVs, sampler2D aTex)
+{
+    const float ambientIntensity = aLight.ColorAndIntensity.w;
+    const vec3 objDiffuseColor = texture(aTex, aUVs).xyz;
+    const vec3 lightColor = aLight.ColorAndIntensity.xyz;
+    const vec3 ambientColor = objDiffuseColor * lightColor * ambientIntensity;
+
+    const vec3 lightDir = normalize(-aLight.Dir);
+
+    const float diffuse = max(dot(aNormal, lightDir), 0.0);
+    
+    const vec3 diffuseColor = lightColor * diffuse * objDiffuseColor;
+
+    const vec3 reflectionDir = reflect(-lightDir, aNormal);
+    const float shininess = 32; // should come from material
+    const float specular = pow(max(dot(aViewDir, reflectionDir), 0.0), shininess);
+    //  needs spec map instead, but don't have one for now
+    const vec3 specularColor = lightColor * specular * objDiffuseColor; 
+
+    return ambientColor + diffuseColor + specularColor;
+}
+
+struct Light
+{
+   vec4 PosAndIntensity;
+   vec4 AttenuationAndOuterLimit;
+   vec4 DirAndInnerLimit;
+   vec3 Color;
+};
+
+#define GetLight(index) Light( \
+        PosAndAmbientIntensity[index], \
+        AttenuationAndOuterLimit[index], \
+        DirAndInnerLimit[index], \
+        ColorType[index].xyz)
+
+vec3 CalcSpotLight(Light aLight, vec3 aFragPos, vec3 aNormal, vec3 aViewDir, vec2 aUVs, sampler2D aTex)
+{
+    const vec3 lightPos = aLight.PosAndIntensity.xyz;
+    const float distance = length(lightPos - aFragPos);
+    const float fConstant = aLight.AttenuationAndOuterLimit.x;
+    const float fLinear = aLight.AttenuationAndOuterLimit.y;
+    const float fQuadratic = aLight.AttenuationAndOuterLimit.z;
+    const float attenuation = 1.0 / (
+        fConstant 
+        + fLinear * distance 
+        + fQuadratic * distance * distance
+    );
+
+    const float ambientIntensity = aLight.PosAndIntensity.w;
+    const vec3 objDiffuseColor = texture(aTex, aUVs).xyz;
+    const vec3 lightColor = aLight.Color;
+    const vec3 ambientColor = objDiffuseColor * ambientIntensity * lightColor;
+
+    const vec3 lightDir = normalize(lightPos - aFragPos);
+
+    const float diffuse = max(dot(aNormal, lightDir), 0.0);
+    const vec3 diffuseColor = lightColor * diffuse * objDiffuseColor;
+
+    const vec3 reflectionDir = reflect(-lightDir, aNormal);
+    const float shininess = 32; // should come from material
+    const float specular = pow(max(dot(aViewDir, reflectionDir), 0.0), shininess);
+    //  needs spec map instead, but don't have one for now
+    const vec3 specularColor = lightColor * specular * objDiffuseColor; 
+
+    // Spot light falloff
+    const float innerLimit = aLight.DirAndInnerLimit.w;
+    const float outerLimit = aLight.AttenuationAndOuterLimit.w;
+    const float cosA = dot(lightDir, -aLight.DirAndInnerLimit.xyz);
+    const float limitRange = innerLimit - outerLimit;
+    const float fadeFactor = clamp((cosA - outerLimit) / limitRange, 0, 1);
+
+    return ambientColor * attenuation * fadeFactor
+        + diffuseColor * attenuation * fadeFactor
+        + specularColor * attenuation * fadeFactor;
+}
+
+vec3 CalcPointLight(Light aLight, vec3 aFragPos, vec3 aNormal, vec3 aViewDir, vec2 aUVs, sampler2D aTex)
+{
+    const vec3 lightPos = aLight.PosAndIntensity.xyz;
+    const float distance = length(lightPos - aFragPos);
+    const float fConstant = aLight.AttenuationAndOuterLimit.x;
+    const float fLinear = aLight.AttenuationAndOuterLimit.y;
+    const float fQuadratic = aLight.AttenuationAndOuterLimit.z;
+    const float attenuation = 1.0 / (
+        fConstant 
+        + fLinear * distance 
+        + fQuadratic * distance * distance
+    );
+
+    const float ambientIntensity = aLight.PosAndIntensity.w;
+    const vec3 objDiffuseColor = texture(aTex, aUVs).xyz;
+    const vec3 lightColor = aLight.Color;
+    const vec3 ambientColor = objDiffuseColor * ambientIntensity * lightColor;
+
+    const vec3 lightDir = normalize(lightPos - aFragPos);
+
+    const float diffuse = max(dot(aNormal, lightDir), 0.0);
+    const vec3 diffuseColor = lightColor * diffuse * objDiffuseColor;
+
+    const vec3 reflectionDir = reflect(-lightDir, aNormal);
+    const float shininess = 32; // should come from material
+    const float specular = pow(max(dot(aViewDir, reflectionDir), 0.0), shininess);
+    //  needs spec map instead, but don't have one for now
+    const vec3 specularColor = lightColor * specular * objDiffuseColor; 
+
+    return ambientColor * attenuation
+        + diffuseColor * attenuation
+        + specularColor * attenuation;
+}

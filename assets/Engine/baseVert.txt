@@ -1,4 +1,5 @@
 #version 420
+#include "Engine/Adapters/ObjectMatricesAdapter.txt"
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 uvs;
@@ -8,12 +9,7 @@ out vec3 fragPosOut;
 out vec3 normalOut;
 out vec2 uvsOut;
 
-layout (std140, binding = 0) uniform ObjectMatricesAdapter
-{
-	mat4 Model;
-	mat4 ModelView;
-	mat4 MVP;
-};
+layout (std140, binding = 0) uniform ObjectMatricesAdapter;
 
 void main() 
 {

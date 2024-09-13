@@ -1,0 +1,6 @@
+#define ObjectMatricesAdapter ObjectMatricesAdapter \
+{ \
+    mat4 Model; \
+    mat4 ModelView; \
+    mat4 MVP; \
+}
