@@ -23,7 +23,11 @@ void Shader::Serialize(Serializer& aSerializer)
 	shaderSrcFile = shaderSrcFile.replace(shaderSrcFile.size() - 3, 3, "txt");
 	aSerializer.SerializeExternal(shaderSrcFile, myFileContents, GetId());
 
-	PreprocessIncludes(aSerializer);
+	if (myType != Type::Include)
+	{
+		std::unordered_set<std::string_view> alreadyIncluded;
+		myFileContents = PreprocessIncludes(aSerializer, alreadyIncluded);
+	}
 }
 
 void Shader::Upload(const char* aData, size_t aSize)
@@ -32,14 +36,14 @@ void Shader::Upload(const char* aData, size_t aSize)
 	std::memcpy(myFileContents.data(), aData, aSize);
 }
 
-void Shader::PreprocessIncludes(Serializer& aSerializer)
+std::vector<char> Shader::PreprocessIncludes(Serializer& aSerializer, std::unordered_set<std::string_view>& anAlreadyIncluded)
 {
 	// This assumes we're doing GLSL (which is the only thing we support for now)
 	std::string_view text(myFileContents.data(), myFileContents.size());
 	size_t index = text.find("#include");
 	if (index == std::string_view::npos)
 	{
-		return;
+		return myFileContents;
 	}
 
 	constexpr uint8_t kInclLength = std::size("#include");
@@ -51,7 +55,7 @@ void Shader::PreprocessIncludes(Serializer& aSerializer)
 		if (endIndex == std::string_view::npos)
 		{
 			SetErrMsg("Unexpected end of #include line!");
-			return;
+			return myFileContents;
 		}
 
 		while (text[index] == ' ')
@@ -67,7 +71,7 @@ void Shader::PreprocessIncludes(Serializer& aSerializer)
 		if (text[index] != '"' || text[endIndex] != '"')
 		{
 			SetErrMsg("#include - missing \"!");
-			return;
+			return myFileContents;
 		}
 		index++;
 
@@ -97,17 +101,22 @@ void Shader::PreprocessIncludes(Serializer& aSerializer)
 		newContent.append_range(text.substr(endIndex, index - endIndex));
 		endIndex = text.find('\n', index);
 
-		const Shader* shader = myDependencies[inclInd].Get<const Shader>();
+		Shader* shader = myDependencies[inclInd].Get<Shader>();
 		if (shader->GetType() != Type::Include)
 		{
 			SetErrMsg("Expected include shader to have `Include` type!");
-			return;
+			return myFileContents;
 		}
-		newContent.append_range(shader->myFileContents);
+
+		const auto [iter, inserted] = anAlreadyIncluded.insert(shader->GetPath());
+		if (inserted)
+		{
+			newContent.append_range(shader->PreprocessIncludes(aSerializer, anAlreadyIncluded));
+		}
 
 		index = text.find("#include", endIndex);
 		inclInd++;
 	}
 	newContent.append_range(text.substr(endIndex));
-	myFileContents = std::move(newContent);
+	return newContent;
 }

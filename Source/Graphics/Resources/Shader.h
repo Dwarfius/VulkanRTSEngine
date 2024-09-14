@@ -28,5 +28,5 @@ protected:
 private:
 	void Serialize(Serializer& aSerializer) final;
 
-	void PreprocessIncludes(Serializer& aSerializer);
+	std::vector<char> PreprocessIncludes(Serializer& aSerializer, std::unordered_set<std::string_view>& anAlreadyIncluded);
 };
