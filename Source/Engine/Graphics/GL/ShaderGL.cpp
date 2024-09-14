@@ -58,7 +58,55 @@ bool ShaderGL::OnUpload(Graphics& aGraphics)
 		errStr.resize(length);
 		glGetShaderInfoLog(myGLShader, length, &length, &errStr[0]);
 
-		SetErrMsg("Shader failed to compile" + errStr);
+		std::string fullError = errStr;
+		std::string_view lineNumView = errStr; // format is "smth-num(line-num) : rest"
+		std::size_t end = lineNumView.find(") :");
+		if (end != std::string_view::npos)
+		{
+			std::size_t start = lineNumView.substr(0, end).find('(', 1);
+			if (start != std::string_view::npos)
+			{
+				fullError += "Context:\n";
+				lineNumView = lineNumView.substr(start + 1, end - start - 1);
+				uint32_t line = 0;
+				auto [ptr, err] = std::from_chars(
+					lineNumView.data(), lineNumView.data() + lineNumView.length(), line
+				);
+				if (err == std::errc{})
+				{
+					const uint32_t startLines = line - std::min(line, 3u);
+					const uint32_t endLines = line + 3u;
+					uint32_t found = 0;
+					const std::string_view contents(
+						shaderBuffer.data(), shaderBuffer.size()
+					);
+					size_t startIndex = 0;
+					size_t endIndex = contents.find('\n');
+					while (endIndex != std::string_view::npos)
+					{
+						found++;
+						const std::string_view line = contents.substr(startIndex, endIndex - startIndex);
+
+						if (found >= startLines)
+						{
+							fullError += '\n';
+							fullError += std::to_string(found);
+							fullError += ": ";
+							fullError += line;
+							if(found == endLines)
+							{
+								break;
+							}
+						}
+						startIndex = endIndex + 1;
+						endIndex = contents.find('\n', startIndex);
+					}
+
+				}
+			}
+		}
+
+		SetErrMsg("Shader failed to compile, " + fullError);
 #endif
 		return false;
 	}
