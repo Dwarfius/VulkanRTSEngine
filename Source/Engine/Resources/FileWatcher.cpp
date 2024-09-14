@@ -145,6 +145,11 @@ namespace Win32
                 {
                     std::println("Unrecognized dir: {}, error: {}({})", 
                         modifPath.string(), errCode.message(), errCode.value());
+                    if (!info->NextEntryOffset)
+                    {
+                        break;
+                    }
+                    ptr += info->NextEntryOffset;
                     continue;
                 }
 
