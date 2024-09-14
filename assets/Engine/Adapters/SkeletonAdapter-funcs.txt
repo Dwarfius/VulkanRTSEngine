@@ -1,0 +1,8 @@
+mat4 GetBoneSkinningMat(ivec4 aBoneIndices, vec4 aBoneWeights)
+{
+    mat4 skinnedMat = SkinningMatrix[aBoneIndices.x] * aBoneWeights.x
+                    + SkinningMatrix[aBoneIndices.y] * aBoneWeights.y
+                    + SkinningMatrix[aBoneIndices.z] * aBoneWeights.z
+                    + SkinningMatrix[aBoneIndices.w] * aBoneWeights.w;
+    return skinnedMat;
+}

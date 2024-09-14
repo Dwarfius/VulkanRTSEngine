@@ -1,14 +1,11 @@
 #version 420
 #extension GL_ARB_separate_shader_objects : enable
+#include "Engine/Adapters/ObjectMatricesAdapter.txt"
+#include "Engine/Adapters/CameraAdapter.txt"
 
 layout(vertices=1) out;
 
-layout (std140, binding = 0) uniform ObjectMatricesAdapter
-{
-	mat4 Model;
-	mat4 ModelView;
-	mat4 MVP;
-};
+layout (std140, binding = 0) uniform ObjectMatricesAdapter;
 
 layout (std140, binding = 1) uniform TerrainAdapter
 {
@@ -20,15 +17,7 @@ layout (std140, binding = 1) uniform TerrainAdapter
 	vec4 ColorsAndHeightLevels[5];
 };
 
-layout (std140, binding = 2) uniform CameraAdapter
-{
-	mat4 CamViewProj;
-	mat4 CamView;
-	mat4 CamProj;
-	vec4 FrustumPlane[6]; // left, right, down, up, far, near
-	vec4 CamPos;
-	vec2 Viewport;
-};
+layout (std140, binding = 2) uniform CameraAdapter;
 
 layout(location = 0) in DataIn
 {

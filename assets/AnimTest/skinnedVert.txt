@@ -1,6 +1,6 @@
 #version 420
-
-#define MAX_BONES 100
+#include "Engine/Adapters/SkeletonAdapter.txt"
+#include "Engine/Adapters/ObjectMatricesAdapter.txt"
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -12,26 +12,10 @@ out vec3 fragPosOut;
 out vec3 normalOut;
 out vec2 uvsOut;
 
-layout (std140, binding = 0) uniform ObjectMatricesAdapter
-{
-	mat4 Model;
-	mat4 ModelView;
-	mat4 MVP;
-};
+layout (std140, binding = 0) uniform ObjectMatricesAdapter;
+layout (std140, binding = 3) uniform SkeletonAdapter;
 
-layout (std140, binding = 3) uniform SkeletonAdapter
-{
-	mat4 SkinningMatrix[MAX_BONES];
-};
-
-mat4 GetBoneSkinningMat(ivec4 aBoneIndices, vec4 aBoneWeights)
-{
-	mat4 skinnedMat = SkinningMatrix[aBoneIndices.x] * aBoneWeights.x
-					+ SkinningMatrix[aBoneIndices.y] * aBoneWeights.y
-					+ SkinningMatrix[aBoneIndices.z] * aBoneWeights.z
-					+ SkinningMatrix[aBoneIndices.w] * aBoneWeights.w;
-	return skinnedMat;
-}
+#include "Engine/Adapters/SkeletonAdapter-funcs.txt"
 
 void main() 
 {

@@ -1,14 +1,10 @@
 #version 420
 #extension GL_ARB_separate_shader_objects : enable
+#include "Engine/Adapters/ObjectMatricesAdapter.txt"
 
 layout(quads, fractional_even_spacing, cw) in;
 
-layout (std140, binding = 0) uniform ObjectMatricesAdapter
-{
-	mat4 Model;
-	mat4 ModelView;
-	mat4 MVP;
-};
+layout (std140, binding = 0) uniform ObjectMatricesAdapter;
 
 layout (std140, binding = 1) uniform TerrainAdapter
 {

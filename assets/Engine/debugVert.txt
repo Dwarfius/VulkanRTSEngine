@@ -1,17 +1,10 @@
 #version 420
+#include "Engine/Adapters/CameraAdapter.txt"
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 
-layout (std140, binding = 0) uniform CameraAdapter
-{
-	mat4 CamViewProj;
-	mat4 CamView;
-	mat4 CamProj;
-	vec4 FrustumPlane[6]; // left, right, down, up, far, near
-	vec4 CamPos;
-	vec2 Viewport;
-};
+layout (std140, binding = 0) uniform CameraAdapter;
 
 out vec3 colorOut;
 

@@ -1,0 +1,5 @@
+#define MAX_BONES 100
+#define SkeletonAdapter SkeletonAdapter \
+{ \
+    mat4 SkinningMatrix[MAX_BONES]; \
+}

@@ -1,4 +1,5 @@
 #version 420
+#include "Engine/Adapters/CameraAdapter.txt"
 
 in vec3 fragPosOut;
 in vec3 normalOut;
@@ -8,15 +9,7 @@ uniform sampler2D tex;
 
 layout(location = 0) out vec4 outColor;
 
-layout (std140, binding = 1) uniform CameraAdapter
-{
-    mat4 CamViewProj;
-    mat4 CamView;
-    mat4 CamProj;
-    vec4 FrustumPlane[6]; // left, right, down, up, far, near
-    vec4 CamPos;
-    vec2 Viewport;
-};
+layout (std140, binding = 1) uniform CameraAdapter;
 
 void main() 
 {
