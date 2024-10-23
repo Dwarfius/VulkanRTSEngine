@@ -14,6 +14,8 @@
 #include <Graphics/Resources/UniformBuffer.h>
 #include <Graphics/Camera.h>
 
+#include <Core/Profiler.h>
+
 void PaintingRenderPass::SetPipelines(Handle<Pipeline> aPaintPipeline,
 	Handle<Pipeline> aDisplayPipeline, Graphics& aGraphics)
 {
