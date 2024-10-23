@@ -63,10 +63,7 @@ int main()
 	}
 
 	// start running
-	while (game->IsRunning())
-	{
-		game->RunMainThread();
-	}
+	game->Run();
 	
 	game->CleanUp();
 

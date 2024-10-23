@@ -70,7 +70,7 @@ public:
 	GameTaskManager& GetTaskManager() { return *myTaskManager.get(); }
 
 	void Init(bool aUseDefaultFinalCompositePass);
-	void RunMainThread();
+	void Run();
 	void CleanUp();
 
 	float GetLastFrameDeltaTime() const { return myDeltaTime; }
@@ -125,6 +125,8 @@ public:
 	static bool ourGODeleteEnabled;
 
 private:
+	void RunMainThread();
+
 	void AddGameObjects();
 	void BeginFrame();
 	void Update();

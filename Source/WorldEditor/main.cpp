@@ -36,10 +36,7 @@ int main()
 	taskManager.GetTask(Game::Tasks::RemoveGameObjects).AddDependency(kEditorUpdateTask);
 
 	// start running
-	while (game->IsRunning())
-	{
-		game->RunMainThread();
-	}
+	game->Run();
 	
 	delete editor;
 	game->CleanUp();

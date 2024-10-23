@@ -35,11 +35,7 @@ int main()
 	taskManager.GetTask(Game::Tasks::UpdateEnd).AddDependency(kTestUpdateTask);
 	taskManager.GetTask(Game::Tasks::RemoveGameObjects).AddDependency(kTestUpdateTask);
 
-	// start running
-	while (game->IsRunning())
-	{
-		game->RunMainThread();
-	}
+	game->Run();
 	
 	delete testScenario;
 	game->CleanUp();

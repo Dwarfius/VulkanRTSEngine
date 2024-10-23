@@ -291,39 +291,20 @@ void Game::Init(bool aUseDefaultCompositePass)
 	myTaskManager->Wait();
 }
 
-void Game::RunMainThread()
+void Game::Run()
 {
-	Profiler::ScopedMark mainProfile(__func__);
-	Profiler::GetInstance().NewFrame();
-	glfwPollEvents();
-
-	// TODO: refactor to get rid of this requirement to avoid triggering
-	// the entire task manager just to get the first frame
-	if (myRenderThread->HasWork())
+	// TODO: revisit this once I no longer do whole graph kick-off at init time
+	// It's possible that first actual update tick(between Init() and any additional
+	// work that owner does) takes too long, so sanitize just 1 update time
+	constexpr float kMaxTime = 0.1f;
+	const float newTime = static_cast<float>(glfwGetTime());
+	if (newTime - myFrameStart > kMaxTime)
 	{
-		const float newTime = static_cast<float>(glfwGetTime());
-		myDeltaTime = newTime - myFrameStart;
-		myFrameStart = newTime;
-		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
-
-		{
-			Profiler::ScopedMark fileWatcherProfile("Game::CheckFiles");
-			myFileWatcher->CheckFiles();
-			for (const std::string& file : myFileWatcher->GetModifs())
-			{
-				std::println("FileWatcher: Detected change! {}", file);
-				myRenderThread->GetGraphics()->FileChanged(file);
-			}
-		}
-
-		{
-			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(Tasks::Render);
-			myTaskManager->Run();
-
-			Profiler::ScopedMark renderablesProfile("Game::SubmitRenderables");
-			myRenderThread->SubmitRenderables();
-		}
-		myTaskManager->Wait();
+		myFrameStart = newTime - kMaxTime;
+	}
+	while (IsRunning())
+	{
+		RunMainThread();
 	}
 }
 
@@ -402,6 +383,42 @@ Graphics* Game::GetGraphics()
 const Graphics* Game::GetGraphics() const
 {
 	return myRenderThread->GetGraphics();
+}
+
+void Game::RunMainThread()
+{
+	Profiler::ScopedMark mainProfile(__func__);
+	Profiler::GetInstance().NewFrame();
+	glfwPollEvents();
+
+	// TODO: refactor to get rid of this requirement to avoid triggering
+	// the entire task manager just to get the first frame
+	if (myRenderThread->HasWork())
+	{
+		const float newTime = static_cast<float>(glfwGetTime());
+		myDeltaTime = newTime - myFrameStart;
+		myFrameStart = newTime;
+		myIsInFocus = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED) != 0;
+
+		{
+			Profiler::ScopedMark fileWatcherProfile("Game::CheckFiles");
+			myFileWatcher->CheckFiles();
+			for (const std::string& file : myFileWatcher->GetModifs())
+			{
+				std::println("FileWatcher: Detected change! {}", file);
+				myRenderThread->GetGraphics()->FileChanged(file);
+			}
+		}
+
+		{
+			GameTaskManager::ExternalDependencyScope dependency = myTaskManager->AddExternalDependency(Tasks::Render);
+			myTaskManager->Run();
+
+			Profiler::ScopedMark renderablesProfile("Game::SubmitRenderables");
+			myRenderThread->SubmitRenderables();
+		}
+		myTaskManager->Wait();
+	}
 }
 
 void Game::AddGameObject(Handle<GameObject> aGOHandle)
