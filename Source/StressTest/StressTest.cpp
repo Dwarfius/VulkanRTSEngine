@@ -68,8 +68,8 @@ StressTest::StressTest(Game& aGame)
 		myGreyTexture->SetHeight(1);
 		myGreyTexture->SetFormat(Texture::Format::UNorm_RGB);
 
-		uint8_t* kGreyPixel = new uint8_t[]{ 64, 64, 64 };
-		myGreyTexture->SetPixels(kGreyPixel);
+		uint8_t* greyPixel = new uint8_t[]{ 64, 64, 64 };
+		myGreyTexture->SetPixels(greyPixel);
 	}
 
 	myGreenTankTexture = assetTracker.GetOrCreate<Texture>("Tank/playerTank.img");
