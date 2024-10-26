@@ -82,6 +82,13 @@ public:
 		uint8_t myDrawMode;
 	};
 
+	struct DispatchCompute : RenderPassJobCmd<9>
+	{
+		uint32_t myGroupsX;
+		uint32_t myGroupsY;
+		uint32_t myGroupsZ;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 

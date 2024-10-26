@@ -361,6 +361,11 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			glDrawArrays(TranslatePrimitiveType(cmd.myDrawMode), cmd.myOffset, cmd.myCount);
 			break;
 		}
+		case RenderPassJob::DispatchCompute::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::DispatchCompute>(bytes, index);
+			glDispatchCompute(cmd.myGroupsX, cmd.myGroupsY, cmd.myGroupsZ);
+		}
 		default:
 			ASSERT_STR(false, "Unknown command!");
 		}
