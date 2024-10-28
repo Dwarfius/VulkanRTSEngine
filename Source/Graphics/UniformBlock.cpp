@@ -1,9 +1,9 @@
 #include "Precomp.h"
 #include "UniformBlock.h"
 
-#include "Resources/UniformBuffer.h"
+#include "Resources/GPUBuffer.h"
 
-UniformBlock::UniformBlock(UniformBuffer& aBuffer)
+UniformBlock::UniformBlock(GPUBuffer& aBuffer)
 	: myBuffer(aBuffer)
 {
 	myData = myBuffer.Map();

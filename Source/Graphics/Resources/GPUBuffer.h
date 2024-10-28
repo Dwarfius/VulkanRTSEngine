@@ -1,14 +1,22 @@
 #pragma once
 
-#include <Graphics/GraphicsConfig.h>
-#include <Graphics/GPUResource.h>
 #include <Core/RWBuffer.h>
 
-class UniformBuffer : public GPUResource
+#include <Graphics/GraphicsConfig.h>
+#include <Graphics/GPUResource.h>
+
+class GPUBuffer : public GPUResource
 {
 public:
-	UniformBuffer(size_t anAlignedSize)
+	enum class Type : uint8_t
+	{
+		Uniform,
+		//ShaderStorage
+	};
+
+	GPUBuffer(Type aType, size_t anAlignedSize)
 		: myBufferSize(anAlignedSize)
+		, myType(aType)
 	{
 	}
 
@@ -33,7 +41,7 @@ public:
 		}
 	}
 
-	std::string_view GetTypeName() const final { return "UniformBuffer"; }
+	std::string_view GetTypeName() const final { return "GPUBuffer"; }
 
 protected:
 	static constexpr uint8_t kMaxFrames = GraphicsConfig::kMaxFramesScheduled + 1;
@@ -46,4 +54,5 @@ protected:
 	void* myMappedBuffer = nullptr;
 	const size_t myBufferSize;
 	uint8_t myMappedCount = 0;
+	Type myType;
 };

@@ -3,12 +3,12 @@
 
 #include "Descriptor.h"
 #include "Graphics.h"
-#include "Resources/UniformBuffer.h"
+#include "Resources/GPUBuffer.h"
 #include "Resources/GPUPipeline.h"
 
 #include <Core/Profiler.h>
 
-UniformBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
+GPUBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
 	auto bucketIter = std::lower_bound(
 		myUBOBuckets.begin(), 
@@ -40,7 +40,7 @@ bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics,
 			continue;
 		}
 
-		UniformBuffer* uniformBuffer = AllocateUBO(
+		GPUBuffer* uniformBuffer = AllocateUBO(
 			aGraphics,
 			uniformAdapter.GetDescriptor().GetBlockSize()
 		);
@@ -104,13 +104,13 @@ RenderPass::UBOBucket::UBOBucket(size_t aSize)
 {
 }
 
-UniformBuffer* RenderPass::UBOBucket::AllocateUBO(Graphics& aGraphics, size_t aSize)
+GPUBuffer* RenderPass::UBOBucket::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
 	uint32_t index = myUBOCounter++;
 	if (index < myUBOs.size())
 	{
-		Handle<UniformBuffer>& uboHandle = myUBOs[index];
-		UniformBuffer* ubo = uboHandle.Get();
+		Handle<GPUBuffer>& uboHandle = myUBOs[index];
+		GPUBuffer* ubo = uboHandle.Get();
 		return ubo->GetState() == GPUResource::State::Valid ?
 			ubo : nullptr;
 	}
@@ -128,7 +128,7 @@ void RenderPass::UBOBucket::PrepForPass(Graphics& aGraphics)
 		myUBOs.resize(newSize);
 		for (size_t i=oldSize; i < newSize; i++)
 		{
-			myUBOs[i] = aGraphics.CreateUniformBuffer(mySize);
+			myUBOs[i] = aGraphics.CreateUBOBuffer(mySize);
 		}
 	}
 	myUBOCounter = 0;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/GL/FrameBufferGL.h"
-#include "Graphics/GL/UniformBufferGL.h"
+#include "Graphics/GL/GPUBufferGL.h"
 #include "Graphics/GL/RenderPassJobGL.h"
 
 #include <Graphics/Graphics.h>
@@ -38,7 +38,7 @@ public:
 	[[nodiscard]]
 	RenderPassJob& CreateRenderPassJob(const RenderContext& renderContext) override;
 
-	void CleanUpUBO(UniformBuffer* aUBO) override;
+	void CleanUpUBO(GPUBuffer* aUBO) override;
 
 	std::string_view GetTypeName() const override { return "GraphicsGL"; }
 
@@ -72,12 +72,12 @@ private:
 	std::mutex myPipelinesMutex;
 	std::mutex myTexturesMutex;
 
-	UniformBuffer* CreateUniformBufferImpl(size_t aSize) override;
+	GPUBuffer* CreateUniformBufferImpl(size_t aSize) override;
 
-	StableVector<UniformBufferGL> myUBOs;
+	StableVector<GPUBufferGL> myUBOs;
 	std::mutex myUBOsMutex;
 	constexpr static uint8_t kQueues = GraphicsConfig::kMaxFramesScheduled * 2 + 1;
-	RWBuffer<tbb::concurrent_queue<UniformBufferGL*>, kQueues> myUBOCleanUpQueues;
+	RWBuffer<tbb::concurrent_queue<GPUBufferGL*>, kQueues> myUBOCleanUpQueues;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	int32_t myUBOOffsetAlignment = 0;
 	uint8_t myWriteFenceInd = GraphicsConfig::kMaxFramesScheduled;

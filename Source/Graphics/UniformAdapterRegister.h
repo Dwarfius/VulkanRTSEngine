@@ -8,7 +8,7 @@
 #include <Core/RefCounted.h>
 
 class UniformBlock;
-class UniformBuffer;
+class GPUBuffer;
 class Camera;
 class Graphics;
 class Descriptor;
@@ -49,16 +49,16 @@ public:
 
 	void CreateGlobalUBO(Graphics& aGraphics);
 	// TODO: find a way to avoid copies here
-	Handle<UniformBuffer> GetGlobalUBO() const { return myGlobalUBO; }
+	Handle<GPUBuffer> GetGlobalUBO() const { return myGlobalUBO; }
 	// TODO: find a way to just expose a mutable reference to avoid this API
-	void ReleaseUBO() { myGlobalUBO = Handle<UniformBuffer>(); }
+	void ReleaseUBO() { myGlobalUBO = Handle<GPUBuffer>(); }
 
 private:
 	const FillUBCallback myUBFiller;
 	const Descriptor& myDescriptor;
 	const std::string_view myName;
 	const bool myIsGlobal;
-	Handle<UniformBuffer> myGlobalUBO;
+	Handle<GPUBuffer> myGlobalUBO;
 };
 
 // A Singleton class used for tracking all the uniform adapters

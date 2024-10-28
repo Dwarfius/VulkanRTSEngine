@@ -1,11 +1,11 @@
 #pragma once
 
-class UniformBuffer;
+class GPUBuffer;
 
 class UniformBlock
 {
 public:
-	UniformBlock(UniformBuffer& aBuffer);
+	UniformBlock(GPUBuffer& aBuffer);
 	~UniformBlock();
 
 	template<class T>
@@ -18,5 +18,5 @@ public:
 
 private:
 	char* myData;
-	UniformBuffer& myBuffer;
+	GPUBuffer& myBuffer;
 };

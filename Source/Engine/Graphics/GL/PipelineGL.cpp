@@ -8,7 +8,7 @@
 #include <Core/Profiler.h>
 
 #include "ShaderGL.h"
-#include "UniformBufferGL.h"
+#include "GPUBufferGL.h"
 
 PipelineGL::PipelineGL()
 	: myGLProgram(0)

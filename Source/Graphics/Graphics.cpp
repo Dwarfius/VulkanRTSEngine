@@ -11,7 +11,7 @@
 #include "Resources/GPUModel.h"
 #include "Resources/GPUTexture.h"
 #include "Resources/GPUShader.h"
-#include "Resources/UniformBuffer.h"
+#include "Resources/GPUBuffer.h"
 #include "UniformAdapterRegister.h"
 
 #include <Core/Profiler.h>
@@ -134,7 +134,7 @@ void Graphics::Gather()
 			return;
 		}
 
-		Handle<UniformBuffer> uboHandle = anAdapter.GetGlobalUBO();
+		Handle<GPUBuffer> uboHandle = anAdapter.GetGlobalUBO();
 		ASSERT_STR(uboHandle.IsValid() 
 			&& (uboHandle.Get()->GetState() == GPUResource::State::PendingUpload
 				|| uboHandle.Get()->GetState() == GPUResource::State::Valid),
@@ -285,9 +285,9 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 	myUnloadQueues.GetWrite().push(aGPUResource);
 }
 
-Handle<UniformBuffer> Graphics::CreateUniformBuffer(size_t aSize)
+Handle<GPUBuffer> Graphics::CreateUBOBuffer(size_t aSize)
 {
-	Handle<UniformBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
+	Handle<GPUBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
 	uniformBuffer->Create(*this, {});
 	return uniformBuffer;
 }

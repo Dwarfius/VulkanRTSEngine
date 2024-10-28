@@ -11,7 +11,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/Pipeline.h>
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/Camera.h>
 
 #include <Core/Profiler.h>
@@ -23,14 +23,14 @@ void PaintingRenderPass::SetPipelines(Handle<Pipeline> aPaintPipeline,
 	aPaintPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myPaintBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+		myPaintBuffer = aGraphics.CreateUBOBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 
 	myDisplayPipeline = aGraphics.GetOrCreate(aDisplayPipeline).Get<GPUPipeline>();
 	aDisplayPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myDisplayBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+		myDisplayBuffer = aGraphics.CreateUBOBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 }
 
@@ -126,9 +126,9 @@ void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 	UniformBlock block(*myPaintBuffer.Get());
 	adapter.FillUniformBlock(source, block);
 
-	RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	uboCmd.mySlot = 0;
-	uboCmd.myUniformBuffer = myPaintBuffer.Get();
+	uboCmd.myBuffer = myPaintBuffer.Get();
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;
@@ -164,9 +164,9 @@ void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 	PainterAdapter adapter;
 	UniformBlock block(*myDisplayBuffer.Get());
 	adapter.FillUniformBlock(source, block);
-	RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	uboCmd.mySlot = 0;
-	uboCmd.myUniformBuffer = myDisplayBuffer.Get();
+	uboCmd.myBuffer = myDisplayBuffer.Get();
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;

@@ -1,7 +1,7 @@
 #include "Precomp.h"
 #include "RenderPassJobGL.h"
 
-#include "Graphics/GL/UniformBufferGL.h"
+#include "Graphics/GL/GPUBufferGL.h"
 #include "Graphics/GL/GraphicsGL.h"
 #include "ModelGL.h"
 #include "PipelineGL.h"
@@ -302,12 +302,13 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			break;
 		}
 			
-		case RenderPassJob::SetUniformBufferCmd::kId:
+		case RenderPassJob::SetBufferCmd::kId:
 		{
-			auto cmd = GetCommand<RenderPassJob::SetUniformBufferCmd>(bytes, index);
+			auto cmd = GetCommand<RenderPassJob::SetBufferCmd>(bytes, index);
 
+			// TODO: account for SSBO
 			// Now we can update the uniform blocks
-			UniformBufferGL& buffer = *static_cast<UniformBufferGL*>(cmd.myUniformBuffer);
+			GPUBufferGL& buffer = *static_cast<GPUBufferGL*>(cmd.myBuffer);
 			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid
 				|| buffer.GetState() == GPUResource::State::PendingUnload,
 				"UBO must be valid at this point!");

@@ -8,7 +8,7 @@
 class GPUPipeline;
 class GPUTexture;
 class GPUModel;
-class UniformBuffer;
+class GPUBuffer;
 class Graphics;
 
 // A basic class encapsulating a set of render commands
@@ -20,7 +20,7 @@ public:
 	using DrawMode = uint8_t; // IMode::PrimitiveType
 
 	using TextureSet = StaticVector<GPUTexture*, 4>;
-	using UniformSet = StaticVector<UniformBuffer*, 4>;
+	using UniformSet = StaticVector<GPUBuffer*, 4>;
 
 	template<uint8_t Id>
 	struct RenderPassJobCmd
@@ -44,10 +44,10 @@ public:
 		GPUTexture* myTexture;
 	};
 
-	struct SetUniformBufferCmd : RenderPassJobCmd<3>
+	struct SetBufferCmd : RenderPassJobCmd<3>
 	{
 		uint8_t mySlot;
-		UniformBuffer* myUniformBuffer;
+		GPUBuffer* myBuffer;
 	};
 
 	struct DrawIndexedCmd : RenderPassJobCmd<4>

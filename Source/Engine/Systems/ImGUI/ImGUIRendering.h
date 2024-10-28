@@ -15,7 +15,7 @@
 class GPUModel;
 class GPUPipeline; 
 class GPUTexture;
-class UniformBuffer;
+class GPUBuffer;
 
 struct ImGUIVertex
 {
@@ -113,5 +113,5 @@ private:
 	Handle<GPUModel> myModel;
 	Handle<GPUTexture> myFontAtlas;
 	RenderPassJob* myCurrentJob;
-	Handle<UniformBuffer> myUniformBuffer;
+	Handle<GPUBuffer> myBuffer;
 };

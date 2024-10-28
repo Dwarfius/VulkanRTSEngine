@@ -10,7 +10,7 @@ class Graphics;
 class Pipeline;
 class GPUModel;
 class GPUPipeline;
-class UniformBuffer;
+class GPUBuffer;
 
 class DebugRenderPass final : public RenderPass
 {
@@ -39,7 +39,7 @@ private:
 		Handle<GPUModel> myModel;
 		Camera myCamera;
 		UploadDesc myDesc;
-		Handle<UniformBuffer> myBuffer;
+		Handle<GPUBuffer> myBuffer;
 	};
 	std::vector<PerCameraModel> myCameraModels;
 };

@@ -16,7 +16,7 @@
 class GPUPipeline;
 class Pipeline;
 class GPUTexture;
-class UniformBuffer;
+class GPUBuffer;
 
 struct PaintingFrameBuffer
 {
@@ -91,8 +91,8 @@ private:
 
 	Handle<GPUPipeline> myPaintPipeline;
 	Handle<GPUPipeline> myDisplayPipeline;
-	Handle<UniformBuffer> myPaintBuffer;
-	Handle<UniformBuffer> myDisplayBuffer;
+	Handle<GPUBuffer> myPaintBuffer;
+	Handle<GPUBuffer> myDisplayBuffer;
 	PaintParams myParams;
 	bool myWriteToOther = false;
 

@@ -14,7 +14,7 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/Resources/Texture.h>
 
 namespace
@@ -104,7 +104,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 		// each command needs an extra byte to identify it
 		return aCount * (sizeof(RenderPassJob::SetPipelineCmd) + 1 +
 			sizeof(RenderPassJob::SetModelCmd) + 1 +
-			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
+			sizeof(RenderPassJob::SetBufferCmd) * 4 + 4 +
 			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
 	};
 
@@ -173,9 +173,9 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 
 				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 				{
-					RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+					RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd, false>();
 					uboCmd.mySlot = i;
-					uboCmd.myUniformBuffer = uniformSet[i];
+					uboCmd.myBuffer = uniformSet[i];
 				}
 
 				RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
@@ -254,9 +254,9 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 
 			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 			{
-				RenderPassJob::SetUniformBufferCmd& uboCmd = aCmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+				RenderPassJob::SetBufferCmd& uboCmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 				uboCmd.mySlot = i;
-				uboCmd.myUniformBuffer = uniformSet[i];
+				uboCmd.myBuffer = uniformSet[i];
 			}
 
 			RenderPassJob::DrawTesselatedCmd& drawCmd = aCmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();

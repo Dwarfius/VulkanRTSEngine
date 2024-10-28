@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 
-class UniformBufferGL final : public UniformBuffer
+class GPUBufferGL final : public GPUBuffer
 {
 public:
-	using UniformBuffer::UniformBuffer;
+	using GPUBuffer::GPUBuffer;
 
 	void Cleanup() override;
 
@@ -19,5 +19,5 @@ private:
 	bool OnUpload(Graphics& aGraphics) override { return true; }
 	void OnUnload(Graphics& aGraphics) override;
 
-	uint32_t myUniformBuffer = 0;
+	uint32_t myBufferGL = 0;
 };

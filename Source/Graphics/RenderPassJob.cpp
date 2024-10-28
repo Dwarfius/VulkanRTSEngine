@@ -1,7 +1,7 @@
 #include "Precomp.h"
 #include "RenderPassJob.h"
 
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 
 void RenderPassJob::Execute(Graphics& aGraphics)
 {

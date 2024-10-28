@@ -7,9 +7,8 @@
 class RenderContext;
 class Graphics;
 class Camera;
-class UniformBuffer;
-template<class T>
-class Handle;
+class GPUBuffer;
+template<class T> class Handle;
 struct AdapterSourceData;
 
 // The goal behind the render passes is to be able to 
@@ -25,7 +24,7 @@ public:
 
 	virtual ~RenderPass() = default;
 
-	UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
+	GPUBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
 	// Helper for filling UBOs for the render job with game state
 	// Handles both normal and global UBOs.
@@ -51,7 +50,7 @@ private:
 	struct UBOBucket
 	{
 		// Note: not using LazyVector as it's not thread safe
-		std::vector<Handle<UniformBuffer>> myUBOs;
+		std::vector<Handle<GPUBuffer>> myUBOs;
 		std::atomic<uint32_t> myUBOCounter = 32;
 		size_t mySize;
 
@@ -75,7 +74,7 @@ private:
 			return mySize < aOther.mySize;
 		}
 
-		UniformBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
+		GPUBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 		void PrepForPass(Graphics& aGraphics);
 	};
 	std::vector<UBOBucket> myUBOBuckets;

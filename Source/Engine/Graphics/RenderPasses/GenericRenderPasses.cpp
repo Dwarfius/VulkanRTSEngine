@@ -7,7 +7,7 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 
 #include "Graphics/Adapters/AdapterSourceData.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
@@ -43,7 +43,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 		return aCount * (sizeof(RenderPassJob::SetPipelineCmd) + 1 +
 			sizeof(RenderPassJob::SetModelCmd) + 1 +
 			sizeof(RenderPassJob::SetTextureCmd) + 1 +
-			sizeof(RenderPassJob::SetUniformBufferCmd) * 4 + 4 +
+			sizeof(RenderPassJob::SetBufferCmd) * 4 + 4 +
 			sizeof(RenderPassJob::DrawIndexedCmd) + 1);
 	};
 
@@ -119,10 +119,10 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 
 					for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 					{
-						RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<
-							RenderPassJob::SetUniformBufferCmd, false>();
+						RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<
+							RenderPassJob::SetBufferCmd, false>();
 						uboCmd.mySlot = i;
-						uboCmd.myUniformBuffer = uniformSet[i];
+						uboCmd.myBuffer = uniformSet[i];
 					}
 					RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
 					drawCmd.myOffset = 0;
@@ -241,9 +241,9 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 
 			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 			{
-				RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+				RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 				uboCmd.mySlot = i;
-				uboCmd.myUniformBuffer = uniformSet[i];
+				uboCmd.myBuffer = uniformSet[i];
 			}
 
 			RenderPassJob::DrawTesselatedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();

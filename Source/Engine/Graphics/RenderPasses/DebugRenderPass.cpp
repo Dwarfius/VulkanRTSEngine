@@ -10,7 +10,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Pipeline.h>
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/UniformBlock.h>
 
@@ -108,14 +108,14 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
 		modelCmd.myModel = gpuModel;
 
-		UniformBuffer* ubo = perCamModel.myBuffer.Get();
+		GPUBuffer* ubo = perCamModel.myBuffer.Get();
 		UniformBlock block(*ubo);
 		CameraAdapterSourceData source{ aGraphics, perCamModel.myCamera };
 		adapter.Fill(source, block);
 		
-		RenderPassJob::SetUniformBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetUniformBufferCmd>();
+		RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 		uboCmd.mySlot = 0;
-		uboCmd.myUniformBuffer = ubo;
+		uboCmd.myBuffer = ubo;
 
 		RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 		drawCmd.myDrawMode = IModel::PrimitiveType::Lines;
@@ -148,7 +148,7 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 		ASSERT_STR(myPipeline->GetAdapterCount() == 1,
 			"DebugRenderPass needs a pipeline with Camera adapter only!");
 		const size_t bufferSize = myPipeline->GetAdapter(0).GetDescriptor().GetBlockSize();
-		Handle<UniformBuffer> buffer = aGraphics.CreateUniformBuffer(bufferSize);
+		Handle<GPUBuffer> buffer = aGraphics.CreateUBOBuffer(bufferSize);
 		PerCameraModel::UploadDesc desc;
 		myCameraModels.emplace_back(gpuModel, aCamera, desc, buffer);
 	}

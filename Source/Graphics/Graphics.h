@@ -20,7 +20,7 @@ class Pipeline;
 class Model;
 class Shader;
 class GPUModel;
-class UniformBuffer;
+class GPUBuffer;
 
 class Graphics
 {
@@ -85,9 +85,9 @@ public:
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
-	virtual void CleanUpUBO(UniformBuffer* aUBO) = 0;
+	virtual void CleanUpUBO(GPUBuffer* aBuffer) = 0;
 
-	Handle<UniformBuffer> CreateUniformBuffer(size_t aSize);
+	Handle<GPUBuffer> CreateUBOBuffer(size_t aSize);
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 
@@ -143,7 +143,7 @@ private:
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) = 0;
 
-	virtual UniformBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
+	virtual GPUBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
 
 	void SortRenderPasses();
 

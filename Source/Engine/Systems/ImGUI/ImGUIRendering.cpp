@@ -5,7 +5,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
-#include <Graphics/Resources/UniformBuffer.h>
+#include <Graphics/Resources/GPUBuffer.h>
 
 #include <Core/Profiler.h>
 
@@ -28,7 +28,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		ASSERT_STR(pipeline->GetAdapterCount() == 1,
 			"Only supporting 1 adapter! Please update if changed!");
 		const Descriptor& descriptor = pipeline->GetAdapter(0).GetDescriptor();
-		myUniformBuffer = aGraphics.CreateUniformBuffer(descriptor.GetBlockSize());
+		myBuffer = aGraphics.CreateUBOBuffer(descriptor.GetBlockSize());
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	Handle<Model> model = new Model(
@@ -46,7 +46,7 @@ bool ImGUIRenderPass::IsReady() const
 		&& myFontAtlas->GetState() == GPUResource::State::Valid
 		&& (myModel->GetState() == GPUResource::State::Valid
 			|| myModel->GetState() == GPUResource::State::PendingUpload)
-		&& myUniformBuffer->GetState() == GPUResource::State::Valid;
+		&& myBuffer->GetState() == GPUResource::State::Valid;
 }
 
 RenderContext ImGUIRenderPass::CreateContext(Graphics& aGraphics) const
@@ -91,7 +91,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 		return;
 	}
 
-	UniformBlock block(*myUniformBuffer.Get());
+	UniformBlock block(*myBuffer.Get());
 	block.SetUniform(0, frame.myMatrix);
 
 	if (frame.myDesc.myIndCount > 0)
@@ -105,7 +105,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	buffer.Clear();
 	const size_t expectedSize = (1 + sizeof(RenderPassJob::SetPipelineCmd)
 		+ 1 + sizeof(RenderPassJob::SetModelCmd)
-		+ 1 + sizeof(RenderPassJob::SetUniformBufferCmd)
+		+ 1 + sizeof(RenderPassJob::SetBufferCmd)
 		+ frame.myParams.size() * (1 + sizeof(RenderPassJob::SetTextureCmd)
 			+ 1 + sizeof(RenderPassJob::SetScissorRectCmd)
 			+ 1 + sizeof(RenderPassJob::DrawIndexedCmd)));
@@ -119,9 +119,9 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetModelCmd& modelCmd = buffer.Write<RenderPassJob::SetModelCmd, false>();
 	modelCmd.myModel = myModel.Get();
 
-	RenderPassJob::SetUniformBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetUniformBufferCmd, false>();
+	RenderPassJob::SetBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetBufferCmd, false>();
 	uboCmd.mySlot = 0;
-	uboCmd.myUniformBuffer = myUniformBuffer.Get();
+	uboCmd.myBuffer = myBuffer.Get();
 
 	// Only things that change between render calls are:
 	// * the textures (either the ImGUI atlas or user texture)
