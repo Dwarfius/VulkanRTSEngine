@@ -2,7 +2,6 @@
 #include "LightRenderPass.h"
 
 #include <Graphics/Graphics.h>
-#include <Graphics/UniformAdapterRegister.h>
 
 #include "Light.h"
 
