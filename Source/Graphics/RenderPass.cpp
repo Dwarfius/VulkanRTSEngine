@@ -36,7 +36,8 @@ bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics,
 		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
 		if (uniformAdapter.IsGlobal())
 		{
-			aSet.PushBack(uniformAdapter.GetGlobalUBO().Get());
+			// TODO: get rid of this
+			aSet.PushBack(nullptr);
 			continue;
 		}
 

@@ -9,12 +9,18 @@
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/GPUBuffer.h>
 
+#include "Graphics/RenderPasses/LightRenderPass.h"
 #include "Graphics/Adapters/AdapterSourceData.h"
 #include "Graphics/Adapters/TerrainAdapter.h"
 #include "Graphics/NamedFrameBuffers.h"
 #include "Light.h"
 #include "Terrain.h"
 #include "Game.h"
+
+DefaultRenderPass::DefaultRenderPass()
+{
+	AddDependency(LightRenderPass::kId);
+}
 
 void DefaultRenderPass::Execute(Graphics& aGraphics)
 {
@@ -119,6 +125,11 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 
 					for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 					{
+						// TODO: remove this
+						if (uniformSet[i] == nullptr)
+						{
+							continue;
+						}
 						RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<
 							RenderPassJob::SetBufferCmd, false>();
 						uboCmd.mySlot = i;

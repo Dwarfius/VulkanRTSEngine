@@ -7,6 +7,7 @@
 #include "Game.h"
 #include "Graphics/RenderPasses/GenericRenderPasses.h"
 #include "Graphics/RenderPasses/DebugRenderPass.h"
+#include "Graphics/RenderPasses/LightRenderPass.h"
 #include "Graphics/RenderPasses/FinalCompositeRenderPass.h"
 #include "Graphics/NamedFrameBuffers.h"
 
@@ -44,6 +45,7 @@ void RenderThread::Init(bool anUseVulkan, AssetTracker& anAssetTracker)
 	}
 	myGraphics->SetMaxThreads(std::thread::hardware_concurrency());
 	myGraphics->Init();
+	myGraphics->AddRenderPass(new LightRenderPass(*myGraphics));
 	myGraphics->AddRenderPass(new DefaultRenderPass());
 	myGraphics->AddRenderPass(new TerrainRenderPass());
 	myGraphics->AddRenderPass(new DebugRenderPass(

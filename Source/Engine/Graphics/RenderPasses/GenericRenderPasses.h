@@ -7,6 +7,8 @@ class DefaultRenderPass final : public RenderPass
 public:
 	constexpr static uint32_t kId = Utils::CRC32("DefaultRenderPass");
 
+	DefaultRenderPass();
+
 	Id GetId() const override { return kId; }
 
 	void Execute(Graphics& aGraphics) override;
