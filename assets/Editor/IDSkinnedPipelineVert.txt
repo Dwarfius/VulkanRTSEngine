@@ -9,8 +9,8 @@ layout(location = 4) in vec4 boneWeights;
 out flat uint idOut;
 
 layout (std140, binding = 0) uniform ObjectMatricesAdapter;
-layout (std140, binding = 1) uniform SkeletonAdapter;
-layout (std140, binding = 2) uniform IDAdapter
+layout (std140, binding = 4) uniform SkeletonAdapter;
+layout (std140, binding = 3) uniform IDAdapter
 {
 	uint ID;	
 };

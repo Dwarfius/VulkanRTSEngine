@@ -10,7 +10,7 @@ uniform sampler2D tex;
 
 layout(location = 0) out vec4 outColor;
 
-layout (std140, binding = 1) uniform CameraAdapter;
+layout (std140, binding = 5) uniform CameraAdapter;
 layout (std140, binding = 2) uniform LightAdapter;
 
 void main() 

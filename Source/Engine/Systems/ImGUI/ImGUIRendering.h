@@ -62,6 +62,8 @@ namespace std
 class ImGUIAdapter : RegisterUniformAdapter<ImGUIAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 0;
+
 	struct ImGUIData : AdapterSourceData
 	{
 		glm::mat4 myOrthoProj;

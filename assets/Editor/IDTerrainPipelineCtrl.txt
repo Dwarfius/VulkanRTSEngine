@@ -17,7 +17,7 @@ layout (std140, binding = 1) uniform TerrainAdapter
 	vec4 ColorsAndHeightLevels[5];
 };
 
-layout (std140, binding = 2) uniform CameraAdapter;
+layout (std140, binding = 5) uniform CameraAdapter;
 
 layout(location = 0) in DataIn
 {

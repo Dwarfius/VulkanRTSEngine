@@ -7,7 +7,7 @@ out flat uint idOut;
 
 layout (std140, binding = 0) uniform ObjectMatricesAdapter;
 
-layout (std140, binding = 1) uniform IDAdapter
+layout (std140, binding = 3) uniform IDAdapter
 {
 	uint ID;	
 };

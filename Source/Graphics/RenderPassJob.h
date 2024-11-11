@@ -19,6 +19,7 @@ class RenderPassJob
 public:
 	using DrawMode = uint8_t; // IMode::PrimitiveType
 
+	// TODO: remove this
 	using TextureSet = StaticVector<GPUTexture*, 4>;
 	using UniformSet = StaticVector<GPUBuffer*, 4>;
 

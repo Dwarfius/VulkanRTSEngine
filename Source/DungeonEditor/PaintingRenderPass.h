@@ -104,6 +104,8 @@ private:
 class PainterAdapter : RegisterUniformAdapter<PainterAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 0;
+
 	struct Source : CameraAdapterSourceData
 	{
 		const glm::vec3 myColor;

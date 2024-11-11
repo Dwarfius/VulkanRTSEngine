@@ -23,7 +23,7 @@ GPUBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	return nullptr;
 }
 
-bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics, 
+bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Bindpoints& aBindpoints, Graphics& aGraphics, 
 	const AdapterSourceData& aSource, const GPUPipeline& aPipeline)
 {
 	const size_t uboCount = aPipeline.GetAdapterCount();
@@ -53,6 +53,8 @@ bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics,
 		UniformBlock uniformBlock(*uniformBuffer);
 		uniformAdapter.Fill(aSource, uniformBlock);
 		aSet.PushBack(uniformBuffer);
+
+		aBindpoints[i] = uniformAdapter.GetBindpoint();
 	}
 	return true;
 }

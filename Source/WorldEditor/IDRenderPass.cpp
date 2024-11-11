@@ -158,7 +158,8 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 					mySkinningPipeline.Get() :
 					myDefaultPipeline.Get();
 				RenderPassJob::UniformSet uniformSet;
-				if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+				Bindpoints bindpoints;
+				if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
 					[[unlikely]]
 				{
 					return;
@@ -174,7 +175,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 				{
 					RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd, false>();
-					uboCmd.mySlot = i;
+					uboCmd.mySlot = bindpoints[i];
 					uboCmd.myBuffer = uniformSet[i];
 				}
 
@@ -242,7 +243,8 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 				newID | kTerrainBit
 			};
 			RenderPassJob::UniformSet uniformSet;
-			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+			Bindpoints bindpoints;
+			if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{
 				return;
@@ -255,7 +257,7 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 			{
 				RenderPassJob::SetBufferCmd& uboCmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-				uboCmd.mySlot = i;
+				uboCmd.mySlot = bindpoints[i];
 				uboCmd.myBuffer = uniformSet[i];
 			}
 

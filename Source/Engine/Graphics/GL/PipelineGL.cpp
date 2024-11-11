@@ -156,18 +156,6 @@ bool PipelineGL::OnUpload(Graphics& aGraphics)
 			return false;
 		}
 #endif
-		
-		// all good - time to resolve the UBOs
-		const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
-		const size_t adapterCount = pipeline->GetAdapterCount();
-		for (size_t i = 0; i < adapterCount; i++)
-		{
-			const UniformAdapter& adapter = pipeline->GetAdapter(i);
-			const std::string_view uboName = adapter.GetName();
-			const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
-			ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for {}!", uboName);
-			glUniformBlockBinding(myGLProgram, uboIndex, static_cast<GLint>(i));
-		}
 
 		// Because samplers can't be part of the uniform blocks, 
 		// they have to stay separate, which means we have to find them
@@ -258,27 +246,25 @@ bool PipelineGL::AreUBOsValid()
 		return false;
 	}
 
-	// We need to accumulate names to know how to map them on to our
-	// declared descriptors
-	constexpr static uint8_t kMaxAdapters = 10;
-	ASSERT_STR(uniformBlocks < kMaxAdapters, "Bellow array not big enough - increase!");
-	std::string uboNames[kMaxAdapters];
-	for (uint32_t blockInd = 0; blockInd < adapterCount; blockInd++)
+	// all good - time to resolve the UBOs
+	for (size_t i = 0; i < adapterCount; i++)
 	{
-		uint32_t properties[] = { GL_NAME_LENGTH };
-		int32_t nameLength;
-		glGetProgramResourceiv(myGLProgram, GL_UNIFORM_BLOCK, blockInd,
-			1, properties,
-			1, nullptr, &nameLength
-		);
+		const UniformAdapter& adapter = pipeline->GetAdapter(i);
+		const std::string_view uboName = adapter.GetName();
+		const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
+		ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for {}!", uboName);
+		
+		int32_t declaredBinding;
+		glGetActiveUniformBlockiv(myGLProgram, uboIndex, GL_UNIFORM_BLOCK_BINDING, &declaredBinding);
 
-		uboNames[blockInd].resize(nameLength);
-
-		glGetProgramResourceName(myGLProgram, GL_UNIFORM_BLOCK, blockInd,
-			nameLength, nullptr, uboNames[blockInd].data()
-		);
-
-		uboNames[blockInd].resize(nameLength - 1); // get rid of extra null terminator
+		if (declaredBinding != adapter.GetBindpoint())
+		{
+			char errorMsg[200];
+			Utils::StringFormat(errorMsg, "Pipline {} had an invalid bindpoint for {}, supposed to be {}!", 
+				pipeline->GetName(), adapter.GetName(), adapter.GetBindpoint());
+			SetErrMsg(errorMsg);
+			return false;
+		}
 	}
 
 	// The driver returns uniforms in unspecified order while our 
@@ -297,15 +283,8 @@ bool PipelineGL::AreUBOsValid()
 	for (uint32_t adapterInd = 0; adapterInd < adapterCount; adapterInd++)
 	{
 		const UniformAdapter& adapter = pipeline->GetAdapter(adapterInd);
-		auto foundIter = std::find_if(
-			std::begin(uboNames), std::end(uboNames),
-			[&](std::string_view aName) {
-				return aName == adapter.GetName();
-			}
-		);
-		const uint32_t blockInd = static_cast<uint32_t>(
-			std::distance(std::begin(uboNames), foundIter)
-		);
+		const std::string_view uboName = adapter.GetName();
+		const uint32_t blockInd = glGetUniformBlockIndex(myGLProgram, uboName.data());
 
 		const uint32_t activeUniformCountProperty = GL_NUM_ACTIVE_VARIABLES;
 		int32_t activeUniforms;

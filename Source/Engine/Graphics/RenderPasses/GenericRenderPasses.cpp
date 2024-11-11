@@ -94,6 +94,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 				GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
 
 				RenderPassJob::UniformSet uniformSet;
+				Bindpoints bindpoints;
 				{
 					Profiler::ScopedMark earlyChecks("FillUBO");
 					// updating the uniforms - grabbing game state!
@@ -103,7 +104,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 						gameObject,
 						visObj
 					};
-					if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+					if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
 						[[unlikely]]
 					{
 						return;
@@ -132,7 +133,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 						}
 						RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<
 							RenderPassJob::SetBufferCmd, false>();
-						uboCmd.mySlot = i;
+						uboCmd.mySlot = bindpoints[i];
 						uboCmd.myBuffer = uniformSet[i];
 					}
 					RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
@@ -237,7 +238,8 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 				terrain
 			};
 			RenderPassJob::UniformSet uniformSet;
-			if (!FillUBOs(uniformSet, aGraphics, source, *gpuPipeline))
+			Bindpoints bindpoints;
+			if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{
 				return;
@@ -253,7 +255,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
 			{
 				RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-				uboCmd.mySlot = i;
+				uboCmd.mySlot = bindpoints[i];
 				uboCmd.myBuffer = uniformSet[i];
 			}
 

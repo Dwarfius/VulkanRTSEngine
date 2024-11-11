@@ -13,7 +13,7 @@ out vec3 normalOut;
 out vec2 uvsOut;
 
 layout (std140, binding = 0) uniform ObjectMatricesAdapter;
-layout (std140, binding = 3) uniform SkeletonAdapter;
+layout (std140, binding = 4) uniform SkeletonAdapter;
 
 #include "Engine/Adapters/SkeletonAdapter-funcs.txt"
 

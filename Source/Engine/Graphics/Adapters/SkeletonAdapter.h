@@ -6,6 +6,8 @@
 class SkeletonAdapter : RegisterUniformAdapter<SkeletonAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 4;
+
 	constexpr static uint32_t kMaxBones = 100;
 	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4, kMaxBones }

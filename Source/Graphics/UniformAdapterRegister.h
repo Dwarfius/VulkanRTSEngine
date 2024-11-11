@@ -30,8 +30,9 @@ class UniformAdapter
 public:
 	using FillUBCallback = void(*)(const AdapterSourceData& aData, UniformBlock& aUB);
 	
-	UniformAdapter(std::string_view aName, FillUBCallback aUBCallback, const Descriptor& aDesc, bool aIsGlobal)
+	UniformAdapter(std::string_view aName, uint8_t aBindpoint, FillUBCallback aUBCallback, const Descriptor& aDesc, bool aIsGlobal)
 		: myName(aName)
+		, myBindpoint(aBindpoint)
 		, myUBFiller(aUBCallback)
 		, myDescriptor(aDesc)
 		, myIsGlobal(aIsGlobal)
@@ -45,6 +46,7 @@ public:
 
 	const Descriptor& GetDescriptor() const { return myDescriptor; }
 	std::string_view GetName() const { return myName; }
+	uint8_t GetBindpoint() const { return myBindpoint; }
 	bool IsGlobal() const { return myIsGlobal; }
 
 	void CreateGlobalUBO(Graphics& aGraphics);
@@ -57,6 +59,7 @@ private:
 	const FillUBCallback myUBFiller;
 	const Descriptor& myDescriptor;
 	const std::string_view myName;
+	const uint8_t myBindpoint;
 	const bool myIsGlobal;
 	Handle<GPUBuffer> myGlobalUBO;
 };
@@ -76,14 +79,16 @@ public:
 
 	// Before adapters can be fetched, they must be registered
 	template<class Type>
-	void Register(std::string_view aName, bool aIsGlobal)
+	void Register(bool aIsGlobal)
 	{
 #ifdef _DEBUG
 		AssertWriteLock lock(myRegisterMutex);
 #endif
 		UniformAdapter::FillUBCallback adapterCallback = &Type::FillUniformBlock;
+		const std::string_view name = Utils::NameOf<Type>;
 		const Descriptor& desc = Type::ourDescriptor;
-		myAdapters.insert({ aName, { aName, adapterCallback, desc, aIsGlobal } });
+		const uint8_t bindpoint = Type::kBindpoint;
+		myAdapters.insert({ name, { name, bindpoint, adapterCallback, desc, aIsGlobal } });
 	}
 
 	template<class TFunc>
@@ -113,7 +118,7 @@ class RegisterUniformAdapter
 private:
 	static bool Register()
 	{
-		UniformAdapterRegister::GetInstance().Register<CRTP>(Utils::NameOf<CRTP>, kIsGlobal);
+		UniformAdapterRegister::GetInstance().Register<CRTP>(kIsGlobal);
 		return true;
 	}
 

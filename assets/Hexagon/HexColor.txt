@@ -7,7 +7,7 @@ uniform sampler2D tex;
 
 layout(location = 0) out vec4 outColor;
 
-layout (std140, binding = 0) uniform TintAdapter
+layout (std140, binding = 1) uniform TintAdapter
 {
     vec4 Color;
 };

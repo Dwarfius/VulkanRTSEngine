@@ -9,6 +9,8 @@
 class ObjectMatricesAdapter : RegisterUniformAdapter<ObjectMatricesAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 0;
+
 	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },

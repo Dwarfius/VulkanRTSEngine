@@ -120,7 +120,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	modelCmd.myModel = myModel.Get();
 
 	RenderPassJob::SetBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetBufferCmd, false>();
-	uboCmd.mySlot = 0;
+	uboCmd.mySlot = ImGUIAdapter::kBindpoint;
 	uboCmd.myBuffer = myBuffer.Get();
 
 	// Only things that change between render calls are:

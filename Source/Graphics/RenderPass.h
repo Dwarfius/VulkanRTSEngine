@@ -21,6 +21,7 @@ class RenderPass
 {
 public:
 	using Id = uint32_t;
+	using Bindpoints = std::array<uint8_t, 4>;
 
 	virtual ~RenderPass() = default;
 
@@ -29,7 +30,7 @@ public:
 	// Helper for filling UBOs for the render job with game state
 	// Handles both normal and global UBOs.
 	// Returns false if ran out of allocated UBOs this frame, otherwise true
-	bool FillUBOs(RenderPassJob::UniformSet& aSet, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
+	bool FillUBOs(RenderPassJob::UniformSet& aSet, Bindpoints& aBindpoints, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
 
 	size_t GetUBOCount() const;
 	size_t GetUBOTotalSize() const;

@@ -13,6 +13,8 @@ class TerrainAdapter : RegisterUniformAdapter<TerrainAdapter>
 	static float GetTileSize(const Terrain& aTerrain);
 
 public:
+	constexpr static uint8_t kBindpoint = 1;
+
 	struct Source : UniformAdapterSource
 	{
 		const Terrain& myTerrain;

@@ -92,6 +92,8 @@ struct IDFrameBuffer
 class IDAdapter : RegisterUniformAdapter<IDAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 3;
+
 	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Int }
 	};

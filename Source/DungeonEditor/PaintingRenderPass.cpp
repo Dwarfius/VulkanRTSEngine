@@ -127,7 +127,7 @@ void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 	adapter.FillUniformBlock(source, block);
 
 	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-	uboCmd.mySlot = 0;
+	uboCmd.mySlot = PainterAdapter::kBindpoint;
 	uboCmd.myBuffer = myPaintBuffer.Get();
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
@@ -165,7 +165,7 @@ void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 	UniformBlock block(*myDisplayBuffer.Get());
 	adapter.FillUniformBlock(source, block);
 	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-	uboCmd.mySlot = 0;
+	uboCmd.mySlot = PainterAdapter::kBindpoint;
 	uboCmd.myBuffer = myDisplayBuffer.Get();
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();

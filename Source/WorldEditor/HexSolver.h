@@ -42,6 +42,8 @@ public:
 class TintAdapter : RegisterUniformAdapter<TintAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 1;
+
 	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Vec4 }
 	};

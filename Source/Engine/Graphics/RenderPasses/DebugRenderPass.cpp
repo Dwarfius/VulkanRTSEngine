@@ -114,7 +114,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		adapter.Fill(source, block);
 		
 		RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-		uboCmd.mySlot = 0;
+		uboCmd.mySlot = adapter.GetBindpoint();
 		uboCmd.myBuffer = ubo;
 
 		RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();

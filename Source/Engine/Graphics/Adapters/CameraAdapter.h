@@ -6,6 +6,8 @@
 class CameraAdapter : RegisterUniformAdapter<CameraAdapter>
 {
 public:
+	constexpr static uint8_t kBindpoint = 5;
+
 	constexpr static Descriptor ourDescriptor{
 		{ Descriptor::UniformType::Mat4 },
 		{ Descriptor::UniformType::Mat4 },
