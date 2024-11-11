@@ -1,10 +1,5 @@
 #pragma once
 
-// TODO: get rid of this
-#include "RenderPassJob.h"
-
-#include <Core/CRC32.h>
-
 class RenderContext;
 class Graphics;
 class Camera;

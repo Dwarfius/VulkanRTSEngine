@@ -8,6 +8,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Model.h>
+#include <Graphics/RenderPassJob.h>
 
 #include <Core/Profiler.h>
 

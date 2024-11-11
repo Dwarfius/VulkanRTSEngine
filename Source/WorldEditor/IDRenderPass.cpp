@@ -16,6 +16,7 @@
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/Resources/Texture.h>
+#include <Graphics/RenderPassJob.h>
 
 namespace
 {

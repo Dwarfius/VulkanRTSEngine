@@ -8,6 +8,7 @@
 #include "Graphics.h"
 #include "Resources/GPUBuffer.h"
 #include "Resources/GPUPipeline.h"
+#include "RenderPassJob.h"
 
 GPUBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {

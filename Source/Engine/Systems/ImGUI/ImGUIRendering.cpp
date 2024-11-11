@@ -6,6 +6,7 @@
 #include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/GPUBuffer.h>
+#include <Graphics/RenderPassJob.h>
 
 #include <Core/Profiler.h>
 

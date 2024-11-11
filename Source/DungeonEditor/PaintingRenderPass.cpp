@@ -13,6 +13,7 @@
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/Camera.h>
+#include <Graphics/RenderPassJob.h>
 
 #include <Core/Profiler.h>
 

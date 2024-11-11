@@ -8,6 +8,7 @@
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUTexture.h>
 #include <Graphics/Resources/GPUBuffer.h>
+#include <Graphics/RenderPassJob.h>
 
 #include "Graphics/RenderPasses/LightRenderPass.h"
 #include "Graphics/Adapters/AdapterSourceData.h"
