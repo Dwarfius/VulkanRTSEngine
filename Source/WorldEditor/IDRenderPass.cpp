@@ -157,9 +157,7 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 				GPUPipeline* gpuPipeline = isSkinned ?
 					mySkinningPipeline.Get() :
 					myDefaultPipeline.Get();
-				RenderPassJob::UniformSet uniformSet;
-				Bindpoints bindpoints;
-				if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
+				if (!BindUBOs(cmdBuffer, aGraphics, source, *gpuPipeline))
 					[[unlikely]]
 				{
 					return;
@@ -171,13 +169,6 @@ void IDRenderPass::ScheduleGameObjects(Graphics& aGraphics, Game& aGame, CmdBuff
 				GPUModel* gpuModel = vo.GetModel().Get();
 				RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd, false>();
 				modelCmd.myModel = gpuModel;
-
-				for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-				{
-					RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd, false>();
-					uboCmd.mySlot = bindpoints[i];
-					uboCmd.myBuffer = uniformSet[i];
-				}
 
 				RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
 				drawCmd.myOffset = 0;
@@ -242,9 +233,7 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 				terrain,
 				newID | kTerrainBit
 			};
-			RenderPassJob::UniformSet uniformSet;
-			Bindpoints bindpoints;
-			if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
+			if (!BindUBOsAndGrow(aCmdBuffer, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{
 				return;
@@ -253,13 +242,6 @@ void IDRenderPass::ScheduleTerrain(Graphics& aGraphics, Game& aGame, CmdBuffer& 
 			RenderPassJob::SetTextureCmd& textureCmd = aCmdBuffer.Write<RenderPassJob::SetTextureCmd>();
 			textureCmd.mySlot = 0;
 			textureCmd.myTexture = texture.Get();
-
-			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-			{
-				RenderPassJob::SetBufferCmd& uboCmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-				uboCmd.mySlot = bindpoints[i];
-				uboCmd.myBuffer = uniformSet[i];
-			}
 
 			RenderPassJob::DrawTesselatedCmd& drawCmd = aCmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();
 			drawCmd.myOffset = 0;

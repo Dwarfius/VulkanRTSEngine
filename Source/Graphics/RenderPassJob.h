@@ -21,7 +21,6 @@ public:
 
 	// TODO: remove this
 	using TextureSet = StaticVector<GPUTexture*, 4>;
-	using UniformSet = StaticVector<GPUBuffer*, 4>;
 
 	template<uint8_t Id>
 	struct RenderPassJobCmd

@@ -93,10 +93,8 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 				// we need to early out without spawning a job
 				GPUPipeline* gpuPipeline = visObj.GetPipeline().Get();
 
-				RenderPassJob::UniformSet uniformSet;
-				Bindpoints bindpoints;
 				{
-					Profiler::ScopedMark earlyChecks("FillUBO");
+					Profiler::ScopedMark earlyChecks("BindUBOs");
 					// updating the uniforms - grabbing game state!
 					UniformAdapterSource source{
 						aGraphics,
@@ -104,7 +102,7 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 						gameObject,
 						visObj
 					};
-					if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
+					if (!BindUBOs(cmdBuffer, aGraphics, source, *gpuPipeline))
 						[[unlikely]]
 					{
 						return;
@@ -124,18 +122,6 @@ void DefaultRenderPass::Execute(Graphics& aGraphics)
 					textureCmd.mySlot = 0;
 					textureCmd.myTexture = visObj.GetTexture().Get();
 
-					for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-					{
-						// TODO: remove this
-						if (uniformSet[i] == nullptr)
-						{
-							continue;
-						}
-						RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<
-							RenderPassJob::SetBufferCmd, false>();
-						uboCmd.mySlot = bindpoints[i];
-						uboCmd.myBuffer = uniformSet[i];
-					}
 					RenderPassJob::DrawIndexedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedCmd, false>();
 					drawCmd.myOffset = 0;
 					drawCmd.myCount = visObj.GetModel().Get()->GetPrimitiveCount();
@@ -237,9 +223,7 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 				*visObj,
 				terrain
 			};
-			RenderPassJob::UniformSet uniformSet;
-			Bindpoints bindpoints;
-			if (!FillUBOs(uniformSet, bindpoints, aGraphics, source, *gpuPipeline))
+			if (!BindUBOsAndGrow(cmdBuffer, aGraphics, source, *gpuPipeline))
 				[[unlikely]]
 			{
 				return;
@@ -251,13 +235,6 @@ void TerrainRenderPass::Execute(Graphics& aGraphics)
 			RenderPassJob::SetTextureCmd& textureCmd = cmdBuffer.Write<RenderPassJob::SetTextureCmd>();
 			textureCmd.mySlot = 0;
 			textureCmd.myTexture = visObj->GetTexture().Get();
-
-			for (uint8_t i = 0; i < uniformSet.GetSize(); i++)
-			{
-				RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-				uboCmd.mySlot = bindpoints[i];
-				uboCmd.myBuffer = uniformSet[i];
-			}
 
 			RenderPassJob::DrawTesselatedCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawTesselatedCmd>();
 			drawCmd.myOffset = 0;

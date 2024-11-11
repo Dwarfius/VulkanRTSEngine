@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: get rid of this
 #include "RenderPassJob.h"
 
 #include <Core/CRC32.h>
@@ -10,6 +11,8 @@ class Camera;
 class GPUBuffer;
 template<class T> class Handle;
 struct AdapterSourceData;
+class CmdBuffer;
+class GPUPipeline;
 
 // The goal behind the render passes is to be able to 
 // setup a a render environment, sort the objects, and 
@@ -21,16 +24,22 @@ class RenderPass
 {
 public:
 	using Id = uint32_t;
-	using Bindpoints = std::array<uint8_t, 4>;
 
 	virtual ~RenderPass() = default;
 
 	GPUBuffer* AllocateUBO(Graphics& aGraphics, size_t aSize);
 
 	// Helper for filling UBOs for the render job with game state
-	// Handles both normal and global UBOs.
+	// Handles instance UBOs only.
 	// Returns false if ran out of allocated UBOs this frame, otherwise true
-	bool FillUBOs(RenderPassJob::UniformSet& aSet, Bindpoints& aBindpoints, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
+	// If succeeds, binds all GPUPipeline's UBOs. Doesn't grow the command buffer!
+	bool BindUBOs(CmdBuffer& aCmdBuffer, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
+
+	// Helper for filling UBOs for the render job with game state
+	// Handles instance UBOs only.
+	// Returns false if ran out of allocated UBOs this frame, otherwise true
+	// If succeeds, binds all GPUPipeline's UBOs. May grow the command buffer!
+	bool BindUBOsAndGrow(CmdBuffer& aCmdBuffer, Graphics& aGraphics, const AdapterSourceData& aSource, const GPUPipeline& aPipeline);
 
 	size_t GetUBOCount() const;
 	size_t GetUBOTotalSize() const;

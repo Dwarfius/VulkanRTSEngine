@@ -1,12 +1,13 @@
 #include "Precomp.h"
 #include "RenderPass.h"
 
+#include <Core/Profiler.h>
+#include <Core/CmdBuffer.h>
+
 #include "Descriptor.h"
 #include "Graphics.h"
 #include "Resources/GPUBuffer.h"
 #include "Resources/GPUPipeline.h"
-
-#include <Core/Profiler.h>
 
 GPUBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 {
@@ -23,21 +24,19 @@ GPUBuffer* RenderPass::AllocateUBO(Graphics& aGraphics, size_t aSize)
 	return nullptr;
 }
 
-bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Bindpoints& aBindpoints, Graphics& aGraphics, 
+bool RenderPass::BindUBOs(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
 	const AdapterSourceData& aSource, const GPUPipeline& aPipeline)
 {
 	const size_t uboCount = aPipeline.GetAdapterCount();
-	ASSERT_STR(uboCount <= 4,
-		"Tried to push {} UBOs into a render job that supports only 4!",
-		uboCount);
-
+	constexpr uint8_t kBufferCount = 16;
+	ASSERT_STR(uboCount < kBufferCount, "Need more than {} GPUBuffers!", kBufferCount);
+	std::array<GPUBuffer*, kBufferCount> buffers;
 	for (size_t i = 0; i < uboCount; i++)
 	{
 		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		// TODO: get rid of this
 		if (uniformAdapter.IsGlobal())
 		{
-			// TODO: get rid of this
-			aSet.PushBack(nullptr);
 			continue;
 		}
 
@@ -49,12 +48,70 @@ bool RenderPass::FillUBOs(RenderPassJob::UniformSet& aSet, Bindpoints& aBindpoin
 		{
 			return false;
 		}
+		buffers[i] = uniformBuffer;
+	}
 
-		UniformBlock uniformBlock(*uniformBuffer);
+	for (size_t i = 0; i < uboCount; i++)
+	{
+		// TODO: once globals are removed above, remove this if
+		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		if (uniformAdapter.IsGlobal())
+		{
+			continue;
+		}
+
+		UniformBlock uniformBlock(*buffers[i]);
 		uniformAdapter.Fill(aSource, uniformBlock);
-		aSet.PushBack(uniformBuffer);
+		
+		RenderPassJob::SetBufferCmd& cmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd, false>();
+		cmd.myBuffer = buffers[i];
+		cmd.mySlot = uniformAdapter.GetBindpoint();
+	}
+	return true;
+}
 
-		aBindpoints[i] = uniformAdapter.GetBindpoint();
+bool RenderPass::BindUBOsAndGrow(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
+	const AdapterSourceData& aSource, const GPUPipeline& aPipeline)
+{
+	const size_t uboCount = aPipeline.GetAdapterCount();
+	constexpr uint8_t kBufferCount = 16;
+	ASSERT_STR(uboCount < kBufferCount, "Need more than {} GPUBuffers!", kBufferCount);
+	std::array<GPUBuffer*, kBufferCount> buffers;
+	for (size_t i = 0; i < uboCount; i++)
+	{
+		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		// TODO: get rid of this
+		if (uniformAdapter.IsGlobal())
+		{
+			continue;
+		}
+
+		GPUBuffer* uniformBuffer = AllocateUBO(
+			aGraphics,
+			uniformAdapter.GetDescriptor().GetBlockSize()
+		);
+		if (!uniformBuffer)
+		{
+			return false;
+		}
+		buffers[i] = uniformBuffer;
+	}
+
+	for (size_t i = 0; i < uboCount; i++)
+	{
+		// TODO: once globals are removed above, remove this if
+		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
+		if (uniformAdapter.IsGlobal())
+		{
+			continue;
+		}
+
+		UniformBlock uniformBlock(*buffers[i]);
+		uniformAdapter.Fill(aSource, uniformBlock);
+
+		RenderPassJob::SetBufferCmd& cmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd>();
+		cmd.myBuffer = buffers[i];
+		cmd.mySlot = uniformAdapter.GetBindpoint();
 	}
 	return true;
 }
