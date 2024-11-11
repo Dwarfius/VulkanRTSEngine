@@ -1,16 +1,6 @@
 #include "Precomp.h"
 #include "UniformAdapterRegister.h"
 
-#include "Descriptor.h"
-#include "Graphics.h"
-
-void UniformAdapter::CreateGlobalUBO(Graphics& aGraphics)
-{
-	ASSERT_STR(myIsGlobal, "Non-global adaptors don't need a UBO!");
-	ASSERT_STR(!myGlobalUBO.IsValid(), "Already initialized the global UBO!");
-	myGlobalUBO = aGraphics.CreateUBOBuffer(myDescriptor.GetBlockSize());
-}
-
 const UniformAdapter& UniformAdapterRegister::GetAdapter(std::string_view aName) const
 {
 #ifdef _DEBUG

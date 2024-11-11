@@ -49,19 +49,12 @@ public:
 	uint8_t GetBindpoint() const { return myBindpoint; }
 	bool IsGlobal() const { return myIsGlobal; }
 
-	void CreateGlobalUBO(Graphics& aGraphics);
-	// TODO: find a way to avoid copies here
-	Handle<GPUBuffer> GetGlobalUBO() const { return myGlobalUBO; }
-	// TODO: find a way to just expose a mutable reference to avoid this API
-	void ReleaseUBO() { myGlobalUBO = Handle<GPUBuffer>(); }
-
 private:
 	const FillUBCallback myUBFiller;
 	const Descriptor& myDescriptor;
 	const std::string_view myName;
 	const uint8_t myBindpoint;
 	const bool myIsGlobal;
-	Handle<GPUBuffer> myGlobalUBO;
 };
 
 // A Singleton class used for tracking all the uniform adapters

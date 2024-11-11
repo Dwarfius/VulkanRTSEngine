@@ -390,6 +390,7 @@ bool PipelineGL::AreUBOsValid()
 				return false;
 			}
 		}
+		return true;
 	};
 
 	for (size_t i = 0; i < pipeline->GetAdapterCount(); i++)

@@ -99,19 +99,6 @@ void Graphics::Init()
 	);
 	myFullScrenQuad = GetOrCreate(cpuModel).Get<GPUModel>();
 
-	// Creating global adapters so that RenderPasses can
-	// use the buffers when scheduling work
-	// Note: hard requirement that all adapters are registered at boot,
-	// which is rather unflexible. But for now dont' have a better idea
-	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
-	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
-		if (!anAdapter.IsGlobal())
-		{
-			return;
-		}
-
-		anAdapter.CreateGlobalUBO(*this);
-	});
 	ProcessCreateQueue();
 }
 
@@ -126,23 +113,6 @@ void Graphics::Gather()
 		SortRenderPasses();
 		myRenderPassesNeedOrdering = false;
 	}
-
-	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
-	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
-		if (!anAdapter.IsGlobal())
-		{
-			return;
-		}
-
-		Handle<GPUBuffer> uboHandle = anAdapter.GetGlobalUBO();
-		ASSERT_STR(uboHandle.IsValid() 
-			&& (uboHandle.Get()->GetState() == GPUResource::State::PendingUpload
-				|| uboHandle.Get()->GetState() == GPUResource::State::Valid),
-			"Uniform Buffer should be available by this point!");
-		UniformBlock block(*uboHandle.Get());
-		AdapterSourceData source(*this);
-		anAdapter.Fill(source, block);
-	});
 
 	for (RenderPass* pass : myRenderPasses)
 	{
@@ -167,17 +137,6 @@ void Graphics::CleanUp()
 	{
 		delete pass;
 	}
-
-	// Adapter register keeps global UBOs around, so clean those up as well
-	UniformAdapterRegister& adapterRegister = UniformAdapterRegister::GetInstance();
-	adapterRegister.ForEach([&](UniformAdapter& anAdapter) {
-		if (!anAdapter.IsGlobal())
-		{
-			return;
-		}
-
-		anAdapter.ReleaseUBO();
-	});
 
 	myFullScrenQuad = Handle<GPUModel>();
 }
