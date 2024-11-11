@@ -6,5 +6,6 @@
     ],
     "myAdapters":[
         "PainterAdapter"
-    ]
+    ],
+    "myGlobalAdapters":[]
 }

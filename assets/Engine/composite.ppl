@@ -4,5 +4,6 @@
         "Engine/compositeVert.shd",
         "Engine/compositeFrag.shd"
     ],
-    "myAdapters":[]
+    "myAdapters":[],
+    "myGlobalAdapters":[]
 }

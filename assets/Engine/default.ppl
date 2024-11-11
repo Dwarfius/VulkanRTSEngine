@@ -4,9 +4,11 @@
 		"Engine/baseVert.shd",
 		"Engine/baseFrag.shd"
 	],
-	"myAdapters":[  
+	"myAdapters": [
 		"ObjectMatricesAdapter",
-		"CameraAdapter",
+		"CameraAdapter"
+	],
+	"myGlobalAdapters": [
 		"LightAdapter"
 	]
 }

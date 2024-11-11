@@ -4,6 +4,7 @@
         "ObjectMatricesAdapter",
         "TintAdapter"
     ],
+    "myGlobalAdapters":[],
     "myShaders":
     [
         "Engine/baseVert.shd",

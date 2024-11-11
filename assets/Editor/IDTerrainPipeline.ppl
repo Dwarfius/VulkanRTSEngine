@@ -11,5 +11,6 @@
 		"TerrainAdapter",
 		"CameraAdapter",
 		"IDAdapter"
-	]
+	],
+	"myGlobalAdapters":[]
 }

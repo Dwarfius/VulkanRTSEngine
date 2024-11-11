@@ -8,5 +8,6 @@
         "ObjectMatricesAdapter",
         "SkeletonAdapter",
         "IDAdapter"
-    ]
+    ],
+    "myGlobalAdapters":[]
 }

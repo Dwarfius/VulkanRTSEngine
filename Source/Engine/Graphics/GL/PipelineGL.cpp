@@ -234,56 +234,57 @@ void PipelineGL::OnShaderRemove(ShaderGL& aShader)
 bool PipelineGL::AreUBOsValid()
 {
 	const Pipeline* pipeline = myResHandle.Get<const Pipeline>();
-	const size_t adapterCount = pipeline->GetAdapterCount();
-	int uniformBlocks;
-	glGetProgramInterfaceiv(myGLProgram, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniformBlocks);
-	if (uniformBlocks != adapterCount)
 	{
-		char errorMsg[200];
-		Utils::StringFormat(errorMsg, "Mismatching adapter count, expecting {} got {}",
-			adapterCount, uniformBlocks);
-		SetErrMsg(errorMsg);
-		return false;
-	}
-
-	// all good - time to resolve the UBOs
-	for (size_t i = 0; i < adapterCount; i++)
-	{
-		const UniformAdapter& adapter = pipeline->GetAdapter(i);
-		const std::string_view uboName = adapter.GetName();
-		const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
-		ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for {}!", uboName);
-		
-		int32_t declaredBinding;
-		glGetActiveUniformBlockiv(myGLProgram, uboIndex, GL_UNIFORM_BLOCK_BINDING, &declaredBinding);
-
-		if (declaredBinding != adapter.GetBindpoint())
+		const size_t totalAdapterCount = pipeline->GetAdapterCount()
+			+ pipeline->GetGlobalAdapterCount();
+		int uniformBlocks;
+		glGetProgramInterfaceiv(myGLProgram, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniformBlocks);
+		if (uniformBlocks != totalAdapterCount)
 		{
 			char errorMsg[200];
-			Utils::StringFormat(errorMsg, "Pipline {} had an invalid bindpoint for {}, supposed to be {}!", 
-				pipeline->GetName(), adapter.GetName(), adapter.GetBindpoint());
+			Utils::StringFormat(errorMsg, "Mismatching adapter count, expecting {} got {}",
+				totalAdapterCount, uniformBlocks);
 			SetErrMsg(errorMsg);
 			return false;
 		}
 	}
 
-	// The driver returns uniforms in unspecified order while our 
-	// descriptors are defined in the same order as uniforms
-	// in a uniform block of a shader. So we have to cache and sort
-	// the uniforms reported by the driver to ensure we're
-	// comparing in the right order
-	struct UniformInfo
+	// all good - time to resolve the UBOs
+	auto CheckBindpoint = [this, pipeline](const UniformAdapter& anAdapter) 
 	{
-		int32_t myType;
-		int32_t myOffset;
-	};
-	constexpr static uint8_t kMaxUniforms = 20;
-	std::array<UniformInfo, kMaxUniforms> uniforms;
+		const std::string_view uboName = anAdapter.GetName();
+		const uint32_t uboIndex = glGetUniformBlockIndex(myGLProgram, uboName.data());
+		ASSERT_STR(uboIndex != GL_INVALID_INDEX, "Got invalid index for {}!", uboName);
 
-	for (uint32_t adapterInd = 0; adapterInd < adapterCount; adapterInd++)
+		int32_t declaredBinding;
+		glGetActiveUniformBlockiv(myGLProgram, uboIndex, GL_UNIFORM_BLOCK_BINDING, &declaredBinding);
+
+		if (declaredBinding != anAdapter.GetBindpoint())
+		{
+			char errorMsg[200];
+			Utils::StringFormat(errorMsg, "Pipline {} had an invalid bindpoint for {}, supposed to be {}!",
+				pipeline->GetName(), anAdapter.GetName(), anAdapter.GetBindpoint());
+			SetErrMsg(errorMsg);
+			return false;
+		}
+		return true;
+	};
+	auto CheckFormat = [this, pipeline](const UniformAdapter& anAdapter) 
 	{
-		const UniformAdapter& adapter = pipeline->GetAdapter(adapterInd);
-		const std::string_view uboName = adapter.GetName();
+		// The driver returns uniforms in unspecified order while our 
+		// descriptors are defined in the same order as uniforms
+		// in a uniform block of a shader. So we have to cache and sort
+		// the uniforms reported by the driver to ensure we're
+		// comparing in the right order
+		struct UniformInfo
+		{
+			int32_t myType;
+			int32_t myOffset;
+		};
+		constexpr static uint8_t kMaxUniforms = 20;
+		std::array<UniformInfo, kMaxUniforms> uniforms;
+
+		const std::string_view uboName = anAdapter.GetName();
 		const uint32_t blockInd = glGetUniformBlockIndex(myGLProgram, uboName.data());
 
 		const uint32_t activeUniformCountProperty = GL_NUM_ACTIVE_VARIABLES;
@@ -313,16 +314,16 @@ bool PipelineGL::AreUBOsValid()
 		}
 
 		std::sort(
-			std::begin(uniforms), 
+			std::begin(uniforms),
 			std::begin(uniforms) + activeUniforms,
-			[](const UniformInfo& aLeft, const UniformInfo& aRight)	{
-				return aLeft.myOffset < aRight.myOffset;
-			}
+			[](const UniformInfo& aLeft, const UniformInfo& aRight) {
+			return aLeft.myOffset < aRight.myOffset;
+		}
 		);
-		
+
 		for (int32_t uniformInd = 0; uniformInd < activeUniforms; uniformInd++)
 		{
-			const Descriptor::UniformType declaredType = adapter.GetDescriptor().GetType(
+			const Descriptor::UniformType declaredType = anAdapter.GetDescriptor().GetType(
 				static_cast<uint32_t>(uniformInd)
 			);
 			bool missmatch = false;
@@ -381,7 +382,7 @@ bool PipelineGL::AreUBOsValid()
 				Utils::StringFormat(errorMsg,
 					"For slot {} in uniform buffer {} expected %s but got {}",
 					uniformInd,
-					adapter.GetName(),
+					anAdapter.GetName(),
 					Descriptor::UniformType::kNames[declaredType],
 					typeName
 				);
@@ -389,7 +390,27 @@ bool PipelineGL::AreUBOsValid()
 				return false;
 			}
 		}
+	};
+
+	for (size_t i = 0; i < pipeline->GetAdapterCount(); i++)
+	{
+		const UniformAdapter& adapter = pipeline->GetAdapter(i);
+		if (!CheckBindpoint(adapter) || !CheckFormat(adapter))
+		{
+			return false;
+		}
 	}
+
+	for (size_t i = 0; i < pipeline->GetGlobalAdapterCount(); i++)
+	{
+		const UniformAdapter& adapter = pipeline->GetGlobalAdapter(i);
+		if (!CheckBindpoint(adapter) || !CheckFormat(adapter))
+		{
+			return false;
+		}
+	}
+
+	
 	return true;
 }
 #endif

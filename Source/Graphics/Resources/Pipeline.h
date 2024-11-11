@@ -19,6 +19,10 @@ public:
 
 	size_t GetAdapterCount() const override { return myAdapters.size(); }
 	const UniformAdapter& GetAdapter(size_t anIndex) const override { return *myAdapters[anIndex]; }
+
+	size_t GetGlobalAdapterCount() const override { return myGlobalAdapters.size(); }
+	const UniformAdapter& GetGlobalAdapter(size_t anIndex) const override { return *myGlobalAdapters[anIndex]; }
+
 	void AddAdapter(std::string_view anAdapter);
 
 	void AddShader(const std::string& aShader) { myShaders.push_back(aShader); }
@@ -33,5 +37,6 @@ private:
 
 	Type myType;
 	std::vector<const UniformAdapter*> myAdapters;
+	std::vector<const UniformAdapter*> myGlobalAdapters;
 	std::vector<std::string> myShaders;
 };

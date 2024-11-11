@@ -35,12 +35,6 @@ bool RenderPass::BindUBOs(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
 	for (size_t i = 0; i < uboCount; i++)
 	{
 		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
-		// TODO: get rid of this
-		if (uniformAdapter.IsGlobal())
-		{
-			continue;
-		}
-
 		GPUBuffer* uniformBuffer = AllocateUBO(
 			aGraphics,
 			uniformAdapter.GetDescriptor().GetBlockSize()
@@ -54,13 +48,7 @@ bool RenderPass::BindUBOs(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
 
 	for (size_t i = 0; i < uboCount; i++)
 	{
-		// TODO: once globals are removed above, remove this if
 		const UniformAdapter& uniformAdapter = aPipeline.GetAdapter(i);
-		if (uniformAdapter.IsGlobal())
-		{
-			continue;
-		}
-
 		UniformBlock uniformBlock(*buffers[i]);
 		uniformAdapter.Fill(aSource, uniformBlock);
 		

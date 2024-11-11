@@ -10,5 +10,6 @@
 		"ObjectMatricesAdapter",
 		"TerrainAdapter",
 		"CameraAdapter"
-	]
+	],
+	"myGlobalAdapters":[]
 }
