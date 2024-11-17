@@ -18,6 +18,7 @@
 #include <variant>
 #include <span>
 #include <print>
+#include <ranges>
 
 #ifdef USE_AUDIO
 #include <AL/alut.h>
