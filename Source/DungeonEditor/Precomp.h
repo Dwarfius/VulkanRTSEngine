@@ -4,6 +4,7 @@
 #include <atomic>
 #include <array>
 #include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 #include <random>
 #include <mutex>
@@ -16,6 +17,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Core/CRC32.h>
 #include <Core/Debug/Assert.h>
 
 #include <imgui.h>

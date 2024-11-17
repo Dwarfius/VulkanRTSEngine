@@ -56,6 +56,7 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
+#include <Core/CRC32.h>
 #include <Core/Debug/Assert.h>
 #include <Core/Utils.h>
 

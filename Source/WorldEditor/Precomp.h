@@ -19,6 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/bitfield.hpp>
 
+#include <Core/CRC32.h>
 #include <Core/Debug/Assert.h>
 
 #include <imgui.h>

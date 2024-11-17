@@ -2,6 +2,8 @@
 #include "LightRenderPass.h"
 
 #include <Graphics/Graphics.h>
+#include <Graphics/RenderContext.h>
+#include <Graphics/RenderPassJob.h>
 
 #include "Light.h"
 

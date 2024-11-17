@@ -13,6 +13,7 @@
 #include <Graphics/Resources/GPUBuffer.h>
 #include <Graphics/UniformAdapterRegister.h>
 #include <Graphics/UniformBlock.h>
+#include <Graphics/RenderPassJob.h>
 
 #include <Core/Debug/DebugDrawer.h>
 
