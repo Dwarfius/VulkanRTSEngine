@@ -8,7 +8,7 @@ include(FetchContent)
 FetchContent_Declare(
 	tbb
 	GIT_REPOSITORY	https://github.com/oneapi-src/oneTBB
-	GIT_TAG			v2021.12.0
+	GIT_TAG			v2022.0.0
 )
 
 FetchContent_GetProperties(tbb)
