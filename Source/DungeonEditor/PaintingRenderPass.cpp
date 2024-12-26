@@ -24,14 +24,14 @@ void PaintingRenderPass::SetPipelines(Handle<Pipeline> aPaintPipeline,
 	aPaintPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myPaintBuffer = aGraphics.CreateUBOBuffer(adapter.GetDescriptor().GetBlockSize());
+		myPaintBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 
 	myDisplayPipeline = aGraphics.GetOrCreate(aDisplayPipeline).Get<GPUPipeline>();
 	aDisplayPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myDisplayBuffer = aGraphics.CreateUBOBuffer(adapter.GetDescriptor().GetBlockSize());
+		myDisplayBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
 	});
 }
 

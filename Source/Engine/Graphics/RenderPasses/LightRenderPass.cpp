@@ -9,7 +9,7 @@
 
 LightRenderPass::LightRenderPass(Graphics& aGraphics)
 {
-	myLightsUBO = aGraphics.CreateUBOBuffer(LightAdapter::ourDescriptor.GetBlockSize());
+	myLightsUBO = aGraphics.CreateUniformBuffer(LightAdapter::ourDescriptor.GetBlockSize());
 }
 
 void LightRenderPass::Execute(Graphics& aGraphics)

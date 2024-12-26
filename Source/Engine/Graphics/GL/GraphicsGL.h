@@ -38,7 +38,7 @@ public:
 	[[nodiscard]]
 	RenderPassJob& CreateRenderPassJob(const RenderContext& renderContext) override;
 
-	void CleanUpUBO(GPUBuffer* aUBO) override;
+	void CleanUpGPUBuffer(GPUBuffer* aUBO) override;
 
 	std::string_view GetTypeName() const override { return "GraphicsGL"; }
 

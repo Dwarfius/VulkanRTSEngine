@@ -29,7 +29,7 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		ASSERT_STR(pipeline->GetAdapterCount() == 1,
 			"Only supporting 1 adapter! Please update if changed!");
 		const Descriptor& descriptor = pipeline->GetAdapter(0).GetDescriptor();
-		myBuffer = aGraphics.CreateUBOBuffer(descriptor.GetBlockSize());
+		myBuffer = aGraphics.CreateUniformBuffer(descriptor.GetBlockSize());
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	Handle<Model> model = new Model(

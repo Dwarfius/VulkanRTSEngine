@@ -7,7 +7,7 @@
 void GPUBufferGL::Cleanup()
 {
 	myState = State::PendingUnload;
-	myGraphics->CleanUpUBO(this);
+	myGraphics->CleanUpGPUBuffer(this);
 }
 
 void GPUBufferGL::Bind(uint32_t aBindPoint)

@@ -165,7 +165,7 @@ void RenderPass::UBOBucket::PrepForPass(Graphics& aGraphics)
 		myUBOs.resize(newSize);
 		for (size_t i=oldSize; i < newSize; i++)
 		{
-			myUBOs[i] = aGraphics.CreateUBOBuffer(mySize);
+			myUBOs[i] = aGraphics.CreateUniformBuffer(mySize);
 		}
 	}
 	myUBOCounter = 0;

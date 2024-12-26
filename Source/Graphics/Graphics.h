@@ -85,12 +85,10 @@ public:
 	void ScheduleCreate(Handle<GPUResource> aGPUResource);
 	void ScheduleUpload(Handle<GPUResource> aGPUResource);
 	void ScheduleUnload(GPUResource* aGPUResource);
-	virtual void CleanUpUBO(GPUBuffer* aBuffer) = 0;
+	virtual void CleanUpGPUBuffer(GPUBuffer* aBuffer) = 0;
 
-	// TODO: rename this to UniformBuffer
-	Handle<GPUBuffer> CreateUBOBuffer(size_t aSize);
-	// TODO: rename this to SharedStorageBuffer
-	Handle<GPUBuffer> CreateSSBOBuffer(size_t aSize);
+	Handle<GPUBuffer> CreateUniformBuffer(size_t aSize);
+	Handle<GPUBuffer> CreateShaderStorageBuffer(size_t aSize);
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 

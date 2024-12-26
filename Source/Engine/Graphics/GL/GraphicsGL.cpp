@@ -307,7 +307,7 @@ RenderPassJob& GraphicsGL::CreateRenderPassJob(const RenderContext& renderContex
 	return job;
 }
 
-void GraphicsGL::CleanUpUBO(GPUBuffer* aUBO)
+void GraphicsGL::CleanUpGPUBuffer(GPUBuffer* aUBO)
 {
 	ASSERT_STR(aUBO->GetState() == GPUResource::State::PendingUnload,
 		"UBO must be marked as end-of-life at this point!");

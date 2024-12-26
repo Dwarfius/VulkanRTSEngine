@@ -244,14 +244,14 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 	myUnloadQueues.GetWrite().push(aGPUResource);
 }
 
-Handle<GPUBuffer> Graphics::CreateUBOBuffer(size_t aSize)
+Handle<GPUBuffer> Graphics::CreateUniformBuffer(size_t aSize)
 {
 	Handle<GPUBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
 	uniformBuffer->Create(*this, {});
 	return uniformBuffer;
 }
 
-Handle<GPUBuffer> Graphics::CreateSSBOBuffer(size_t aSize)
+Handle<GPUBuffer> Graphics::CreateShaderStorageBuffer(size_t aSize)
 {
 	Handle<GPUBuffer> shaderStorageBuffer = CreateShaderStorageBufferImpl(aSize);
 	shaderStorageBuffer->Create(*this, {});
