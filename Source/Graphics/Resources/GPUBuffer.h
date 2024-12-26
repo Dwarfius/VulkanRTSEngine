@@ -5,13 +5,14 @@
 #include <Graphics/GraphicsConfig.h>
 #include <Graphics/GPUResource.h>
 
+// TODO: add support fo dynamic count of per-frame buffers for SSBO
 class GPUBuffer : public GPUResource
 {
 public:
 	enum class Type : uint8_t
 	{
 		Uniform,
-		//ShaderStorage
+		ShaderStorage
 	};
 
 	GPUBuffer(Type aType, size_t anAlignedSize)
@@ -22,14 +23,21 @@ public:
 
 	char* Map()
 	{
-		const Buffer& buffer = myBufferInfos.GetWrite();
-		return static_cast<char*>(myMappedBuffer) + buffer.myOffest;
+		if (myType == Type::Uniform)
+		{
+			const Buffer& buffer = myBufferInfos.GetWrite();
+			return static_cast<char*>(myMappedBuffer) + buffer.myOffest;
+		}
+		return static_cast<char*>(myMappedBuffer);
 	}
 
 	void Unmap()
 	{
-		myBufferInfos.AdvanceWrite();
-		myMappedCount++;
+		if (myType == Type::Uniform)
+		{
+			myBufferInfos.AdvanceWrite();
+			myMappedCount++;
+		}
 	}
 
 	void AdvanceReadBuffer()
@@ -40,6 +48,8 @@ public:
 			myMappedCount--;
 		}
 	}
+
+	Type GetType() const { return myType; }
 
 	std::string_view GetTypeName() const final { return "GPUBuffer"; }
 
@@ -52,7 +62,7 @@ protected:
 	};
 	RWBuffer<Buffer, kMaxFrames> myBufferInfos;
 	void* myMappedBuffer = nullptr;
-	const size_t myBufferSize;
+	size_t myBufferSize;
 	uint8_t myMappedCount = 0;
 	Type myType;
 };

@@ -251,6 +251,13 @@ Handle<GPUBuffer> Graphics::CreateUBOBuffer(size_t aSize)
 	return uniformBuffer;
 }
 
+Handle<GPUBuffer> Graphics::CreateSSBOBuffer(size_t aSize)
+{
+	Handle<GPUBuffer> shaderStorageBuffer = CreateShaderStorageBufferImpl(aSize);
+	shaderStorageBuffer->Create(*this, {});
+	return shaderStorageBuffer;
+}
+
 void Graphics::FileChanged(std::string_view aFile)
 {
 	// Because we can drop CPU-side resources when we upload

@@ -6,6 +6,7 @@
 // and asserts if read-write collision happens. Read and Write heads
 // can be pointing towards the same element, but calling either 
 // Read/Write() will trigger an assert
+// TODO: reduce the size of Size to u8 - then can pack it all into one u32
 template<typename T, size_t Size>
 class RWBuffer
 {

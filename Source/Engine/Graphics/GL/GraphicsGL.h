@@ -73,9 +73,12 @@ private:
 	std::mutex myTexturesMutex;
 
 	GPUBuffer* CreateUniformBufferImpl(size_t aSize) override;
+	GPUBuffer* CreateShaderStorageBufferImpl(size_t aSize) override;
 
 	StableVector<GPUBufferGL> myUBOs;
 	std::mutex myUBOsMutex;
+	StableVector<GPUBufferGL> mySSBOs;
+	std::mutex mySSBOsMutex;
 	constexpr static uint8_t kQueues = GraphicsConfig::kMaxFramesScheduled * 2 + 1;
 	RWBuffer<tbb::concurrent_queue<GPUBufferGL*>, kQueues> myUBOCleanUpQueues;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;

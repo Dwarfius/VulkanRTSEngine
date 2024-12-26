@@ -251,6 +251,12 @@ GPUBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize)
 	return &myUBOs.Allocate(GPUBuffer::Type::Uniform, alignedSize);
 }
 
+GPUBuffer* GraphicsGL::CreateShaderStorageBufferImpl(size_t aSize)
+{
+	std::lock_guard lock(mySSBOsMutex);
+	return &mySSBOs.Allocate(GPUBuffer::Type::ShaderStorage, aSize);
+}
+
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
 {
 	if (aWidth == 0 && aHeight == 0)
@@ -306,7 +312,17 @@ void GraphicsGL::CleanUpUBO(GPUBuffer* aUBO)
 	ASSERT_STR(aUBO->GetState() == GPUResource::State::PendingUnload,
 		"UBO must be marked as end-of-life at this point!");
 	UnregisterResource(aUBO); // TODO: can we avoid unregister here? Those are UBOs!
-	myUBOCleanUpQueues.GetWrite().push(static_cast<GPUBufferGL*>(aUBO));
+	if (aUBO->GetType() == GPUBuffer::Type::Uniform)
+	{
+		myUBOCleanUpQueues.GetWrite().push(static_cast<GPUBufferGL*>(aUBO));
+	}
+	else
+	{
+		// Assumign SSBOs are only needed for the duration of render pass lifetime
+		// (and those are static atm)
+		TriggerUnload(aUBO);
+		mySSBOs.Free(*static_cast<GPUBufferGL*>(aUBO));
+	}
 }
 
 void GraphicsGL::OnResize(int aWidth, int aHeight)

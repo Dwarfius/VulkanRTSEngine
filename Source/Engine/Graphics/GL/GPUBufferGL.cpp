@@ -12,11 +12,18 @@ void GPUBufferGL::Cleanup()
 
 void GPUBufferGL::Bind(uint32_t aBindPoint)
 {
-	const Buffer& buffer = myBufferInfos.GetRead();
-	glFlushMappedNamedBufferRange(myBufferGL, buffer.myOffest, myBufferSize);
-	// TODO: change this based on buffer type!
-	glBindBufferRange(GL_UNIFORM_BUFFER, aBindPoint, myBufferGL,
-		buffer.myOffest, myBufferSize);
+	if (myType == Type::Uniform)
+	{
+		const Buffer& buffer = myBufferInfos.GetRead();
+		glFlushMappedNamedBufferRange(myBufferGL, buffer.myOffest, myBufferSize);
+		glBindBufferRange(GL_UNIFORM_BUFFER, aBindPoint, myBufferGL,
+			buffer.myOffest, myBufferSize);
+	}
+	else
+	{
+		glFlushMappedNamedBufferRange(myBufferGL, 0, myBufferSize);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, aBindPoint, myBufferGL);
+	}
 }
 
 void GPUBufferGL::OnCreate(Graphics& aGraphics)
@@ -24,20 +31,24 @@ void GPUBufferGL::OnCreate(Graphics& aGraphics)
 	ASSERT_STR(!myBufferGL, "Double initialization of GL buffer!");
 	glCreateBuffers(1, &myBufferGL);
 
+	const size_t fullSize = myType == Type::Uniform ? myBufferSize * kMaxFrames : myBufferSize;
 	constexpr uint32_t kCreateFlags = GL_MAP_WRITE_BIT
 		| GL_MAP_PERSISTENT_BIT;
-	glNamedBufferStorage(myBufferGL, myBufferSize * kMaxFrames, nullptr, kCreateFlags);
+	glNamedBufferStorage(myBufferGL, fullSize, nullptr, kCreateFlags);
 
 	constexpr uint32_t kMapFlags = GL_MAP_WRITE_BIT
 		| GL_MAP_PERSISTENT_BIT
 		| GL_MAP_FLUSH_EXPLICIT_BIT;
-	myMappedBuffer = glMapNamedBufferRange(myBufferGL, 0, myBufferSize * kMaxFrames, kMapFlags);
+	myMappedBuffer = glMapNamedBufferRange(myBufferGL, 0, fullSize, kMapFlags);
 
-	for (uint8_t i = 0; i < kMaxFrames; i++)
+	if (myType == Type::Uniform)
 	{
-		Buffer& buffer = myBufferInfos.GetWrite();
-		buffer.myOffest = i * myBufferSize;
-		myBufferInfos.Advance();
+		for (uint8_t i = 0; i < kMaxFrames; i++)
+		{
+			Buffer& buffer = myBufferInfos.GetWrite();
+			buffer.myOffest = i * myBufferSize;
+			myBufferInfos.Advance();
+		}
 	}
 }
 
