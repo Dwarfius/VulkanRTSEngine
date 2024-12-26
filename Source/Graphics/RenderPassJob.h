@@ -2,7 +2,6 @@
 
 #include "RenderContext.h"
 
-#include <Core/StaticVector.h>
 #include <Core/CmdBuffer.h>
 
 class GPUPipeline;
@@ -17,11 +16,6 @@ class Graphics;
 class RenderPassJob
 {
 public:
-	using DrawMode = uint8_t; // IMode::PrimitiveType
-
-	// TODO: remove this
-	using TextureSet = StaticVector<GPUTexture*, 4>;
-
 	template<uint8_t Id>
 	struct RenderPassJobCmd
 	{
@@ -117,6 +111,5 @@ private:
 	virtual void DownloadFrameBuffer(Graphics& aGraphics, Texture& aTexture) = 0;
 
 	RenderContext myContext;
-	tbb::spin_mutex myJobsMutex;
 	CmdBuffer myCmdBuffer;
 };
