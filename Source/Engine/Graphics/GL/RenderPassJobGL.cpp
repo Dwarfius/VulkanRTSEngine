@@ -366,6 +366,26 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		{
 			auto cmd = GetCommand<RenderPassJob::DispatchCompute>(bytes, index);
 			glDispatchCompute(cmd.myGroupsX, cmd.myGroupsY, cmd.myGroupsZ);
+			break;
+		}
+		case RenderPassJob::MemBarrier::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::MemBarrier>(bytes, index);
+			GLbitfield barrier = 0;
+			if ((cmd.myType & MemBarrierType::UniformBuffer) == MemBarrierType::UniformBuffer)
+			{
+				barrier |= GL_UNIFORM_BARRIER_BIT;
+			}
+			if ((cmd.myType & MemBarrierType::ShaderStorageBuffer) == MemBarrierType::ShaderStorageBuffer)
+			{
+				barrier |= GL_SHADER_STORAGE_BARRIER_BIT;
+			}
+			if ((cmd.myType & MemBarrierType::CommandBuffer) == MemBarrierType::CommandBuffer)
+			{
+				barrier |= GL_COMMAND_BARRIER_BIT;
+			}
+			glMemoryBarrier(barrier);
+			break;
 		}
 		default:
 			ASSERT_STR(false, "Unknown command!");

@@ -83,6 +83,18 @@ public:
 		uint32_t myGroupsZ;
 	};
 
+	enum class MemBarrierType : uint8_t
+	{
+		UniformBuffer = 0b1,
+		ShaderStorageBuffer = 0b10,
+		CommandBuffer = 0b100
+	};
+	// TODO: isolate Windows.h, can't use MemoryBarrier!
+	struct MemBarrier : RenderPassJobCmd<10>
+	{
+		MemBarrierType myType;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 
@@ -113,3 +125,12 @@ private:
 	RenderContext myContext;
 	CmdBuffer myCmdBuffer;
 };
+
+inline RenderPassJob::MemBarrierType operator&(
+	RenderPassJob::MemBarrierType aLeft, RenderPassJob::MemBarrierType aRight
+)
+{
+	return static_cast<RenderPassJob::MemBarrierType>(
+		std::to_underlying(aLeft) & std::to_underlying(aRight)
+	);
+}
