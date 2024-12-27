@@ -13,6 +13,7 @@ class GameObject;
 class Terrain;
 class VisualObject;
 class Game;
+class Texture;
 
 class IDRenderPass : public RenderPass
 {
