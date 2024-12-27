@@ -19,6 +19,7 @@ struct AdapterSourceData
 	const Graphics& myGraphics;
 };
 
+// TODO: move to CameraAdapter
 // For per-camera adapters
 struct CameraAdapterSourceData : AdapterSourceData
 {
