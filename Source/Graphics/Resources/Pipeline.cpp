@@ -32,8 +32,6 @@ void Pipeline::AddAdapter(std::string_view anAdapter)
 void Pipeline::Serialize(Serializer& aSerializer)
 {
 	aSerializer.Serialize("myType", myType);
-	ASSERT_STR(myType == IPipeline::Type::Graphics, "Compute pipeline needs implementing!");
-
 	aSerializer.Serialize("myShaders", myShaders);
 
 	size_t adaptersSize = myAdapters.size();
