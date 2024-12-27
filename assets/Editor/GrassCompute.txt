@@ -1,0 +1,23 @@
+#version 430 core
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+#include "Engine/Adapters/CameraAdapter.txt"
+
+layout (std140, binding = 5) uniform CameraAdapter;
+layout (std430, binding = 6) buffer Positions
+{
+    float myCoord[]; // xyzxyzxyz...
+};
+
+void main()
+{
+    vec4 forward = FrustumPlane[4]; // far
+    vec3 cubePos = (CamPos + forward * gl_WorkGroupSize.x).xyz; // grid origin
+    const float size = 0.25f;
+    const float offset = size * 2;
+    cubePos -= vec3(gl_WorkGroupSize.x / 2);
+    cubePos += gl_LocalInvocationID * offset;
+    myCoord[gl_LocalInvocationIndex * 3 + 0] = cubePos.x;
+    myCoord[gl_LocalInvocationIndex * 3 + 1] = cubePos.y;
+    myCoord[gl_LocalInvocationIndex * 3 + 2] = cubePos.z;
+}

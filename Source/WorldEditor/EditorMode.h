@@ -21,6 +21,7 @@ class Game;
 class AnimationSystem;
 class AnimationTest;
 class IDRenderPass;
+class GrassRenderPass;
 class Terrain;
 struct Light;
 class NavMeshGen;
@@ -71,6 +72,7 @@ private:
 	void UpdatePickedObject(Game& aGame);
 
 	IDRenderPass* myIDRenderPass; // non-owning
+	GrassRenderPass* myGrassRenderPass; // non-owning
 	GameObject* myPickedGO = nullptr;
 	Terrain* myPickedTerrain = nullptr;
 

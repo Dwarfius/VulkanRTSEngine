@@ -2,6 +2,7 @@
 #include "EditorMode.h"
 
 #include "AnimationTest.h"
+#include "GrassRenderPass.h"
 #include "IDRenderPass.h"
 #include "NavMeshGen.h"
 
@@ -54,6 +55,9 @@ EditorMode::EditorMode(Game& aGame)
 		graphics.GetOrCreate(idTerrainPipeline).Get<GPUPipeline>()
 	);
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
+
+	myGrassRenderPass = new GrassRenderPass(graphics);
+	aGame.GetGraphics()->AddRenderPass(myGrassRenderPass);
 
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();
 	light.Get()->myColor = glm::vec3(1, 1, 1);

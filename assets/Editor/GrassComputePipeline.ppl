@@ -1,0 +1,10 @@
+{  
+    "myType":1,
+    "myShaders":[
+        "Editor/GrassCompute.shd"
+    ],
+    "myAdapters":[
+        "CameraAdapter"
+    ],
+    "myGlobalAdapters":[]
+}
