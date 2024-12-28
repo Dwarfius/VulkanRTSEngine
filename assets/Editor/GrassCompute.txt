@@ -13,8 +13,8 @@ void main()
 {
     vec4 forward = FrustumPlane[4]; // far
     vec3 cubePos = (CamPos + forward * gl_WorkGroupSize.x).xyz; // grid origin
-    const float size = 0.25f;
-    const float offset = size * 2;
+    const float size = 1.f;
+    const float offset = size + 0.5f;
     cubePos -= vec3(gl_WorkGroupSize.x / 2);
     cubePos += gl_LocalInvocationID * offset;
     myCoord[gl_LocalInvocationIndex * 3 + 0] = cubePos.x;
