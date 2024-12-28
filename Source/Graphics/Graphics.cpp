@@ -493,15 +493,40 @@ void Graphics::OnResize(int aWidth, int aHeight)
 
 void Graphics::SortRenderPasses()
 {
-	std::sort(myRenderPasses.begin(), myRenderPasses.end(),
-		[](const RenderPass* aLeft, const RenderPass* aRight) {
-		for (const uint32_t rightId : aRight->GetDependencies())
+	// TODO: take into account frame-buffers
+	std::vector<RenderPass*> toSort = std::move(myRenderPasses);
+	myRenderPasses.reserve(toSort.size());
+	std::unordered_set<uint32_t> alreadyAdded;
+	alreadyAdded.reserve(toSort.size());
+	uint32_t startIndex = 0;
+	while (startIndex < toSort.size())
+	{
+		bool inserted = false;
+		for (uint32_t i = startIndex; i < toSort.size(); i++)
 		{
-			if (aLeft->GetId() == rightId)
+			RenderPass* pass = toSort[i];
+			bool foundDeps = true;
+			for(uint32_t dep : pass->GetDependencies())
 			{
-				return true;
+				if (!alreadyAdded.contains(dep))
+				{
+					foundDeps = false;
+					break;
+				}
+			}
+			if (foundDeps)
+			{
+				alreadyAdded.emplace(pass->GetId());
+				myRenderPasses.push_back(pass);
+				if (i != startIndex)
+				{
+					std::swap(toSort[i], toSort[startIndex]);
+				}
+				startIndex++;
+				inserted = true;
+				break;
 			}
 		}
-		return false;
-	});
+		ASSERT_STR(inserted, "Missing dependency for one of the render passes!");
+	}
 }
