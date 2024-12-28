@@ -56,7 +56,7 @@ EditorMode::EditorMode(Game& aGame)
 	);
 	aGame.GetGraphics()->AddRenderPass(myIDRenderPass);
 
-	myGrassRenderPass = new GrassRenderPass(graphics);
+	myGrassRenderPass = new GrassRenderPass(graphics, myDefAssets.GetBox());
 	aGame.GetGraphics()->AddRenderPass(myGrassRenderPass);
 
 	PoolPtr<Light> light = aGame.GetLightSystem().AllocateLight();

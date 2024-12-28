@@ -306,7 +306,6 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 		{
 			auto cmd = GetCommand<RenderPassJob::SetBufferCmd>(bytes, index);
 
-			// TODO: account for SSBO
 			// Now we can update the uniform blocks
 			GPUBufferGL& buffer = *static_cast<GPUBufferGL*>(cmd.myBuffer);
 			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid
@@ -385,6 +384,18 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 				barrier |= GL_COMMAND_BARRIER_BIT;
 			}
 			glMemoryBarrier(barrier);
+			break;
+		}
+		case RenderPassJob::DrawIndexedInstanced::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::DrawIndexedInstanced>(bytes, index);
+			const uint32_t drawMode = myCurrentModel->GetDrawMode();
+			const size_t indexOffset = cmd.myOffset * sizeof(IModel::IndexType);
+			glDrawElementsInstanced(drawMode, 
+				static_cast<GLsizei>(cmd.myCount),
+				GL_UNSIGNED_INT,
+				reinterpret_cast<void*>(indexOffset),
+				cmd.myInstanceCount);
 			break;
 		}
 		default:

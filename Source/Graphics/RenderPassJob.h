@@ -95,6 +95,13 @@ public:
 		MemBarrierType myType;
 	};
 
+	struct DrawIndexedInstanced : RenderPassJobCmd<11>
+	{
+		uint32_t myOffset;
+		uint32_t myCount;
+		uint32_t myInstanceCount;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 

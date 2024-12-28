@@ -6,13 +6,15 @@
 
 class GPUPipeline;
 class GPUBuffer;
+class GPUModel;
+class Model;
 class Graphics;
 
 class GrassRenderPass final : public RenderPass
 {
 public:
 	constexpr static uint32_t kId = Utils::CRC32("GrassRenderPass");
-	GrassRenderPass(Graphics& aGraphics);
+	GrassRenderPass(Graphics& aGraphics, const Handle<Model>& aBox);
 	
 	void Execute(Graphics& aGraphics) override;
 	Id GetId() const override { return kId; }
@@ -20,6 +22,8 @@ public:
 
 private:
 	Handle<GPUPipeline> myComputePipeline;
+	Handle<GPUPipeline> myDrawPipeline;
 	Handle<GPUBuffer> myCamBuffer;
 	Handle<GPUBuffer> myPosBuffer;
+	Handle<GPUModel> myBox;
 };

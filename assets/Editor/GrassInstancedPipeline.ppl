@@ -1,0 +1,11 @@
+{  
+    "myType":1,
+    "myShaders":[
+        "Editor/GrassInstancedVert.shd",
+        "Editor/GrassInstancedFrag.shd"
+    ],
+    "myAdapters":[
+        "CameraAdapter"
+    ],
+    "myGlobalAdapters":[]
+}

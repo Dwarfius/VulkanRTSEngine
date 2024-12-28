@@ -2,38 +2,65 @@
 #include "GrassRenderPass.h"
 
 #include <Engine/Graphics/Adapters/CameraAdapter.h>
+#include <Engine/Graphics/NamedFrameBuffers.h>
+#include <Engine/Graphics/RenderPasses/DebugRenderPass.h>
 #include <Engine/Game.h>
 
 #include <Graphics/Graphics.h>
 #include <Graphics/Resources/GPUPipeline.h>
 #include <Graphics/Resources/GPUBuffer.h>
+#include <Graphics/Resources/GPUModel.h>
 #include <Graphics/Resources/Pipeline.h>
 #include <Graphics/RenderContext.h>
 #include <Graphics/RenderPassJob.h>
 
 #include <Core/Resources/AssetTracker.h>
 
-GrassRenderPass::GrassRenderPass(Graphics& aGraphics)
+GrassRenderPass::GrassRenderPass(Graphics& aGraphics, const Handle<Model>& aBox)
 {
 	AssetTracker& assetTracker = aGraphics.GetAssetTracker();
-	Handle<Pipeline> pipeline = assetTracker.GetOrCreate<Pipeline>("Editor/GrassComputePipeline.ppl");
-	myComputePipeline = aGraphics.GetOrCreate(pipeline).Get<GPUPipeline>();
+	Handle<Pipeline> computePipeline = assetTracker.GetOrCreate<Pipeline>("Editor/GrassComputePipeline.ppl");
+	myComputePipeline = aGraphics.GetOrCreate(computePipeline).Get<GPUPipeline>();
+
+	Handle<Pipeline> drawPipeline = assetTracker.GetOrCreate<Pipeline>("Editor/GrassInstancedPipeline.ppl");
+	myDrawPipeline = aGraphics.GetOrCreate(drawPipeline).Get<GPUPipeline>();
 
 	static constexpr uint32_t kSize = 32 * 32 * 3 * 4;
 	myPosBuffer = aGraphics.CreateShaderStorageBuffer(kSize);
 
 	myCamBuffer = aGraphics.CreateUniformBuffer(CameraAdapter::ourDescriptor.GetBlockSize());
+
+	myBox = aGraphics.GetOrCreate(aBox).Get<GPUModel>();
+
+	aGraphics.AddRenderPassDependency(DebugRenderPass::kId, kId);
 }
 
 void GrassRenderPass::Execute(Graphics& aGraphics)
 {
 	if (myComputePipeline->GetState() != GPUResource::State::Valid
+		|| myDrawPipeline->GetState() != GPUResource::State::Valid
+		|| myCamBuffer->GetState() != GPUResource::State::Valid
+		|| myBox->GetState() != GPUResource::State::Valid
 		|| myPosBuffer->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
 
-	RenderPassJob& job = aGraphics.CreateRenderPassJob({});
+	const EngineSettings& settings = Game::GetInstance()->GetEngineSettings();
+	RenderContext renderContext{
+		.myFrameBuffer = DefaultFrameBuffer::kName,
+		.myTextureCount = 1u,
+		.myTexturesToActivate = { -1 },
+		.myViewportSize = {
+			static_cast<int>(aGraphics.GetWidth()),
+			static_cast<int>(aGraphics.GetHeight())
+		},
+		.myPolygonMode = settings.myUseWireframe ?
+			RenderContext::PolygonMode::Line : RenderContext::PolygonMode::Fill,
+		.myEnableDepthTest = true,
+		.myEnableCulling = true,
+	};
+	RenderPassJob& job = aGraphics.CreateRenderPassJob(renderContext);
 	CmdBuffer& cmdBuffer = job.GetCmdBuffer();
 	cmdBuffer.Clear();
 
@@ -63,4 +90,14 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 
 	RenderPassJob::MemBarrier& barrierCmd = cmdBuffer.Write<RenderPassJob::MemBarrier>();
 	barrierCmd.myType = RenderPassJob::MemBarrierType::ShaderStorageBuffer;
+
+	cmdBuffer.Write<RenderPassJob::SetPipelineCmd>().myPipeline = myDrawPipeline.Get();
+
+	RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
+	modelCmd.myModel = myBox.Get();
+
+	RenderPassJob::DrawIndexedInstanced& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedInstanced>();
+	drawCmd.myCount = 36;
+	drawCmd.myOffset = 0;
+	drawCmd.myInstanceCount = 32 * 32;
 }
