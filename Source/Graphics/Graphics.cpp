@@ -244,18 +244,11 @@ void Graphics::ScheduleUnload(GPUResource* aGPUResource)
 	myUnloadQueues.GetWrite().push(aGPUResource);
 }
 
-Handle<GPUBuffer> Graphics::CreateUniformBuffer(size_t aSize)
+Handle<GPUBuffer> Graphics::CreateGPUBuffer(size_t aSize, uint8_t aFrameCount, bool aIsUBO)
 {
-	Handle<GPUBuffer> uniformBuffer = CreateUniformBufferImpl(aSize);
+	Handle<GPUBuffer> uniformBuffer = CreateGPUBufferImpl(aSize, aFrameCount, aIsUBO);
 	uniformBuffer->Create(*this, {});
 	return uniformBuffer;
-}
-
-Handle<GPUBuffer> Graphics::CreateShaderStorageBuffer(size_t aSize)
-{
-	Handle<GPUBuffer> shaderStorageBuffer = CreateShaderStorageBufferImpl(aSize);
-	shaderStorageBuffer->Create(*this, {});
-	return shaderStorageBuffer;
 }
 
 void Graphics::FileChanged(std::string_view aFile)

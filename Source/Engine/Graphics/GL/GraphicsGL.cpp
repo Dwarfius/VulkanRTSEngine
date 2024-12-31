@@ -56,7 +56,7 @@ GraphicsGL::GraphicsGL(AssetTracker& anAssetTracker)
 {
 	for (uint8_t i = 0; i < GraphicsConfig::kMaxFramesScheduled - 1; i++)
 	{
-		myUBOCleanUpQueues.AdvanceWrite();
+		myGPUBufferCleanUpQueue.AdvanceWrite();
 	}
 }
 
@@ -127,19 +127,19 @@ void GraphicsGL::Display()
 	Graphics::Display();
 
 	{
-		myUBOCleanUpQueues.AdvanceRead();
-		tbb::concurrent_queue<GPUBufferGL*>& queue = myUBOCleanUpQueues.GetRead();
-		GPUBufferGL* ubo;
-		while (queue.try_pop(ubo))
+		myGPUBufferCleanUpQueue.AdvanceRead();
+		tbb::concurrent_queue<GPUBufferGL*>& queue = myGPUBufferCleanUpQueue.GetRead();
+		GPUBufferGL* buffer;
+		while (queue.try_pop(buffer))
 		{
-			ASSERT_STR(myUBOs.Contains(ubo), "Unrecognized UBO - Where did it come from?");
-			TriggerUnload(ubo);
-			myUBOs.Free(*ubo);
+			ASSERT_STR(myGPUBuffers.Contains(buffer), "Unrecognized UBO - Where did it come from?");
+			TriggerUnload(buffer);
+			myGPUBuffers.Free(*buffer);
 		}
 	}
 
 	{
-		myUBOs.ForEach([](GPUBufferGL& aUBO) {
+		myGPUBuffers.ForEach([](GPUBufferGL& aUBO) {
 			aUBO.AdvanceReadBuffer();
 		});
 	}
@@ -190,7 +190,7 @@ void GraphicsGL::Display()
 
 void GraphicsGL::Gather()
 {
-	myUBOCleanUpQueues.AdvanceWrite();
+	myGPUBufferCleanUpQueue.AdvanceWrite();
 	
 	Graphics::Gather();
 
@@ -202,14 +202,14 @@ void GraphicsGL::CleanUp()
 {
 	Graphics::CleanUp();
 
-	for(tbb::concurrent_queue<GPUBufferGL*>& queue : myUBOCleanUpQueues)
+	for(tbb::concurrent_queue<GPUBufferGL*>& queue : myGPUBufferCleanUpQueue)
 	{
-		GPUBufferGL* ubo;
-		while (queue.try_pop(ubo))
+		GPUBufferGL* buffer;
+		while (queue.try_pop(buffer))
 		{
-			ASSERT_STR(myUBOs.Contains(ubo), "Unrecognized UBO - Where did it come from?");
-			TriggerUnload(ubo);
-			myUBOs.Free(*ubo);
+			ASSERT_STR(myGPUBuffers.Contains(buffer), "Unrecognized UBO - Where did it come from?");
+			TriggerUnload(buffer);
+			myGPUBuffers.Free(*buffer);
 		}
 	}
 
@@ -242,19 +242,13 @@ GPUResource* GraphicsGL::Create(Shader*, GPUResource::UsageType)
 	return new ShaderGL();
 }
 
-GPUBuffer* GraphicsGL::CreateUniformBufferImpl(size_t aSize)
+GPUBuffer* GraphicsGL::CreateGPUBufferImpl(size_t aSize, uint8_t aFrameCount, bool aIsUBO)
 {
-	const size_t alignedSize = Utils::Align(aSize, myUBOOffsetAlignment);
+	const size_t alignedSize = aIsUBO ? Utils::Align(aSize, myUBOOffsetAlignment) : aSize;
 
 	// TODO: add recycling to avoid recreating GPU-side resources
-	std::lock_guard lock(myUBOsMutex);
-	return &myUBOs.Allocate(GPUBuffer::Type::Uniform, alignedSize);
-}
-
-GPUBuffer* GraphicsGL::CreateShaderStorageBufferImpl(size_t aSize)
-{
-	std::lock_guard lock(mySSBOsMutex);
-	return &mySSBOs.Allocate(GPUBuffer::Type::ShaderStorage, aSize);
+	std::lock_guard lock(myGPUBuffersMutex);
+	return &myGPUBuffers.Allocate(alignedSize, aFrameCount);
 }
 
 void GraphicsGL::OnWindowResized(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -312,17 +306,7 @@ void GraphicsGL::CleanUpGPUBuffer(GPUBuffer* aUBO)
 	ASSERT_STR(aUBO->GetState() == GPUResource::State::PendingUnload,
 		"UBO must be marked as end-of-life at this point!");
 	UnregisterResource(aUBO); // TODO: can we avoid unregister here? Those are UBOs!
-	if (aUBO->GetType() == GPUBuffer::Type::Uniform)
-	{
-		myUBOCleanUpQueues.GetWrite().push(static_cast<GPUBufferGL*>(aUBO));
-	}
-	else
-	{
-		// Assumign SSBOs are only needed for the duration of render pass lifetime
-		// (and those are static atm)
-		TriggerUnload(aUBO);
-		mySSBOs.Free(*static_cast<GPUBufferGL*>(aUBO));
-	}
+	myGPUBufferCleanUpQueue.GetWrite().push(static_cast<GPUBufferGL*>(aUBO));
 }
 
 void GraphicsGL::OnResize(int aWidth, int aHeight)

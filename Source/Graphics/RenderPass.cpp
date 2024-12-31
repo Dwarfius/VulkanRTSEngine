@@ -55,6 +55,7 @@ bool RenderPass::BindUBOs(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
 		RenderPassJob::SetBufferCmd& cmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd, false>();
 		cmd.myBuffer = buffers[i];
 		cmd.mySlot = uniformAdapter.GetBindpoint();
+		cmd.myType = RenderPassJob::GPUBufferType::Uniform;
 	}
 	return true;
 }
@@ -89,6 +90,7 @@ bool RenderPass::BindUBOsAndGrow(CmdBuffer& aCmdBuffer, Graphics& aGraphics,
 		RenderPassJob::SetBufferCmd& cmd = aCmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 		cmd.myBuffer = buffers[i];
 		cmd.mySlot = uniformAdapter.GetBindpoint();
+		cmd.myType = RenderPassJob::GPUBufferType::Uniform;
 	}
 	return true;
 }
@@ -165,7 +167,7 @@ void RenderPass::UBOBucket::PrepForPass(Graphics& aGraphics)
 		myUBOs.resize(newSize);
 		for (size_t i=oldSize; i < newSize; i++)
 		{
-			myUBOs[i] = aGraphics.CreateUniformBuffer(mySize);
+			myUBOs[i] = aGraphics.CreateGPUBuffer(mySize, GraphicsConfig::kMaxFramesScheduled + 1, true);
 		}
 	}
 	myUBOCounter = 0;

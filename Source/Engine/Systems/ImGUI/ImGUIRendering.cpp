@@ -29,7 +29,9 @@ ImGUIRenderPass::ImGUIRenderPass(Handle<Pipeline> aPipeline, Handle<Texture> aFo
 		ASSERT_STR(pipeline->GetAdapterCount() == 1,
 			"Only supporting 1 adapter! Please update if changed!");
 		const Descriptor& descriptor = pipeline->GetAdapter(0).GetDescriptor();
-		myBuffer = aGraphics.CreateUniformBuffer(descriptor.GetBlockSize());
+		myBuffer = aGraphics.CreateGPUBuffer(descriptor.GetBlockSize(), 
+			GraphicsConfig::kMaxFramesScheduled + 1, true
+		);
 	});
 	myPipeline = aGraphics.GetOrCreate(aPipeline).Get<GPUPipeline>();
 	Handle<Model> model = new Model(
@@ -123,6 +125,7 @@ void ImGUIRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& uboCmd = buffer.Write<RenderPassJob::SetBufferCmd, false>();
 	uboCmd.mySlot = ImGUIAdapter::kBindpoint;
 	uboCmd.myBuffer = myBuffer.Get();
+	uboCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
 	// Only things that change between render calls are:
 	// * the textures (either the ImGUI atlas or user texture)

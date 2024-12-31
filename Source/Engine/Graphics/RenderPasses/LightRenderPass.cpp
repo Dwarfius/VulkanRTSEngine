@@ -9,7 +9,9 @@
 
 LightRenderPass::LightRenderPass(Graphics& aGraphics)
 {
-	myLightsUBO = aGraphics.CreateUniformBuffer(LightAdapter::ourDescriptor.GetBlockSize());
+	myLightsUBO = aGraphics.CreateGPUBuffer(LightAdapter::ourDescriptor.GetBlockSize(), 
+		GraphicsConfig::kMaxFramesScheduled + 1, true
+	);
 }
 
 void LightRenderPass::Execute(Graphics& aGraphics)
@@ -28,4 +30,5 @@ void LightRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& uboCmd = passJob.GetCmdBuffer().Write<RenderPassJob::SetBufferCmd>();
 	uboCmd.mySlot = LightAdapter::kBindpoint;
 	uboCmd.myBuffer = myLightsUBO.Get();
+	uboCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 }

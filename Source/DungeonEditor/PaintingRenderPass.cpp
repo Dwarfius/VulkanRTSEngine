@@ -24,14 +24,18 @@ void PaintingRenderPass::SetPipelines(Handle<Pipeline> aPaintPipeline,
 	aPaintPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myPaintBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+		myPaintBuffer = aGraphics.CreateGPUBuffer(adapter.GetDescriptor().GetBlockSize(), 
+			GraphicsConfig::kMaxFramesScheduled + 1, true
+		);
 	});
 
 	myDisplayPipeline = aGraphics.GetOrCreate(aDisplayPipeline).Get<GPUPipeline>();
 	aDisplayPipeline->ExecLambdaOnLoad([this, &aGraphics](const Resource* aRes) {
 		const Pipeline* pipeline = static_cast<const Pipeline*>(aRes);
 		const UniformAdapter& adapter = pipeline->GetAdapter(0);
-		myDisplayBuffer = aGraphics.CreateUniformBuffer(adapter.GetDescriptor().GetBlockSize());
+		myDisplayBuffer = aGraphics.CreateGPUBuffer(adapter.GetDescriptor().GetBlockSize(), 
+			GraphicsConfig::kMaxFramesScheduled + 1, true
+		);
 	});
 }
 
@@ -130,6 +134,7 @@ void PaintingRenderPass::ExecutePainting(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	uboCmd.mySlot = PainterAdapter::kBindpoint;
 	uboCmd.myBuffer = myPaintBuffer.Get();
+	uboCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;
@@ -168,6 +173,7 @@ void PaintingRenderPass::ExecuteDisplay(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	uboCmd.mySlot = PainterAdapter::kBindpoint;
 	uboCmd.myBuffer = myDisplayBuffer.Get();
+	uboCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
 	RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 	drawCmd.myDrawMode = IModel::PrimitiveType::Triangles;

@@ -34,14 +34,20 @@ public:
 
 	struct SetTextureCmd : RenderPassJobCmd<2>
 	{
-		uint8_t mySlot;
 		GPUTexture* myTexture;
+		uint8_t mySlot;
 	};
 
+	enum class GPUBufferType : uint8_t
+	{
+		Uniform,
+		ShaderStorage
+	};
 	struct SetBufferCmd : RenderPassJobCmd<3>
 	{
-		uint8_t mySlot;
 		GPUBuffer* myBuffer;
+		uint8_t mySlot;
+		GPUBufferType myType;
 	};
 
 	struct DrawIndexedCmd : RenderPassJobCmd<4>

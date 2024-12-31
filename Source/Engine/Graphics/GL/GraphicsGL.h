@@ -72,15 +72,12 @@ private:
 	std::mutex myPipelinesMutex;
 	std::mutex myTexturesMutex;
 
-	GPUBuffer* CreateUniformBufferImpl(size_t aSize) override;
-	GPUBuffer* CreateShaderStorageBufferImpl(size_t aSize) override;
+	GPUBuffer* CreateGPUBufferImpl(size_t aSize, uint8_t aFrameCount, bool aIsUBO) override;
 
-	StableVector<GPUBufferGL> myUBOs;
-	std::mutex myUBOsMutex;
-	StableVector<GPUBufferGL> mySSBOs;
-	std::mutex mySSBOsMutex;
+	StableVector<GPUBufferGL> myGPUBuffers;
+	std::mutex myGPUBuffersMutex;
 	constexpr static uint8_t kQueues = GraphicsConfig::kMaxFramesScheduled * 2 + 1;
-	RWBuffer<tbb::concurrent_queue<GPUBufferGL*>, kQueues> myUBOCleanUpQueues;
+	RWBuffer<tbb::concurrent_queue<GPUBufferGL*>, kQueues> myGPUBufferCleanUpQueue;
 	std::unordered_map<std::string_view, FrameBufferGL> myFrameBuffers;
 	int32_t myUBOOffsetAlignment = 0;
 	uint8_t myWriteFenceInd = GraphicsConfig::kMaxFramesScheduled;

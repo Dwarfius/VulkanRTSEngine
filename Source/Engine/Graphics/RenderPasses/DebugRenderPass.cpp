@@ -117,6 +117,7 @@ void DebugRenderPass::Execute(Graphics& aGraphics)
 		RenderPassJob::SetBufferCmd& uboCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 		uboCmd.mySlot = adapter.GetBindpoint();
 		uboCmd.myBuffer = ubo;
+		uboCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
 		RenderPassJob::DrawArrayCmd& drawCmd = cmdBuffer.Write<RenderPassJob::DrawArrayCmd>();
 		drawCmd.myDrawMode = IModel::PrimitiveType::Lines;
@@ -149,7 +150,9 @@ void DebugRenderPass::SetCamera(uint32_t aCamIndex, const Camera& aCamera, Graph
 		ASSERT_STR(myPipeline->GetAdapterCount() == 1,
 			"DebugRenderPass needs a pipeline with Camera adapter only!");
 		const size_t bufferSize = myPipeline->GetAdapter(0).GetDescriptor().GetBlockSize();
-		Handle<GPUBuffer> buffer = aGraphics.CreateUniformBuffer(bufferSize);
+		Handle<GPUBuffer> buffer = aGraphics.CreateGPUBuffer(bufferSize, 
+			GraphicsConfig::kMaxFramesScheduled + 1, true
+		);
 		PerCameraModel::UploadDesc desc;
 		myCameraModels.emplace_back(gpuModel, aCamera, desc, buffer);
 	}

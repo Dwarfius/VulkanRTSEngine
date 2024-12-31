@@ -311,11 +311,24 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			ASSERT_STR(buffer.GetState() == GPUResource::State::Valid
 				|| buffer.GetState() == GPUResource::State::PendingUnload,
 				"UBO must be valid at this point!");
+
+			uint32_t bindType = 0;
+			switch (cmd.myType)
+			{
+			case RenderPassJob::GPUBufferType::Uniform:
+				bindType = GL_UNIFORM_BUFFER;
+				break;
+			case RenderPassJob::GPUBufferType::ShaderStorage:
+				bindType = GL_SHADER_STORAGE_BUFFER;
+				break;
+			default:
+				ASSERT(false);
+			}
 			// TODO: implement logic that doesn't rebind same slots:
 			// If pipeline A has X, Y, Z uniform blocks
 			// and pipeline B has X, V, W,
 			// if we bind from A to B (or vice versa), no need to rebind X
-			buffer.Bind(cmd.mySlot);
+			buffer.Bind(cmd.mySlot, bindType);
 			break;
 		}
 		case RenderPassJob::DrawIndexedCmd::kId:

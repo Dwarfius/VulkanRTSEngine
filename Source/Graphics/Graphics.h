@@ -87,8 +87,7 @@ public:
 	void ScheduleUnload(GPUResource* aGPUResource);
 	virtual void CleanUpGPUBuffer(GPUBuffer* aBuffer) = 0;
 
-	Handle<GPUBuffer> CreateUniformBuffer(size_t aSize);
-	Handle<GPUBuffer> CreateShaderStorageBuffer(size_t aSize);
+	Handle<GPUBuffer> CreateGPUBuffer(size_t aSize, uint8_t aFrameCount, bool aIsUBO);
 
 	AssetTracker& GetAssetTracker() { return myAssetTracker; }
 
@@ -144,8 +143,7 @@ private:
 	virtual GPUResource* Create(Shader*, GPUResource::UsageType aUsage) = 0;
 	virtual GPUResource* Create(Texture*, GPUResource::UsageType aUsage) = 0;
 
-	virtual GPUBuffer* CreateUniformBufferImpl(size_t aSize) = 0;
-	virtual GPUBuffer* CreateShaderStorageBufferImpl(size_t aSize) = 0;
+	virtual GPUBuffer* CreateGPUBufferImpl(size_t aSize, uint8_t aFrameCount, bool aIsUBO) = 0;
 
 	void SortRenderPasses();
 

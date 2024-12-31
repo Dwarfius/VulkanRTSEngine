@@ -26,9 +26,11 @@ GrassRenderPass::GrassRenderPass(Graphics& aGraphics, const Handle<Model>& aBox)
 	myDrawPipeline = aGraphics.GetOrCreate(drawPipeline).Get<GPUPipeline>();
 
 	static constexpr uint32_t kSize = 32 * 32 * 3 * 4;
-	myPosBuffer = aGraphics.CreateShaderStorageBuffer(kSize);
+	myPosBuffer = aGraphics.CreateGPUBuffer(kSize, 1, false);
 
-	myCamBuffer = aGraphics.CreateUniformBuffer(CameraAdapter::ourDescriptor.GetBlockSize());
+	myCamBuffer = aGraphics.CreateGPUBuffer(CameraAdapter::ourDescriptor.GetBlockSize(), 
+		GraphicsConfig::kMaxFramesScheduled + 1, true
+	);
 
 	myBox = aGraphics.GetOrCreate(aBox).Get<GPUModel>();
 
@@ -70,6 +72,7 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& posCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	posCmd.myBuffer = myPosBuffer.Get();
 	posCmd.mySlot = 6;
+	posCmd.myType = RenderPassJob::GPUBufferType::ShaderStorage;
 
 	UniformBlock camBlock(*myCamBuffer.Get());
 	CameraAdapterSourceData source
@@ -82,6 +85,7 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetBufferCmd& camCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
 	camCmd.myBuffer = myCamBuffer.Get();
 	camCmd.mySlot = CameraAdapter::kBindpoint;
+	camCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
 	RenderPassJob::DispatchCompute& computeCmd = cmdBuffer.Write<RenderPassJob::DispatchCompute>();
 	computeCmd.myGroupsX = 1;

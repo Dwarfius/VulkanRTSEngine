@@ -1,68 +1,55 @@
 #pragma once
 
-#include <Core/RWBuffer.h>
-
-#include <Graphics/GraphicsConfig.h>
 #include <Graphics/GPUResource.h>
 
 // TODO: add support fo dynamic count of per-frame buffers for SSBO
 class GPUBuffer : public GPUResource
 {
 public:
-	enum class Type : uint8_t
-	{
-		Uniform,
-		ShaderStorage
-	};
-
-	GPUBuffer(Type aType, size_t anAlignedSize)
+	GPUBuffer(size_t anAlignedSize, uint8_t aFrameCount)
 		: myBufferSize(anAlignedSize)
-		, myType(aType)
+		, myFrameCount(aFrameCount)
 	{
+		myWriteHead = 1;
+		myReadHead = 0;
 	}
 
 	char* Map()
 	{
-		if (myType == Type::Uniform)
-		{
-			const Buffer& buffer = myBufferInfos.GetWrite();
-			return static_cast<char*>(myMappedBuffer) + buffer.myOffest;
-		}
-		return static_cast<char*>(myMappedBuffer);
+		return static_cast<char*>(myMappedBuffer) + myBufferSize * myWriteHead;
 	}
 
 	void Unmap()
 	{
-		if (myType == Type::Uniform)
-		{
-			myBufferInfos.AdvanceWrite();
-			myMappedCount++;
-		}
+		myWriteHead = (myWriteHead + 1) % myFrameCount;
+		myCanAdvance = true;
 	}
 
 	void AdvanceReadBuffer()
 	{
-		if (myMappedCount)
+		// TODO: I don't like this, but don't have a better idea for now :/
+		// In theory I should be able to advance it on bind, but it asserts
+		if (myCanAdvance) 
 		{
-			myBufferInfos.AdvanceRead();
-			myMappedCount--;
+			myReadHead = (myReadHead + 1) % myFrameCount;
 		}
+		myCanAdvance = false;
 	}
-
-	Type GetType() const { return myType; }
 
 	std::string_view GetTypeName() const final { return "GPUBuffer"; }
 
 protected:
-	static constexpr uint8_t kMaxFrames = GraphicsConfig::kMaxFramesScheduled + 1;
-
-	struct Buffer
+	void CheckOverlap() const
 	{
-		size_t myOffest = 0;
-	};
-	RWBuffer<Buffer, kMaxFrames> myBufferInfos;
+		ASSERT_STR(myFrameCount == 1 || myReadHead != myWriteHead, "Read caught up with write!");
+	}
+
 	void* myMappedBuffer = nullptr;
 	size_t myBufferSize;
-	uint8_t myMappedCount = 0;
-	Type myType;
+	uint8_t myFrameCount; // or how many per-frame sub-buffers it has
+	bool myCanAdvance = false;
+
+	// TODO: explore falshe-sharing impact
+	std::atomic_uint8_t myWriteHead;
+	std::atomic_uint8_t myReadHead;
 };
