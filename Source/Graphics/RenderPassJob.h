@@ -41,7 +41,8 @@ public:
 	enum class GPUBufferType : uint8_t
 	{
 		Uniform,
-		ShaderStorage
+		ShaderStorage,
+		DrawIndirect
 	};
 	struct SetBufferCmd : RenderPassJobCmd<3>
 	{
@@ -108,6 +109,11 @@ public:
 		uint32_t myInstanceCount;
 	};
 
+	struct DrawIndexedInstancedIndirect : RenderPassJobCmd<12>
+	{
+		uint32_t myOffset;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 
@@ -145,5 +151,14 @@ inline RenderPassJob::MemBarrierType operator&(
 {
 	return static_cast<RenderPassJob::MemBarrierType>(
 		std::to_underlying(aLeft) & std::to_underlying(aRight)
+	);
+}
+
+inline RenderPassJob::MemBarrierType operator|(
+	RenderPassJob::MemBarrierType aLeft, RenderPassJob::MemBarrierType aRight
+	)
+{
+	return static_cast<RenderPassJob::MemBarrierType>(
+		std::to_underlying(aLeft) | std::to_underlying(aRight)
 	);
 }

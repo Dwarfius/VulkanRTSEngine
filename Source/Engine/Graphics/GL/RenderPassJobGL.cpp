@@ -321,6 +321,9 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			case RenderPassJob::GPUBufferType::ShaderStorage:
 				bindType = GL_SHADER_STORAGE_BUFFER;
 				break;
+			case RenderPassJob::GPUBufferType::DrawIndirect:
+				bindType = GL_DRAW_INDIRECT_BUFFER;
+				break;
 			default:
 				ASSERT(false);
 			}
@@ -409,6 +412,16 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 				GL_UNSIGNED_INT,
 				reinterpret_cast<void*>(indexOffset),
 				cmd.myInstanceCount);
+			break;
+		}
+		case RenderPassJob::DrawIndexedInstancedIndirect::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::DrawIndexedInstancedIndirect>(bytes, index);
+			const uint32_t drawMode = myCurrentModel->GetDrawMode();
+			const size_t offset = cmd.myOffset;
+			glDrawElementsIndirect(drawMode,
+				GL_UNSIGNED_INT,
+				reinterpret_cast<void*>(offset));
 			break;
 		}
 		default:

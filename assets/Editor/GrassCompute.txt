@@ -8,6 +8,14 @@ layout (std430, binding = 6) buffer Positions
 {
     float myCoord[]; // xyzxyzxyz...
 };
+layout (std430, binding = 7) buffer IndirectDraw
+{
+    uint myCount;
+    uint myInstanceCount;
+    uint myFirstIndex;
+    uint myBaseVertex;
+    uint myBaseInstance;
+};
 
 void main()
 {
@@ -20,4 +28,13 @@ void main()
     myCoord[gl_LocalInvocationIndex * 3 + 0] = cubePos.x;
     myCoord[gl_LocalInvocationIndex * 3 + 1] = cubePos.y;
     myCoord[gl_LocalInvocationIndex * 3 + 2] = cubePos.z;
+
+    if(gl_LocalInvocationIndex == 0)
+    {
+        myCount = 36;
+        myInstanceCount = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+        myFirstIndex = 0;
+        myBaseVertex = 0;
+        myBaseInstance = 0;
+    }
 }

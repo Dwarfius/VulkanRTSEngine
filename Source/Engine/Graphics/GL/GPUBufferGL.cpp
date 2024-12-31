@@ -13,9 +13,16 @@ void GPUBufferGL::Cleanup()
 void GPUBufferGL::Bind(uint32_t aBindPoint, uint32_t aBindPointType)
 {
 	CheckOverlap();
-	const size_t offset = myReadHead * myBufferSize;
-	glFlushMappedNamedBufferRange(myBufferGL, offset, myBufferSize);
-	glBindBufferRange(aBindPointType, aBindPoint, myBufferGL, offset, myBufferSize);
+	if (aBindPointType == GL_UNIFORM_BUFFER || aBindPointType == GL_SHADER_STORAGE_BUFFER)
+	{
+		const size_t offset = myReadHead * myBufferSize;
+		glFlushMappedNamedBufferRange(myBufferGL, offset, myBufferSize);
+		glBindBufferRange(aBindPointType, aBindPoint, myBufferGL, offset, myBufferSize);
+	}
+	else
+	{
+		glBindBuffer(aBindPointType, myBufferGL);
+	}
 }
 
 void GPUBufferGL::OnCreate(Graphics& aGraphics)

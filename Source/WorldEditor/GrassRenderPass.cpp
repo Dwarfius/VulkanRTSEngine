@@ -32,6 +32,9 @@ GrassRenderPass::GrassRenderPass(Graphics& aGraphics, const Handle<Model>& aBox)
 		GraphicsConfig::kMaxFramesScheduled + 1, true
 	);
 
+	static constexpr uint32_t kIndirectCommandSize = 5 * sizeof(uint32_t);
+	myIndirectBuffer = aGraphics.CreateGPUBuffer(kIndirectCommandSize, 1, false);
+
 	myBox = aGraphics.GetOrCreate(aBox).Get<GPUModel>();
 
 	aGraphics.AddRenderPassDependency(DebugRenderPass::kId, kId);
@@ -43,7 +46,8 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 		|| myDrawPipeline->GetState() != GPUResource::State::Valid
 		|| myCamBuffer->GetState() != GPUResource::State::Valid
 		|| myBox->GetState() != GPUResource::State::Valid
-		|| myPosBuffer->GetState() != GPUResource::State::Valid)
+		|| myPosBuffer->GetState() != GPUResource::State::Valid
+		|| myIndirectBuffer->GetState() != GPUResource::State::Valid)
 	{
 		return;
 	}
@@ -69,11 +73,6 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 	RenderPassJob::SetPipelineCmd& pipelineCmd = cmdBuffer.Write<RenderPassJob::SetPipelineCmd>();
 	pipelineCmd.myPipeline = myComputePipeline.Get();
 
-	RenderPassJob::SetBufferCmd& posCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
-	posCmd.myBuffer = myPosBuffer.Get();
-	posCmd.mySlot = 6;
-	posCmd.myType = RenderPassJob::GPUBufferType::ShaderStorage;
-
 	UniformBlock camBlock(*myCamBuffer.Get());
 	CameraAdapterSourceData source
 	{
@@ -87,21 +86,34 @@ void GrassRenderPass::Execute(Graphics& aGraphics)
 	camCmd.mySlot = CameraAdapter::kBindpoint;
 	camCmd.myType = RenderPassJob::GPUBufferType::Uniform;
 
+	RenderPassJob::SetBufferCmd& posCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
+	posCmd.myBuffer = myPosBuffer.Get();
+	posCmd.mySlot = 6;
+	posCmd.myType = RenderPassJob::GPUBufferType::ShaderStorage;
+
+	RenderPassJob::SetBufferCmd& indirectBufferCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
+	indirectBufferCmd.myBuffer = myIndirectBuffer.Get();
+	indirectBufferCmd.mySlot = 7;
+	indirectBufferCmd.myType = RenderPassJob::GPUBufferType::ShaderStorage;
+
 	RenderPassJob::DispatchCompute& computeCmd = cmdBuffer.Write<RenderPassJob::DispatchCompute>();
 	computeCmd.myGroupsX = 1;
 	computeCmd.myGroupsY = 1;
 	computeCmd.myGroupsZ = 1;
 
 	RenderPassJob::MemBarrier& barrierCmd = cmdBuffer.Write<RenderPassJob::MemBarrier>();
-	barrierCmd.myType = RenderPassJob::MemBarrierType::ShaderStorageBuffer;
+	barrierCmd.myType = RenderPassJob::MemBarrierType::ShaderStorageBuffer
+		| RenderPassJob::MemBarrierType::CommandBuffer;
 
 	cmdBuffer.Write<RenderPassJob::SetPipelineCmd>().myPipeline = myDrawPipeline.Get();
 
 	RenderPassJob::SetModelCmd& modelCmd = cmdBuffer.Write<RenderPassJob::SetModelCmd>();
 	modelCmd.myModel = myBox.Get();
 
-	RenderPassJob::DrawIndexedInstanced& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedInstanced>();
-	drawCmd.myCount = 36;
+	RenderPassJob::SetBufferCmd& indirectSourceCmd = cmdBuffer.Write<RenderPassJob::SetBufferCmd>();
+	indirectSourceCmd.myBuffer = myIndirectBuffer.Get();
+	indirectSourceCmd.myType = RenderPassJob::GPUBufferType::DrawIndirect;
+
+	RenderPassJob::DrawIndexedInstancedIndirect& drawCmd = cmdBuffer.Write<RenderPassJob::DrawIndexedInstancedIndirect>();
 	drawCmd.myOffset = 0;
-	drawCmd.myInstanceCount = 32 * 32;
 }

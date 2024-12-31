@@ -25,5 +25,6 @@ private:
 	Handle<GPUPipeline> myDrawPipeline;
 	Handle<GPUBuffer> myCamBuffer;
 	Handle<GPUBuffer> myPosBuffer;
+	Handle<GPUBuffer> myIndirectBuffer;
 	Handle<GPUModel> myBox;
 };
