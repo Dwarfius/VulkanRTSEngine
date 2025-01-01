@@ -90,6 +90,8 @@ public:
 	void AccessRenderables(TFunc&& aFunc);
 	template<class TFunc>
 	void AccessTerrains(TFunc&& aFunc);
+	template<class TFunc>
+	void AccessTerrains(TFunc&& aFunc) const;
 	void ForEachDebugDrawer(const DebugDrawerCallback& aFunc);
 
 	Camera* GetCamera() const { return myCamera; }
@@ -118,7 +120,9 @@ public:
 
 	void AddTerrain(Terrain* aTerrain /* owning */, Handle<Pipeline> aPipeline);
 	void RemoveTerrain(size_t anIndex);
+	// TODO: remove this (we have AccessTerrains), or find protect it with a mutex
 	Terrain* GetTerrain(size_t anIndex) { return myTerrains[anIndex].myTerrain; }
+	const Terrain* GetTerrain(size_t anIndex) const { return myTerrains[anIndex].myTerrain; }
 	size_t GetTerrainCount() const { return myTerrains.size(); }
 
 	// TODO: need to hide it and gate it around #ifdef _DEBUG
@@ -185,6 +189,15 @@ void Game::AccessRenderables(TFunc&& aFunc)
 
 template<class TFunc>
 void Game::AccessTerrains(TFunc&& aFunc)
+{
+#ifdef ASSERT_MUTEX
+	AssertLock assertLock(myTerrainsMutex);
+#endif
+	aFunc(myTerrains);
+}
+
+template<class TFunc>
+void Game::AccessTerrains(TFunc&& aFunc) const
 {
 #ifdef ASSERT_MUTEX
 	AssertLock assertLock(myTerrainsMutex);

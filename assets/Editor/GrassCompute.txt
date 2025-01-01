@@ -3,6 +3,16 @@ layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 #include "Engine/Adapters/CameraAdapter.txt"
 
+layout (r8, binding = 0) readonly restrict uniform image2D Heightmap;
+layout (std140, binding = 1) uniform TerrainAdapter
+{
+    vec4 GridOrigin;
+    float TileSize;
+    int GridWidth;
+    int GridHeight;
+    float YScale;
+    vec4 ColorsAndHeightLevels[5];
+};
 layout (std140, binding = 5) uniform CameraAdapter;
 layout (std430, binding = 6) buffer Positions
 {
@@ -17,16 +27,42 @@ layout (std430, binding = 7) buffer IndirectDraw
     uint myBaseInstance;
 };
 
+float terrain(vec2 uv)
+{
+    vec2 texSize = vec2(imageSize(Heightmap));
+    // don't think the -1 is correct, but it follows tessEval's implementation
+    // and we need to produce the same coordinates for visuals to match up
+    vec2 fullCoords = uv * (texSize-1.f); 
+    ivec2 botLeft = ivec2(fullCoords);
+    ivec2 topRight = ivec2(fullCoords + 1);
+
+    // need to manually lerp, so grab all heights
+    float botLeftHeight = imageLoad(Heightmap, botLeft).x;
+    float botRightHeight = imageLoad(Heightmap, ivec2(topRight.x, botLeft.y)).x;
+    float topLeftHeight = imageLoad(Heightmap, ivec2(botLeft.x, topRight.y)).x;
+    float topRightHeight = imageLoad(Heightmap, topRight).x;
+
+    float horizontalFactor = fullCoords.x - botLeft.x;
+    float horizontalBotHeight = mix(botLeftHeight, botRightHeight, horizontalFactor);
+    float horizontalTopHeight = mix(topLeftHeight, topRightHeight, horizontalFactor);
+    return mix(horizontalBotHeight, horizontalTopHeight, fullCoords.y - botLeft.y) * YScale;
+}
+
 void main()
 {
     vec4 forward = FrustumPlane[4]; // far
     vec3 cubePos = (CamPos + forward * gl_WorkGroupSize.x).xyz; // grid origin
     const float size = 1.f;
     const float offset = size + 0.5f;
-    cubePos -= vec3(gl_WorkGroupSize.x / 2);
-    cubePos += gl_LocalInvocationID * offset;
+    cubePos -= vec3(gl_WorkGroupSize.x / 2, 0, gl_WorkGroupSize.x / 2);
+    cubePos += gl_LocalInvocationID.xzy * offset;
+
+    vec2 terrainPosLS = cubePos.xz - GridOrigin.xz;
+    vec2 terrainUV = terrainPosLS / vec2(GridWidth * TileSize, GridHeight * TileSize);
+    float height = terrain(terrainUV);
+
     myCoord[gl_LocalInvocationIndex * 3 + 0] = cubePos.x;
-    myCoord[gl_LocalInvocationIndex * 3 + 1] = cubePos.y;
+    myCoord[gl_LocalInvocationIndex * 3 + 1] = height;
     myCoord[gl_LocalInvocationIndex * 3 + 2] = cubePos.z;
 
     if(gl_LocalInvocationIndex == 0)

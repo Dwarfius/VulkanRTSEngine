@@ -7,6 +7,7 @@
 class GPUPipeline;
 class GPUBuffer;
 class GPUModel;
+class GPUTexture;
 class Model;
 class Graphics;
 
@@ -23,8 +24,10 @@ public:
 private:
 	Handle<GPUPipeline> myComputePipeline;
 	Handle<GPUPipeline> myDrawPipeline;
+	Handle<GPUBuffer> myTerrainBuffer;
 	Handle<GPUBuffer> myCamBuffer;
 	Handle<GPUBuffer> myPosBuffer;
 	Handle<GPUBuffer> myIndirectBuffer;
+	Handle<GPUTexture> myHeightmap;
 	Handle<GPUModel> myBox;
 };

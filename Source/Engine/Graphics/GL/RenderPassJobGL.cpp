@@ -296,12 +296,11 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			if (myCurrentTextures[slotToUse] != texture)
 			{
 				glActiveTexture(GL_TEXTURE0 + myTextureSlotsUsed + slotToUse);
-				texture->Bind();
+				texture->BindTexture();
 				myCurrentTextures[slotToUse] = texture;
 			}
 			break;
 		}
-			
 		case RenderPassJob::SetBufferCmd::kId:
 		{
 			auto cmd = GetCommand<RenderPassJob::SetBufferCmd>(bytes, index);
@@ -422,6 +421,30 @@ void RenderPassJobGL::RunCommands(const CmdBuffer& aCmdBuffer)
 			glDrawElementsIndirect(drawMode,
 				GL_UNSIGNED_INT,
 				reinterpret_cast<void*>(offset));
+			break;
+		}
+		case RenderPassJob::BindImageTexture::kId:
+		{
+			auto cmd = GetCommand<RenderPassJob::BindImageTexture>(bytes, index);
+			TextureGL* texture = static_cast<TextureGL*>(cmd.myTexture);
+			ASSERT_STR(texture->GetState() == GPUResource::State::Valid
+				|| texture->GetState() == GPUResource::State::PendingUnload,
+				"Texture must be valid&up-to-date at this point!");
+
+			uint32_t accessType = 0;
+			switch (cmd.myAccessType)
+			{
+			case RenderPassJob::AccessType::Read:
+				accessType = GL_READ_ONLY;
+				break;
+			case RenderPassJob::AccessType::Write:
+				accessType = GL_WRITE_ONLY;
+				break;
+			case RenderPassJob::AccessType::ReadWrite:
+				accessType = GL_READ_WRITE;
+				break;
+			}
+			texture->BindImage(cmd.mySlot, 0, accessType);
 			break;
 		}
 		default:

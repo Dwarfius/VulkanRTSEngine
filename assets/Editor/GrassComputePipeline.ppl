@@ -4,6 +4,7 @@
         "Editor/GrassCompute.shd"
     ],
     "myAdapters":[
+        "TerrainAdapter",
         "CameraAdapter"
     ],
     "myGlobalAdapters":[]

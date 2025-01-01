@@ -4,10 +4,17 @@
 #include <Graphics/Resources/Texture.h>
 #include <Core/Profiler.h>
 
-void TextureGL::Bind()
+void TextureGL::BindTexture()
 {
 	ASSERT_STR(myGLTexture, "Missing GL texture to bind!");
 	glBindTexture(GL_TEXTURE_2D, myGLTexture);
+}
+
+void TextureGL::BindImage(uint32_t aSlot, uint8_t aLevel, uint32_t anAccessType)
+{
+	ASSERT_STR(myGLTexture, "Missing GL texture to bind!");
+	ASSERT_STR(anAccessType == GL_READ_ONLY, "Write NYI(last param must be write format)!");
+	glBindImageTexture(aSlot, myGLTexture, aLevel, GL_FALSE, 0, anAccessType, TranslateInternalFormat(myFormat));
 }
 
 uint32_t TextureGL::TranslateInternalFormat(Format aFormat)
@@ -192,6 +199,8 @@ void TextureGL::OnUnload(Graphics& aGraphics)
 void TextureGL::UpdateTexParams(const Texture* aTexture)
 {
 	ASSERT_STR(myGLTexture, "Texture doesn't exist!");
+
+	myFormat = aTexture->GetFormat();
 
 	if (aTexture->GetWrapMode() != myWrapMode)
 	{

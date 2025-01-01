@@ -114,6 +114,20 @@ public:
 		uint32_t myOffset;
 	};
 
+	enum class AccessType : uint8_t
+	{
+		Read,
+		Write,
+		ReadWrite
+	};
+	// Same as SetTextureCmd, but binds mip level 0 to a image uniform
+	struct BindImageTexture : RenderPassJobCmd<13>
+	{
+		GPUTexture* myTexture;
+		uint32_t mySlot;
+		AccessType myAccessType;
+	};
+
 public:
 	virtual ~RenderPassJob() = default;
 
