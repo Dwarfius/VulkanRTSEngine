@@ -14,22 +14,9 @@ find_package(OpenGL REQUIRED)
 FetchContent_Declare(
 	glew
 	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake
-	GIT_TAG        glew-cmake-2.2.0
+	GIT_TAG        918ece3da858c2e28e10f6507378af01647cb139 # fixes cmake min version req
+	SOURCE_SUBDIR  DoesNotExist # prevents add_subdir, so that we can manually configure
 )
-
-FetchContent_GetProperties(glew)
-if(NOT glew_POPULATED)
-	FetchContent_Populate(glew)
-
-	# enable our configuration
-	set(glew-cmake_BUILD_STATIC ON CACHE BOOL "" FORCE)
-	set(glew-cmake_BUILD_SINGLE_CONTEXT ON CACHE BOOL "" FORCE)
-	set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-	set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE BOOL "" FORCE)
-
-	set(CMAKE_FOLDER Extern/GLEW)
-	add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
-endif()
 
 if(VENGINE_BUILD_WITH_AUDIO)
 	# freealut is old, last commit was June 2014
@@ -37,20 +24,34 @@ if(VENGINE_BUILD_WITH_AUDIO)
 		alut
 		GIT_REPOSITORY https://github.com/vancegroup/freealut
 		GIT_TAG		   fc814e316c2bfa6e05b723b8cc9cb276da141aae
+		SOURCE_SUBDIR  DoesNotExist # prevents add_subdir, so that we can manually configure
 	)
-	FetchContent_GetProperties(alut)
-	if(NOT alut_POPULATED)
-		FetchContent_Populate(alut)
+endif()
 
-		set(OPENAL_INCLUDE_DIR ${openal_SOURCE_DIR}/include CACHE PATH "" FORCE)
+if(VENGINE_BUILD_WITH_AUDIO)
+	FetchContent_MakeAvailable(glew alut)
+else()
+	FetchContent_MakeAvailable(glew)
+endif()
 
-		set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-		set(BUILD_STATIC ON CACHE BOOL "" FORCE)
-		set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+# enable our configuration
+set(glew-cmake_BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(glew-cmake_BUILD_SINGLE_CONTEXT ON CACHE BOOL "" FORCE)
+set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(glew-cmake_BUILD_MULTI_CONTEXT OFF CACHE BOOL "" FORCE)
 
-		set(CMAKE_FOLDER Extern/Alut)
-		add_subdirectory(${alut_SOURCE_DIR} ${alut_BINARY_DIR})
-	endif()
+set(CMAKE_FOLDER Extern/GLEW)
+add_subdirectory(${glew_SOURCE_DIR} ${glew_BINARY_DIR})
+
+if(VENGINE_BUILD_WITH_AUDIO)
+	set(OPENAL_INCLUDE_DIR ${openal_SOURCE_DIR}/include CACHE PATH "" FORCE)
+
+	set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+	set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+	set(CMAKE_FOLDER Extern/Alut)
+	add_subdirectory(${alut_SOURCE_DIR} ${alut_BINARY_DIR})
 endif()
 
 set(CMAKE_FOLDER "")

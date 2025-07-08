@@ -8,12 +8,10 @@ FetchContent_Declare(
 	ImGUI
 	GIT_REPOSITORY https://github.com/ocornut/imgui
 	GIT_TAG        v1.88
+	EXCLUDE_FROM_ALL # we'll manually add it
 )
 
-FetchContent_GetProperties(ImGUI)
-if(NOT imgui_POPULATED)
-	FetchContent_Populate(ImGUI)
-endif()
+FetchContent_MakeAvailable(ImGUI)
 
 # according to https://github.com/ocornut/imgui#usage we only need a couple root files
 set(SRC 
