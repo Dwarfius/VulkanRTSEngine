@@ -27,7 +27,7 @@ set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
 
 set(CMAKE_FOLDER Extern/Bullet3)
-add_subdirectory(${bullet3_SOURCE_DIR} ${bullet3_BINARY_DIR})
+add_subdirectory(${bullet3_SOURCE_DIR} ${bullet3_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 set_target_properties(BulletDynamics PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})
 set_target_properties(BulletCollision PROPERTIES UNITY_BUILD ${VENGINE_ENABLE_UNITYBUILDS})

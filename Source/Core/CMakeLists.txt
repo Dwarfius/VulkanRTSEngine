@@ -36,7 +36,6 @@ FetchContent_Declare(
 # download the repos
 FetchContent_MakeAvailable(tbb glm glfw nlohmann_json)
 
-# TODO: play around with add_subdirectory(... EXCLUDE_FROM_ALL)
 # Now we can manually add them
 # TBB
 set(TBB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -48,7 +47,7 @@ set(TBB_TEST OFF CACHE BOOL "" FORCE)
 set(TBB_BENCH OFF CACHE BOOL "" FORCE)
 
 set(CMAKE_FOLDER Extern/ThreadBuildingBlocks)
-add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR})
+add_subdirectory(${tbb_SOURCE_DIR} ${tbb_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 # TBB on Win32 implicitly links libraries, which can go
 # against CMake's custom targets like RelWithDebInfo
@@ -82,7 +81,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
+add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR} EXCLUDE_FROM_ALL)
+
 # GLFW sets it's own CMAKE_FOLDER property via set_target_properties(... FOLDER ...)
 # which ignores global CMAKE_FOLDER. since we want to control how we organize 
 # dependencies we'll override it
