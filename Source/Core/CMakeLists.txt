@@ -9,6 +9,7 @@ FetchContent_Declare(
 	tbb
 	GIT_REPOSITORY	https://github.com/oneapi-src/oneTBB
 	GIT_TAG			v2022.0.0
+	GIT_SHALLOW		TRUE
 	SOURCE_SUBDIR 	DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 
@@ -16,13 +17,15 @@ FetchContent_Declare(
 	glm
 	GIT_REPOSITORY	https://github.com/g-truc/glm
 	GIT_TAG			1.0.1
+	GIT_SHALLOW		TRUE
 	SOURCE_SUBDIR 	DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 
 FetchContent_Declare(
 	glfw
 	GIT_REPOSITORY https://github.com/glfw/glfw
-	GIT_TAG 3.4
+	GIT_TAG 			3.4
+	GIT_SHALLOW		TRUE
 	SOURCE_SUBDIR 	DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 
@@ -30,6 +33,7 @@ FetchContent_Declare(
 	nlohmann_json
 	GIT_REPOSITORY	https://github.com/nlohmann/json
 	GIT_TAG			v3.11.3
+	GIT_SHALLOW		TRUE
 	SOURCE_SUBDIR 	DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 

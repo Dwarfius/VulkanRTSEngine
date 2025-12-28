@@ -18,6 +18,7 @@
 #include <variant>
 #include <mutex>
 #include <print>
+#include <format>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

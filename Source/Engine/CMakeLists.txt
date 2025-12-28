@@ -15,6 +15,7 @@ FetchContent_Declare(
 	glew
 	GIT_REPOSITORY https://github.com/Perlmint/glew-cmake
 	GIT_TAG        918ece3da858c2e28e10f6507378af01647cb139 # fixes cmake min version req
+	# GIT_SHALLOW	TRUE # doesn't work with commit hashes
 	SOURCE_SUBDIR  DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 
@@ -24,6 +25,7 @@ if(VENGINE_BUILD_WITH_AUDIO)
 		alut
 		GIT_REPOSITORY https://github.com/vancegroup/freealut
 		GIT_TAG		   fc814e316c2bfa6e05b723b8cc9cb276da141aae
+		# GIT_SHALLOW	TRUE # doesn't work with commit hashes
 		SOURCE_SUBDIR  DoesNotExist # prevents add_subdir, so that we can manually configure
 	)
 endif()

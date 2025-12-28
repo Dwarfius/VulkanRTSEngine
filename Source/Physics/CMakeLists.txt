@@ -8,6 +8,7 @@ FetchContent_Declare(
 	bullet3
 	GIT_REPOSITORY	https://github.com/bulletphysics/bullet3
 	GIT_TAG			d1a4256b3a019117f2bb6cb8c63d6367aaf512e2 # fixes cmake min required version
+	# GIT_SHALLOW	TRUE # doesn't work with hashes
 	SOURCE_SUBDIR 	DoesNotExist # prevents add_subdir, so that we can manually configure
 )
 

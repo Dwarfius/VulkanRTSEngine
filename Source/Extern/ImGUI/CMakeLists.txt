@@ -6,8 +6,9 @@ include(FetchContent)
 
 FetchContent_Declare(
 	ImGUI
-	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG        v1.88
+	GIT_REPOSITORY	https://github.com/ocornut/imgui
+	GIT_TAG			v1.88
+	GIT_SHALLOW		TRUE
 	EXCLUDE_FROM_ALL # we'll manually add it
 )
 

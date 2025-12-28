@@ -16,6 +16,7 @@
 #include <span>
 #include <array>
 #include <print>
+#include <chrono>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

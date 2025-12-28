@@ -16,8 +16,9 @@ SET(BENCHTABLE_QuadTree FALSE CACHE BOOL "Should BenchTable include QuadTree tes
 
 FetchContent_Declare(
 	googleBench
-	GIT_REPOSITORY https://github.com/google/benchmark
-	GIT_TAG        v1.8.4
+	GIT_REPOSITORY	https://github.com/google/benchmark
+	GIT_TAG			v1.8.4
+	GIT_SHALLOW		TRUE
 )
 FetchContent_GetProperties(googleBench)
 if(NOT googlebench_POPULATED)
