@@ -25,6 +25,10 @@ GameProto::GameProto(Game& aGame)
 		//tracker.AssignDynamicId(*texture);
 		myTextures[i] = texture;
 	}
+
+	std::array<float, kWaterGridSize * kWaterGridSize> data;
+	std::ranges::fill(data, 0.f);
+	myWaterSim.SeedState(data, kWaterGridSize);
 }
 
 void GameProto::Update(Game& aGame, DefaultAssets& aAssets, float aDelta)
@@ -42,6 +46,42 @@ void GameProto::Update(Game& aGame, DefaultAssets& aAssets, float aDelta)
 			if (myNodes.size() > 0 && ImGui::Button("Update Water"))
 			{
 				UpdateWater();
+			}
+
+			ImGui::Separator();
+
+			ImGui::InputFloat("Flow Accel Rate", &myFlowSpeed);
+			ImGui::InputFloat("Cell Size", &myWaterCellSize);
+			ImGui::InputFloat("Vel Damping", &myVelDamping);
+
+			//if (ImGui::Button("Step Sim"))
+			{
+				const float velDamping = glm::max(1 - myVelDamping, 0.f);
+				myWaterSim.Update(aDelta, myFlowSpeed, myWaterCellSize, velDamping);
+			}
+
+			if (ImGui::BeginTable("Water", kWaterGridSize))
+			{
+				std::array<char, 16> tempString;
+				std::span<const float> field = myWaterSim.GetHeightfield();
+				for (int y = 0; y < kWaterGridSize; y++)
+				{
+					ImGui::TableNextRow();
+					for (int x = 0; x < kWaterGridSize; x++)
+					{
+						ImGui::TableNextColumn();
+
+						auto res = std::format_to_n(tempString.data(), tempString.size() - 1, 
+							"{:.1f}##{}-{}", field[y * kWaterGridSize + x], x, y);
+						*res.out = 0;
+						if (ImGui::Button(tempString.data()))
+						{
+							myWaterSim.Append(x, y, 2);
+						}
+					}
+				}
+
+				ImGui::EndTable();
 			}
 		}
 		ImGui::End();

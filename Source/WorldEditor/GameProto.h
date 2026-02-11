@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/RefCounted.h>
+#include "WaterSim.h"
 
 class Game;
 class DefaultAssets;
@@ -49,4 +50,10 @@ private:
 	uint8_t mySize = 16;
 	Handle<Pipeline> myPipeline;
 	Handle<Texture> myTextures[kColorTypes];
+
+	constexpr static int kWaterGridSize = 16;
+	WaterSim myWaterSim;
+	float myFlowSpeed = 3.f;
+	float myWaterCellSize = 1;
+	float myVelDamping = 0.1f;
 };
